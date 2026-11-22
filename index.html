@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>카페 지도</title>
+<!-- 검색 사이트에 잡히지 않게 한다. 주소를 아는 사람만 연다. -->
+<meta name="robots" content="noindex, nofollow">
+<!-- 휴대폰 홈 화면에 추가하면 앱처럼 꽉 찬 화면으로 열린다. -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="카페 지도">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#171d1b" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%23fff' stroke='%237a5236' stroke-width='5'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%230f7b6c'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+/* 배치: 왼쪽에 필터 패널, 나머지는 전부 지도. 좁은 화면에서는 패널이 아래에서 올라오는 서랍이 된다. */
+:root {
+  --bg: #eef1f0;
+  --panel: #ffffff;
+  --fg: #17201d;
+  --muted: #5d6965;
+  --line: #dde4e1;
+  --soft: #f3f6f5;
+  --accent: #0f7b6c;
+  --on-accent: #ffffff;
+  --c-fr: #0f7b6c;
+  --c-low: #e08a00;
+  --c-des: #c2457a;
+  --c-ind: #7a5236;
+  --halo: #ffffff;
+  --shadow: 0 6px 24px rgba(20, 40, 35, .16);
+  --font: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1413;
+    --panel: #171d1b;
+    --fg: #e8eeeb;
+    --muted: #9aa7a2;
+    --line: #2b3431;
+    --soft: #1f2725;
+    --accent: #3ec1ac;
+    --on-accent: #06201b;
+    --c-fr: #2bb39d;
+    --c-low: #f2b632;
+    --c-des: #e56fa1;
+    --c-ind: #c9946c;
+    --halo: #171d1b;
+    --shadow: 0 6px 24px rgba(0, 0, 0, .5);
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body { font-family: var(--font); font-size: 14px; color: var(--fg); background: var(--bg); display: flex; overflow: hidden; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+#panel { width: 340px; flex: none; background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; z-index: 1000; }
+#panel header { padding: 18px 18px 12px; display: flex; flex-direction: column; gap: 10px; }
+h1 { font-size: 20px; font-weight: 750; margin: 0; letter-spacing: -.01em; }
+#total { color: var(--muted); font-variant-numeric: tabular-nums; }
+#total b { color: var(--fg); font-weight: 650; }
+#scroll { overflow-y: auto; padding: 0 18px 18px; display: flex; flex-direction: column; gap: 22px; min-height: 0; }
+section { display: flex; flex-direction: column; gap: 10px; }
+h2 { font-size: 12px; font-weight: 650; color: var(--muted); margin: 0; letter-spacing: .04em; }
+.hint { color: var(--muted); font-size: 12.5px; line-height: 1.5; margin: 0; }
+
+#q { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--soft); }
+#results { display: flex; flex-direction: column; max-height: 260px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; }
+#results button { text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line); padding: 8px 12px; display: flex; flex-direction: column; gap: 2px; }
+#results button:last-child { border-bottom: 0; }
+#results button:hover { background: var(--soft); }
+#results small { color: var(--muted); }
+#results p { margin: 0; padding: 10px 12px; color: var(--muted); }
+
+.row { display: flex; flex-wrap: wrap; gap: 6px; }
+.preset { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 6px 12px; font-size: 13px; }
+.preset:hover { background: var(--soft); }
+
+.group { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.group-head { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+.group-head label { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; cursor: pointer; font-weight: 600; white-space: nowrap; }
+.dot { width: 12px; height: 12px; border-radius: 50%; flex: none; box-shadow: 0 0 0 2px var(--panel), 0 0 0 3px var(--line); }
+.count { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12.5px; font-weight: 400; }
+.more { border: 0; background: none; color: var(--accent); font-size: 12.5px; padding: 4px 2px; white-space: nowrap; }
+.brands { border-top: 1px solid var(--line); background: var(--soft); padding: 8px 12px 10px; display: flex; flex-direction: column; gap: 6px; }
+.brands .tools { display: flex; gap: 12px; }
+.brands .tools button { border: 0; background: none; color: var(--accent); font-size: 12.5px; padding: 2px 0; }
+.brands ul { list-style: none; margin: 0; padding: 0; max-height: 230px; overflow-y: auto; display: flex; flex-direction: column; }
+.brands li label { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; }
+.brands li span.n { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); flex: none; margin: 0; }
+
+.seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--soft); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 3px; }
+.seg button { border: 0; background: none; border-radius: 7px; padding: 8px 6px; font-weight: 550; }
+.seg button[aria-pressed=true] { background: var(--accent); color: var(--on-accent); }
+.slider { display: flex; flex-direction: column; gap: 4px; }
+.slider output { font-weight: 650; font-variant-numeric: tabular-nums; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.check { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+footer { color: var(--muted); font-size: 12px; line-height: 1.55; border-top: 1px solid var(--line); padding-top: 14px; }
+footer a { color: inherit; }
+
+#mapwrap { flex: 1; position: relative; min-width: 0; }
+#map { position: absolute; inset: 0; background: var(--bg); }
+#status { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 900; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; box-shadow: var(--shadow); font-variant-numeric: tabular-nums; white-space: nowrap; max-width: calc(100% - 24px); overflow: hidden; text-overflow: ellipsis; }
+.fab { position: absolute; z-index: 900; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; box-shadow: var(--shadow); font-weight: 600; }
+#locate { right: 12px; bottom: 96px; }
+#openFilters { display: none; left: 12px; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); }
+#toast { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 950; background: var(--fg); color: var(--panel); padding: 10px 16px; border-radius: 10px; max-width: calc(100% - 32px); }
+#dots { position: absolute; left: 0; top: 0; pointer-events: none; }
+.maplibregl-map { font-family: var(--font); }
+.maplibregl-popup { z-index: 5; }
+.maplibregl-popup-content { background: var(--panel); color: var(--fg); border-radius: 14px; box-shadow: var(--shadow); padding: 14px 16px; width: 282px; max-width: calc(100vw - 32px); }
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip, .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip, .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip { border-top-color: var(--panel); }
+.maplibregl-popup-anchor-top .maplibregl-popup-tip, .maplibregl-popup-anchor-top-left .maplibregl-popup-tip, .maplibregl-popup-anchor-top-right .maplibregl-popup-tip { border-bottom-color: var(--panel); }
+.maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: var(--panel); }
+.maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: var(--panel); }
+.maplibregl-popup-close-button { color: var(--muted); font-size: 20px; padding: 2px 8px; }
+.maplibregl-ctrl-group { background: var(--panel); }
+.maplibregl-ctrl-attrib { background: color-mix(in srgb, var(--panel) 82%, transparent) !important; color: var(--muted); }
+.maplibregl-ctrl-attrib a { color: var(--muted); }
+@media (prefers-color-scheme: dark) { .maplibregl-ctrl-group button .maplibregl-ctrl-icon { filter: invert(1); } }
+.me { width: 18px; height: 18px; border-radius: 50%; background: #2f6fed; border: 3px solid #fff; box-shadow: 0 0 0 2px rgba(47,111,237,.35); }
+.card { display: flex; flex-direction: column; gap: 10px; font-size: 13.5px; }
+.card h3 { margin: 0; font-size: 16px; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; padding-right: 14px; }
+.card .kind { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.card dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 5px 10px; }
+.card dt { color: var(--muted); }
+.card dd { margin: 0; overflow-wrap: anywhere; }
+.card .marks { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.card .marks button { border: 1px solid var(--line); background: var(--soft); border-radius: 9px; padding: 8px 4px; font-size: 12.5px; }
+.card .marks button[aria-pressed=true] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.card .links { display: flex; gap: 14px; }
+.card .links a { color: var(--accent); font-weight: 600; text-decoration: none; }
+.card .links a:hover { text-decoration: underline; }
+
+@media (max-width: 760px) {
+  body { display: block; }
+  #mapwrap { position: absolute; inset: 0; }
+  #panel { position: absolute; left: 0; right: 0; bottom: 0; width: auto; max-height: 76%; border-right: 0; border-top: 1px solid var(--line); border-radius: 18px 18px 0 0; box-shadow: var(--shadow); transform: translateY(105%); transition: transform .22s ease; padding-bottom: env(safe-area-inset-bottom, 0px); }
+  #panel.open { transform: none; }
+  #panel header { flex-direction: row; align-items: center; justify-content: space-between; }
+  #openFilters { display: block; }
+  #panel #closeFilters { display: block; }
+  .maplibregl-ctrl-bottom-right { bottom: 0; }
+  #openFilters { bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
+  #locate { bottom: 110px; }
+}
+#closeFilters { display: none; border: 1px solid var(--line); background: var(--soft); border-radius: 9px; padding: 6px 12px; }
+@media (prefers-reduced-motion: reduce) { #panel { transition: none; } }
+</style>
+</head>
+<body>
+<aside id="panel" aria-label="필터">
+  <header>
+    <div>
+      <h1>카페 지도</h1>
+      <div id="total">불러오는 중</div>
+    </div>
+    <button id="closeFilters" type="button">닫기</button>
+  </header>
+  <div id="scroll">
+    <section>
+      <h2>이름으로 찾기</h2>
+      <input id="q" type="search" placeholder="예: 스타벅스 강남, 테라로사" autocomplete="off">
+      <div id="results" hidden></div>
+    </section>
+
+    <section>
+      <h2>종류</h2>
+      <div class="row" id="presets"></div>
+      <div id="groups" style="display:flex;flex-direction:column;gap:8px"></div>
+      <label class="check"><input type="checkbox" id="hideDabang" checked> 옛날식 다방은 숨기기</label>
+    </section>
+
+    <section>
+      <h2>크기</h2>
+      <div class="seg" id="segBig">
+        <button type="button" data-v="0" aria-pressed="true">전체</button>
+        <button type="button" data-v="1" aria-pressed="false">대형만</button>
+      </div>
+      <div class="slider">
+        <label for="bigMin">대형 기준: <output id="bigOut"></output></label>
+        <input type="range" id="bigMin" min="100" max="1000" step="10" value="330">
+      </div>
+      <p class="hint">매장 면적은 음식점 인허가 자료에서 가져왔어요. 면적을 모르는 카페(전체의 약 18%)는 대형만 볼 때 빠져요.</p>
+    </section>
+
+    <section>
+      <h2>노트북 작업</h2>
+      <div class="seg" id="segLap">
+        <button type="button" data-v="0" aria-pressed="true">전체</button>
+        <button type="button" data-v="1" aria-pressed="false">작업하기 좋은 곳</button>
+      </div>
+      <p class="hint">콘센트나 와이파이 자료는 없어서, 매장 넓이와 브랜드로 추정해요. 카페를 눌러 직접 표시하면 그 표시가 추정보다 먼저예요.</p>
+    </section>
+
+    <footer>
+      카페 위치와 이름: 소상공인시장진흥공단 상가(상권)정보, 2026년 9월 기준.<br>
+      매장 면적: 행정안전부 지방행정 인허가 자료(휴게음식점, 일반음식점, 제과점).<br>
+      브랜드는 상호명으로 자동 분류해서 일부 틀릴 수 있어요.
+    </footer>
+  </div>
+</aside>
+
+<main id="mapwrap">
+  <div id="map"></div>
+  <div id="status" role="status">지도를 불러오는 중</div>
+  <button class="fab" id="locate" type="button">내 위치</button>
+  <button class="fab" id="openFilters" type="button">필터</button>
+  <div id="toast" hidden></div>
+</main>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="cafes.js"></script>
+<script>
+(function () {
+  'use strict';
+  var D = window.CAFES;
+  var $ = function (id) { return document.getElementById(id); };
+  if (!D || !window.maplibregl) {
+    $('status').textContent = !D ? 'cafes.js 파일을 찾지 못했어요. index.html과 같은 폴더에 있어야 해요.' : '지도 라이브러리를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.';
+    $('total').textContent = '';
+    return;
+  }
+
+  // ---------- 데이터 준비 ----------
+  var N = D.name.length;
+  var GROUPS = [
+    { key: 'P', label: '일반 프랜차이즈', css: '--c-fr' },
+    { key: 'L', label: '저가커피', css: '--c-low' },
+    { key: 'D', label: '디저트·음료', css: '--c-des' },
+    { key: 'I', label: '개인카페', css: '--c-ind' }
+  ];
+  var G_OF = { P: 0, L: 1, D: 2 };
+  var brandGroup = D.brands.map(function (b) { return G_OF[b[1]]; });
+  // 앉아서 일하기 좋은 편인 브랜드에 주는 가산점
+  var LAP_BONUS = { '스타벅스': 15, '투썸플레이스': 15, '할리스': 20, '탐앤탐스': 15, '커피빈': 10, '엔제리너스': 10, '파스쿠찌': 10, '카페베네': 10, '드롭탑': 10, '폴바셋': 5 };
+  var LAP_OK = 65;
+
+  var grp = new Uint8Array(N), dabang = new Uint8Array(N), score = new Uint8Array(N);
+  var mx = new Float64Array(N), my = new Float64Array(N);
+  var pass = new Uint8Array(N), mark = new Int8Array(N);
+  var brandCount = new Int32Array(D.brands.length), indieCount = 0;
+  for (var i = 0; i < N; i++) {
+    var b = D.brand[i];
+    if (b < 0) { grp[i] = 3; indieCount++; if (/다방/.test(D.name[i])) dabang[i] = 1; }
+    else { grp[i] = brandGroup[b]; brandCount[b]++; }
+    var lat = D.lat[i] / 1e5, lng = D.lng[i] / 1e5, s = Math.sin(lat * Math.PI / 180);
+    mx[i] = (lng + 180) / 360;
+    my[i] = 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI);
+    var a = D.area[i];
+    var sc = a <= 0 ? 40 : a < 40 ? 10 : a < 80 ? 30 : a < 150 ? 50 : a < 300 ? 68 : 82;
+    if (b >= 0) {
+      var bonus = LAP_BONUS[D.brands[b][0]];
+      sc += bonus !== undefined ? bonus : grp[i] === 1 ? -25 : grp[i] === 2 ? -20 : 0;
+    }
+    if (dabang[i]) sc -= 50;
+    score[i] = Math.max(0, Math.min(100, sc));
+  }
+  function keyOf(i) { return D.name[i] + '@' + D.lat[i] + ',' + D.lng[i]; }
+
+  // ---------- 저장해 둔 상태 ----------
+  var STORE = 'cafemap.v2';
+  function load(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
+  function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* 저장이 막힌 브라우저에서는 그냥 넘어간다 */ } }
+  var saved = load(STORE) || {};
+  var marks = load(STORE + '.marks') || {};
+  var S = {
+    brandOn: D.brands.map(function (b) { return !(saved.off && saved.off.indexOf(b[0]) >= 0); }),
+    indie: saved.indie !== false,
+    big: !!saved.big,
+    bigMin: saved.bigMin || 330,
+    laptop: !!saved.laptop,
+    hideDabang: saved.hideDabang !== false
+  };
+  if (Object.keys(marks).length) for (i = 0; i < N; i++) { var m = marks[keyOf(i)]; if (m) mark[i] = m; }
+  function persist() {
+    var c = map.getCenter();
+    save(STORE, {
+      off: D.brands.filter(function (b, j) { return !S.brandOn[j]; }).map(function (b) { return b[0]; }),
+      indie: S.indie, big: S.big, bigMin: S.bigMin, laptop: S.laptop, hideDabang: S.hideDabang,
+      view: [c.lat, c.lng, +map.getZoom().toFixed(2)]
+    });
+  }
+
+  // ---------- 지도 ----------
+  // 배경 지도는 OpenFreeMap(키가 필요 없는 OpenStreetMap 벡터 지도)이다.
+  var dark = window.matchMedia('(prefers-color-scheme: dark)');
+  function styleUrl() { return 'https://tiles.openfreemap.org/styles/' + (dark.matches ? 'dark' : 'liberty'); }
+  var view = saved.view || [37.47, 127.02, 10];
+  var map = new maplibregl.Map({
+    container: 'map', center: [view[1], view[0]], zoom: view[2],
+    minZoom: 6, maxZoom: 19, maxBounds: [[121, 31], [134.5, 40.5]],
+    dragRotate: false, pitchWithRotate: false, touchPitch: false, attributionControl: { compact: true }
+  });
+  window.cafeMap = map;
+  map.on('error', function (e) { console.error('지도 오류', e && e.error && e.error.message); });
+  map.touchZoomRotate.disableRotation();
+  map.keyboard.disableRotation();
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
+  // 지도 스타일을 받아서 지명을 한글로 바꾼 뒤 적용한다.
+  function applyStyle() {
+    var url = styleUrl();
+    fetch(url).then(function (r) { return r.json(); }).then(function (st) {
+      st.layers.forEach(function (l) {
+        var tf = l.type === 'symbol' && l.layout && l.layout['text-field'];
+        if (tf && JSON.stringify(tf).indexOf('name') >= 0) l.layout['text-field'] = ['coalesce', ['get', 'name:ko'], ['get', 'name']];
+      });
+      map.setStyle(st);
+    }).catch(function () { map.setStyle(url); });
+  }
+  applyStyle();
+
+  var canvas = document.createElement('canvas');
+  canvas.id = 'dots';
+  map.getCanvasContainer().appendChild(canvas);
+  var ctx = canvas.getContext('2d');
+
+  var COL = [], PANEL = '#fff', FG = '#000', HALO = '#fff';
+  function readColors() {
+    var cs = getComputedStyle(document.documentElement);
+    COL = GROUPS.map(function (g) { return cs.getPropertyValue(g.css).trim(); });
+    PANEL = cs.getPropertyValue('--panel').trim();
+    FG = cs.getPropertyValue('--fg').trim();
+    HALO = cs.getPropertyValue('--halo').trim();
+  }
+  readColors();
+  dark.addEventListener('change', function () { readColors(); applyStyle(); draw(); });
+
+  // ---------- 필터 계산 ----------
+  var totalPass = 0;
+  function refilter() {
+    var n = 0;
+    for (var i = 0; i < N; i++) {
+      var b = D.brand[i];
+      var ok = b < 0 ? S.indie : S.brandOn[b];
+      if (ok && S.hideDabang && dabang[i]) ok = false;
+      if (ok && S.big && D.area[i] < S.bigMin) ok = false;
+      if (ok && S.laptop) ok = mark[i] === 1 || (mark[i] !== -1 && score[i] >= LAP_OK);
+      pass[i] = ok ? 1 : 0;
+      if (ok) n++;
+    }
+    totalPass = n;
+    $('total').innerHTML = '조건에 맞는 카페 <b>' + n.toLocaleString('ko-KR') + '</b>곳 (전국)';
+  }
+
+  // ---------- 그리기 ----------
+  var CELL = 84, items = [], sel = -1, queued = false;
+  function short(n) { return n >= 10000 ? (n / 10000).toFixed(1) + '만' : n >= 1000 ? (n / 1000).toFixed(1) + '천' : String(n); }
+  function requestDraw() { if (!queued) { queued = true; requestAnimationFrame(function () { queued = false; draw(); }); } }
+
+  function draw() {
+    var box = map.getContainer(), dpr = window.devicePixelRatio || 1, W = box.clientWidth, H = box.clientHeight;
+    if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) {
+      canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+      canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    var z = map.getZoom(), scale = 512 * Math.pow(2, z), ct = map.getCenter();
+    var sn = Math.sin(ct.lat * Math.PI / 180);
+    var ox = (ct.lng + 180) / 360 * scale - W / 2, oy = (0.5 - Math.log((1 + sn) / (1 - sn)) / (4 * Math.PI)) * scale - H / 2;
+    // 묶음 칸은 정수 줌 기준으로 잡는다. 확대하는 동안 묶음이 흔들리지 않고, 화면 가장자리에서 잘리지도 않는다.
+    var cm = CELL / (512 * Math.pow(2, Math.round(z)));
+    var x0 = Math.floor(ox / scale / cm) * cm, x1 = Math.ceil((ox + W) / scale / cm) * cm;
+    var y0 = Math.floor(oy / scale / cm) * cm, y1 = Math.ceil((oy + H) / scale / cm) * cm;
+    var single = z >= 14.5, cells = new Map(), dots = [], inView = 0, i, px, py;
+    for (i = 0; i < N; i++) {
+      if (!pass[i] || mx[i] < x0 || mx[i] >= x1 || my[i] < y0 || my[i] >= y1) continue;
+      px = mx[i] * scale - ox; py = my[i] * scale - oy;
+      if (px >= 0 && px < W && py >= 0 && py < H) inView++;
+      if (single) { dots.push(i); continue; }
+      var key = Math.floor(mx[i] / cm) * 4194304 + Math.floor(my[i] / cm);
+      var c = cells.get(key);
+      if (!c) { c = { n: 0, sx: 0, sy: 0, g: [0, 0, 0, 0], first: i }; cells.set(key, c); }
+      c.n++; c.sx += px; c.sy += py; c.g[grp[i]]++;
+    }
+    items = [];
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    cells.forEach(function (c) {
+      if (c.n === 1) { dots.push(c.first); return; }
+      var x = c.sx / c.n, y = c.sy / c.n, r = 13 + 4.5 * Math.log10(c.n), a0 = -Math.PI / 2;
+      ctx.beginPath(); ctx.arc(x, y, r + 1.5, 0, 2 * Math.PI); ctx.fillStyle = PANEL; ctx.fill();
+      // 바깥 고리는 그 묶음 안의 종류 비율이다.
+      for (var g = 0; g < 4; g++) {
+        if (!c.g[g]) continue;
+        var a1 = a0 + 2 * Math.PI * c.g[g] / c.n;
+        ctx.beginPath(); ctx.arc(x, y, r - 2.5, a0, a1); ctx.lineWidth = 5; ctx.strokeStyle = COL[g]; ctx.stroke();
+        a0 = a1;
+      }
+      ctx.fillStyle = FG; ctx.font = '650 ' + (c.n >= 1000 ? 10.5 : 11.5) + 'px ' + getComputedStyle(document.body).fontFamily;
+      ctx.fillText(short(c.n), x, y + .5);
+      items.push({ x: x, y: y, r: r + 2, c: c });
+    });
+    var labels = [];
+    for (var k = 0; k < dots.length; k++) {
+      i = dots[k];
+      px = mx[i] * scale - ox; py = my[i] * scale - oy;
+      var big = D.area[i] >= S.bigMin, r = (single ? 7 : 6) + (big ? 3 : 0);
+      ctx.beginPath(); ctx.arc(px, py, r, 0, 2 * Math.PI);
+      ctx.fillStyle = COL[grp[i]]; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = PANEL; ctx.stroke();
+      if (big) { ctx.beginPath(); ctx.arc(px, py, r + 3, 0, 2 * Math.PI); ctx.lineWidth = 1.5; ctx.strokeStyle = COL[grp[i]]; ctx.stroke(); }
+      if (mark[i] === 1) { ctx.beginPath(); ctx.arc(px, py, 2.6, 0, 2 * Math.PI); ctx.fillStyle = PANEL; ctx.fill(); }
+      items.push({ x: px, y: py, r: r + 4, i: i });
+      if (z >= 15.5 && labels.length < 260) labels.push([i, px, py, r]);
+    }
+    if (labels.length) {
+      ctx.textAlign = 'left'; ctx.font = '600 12px ' + getComputedStyle(document.body).fontFamily;
+      var boxes = [];
+      labels.forEach(function (l) {
+        var t = D.name[l[0]]; if (t.length > 16) t = t.slice(0, 15) + '…';
+        var w = ctx.measureText(t).width, bx = l[1] + l[3] + 5, by = l[2] - 8;
+        for (var j = 0; j < boxes.length; j++) { var q = boxes[j]; if (bx < q[0] + q[2] && bx + w > q[0] && by < q[1] + 16 && by + 16 > q[1]) return; }
+        boxes.push([bx, by, w]);
+        ctx.lineWidth = 3.5; ctx.strokeStyle = HALO; ctx.lineJoin = 'round'; ctx.strokeText(t, bx, l[2] + .5);
+        ctx.fillStyle = FG; ctx.fillText(t, bx, l[2] + .5);
+      });
+    }
+    if (sel >= 0) {
+      px = mx[sel] * scale - ox; py = my[sel] * scale - oy;
+      ctx.beginPath(); ctx.arc(px, py, 15, 0, 2 * Math.PI); ctx.lineWidth = 3; ctx.strokeStyle = FG; ctx.stroke();
+    }
+    $('status').textContent = inView ? '이 화면에 ' + inView.toLocaleString('ko-KR') + '곳' : '이 화면에는 조건에 맞는 카페가 없어요';
+  }
+
+  function hit(p) {
+    for (var k = items.length - 1; k >= 0; k--) {
+      var it = items[k], dx = p.x - it.x, dy = p.y - it.y;
+      if (dx * dx + dy * dy <= it.r * it.r) return it;
+    }
+    return null;
+  }
+  var popup = null;
+  function closePopup() { if (popup) { var p = popup; popup = null; p.remove(); } sel = -1; requestDraw(); }
+  map.on('move', requestDraw);
+  map.on('moveend', function () { draw(); persist(); });
+  map.on('resize', requestDraw);
+  map.on('mousemove', function (e) { map.getCanvas().style.cursor = hit(e.point) ? 'pointer' : ''; });
+  map.on('click', function (e) {
+    var it = hit(e.point);
+    if (!it) { closePopup(); return; }
+    if (it.c) map.easeTo({ center: map.unproject([it.x, it.y]), zoom: Math.min(map.getZoom() + 2, 15) });
+    else openCafe(it.i);
+  });
+
+  // ---------- 카페 카드 ----------
+  function el(tag, text, cls) { var e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
+  function lapText(i) {
+    if (mark[i] === 1) return '내가 좋다고 표시한 곳';
+    if (mark[i] === -1) return '내가 별로라고 표시한 곳';
+    var t = score[i] >= LAP_OK ? '작업하기 좋을 것 같아요' : score[i] >= 45 ? '보통일 것 같아요' : '자리가 좁거나 포장 위주일 것 같아요';
+    return t + ' (추정)';
+  }
+  function openCafe(i) {
+    var lat = D.lat[i] / 1e5, lng = D.lng[i] / 1e5, b = D.brand[i], name = D.name[i];
+    var card = el('div', null, 'card');
+    card.appendChild(el('h3', name));
+    var kind = el('div', null, 'kind'), dot = el('span', null, 'dot');
+    dot.style.background = 'var(' + GROUPS[grp[i]].css + ')';
+    kind.appendChild(dot);
+    kind.appendChild(el('span', b < 0 ? '개인카페' : D.brands[b][0] + ', ' + GROUPS[grp[i]].label));
+    card.appendChild(kind);
+    var dl = el('dl');
+    function rowOf(k, v) { dl.appendChild(el('dt', k)); var dd = el('dd', v); dl.appendChild(dd); return dd; }
+    var fl = D.floor[i];
+    rowOf('주소', D.regions[D.region[i]] + ' ' + D.road[i] + (fl > 0 ? ' (' + fl + '층)' : fl < 0 ? ' (지하)' : ''));
+    var a = D.area[i];
+    rowOf('면적', a > 0 ? '약 ' + a.toLocaleString('ko-KR') + '㎡ (' + Math.round(a / 3.3058) + '평)' : '정보 없음');
+    var lapDd = rowOf('노트북', lapText(i));
+    card.appendChild(dl);
+    var marks_ = el('div', null, 'marks');
+    var ok = el('button', '작업하기 좋아요'), no = el('button', '작업하긴 별로예요');
+    ok.type = no.type = 'button';
+    function sync() {
+      ok.setAttribute('aria-pressed', mark[i] === 1); no.setAttribute('aria-pressed', mark[i] === -1);
+      lapDd.textContent = lapText(i);
+    }
+    function setMark(v) {
+      mark[i] = mark[i] === v ? 0 : v;
+      if (mark[i]) marks[keyOf(i)] = mark[i]; else delete marks[keyOf(i)];
+      save(STORE + '.marks', marks);
+      sync();
+      if (S.laptop) refilter();
+      requestDraw();
+    }
+    ok.addEventListener('click', function () { setMark(1); });
+    no.addEventListener('click', function () { setMark(-1); });
+    marks_.appendChild(ok); marks_.appendChild(no);
+    card.appendChild(marks_);
+    sync();
+    var links = el('div', null, 'links');
+    var k = el('a', '카카오맵에서 보기'), n = el('a', '네이버지도에서 찾기');
+    k.href = 'https://map.kakao.com/link/map/' + encodeURIComponent(name.replace(/,/g, ' ')) + ',' + lat + ',' + lng;
+    n.href = 'https://map.naver.com/p/search/' + encodeURIComponent(D.regions[D.region[i]].split(' ').slice(1).join(' ') + ' ' + name);
+    k.target = n.target = '_blank'; k.rel = n.rel = 'noopener';
+    links.appendChild(k); links.appendChild(n);
+    card.appendChild(links);
+    closePopup();
+    sel = i;
+    popup = new maplibregl.Popup({ offset: 14, maxWidth: 'none', closeOnClick: false })
+      .setLngLat([lng, lat]).setDOMContent(card).addTo(map);
+    popup.on('close', function () { if (popup) { popup = null; sel = -1; requestDraw(); } });
+    requestDraw();
+  }
+
+  // ---------- 필터 화면 ----------
+  var groupBoxes = [];
+  function groupBrands(g) { var out = []; for (var j = 0; j < D.brands.length; j++) if (brandGroup[j] === g) out.push(j); return out.sort(function (a, b) { return brandCount[b] - brandCount[a]; }); }
+  function changed() { refilter(); syncUI(); draw(); persist(); }
+
+  GROUPS.forEach(function (g, gi) {
+    var box = el('div', null, 'group'), head = el('div', null, 'group-head');
+    var label = el('label'), cb = el('input'); cb.type = 'checkbox'; cb.id = 'g-' + g.key;
+    var dot = el('span', null, 'dot'); dot.style.background = 'var(' + g.css + ')';
+    label.appendChild(cb); label.appendChild(dot); label.appendChild(el('span', g.label));
+    var list = gi < 3 ? groupBrands(gi) : null;
+    var total = gi < 3 ? list.reduce(function (s, j) { return s + brandCount[j]; }, 0) : indieCount;
+    label.appendChild(el('span', total.toLocaleString('ko-KR'), 'count'));
+    head.appendChild(label);
+    box.appendChild(head);
+    var checks = [];
+    if (list) {
+      var more = el('button', '브랜드별', 'more'); more.type = 'button'; more.setAttribute('aria-expanded', 'false');
+      head.appendChild(more);
+      var body = el('div', null, 'brands'); body.hidden = true;
+      var tools = el('div', null, 'tools'), all = el('button', '모두 켜기'), none = el('button', '모두 끄기');
+      all.type = none.type = 'button';
+      all.addEventListener('click', function () { list.forEach(function (j) { S.brandOn[j] = true; }); changed(); });
+      none.addEventListener('click', function () { list.forEach(function (j) { S.brandOn[j] = false; }); changed(); });
+      tools.appendChild(all); tools.appendChild(none); body.appendChild(tools);
+      var ul = el('ul');
+      list.forEach(function (j) {
+        var li = el('li'), lb = el('label'), c = el('input'); c.type = 'checkbox'; c.id = 'b-' + j;
+        c.addEventListener('change', function () { S.brandOn[j] = c.checked; changed(); });
+        lb.appendChild(c); lb.appendChild(el('span', D.brands[j][0], 'n')); lb.appendChild(el('span', brandCount[j].toLocaleString('ko-KR'), 'count'));
+        li.appendChild(lb); ul.appendChild(li); checks.push([j, c]);
+      });
+      body.appendChild(ul); box.appendChild(body);
+      more.addEventListener('click', function () { body.hidden = !body.hidden; more.setAttribute('aria-expanded', String(!body.hidden)); more.textContent = body.hidden ? '브랜드별' : '접기'; });
+      cb.addEventListener('change', function () { list.forEach(function (j) { S.brandOn[j] = cb.checked; }); changed(); });
+    } else {
+      cb.addEventListener('change', function () { S.indie = cb.checked; changed(); });
+    }
+    groupBoxes.push({ cb: cb, list: list, checks: checks });
+    $('groups').appendChild(box);
+  });
+
+  var PRESETS = [
+    ['전체 보기', function (g) { return true; }],
+    ['저가커피만', function (g) { return g === 1; }],
+    ['프랜차이즈만', function (g) { return g !== 3; }],
+    ['개인카페만', function (g) { return g === 3; }]
+  ];
+  PRESETS.forEach(function (p) {
+    var bt = el('button', p[0], 'preset'); bt.type = 'button';
+    bt.addEventListener('click', function () {
+      for (var j = 0; j < D.brands.length; j++) S.brandOn[j] = p[1](brandGroup[j]);
+      S.indie = p[1](3);
+      changed();
+    });
+    $('presets').appendChild(bt);
+  });
+
+  function seg(id, get, set) {
+    var bts = $(id).querySelectorAll('button');
+    bts.forEach(function (bt) { bt.addEventListener('click', function () { set(bt.dataset.v === '1'); changed(); }); });
+    return function () { bts.forEach(function (bt) { bt.setAttribute('aria-pressed', String((bt.dataset.v === '1') === get())); }); };
+  }
+  var syncBig = seg('segBig', function () { return S.big; }, function (v) { S.big = v; });
+  var syncLap = seg('segLap', function () { return S.laptop; }, function (v) { S.laptop = v; });
+  $('bigMin').addEventListener('input', function () { S.bigMin = +this.value; changed(); });
+  $('hideDabang').addEventListener('change', function () { S.hideDabang = this.checked; changed(); });
+
+  function syncUI() {
+    groupBoxes.forEach(function (gb) {
+      if (!gb.list) { gb.cb.checked = S.indie; return; }
+      var on = gb.list.filter(function (j) { return S.brandOn[j]; }).length;
+      gb.cb.checked = on > 0; gb.cb.indeterminate = on > 0 && on < gb.list.length;
+      gb.checks.forEach(function (c) { c[1].checked = S.brandOn[c[0]]; });
+    });
+    syncBig(); syncLap();
+    $('bigMin').value = S.bigMin;
+    $('bigOut').textContent = S.bigMin + '㎡ (약 ' + Math.round(S.bigMin / 3.3058) + '평) 이상';
+    $('hideDabang').checked = S.hideDabang;
+  }
+
+  // ---------- 이름 검색 ----------
+  var flat = null, timer = 0;
+  $('q').addEventListener('input', function () {
+    clearTimeout(timer);
+    var input = this;
+    timer = setTimeout(function () {
+      var words = input.value.toLowerCase().split(/\s+/).filter(Boolean), box = $('results');
+      box.textContent = '';
+      if (!words.length || words.join('').length < 2) { box.hidden = true; return; }
+      if (!flat) { flat = new Array(N); for (var i = 0; i < N; i++) flat[i] = (D.name[i] + ' ' + D.regions[D.region[i]] + ' ' + D.road[i]).toLowerCase(); }
+      var c = map.getCenter(), s = Math.sin(c.lat * Math.PI / 180), cx = (c.lng + 180) / 360, cy = 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI);
+      var found = [];
+      for (var i = 0; i < N; i++) {
+        var ok = true;
+        for (var w = 0; w < words.length; w++) if (flat[i].indexOf(words[w]) < 0) { ok = false; break; }
+        if (ok) found.push([(mx[i] - cx) * (mx[i] - cx) + (my[i] - cy) * (my[i] - cy), i]);
+      }
+      found.sort(function (a, b) { return a[0] - b[0]; });
+      box.hidden = false;
+      if (!found.length) { box.appendChild(el('p', '찾는 이름이 없어요. 띄어쓰기를 바꾸거나 짧게 입력해 보세요.')); return; }
+      found.slice(0, 30).forEach(function (f) {
+        var i = f[1], bt = el('button'); bt.type = 'button';
+        bt.appendChild(el('span', D.name[i])); bt.appendChild(el('small', D.regions[D.region[i]] + ' ' + D.road[i]));
+        bt.addEventListener('click', function () {
+          $('panel').classList.remove('open');
+          map.jumpTo({ center: [D.lng[i] / 1e5, D.lat[i] / 1e5], zoom: Math.max(map.getZoom(), 16) });
+          openCafe(i);
+        });
+        box.appendChild(bt);
+      });
+      if (found.length > 30) box.appendChild(el('p', '지도 가운데에서 가까운 30곳만 보여 줘요. 모두 ' + found.length.toLocaleString('ko-KR') + '곳이에요.'));
+    }, 160);
+  });
+
+  // ---------- 내 위치, 서랍 ----------
+  var me = null, toastTimer = 0;
+  function toast(t) { var x = $('toast'); x.textContent = t; x.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { x.hidden = true; }, 4500); }
+  $('locate').addEventListener('click', function () {
+    if (!navigator.geolocation) { toast('이 브라우저에서는 위치를 가져올 수 없어요.'); return; }
+    navigator.geolocation.getCurrentPosition(function (p) {
+      var ll = [p.coords.longitude, p.coords.latitude];
+      if (!me) { var d = document.createElement('div'); d.className = 'me'; me = new maplibregl.Marker({ element: d }).setLngLat(ll).addTo(map); }
+      else me.setLngLat(ll);
+      map.easeTo({ center: ll, zoom: Math.max(map.getZoom(), 14) });
+    }, function () { toast('위치를 가져오지 못했어요. 브라우저에서 위치 권한을 허용해 주세요.'); }, { enableHighAccuracy: true, timeout: 10000 });
+  });
+  $('openFilters').addEventListener('click', function () { $('panel').classList.add('open'); });
+  $('closeFilters').addEventListener('click', function () { $('panel').classList.remove('open'); });
+
+  refilter(); syncUI(); draw();
+  map.on('load', draw);
+})();
+</script>
+</body>
+</html>
