@@ -28,7 +28,8 @@ self.addEventListener('fetch', e => {
     return;
   }
   // 나머지(화면, 설정 파일): 인터넷이 되면 새것을 받고, 안 되면 넣어 둔 것을 쓴다.
-  e.respondWith(fetch(e.request).then(r => {
+  // 브라우저가 따로 넣어 둔 사본(10분 동안 그대로 쓴다)을 거치지 않고 서버에서 바로 받는다. 그래야 새로고침했을 때 방금 올린 화면이 뜬다.
+  e.respondWith(fetch(u.href, { cache: 'no-store' }).then(r => {
     if (r.ok) { const cp = r.clone(); caches.open(V).then(c => c.put(e.request, cp)); }
     return r;
   }).catch(() => caches.match(e.request)));
