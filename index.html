@@ -344,7 +344,13 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 #nav > * { pointer-events: auto; }
 .npair { display: flex; gap: 8px; }
 .nbtn { display: inline-flex; align-items: center; gap: 6px; height: 42px; padding: 0 16px 0 13px; border-radius: 12px; background: var(--surface); box-shadow: var(--sh-1); font-weight: 650; white-space: nowrap; }
-.nbtn:hover, .nbtn[aria-pressed=true] { background: var(--pri); color: var(--on-pri); }
+.nbtn[aria-pressed=true] { background: var(--pri); color: var(--on-pri); }
+/* 마우스를 올렸을 때의 색은 마우스가 있는 기기에서만. 폰에서는 손가락을 뗀 뒤에도 그 색이 남아서 눌린 것처럼 보인다. */
+@media (hover: hover) { .nbtn:hover { background: var(--pri); color: var(--on-pri); } }
+/* "OO 전체 보기"와 "동별로 보기"를 오갈 때 동전처럼 뒤집힌다. */
+@keyframes coin { 0% { scale: 1 1; } 50% { scale: 1 .04; } 100% { scale: 1 1; } }
+#navAll.flip { animation: coin .28s ease-in-out; }
+@media (prefers-reduced-motion: reduce) { #navAll.flip { animation: none; } }
 .cbtn { width: 42px; height: 42px; display: grid; place-items: center; background: var(--surface); border-radius: 12px; box-shadow: var(--sh-1); color: var(--ink); }
 .cbtn:hover { background: var(--surface-2); }
 .cgroup { display: flex; flex-direction: column; background: var(--surface); border-radius: 12px; box-shadow: var(--sh-1); overflow: hidden; }
@@ -370,7 +376,13 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   #chips::-webkit-scrollbar { display: none; }
   #panel { left: 0 !important; right: 0; top: auto !important; bottom: 0; width: auto !important; max-height: 62% !important; border-radius: 20px 20px 0 0; }
   #panel[data-kind=region], #panel[data-kind=filter], #panel[data-kind=search], #panel[data-kind=list] { max-height: 74% !important; }
-  #panel[data-kind=detail][data-embed] { max-height: 94% !important; }
+  #panel[data-kind=detail][data-embed], #panel[data-kind=list] { max-height: 94% !important; }
+  /* 목록 카드도 카페 카드처럼 전체 높이로 만들어 두고 아래로 밀어서 반만 보이게 한다. */
+  #panel[data-kind=list] { height: 100%; }
+  /* 폰의 카드는 모두 같은 방식이다: 윗줄에 손잡이 막대가 있고, 윗줄을 잡고 끌어내리면 닫힌다. X 단추는 두지 않는다. */
+  .ph { position: relative; padding-top: 18px; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .ph::before { content: ""; position: absolute; left: 50%; top: 6px; width: 38px; height: 4px; margin-left: -19px; border-radius: 2px; background: var(--line-2); }
+  .ph .ib[aria-label="닫기"] { display: none; }
   /* 아래쪽 단추. 가운데에 "이 화면 N곳", 오른쪽 아래에 둥근 단추를 쌓는다(위에서부터 뒤로, 처음부터, 내 위치).
      내 위치가 늘 맨 아래에 있고, 지역 안으로 들어가면 그 위에 두 개가 더 생긴다. */
   #count { height: 44px; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); }
@@ -742,6 +754,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     chairs: {},               // 그 자리 의자 종류로 더 좁히기. n 일반 의자, w 벽면 고정 의자, s 스탠드형 의자
     sort: saved.sort === 'size' ? 'size' : 'near',
     seen: saved.seen === 'want' ? 'want' : 'all',   // 찜한 곳만 보기: all 전부, want 찜한 곳만
+    outline: saved.outline !== false,   // 환경설정: 고른 지역의 경계선과 색칠을 보일지
     fresh: saved.fresh ? 12 : 0,   // 새로 연 카페만 보기: 0 전부, 12 개업 1년 이내(기간을 고르게 했다가 선택지가 많다는 말을 듣고 하나로 줄였다)
     showAll: false,      // 구 전체 보기를 켰는가. 지역을 바꾸면 꺼진다.
     pins: {},            // 압정으로 목록 맨 위에 고정해 둔 브랜드 이름
@@ -1072,7 +1085,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     save(STORE, {
       cats: Object.keys(S.cats).map(Number), brands: Object.keys(S.brands).map(function (j) { return D.brands[j][0]; }),
       reg: S.reg >= 0 ? regPath(S.reg) : null,
-      big: S.big, bigPy: S.bigPy, outlet: S.outlet, chairs: Object.keys(S.chairs), sort: S.sort, pins: Object.keys(S.pins), tab: S.tab, seen: S.seen, fresh: S.fresh,
+      big: S.big, bigPy: S.bigPy, outlet: S.outlet, chairs: Object.keys(S.chairs), sort: S.sort, pins: Object.keys(S.pins), tab: S.tab, seen: S.seen, fresh: S.fresh, outline: S.outline,
       view: [c.lat, c.lng, +map.getZoom().toFixed(2)]
     });
   }
@@ -1704,7 +1717,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     // 조건을 좁혀서 화면 안에 150곳 이하로 남았을 때는 멀리서도 하나씩 보여 준다.
     indiv = (S.reg >= 0 && rLeaf[S.reg] === 1) || (S.showAll && canShowAll()) || z >= POINT_ZOOM || vc <= 150;
     hits = [];
-    if (S.reg >= 0) drawOutline(S.reg, scale, ox, oy);
+    if (S.reg >= 0 && S.outline) drawOutline(S.reg, scale, ox, oy);
 
     if (!indiv) {
       // 멀리서 볼 때: 지역 이름표에 개수만 적는다.
@@ -2094,21 +2107,26 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 
   // ----- 카드 하나를 돌려 쓴다 -----
   var panel = $('panel'), P = { kind: null, prev: null, anchor: null, cafe: -1 };
+  // 폰에서 반만 올라왔다가 끌어올리면 전체가 되는 카드인가: 카카오맵 화면이 든 카페 카드와 목록 카드.
+  function twoStage() { return mobile.matches && (P.kind === 'list' || (P.kind === 'detail' && panel.hasAttribute('data-embed'))); }
+  var closeTimer = 0;
   function openPanel(kind, anchor) {
     var was = P.kind;
     P.kind = kind; P.anchor = anchor || null;
+    clearTimeout(closeTimer);
     // 카페 카드가 아닌 다른 카드(필터, 지역, 목록)를 열면 보던 카페의 선택을 푼다.
     // 풀지 않으면 그 카페가 필터나 지역과 상관없이 지도에 계속 남는다.
     if (kind !== 'detail' && sel >= 0) { sel = -1; requestDraw(); }
+    if (kind !== 'detail') panel.removeAttribute('data-embed');
     panel.dataset.kind = kind; panel.hidden = false;
-    // 카페 카드는 아래에서 위로 올라오며 나타난다(이미 카페 카드가 떠 있을 때 다른 카페를 누르면 내용만 바뀐다).
-    var fresh = kind === 'detail' ? was !== 'detail' : !was, keep = kind === 'detail' && was === 'detail' ? snap : 'half';
+    // 카드는 아래에서 위로 올라오며 나타난다(이미 카드가 떠 있을 때 내용만 바뀌는 경우는 빼고).
+    var fresh = kind === 'detail' ? was !== 'detail' : !was, keep = was === kind ? snap : 'half';
     panel.style.transform = panel.style.transition = '';
     panel.classList.remove('rise');
     document.body.classList.add('sheet-open');
     renderPanel(); placePanel();
-    if (kind === 'detail' && mobile.matches && panel.hasAttribute('data-embed')) {
-      // 폰에서 카카오맵 화면이 든 카드는 먼저 반만 올라와서 지도를 가리지 않는다(카카오맵 앱과 같은 방식).
+    if (twoStage()) {
+      // 먼저 반만 올라와서 지도를 가리지 않는다(카카오맵 앱과 같은 방식).
       // 윗줄을 끌어올리면 전체로 커지고, 끌어내리면 다시 반, 한 번 더 내리면 닫힌다.
       if (fresh) { panel.style.transition = 'none'; panel.style.transform = 'translateY(100%)'; void panel.offsetWidth; }
       setSnap(keep, true);
@@ -2123,17 +2141,30 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     panel.style.transform = 'translateY(' + snapOffset(which) + 'px)';
     panel.setAttribute('data-snap', which);
   }
-  function closePanel() {
+  // now: 움직임 없이 바로 닫는다(끌어내려 닫을 때는 이미 내려가 있다).
+  function closePanel(now) {
     if (!P.kind) return;
     var was = P.kind;
-    P.kind = null; P.prev = null; panel.hidden = true;
+    P.kind = null; P.prev = null;
     sel = -1;
-    if (wantReload) { softReload(); return; }
-    // 카드 안에 띄워 둔 카카오맵, 네이버지도 화면은 카드를 닫을 때 같이 내린다.
-    var fr = panel.querySelector('iframe'); if (fr) fr.remove();
+    if (wantReload) { panel.hidden = true; softReload(); return; }
     document.body.classList.remove('sheet-open');
-    if (was === 'detail') { sel = -1; requestDraw(); }
+    if (was === 'detail') requestDraw();
     renderChips();
+    // 카드를 치운다. 카드 안에 띄워 둔 카카오맵 화면도 같이 내린다.
+    var done = function () {
+      if (P.kind) return;      // 내려가는 사이에 다른 카드가 열렸으면 그대로 둔다.
+      panel.hidden = true;
+      var fr = panel.querySelector('iframe'); if (fr) fr.remove();
+      panel.style.transition = panel.style.transform = '';
+    };
+    clearTimeout(closeTimer);
+    if (mobile.matches && now !== true && !panel.hidden) {
+      // 폰에서는 아래로 스르륵 내려가며 닫힌다.
+      panel.classList.remove('rise');
+      panel.style.transition = 'transform .22s ease-in'; panel.style.transform = 'translateY(105%)';
+      closeTimer = setTimeout(done, 230);
+    } else done();
   }
   function placePanel() {
     if (mobile.matches) return;
@@ -2147,11 +2178,12 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     panel.style.left = left + 'px'; panel.style.top = top + 'px';
     panel.style.maxHeight = 'calc(100% - ' + (top + 20) + 'px)';
   }
-  window.addEventListener('resize', function () { if (P.kind) placePanel(); if (P.kind === 'detail' && mobile.matches && panel.hasAttribute('data-embed')) setSnap(snap, false); else if (P.kind === 'detail') { panel.style.transform = ''; } });
+  window.addEventListener('resize', function () { if (P.kind) placePanel(); if (twoStage()) setSnap(snap, false); else if (P.kind === 'detail' || P.kind === 'list') { panel.style.transform = ''; } });
   function head(title, small, back) {
     var h = el('div', 'ph');
     if (back) { var bk = btn('ib back', null, back); bk.setAttribute('aria-label', '뒤로'); bk.appendChild(icon('back')); h.appendChild(bk); }
     var t = el('h2', null, title); if (small) t.appendChild(el('small', null, small)); h.appendChild(t);
+    sheetDrag(h);      // 폰에서는 어느 카드든 윗줄을 잡고 끌어내려 닫는다.
     return h;
   }
   function closeBtn() { var x = btn('ib', null, closePanel); x.setAttribute('aria-label', '닫기'); x.appendChild(icon('x')); return x; }
@@ -2187,6 +2219,11 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       }
       acc.appendChild(row); sc.appendChild(acc);
     }
+    // 환경설정
+    var conf = el('div', 'fsec');
+    conf.appendChild(el('div', 'ftitle', '환경설정'));
+    conf.appendChild(toggleRow('지역 경계 보이기', S.outline, function (v) { S.outline = v; persist(); requestDraw(); }));
+    sc.appendChild(conf);
     var info = el('div', 'fsec'), ul = el('ul', 'mlist');
     info.style.borderBottom = '0';
     info.appendChild(el('div', 'ftitle', '지도 자료'));
@@ -2273,7 +2310,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     // 지역을 골라 들어간 동안에만 오른쪽 아래에 뒤로, 처음부터 단추를 보여 준다.
     $('nav').hidden = S.reg < 0;
     // 구(또는 구가 없는 시, 군)를 골랐을 때만 "전체 보기" 단추를 보여 준다. 누르면 동을 고르지 않고도 그 구의 카페가 전부 점으로 나온다.
-    var all = $('navAll'), can = canShowAll();
+    // 새로 오픈만 볼 때는 카페가 적어서 이미 하나씩 보이므로 이 단추를 두지 않는다.
+    var all = $('navAll'), can = canShowAll() && !S.fresh;
     all.hidden = !can;
     if (can) { all.textContent = S.showAll ? '동별로 보기' : rName[S.reg] + ' 전체 보기'; all.setAttribute('aria-pressed', String(S.showAll)); }
   }
@@ -2298,7 +2336,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       return;
     }
     // 새로 오픈을 켤 때 기준(1년)을 잠깐 알려 준다.
-    if (act === 'fresh') { S.fresh = S.fresh ? 0 : 12; if (S.fresh) toast('오픈 1년 이하 카페만 보여요', 'new'); }
+    if (act === 'fresh') { S.showAll = false; S.fresh = S.fresh ? 0 : 12; if (S.fresh) toast('오픈 1년 이하 카페만 보여요', 'new'); }
     if (act === 'reset') resetFilter();
     if (P.kind === 'region' || P.kind === 'filter') closePanel();
     changed();
@@ -2614,7 +2652,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   // 카카오 장소 번호가 없는 카페는 띄울 화면이 없어서, 그 내용을 카드에 바로 보여 준다.
   function renderDetail(i) {
     var b = D.brand[i], g = grp[i], a = D.area[i], fl = D.floor[i], lat = D.lat[i] / 1e5, lng = D.lng[i] / 1e5;
-    var back = P.prev ? function () { var k = P.prev; sel = -1; P.prev = null; openPanel(k); requestDraw(); } : null;
+    // 뒤로 단추는 늘 있다. 목록에서 들어왔으면 그 목록으로 돌아가고, 지도에서 바로 눌렀으면 카드를 닫는다.
+    var back = P.prev ? function () { var k = P.prev; sel = -1; P.prev = null; openPanel(k); requestDraw(); } : function () { closePanel(); };
     var pid = D.kid ? D.kid[i] : 0;
     // 머리줄에는 카페 이름을 적지 않는다(바로 아래 카카오맵 화면에 이름이 나온다). 지도의 점과 같은 아이콘, 그리고 종류만 둔다.
     var h = el('div', 'dh'), kd = el('span', 'kd', GROUPS[g].label);
@@ -2752,8 +2791,9 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     var on = false, y0 = 0, dy = 0, t0 = 0, base = 0, two = false;
     h.addEventListener('pointerdown', function (e) {
       if (e.target.closest('button, a')) return;
+      if (!mobile.matches) return;
       on = true; y0 = e.clientY; dy = 0; t0 = e.timeStamp;
-      two = mobile.matches && panel.hasAttribute('data-embed');
+      two = twoStage();
       base = two ? snapOffset(snap) : 0;
       try { h.setPointerCapture(e.pointerId); } catch (err) { /* 잡지 못해도 계속한다 */ }
       panel.classList.remove('rise'); panel.style.transition = 'none';
@@ -2766,7 +2806,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     });
     function shut() {
       panel.style.transition = 'transform .2s ease-out'; panel.style.transform = 'translateY(110%)';
-      setTimeout(function () { closePanel(); panel.style.transition = panel.style.transform = ''; }, 190);
+      setTimeout(function () { closePanel(true); }, 190);
     }
     function end(e) {
       if (!on) return;
@@ -2801,7 +2841,13 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       if (done) done(); else map.easeTo({ center: ll, zoom: Math.max(map.getZoom(), 15), duration: 600 });
     }, function () { toast('위치를 가져오지 못했어요. 브라우저에서 위치 권한을 허용해 주세요.'); }, { enableHighAccuracy: true, timeout: 10000 });
   }
-  $('navAll').addEventListener('click', function () { S.showAll = !S.showAll; closePanel(); draw(); renderChips(); });
+  // 누르면 동전처럼 뒤집히면서 "OO 전체 보기"(흰색)와 "동별로 보기"(기본색)가 바뀐다. 글자와 색은 뒤집히는 중간에 바꾼다.
+  $('navAll').addEventListener('click', function () {
+    var b = this;
+    b.classList.remove('flip'); void b.offsetWidth; b.classList.add('flip');
+    setTimeout(function () { S.showAll = !S.showAll; closePanel(); draw(); renderChips(); }, 130);
+    setTimeout(function () { b.classList.remove('flip'); }, 300);
+  });
   $('navBack').addEventListener('click', function () { if (S.reg >= 0) { closePanel(); goRegion(rParent[S.reg]); } });
   $('navHome').addEventListener('click', function () { closePanel(); goRegion(-1); });
   $('zin').addEventListener('click', function () { userMove = true; map.zoomIn(); });
