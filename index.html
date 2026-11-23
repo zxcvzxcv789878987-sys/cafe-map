@@ -350,6 +350,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 <script src="cafes.local.js"></script>
 <script>if (!window.CAFES) document.write('<script src="cafes.js"><\/script>');</script>
 <script src="share.js"></script>
+<script src="kakao.js"></script>
 <script src="regions.js"></script>
 <script src="landmarks.js"></script>
 <script>
@@ -825,6 +826,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   window.cafeTest = { layout: function (r) { var L = tagLayout(r), W = map.getContainer().clientWidth, o = {}; regChildren(r).forEach(function (k) { if (L[k]) { var sh = shapeOf(k); o[rName[k]] = [Math.round((L[k].x - L[k].ax) * 512 * Math.pow(2, map.getZoom())), Math.round((L[k].y - L[k].ay) * 512 * Math.pow(2, map.getZoom())), sh ? Math.round(Math.sqrt((sh.bb[2] - sh.bb[0]) * (sh.bb[3] - sh.bb[1])) * 512 * Math.pow(2, map.getZoom())) : -1]; } }); return o; }, name: function (r) { return rName[r]; }, follow: function () { followView(); return S.reg < 0 ? '전국' : regPath(S.reg); }, reg: function () { return S.reg < 0 ? '전국' : regPath(S.reg); },
     // 경계 점검용: 지역마다 경계가 있는지, 그 지역 카페 가운데 몇 곳이 그 경계 안에 찍히는지 센다.
     moved: dongMoved,
+    live: function (key) { liveKey = key; liveOn = !D.kakao && !!D.kid; liveFetch(); return liveOn; },
+    liveStat: function () { var n = 0; for (var i = 0; i < N; i++) n += live[i]; return { on: liveOn, sdk: liveSdk, calls: liveCalls, moved: n, queue: liveQueue.length }; },
     audit: function () {
       var tot = new Int32Array(NR), ins = new Int32Array(NR), out = [];
       for (var i = 0; i < N; i++) for (var r = dongReg[D.dongOf[i]]; r >= 0; r = rParent[r]) { tot[r]++; if (shapeOf(r) && inShape(r, mx[i], my[i])) ins[r]++; }
@@ -1314,7 +1317,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       };
       for (pass2 = 0; pass2 < 2; pass2++) for (k = 0; k < vc; k++) {
         i = viewIdx[k];
-        if (pileOf[i] >= 0) { if (pass2 === 0) (piles[pileOf[i]] = piles[pileOf[i]] || []).push(i); continue; }
+        if (pileOf[i] >= 0 && !(live && live[i])) { if (pass2 === 0) (piles[pileOf[i]] = piles[pileOf[i]] || []).push(i); continue; }
         if ((grp[i] !== 2) !== (pass2 === 1) || i === sel) continue;
         one(i);
       }
@@ -1437,9 +1440,92 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     refilter(); renderChips();
     if (P.kind === 'region') { regBrowse = r >= 0 && rLeaf[r] ? rParent[r] : r; renderPanel(); }
   }
+  // ----- 카카오맵에서 실제 매장 좌표를 그때그때 받아서 찍기 -----
+  // 인터넷에 올린 지도는 공공데이터 좌표(건물 주소의 점)를 쓴다. 카카오 좌표는 저장해 둘 수 없지만(운영정책),
+  // 화면을 볼 때 그 자리에서 물어보는 것은 된다. 그래서 충분히 확대했을 때 화면에 보이는 구역의 카페를 카카오에 묻고,
+  // 장소 번호(D.kid)가 같은 카페를 받은 좌표로 옮겨 찍는다. 받은 좌표는 기억해 두지 않는다(새로 열면 다시 묻는다).
+  // 이 컴퓨터용 자료(cafes.local.js)를 쓸 때는 이미 카카오 좌표라서 하지 않는다.
+  var live = new Uint8Array(N), liveKey = (window.CAFE_KAKAO || {}).js || '', liveOn = !!liveKey && !D.kakao && !!D.kid;
+  var LIVE_ZOOM = 15.5, kidIndex = null, liveTiles = {}, liveQueue = [], liveBusy = false, liveCalls = 0, liveSdk = 0, livePlaces = null;
+  function liveSdkLoad(done) {
+    if (liveSdk === 2) return done();
+    if (liveSdk === 1 || liveSdk === 3) return;
+    liveSdk = 1;
+    function ready() { kakao.maps.load(function () { livePlaces = new kakao.maps.services.Places(); liveSdk = 2; done(); }); }
+    if (window.kakao && kakao.maps && kakao.maps.load) return ready();
+    var sc = document.createElement('script');
+    sc.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=' + encodeURIComponent(liveKey) + '&libraries=services&autoload=false';
+    sc.onload = ready;
+    sc.onerror = function () { liveSdk = 3; };      // 키나 등록 주소가 틀리면 조용히 끈다.
+    document.head.appendChild(sc);
+  }
+  // 한 네모 구역의 카페를 묻는다. 한 번에 45곳까지만 주므로, 더 많으면 넷으로 쪼개서 다시 묻는다.
+  function liveAsk(x0, y0, x1, y1, depth, got, done) {
+    if (liveCalls > 600) return done();              // 한 번 열어서 너무 많이 묻지 않게 막는다.
+    var a = mercToLngLat(x0, y1), b = mercToLngLat(x1, y0);
+    liveCalls++;
+    livePlaces.categorySearch('CE7', function (data, status, pg) {
+      if (status !== kakao.maps.services.Status.OK) return done();
+      if (pg.totalCount > 45 && depth < 3 && pg.current === 1) {
+        var mxm = (x0 + x1) / 2, mym = (y0 + y1) / 2, left = 4, one = function () { if (--left === 0) done(); };
+        liveAsk(x0, y0, mxm, mym, depth + 1, got, one); liveAsk(mxm, y0, x1, mym, depth + 1, got, one);
+        liveAsk(x0, mym, mxm, y1, depth + 1, got, one); liveAsk(mxm, mym, x1, y1, depth + 1, got, one);
+        return;
+      }
+      for (var k = 0; k < data.length; k++) {
+        var i = kidIndex.get(+data[k].id);
+        if (i === undefined || live[i]) continue;
+        mx[i] = (+data[k].x + 180) / 360; my[i] = mercY(+data[k].y); live[i] = 1; got.push(i);
+      }
+      if (pg.hasNextPage && pg.current < 3) { liveCalls++; pg.nextPage(); } else done();
+    }, { rect: a[0] + ',' + a[1] + ',' + b[0] + ',' + b[1], size: 15 });
+  }
+  // 방금 옮긴 카페들끼리 14m보다 가까우면 서로 밀어서 아이콘이 겹치지 않게 한다.
+  function liveSpread(got) {
+    for (var it = 0; it < 30; it++) {
+      var moved = false;
+      for (var a = 0; a < got.length; a++) for (var b = a + 1; b < got.length; b++) {
+        var i = got[a], j = got[b], g = GAP / (40075016 * Math.cos(D.lat[i] / 1e5 * Math.PI / 180));
+        var dx = mx[j] - mx[i], dy = my[j] - my[i], d = Math.sqrt(dx * dx + dy * dy);
+        if (d >= g * .98) continue;
+        var f;
+        if (d < g * 1e-4) { dx = Math.cos(i * 2.399963); dy = Math.sin(i * 2.399963); f = g / 2; } else f = (g - d) / 2 / d;
+        mx[i] -= dx * f; my[i] -= dy * f; mx[j] += dx * f; my[j] += dy * f; moved = true;
+      }
+      if (!moved) break;
+    }
+  }
+  function liveNext() {
+    if (liveBusy || !liveQueue.length) return;
+    liveBusy = true;
+    var t = liveQueue.shift(), got = [];
+    liveAsk(t[0], t[1], t[2], t[3], 0, got, function () {
+      liveBusy = false;
+      if (got.length) { liveSpread(got); requestDraw(); }
+      liveNext();
+    });
+  }
+  // 화면에 보이는 구역을 고정된 칸(약 600m)으로 나눠서, 아직 묻지 않은 칸만 묻는다.
+  function liveFetch() {
+    if (!liveOn || liveSdk === 3 || map.getZoom() < LIVE_ZOOM) return;
+    liveSdkLoad(function () {
+      if (!kidIndex) { kidIndex = new Map(); for (var i = 0; i < N; i++) if (D.kid[i]) kidIndex.set(D.kid[i], i); }
+      var b = map.getBounds(), T = 1 / 65536;
+      var x0 = Math.floor((b.getWest() + 180) / 360 / T), x1 = Math.floor((b.getEast() + 180) / 360 / T);
+      var y0 = Math.floor(mercY(b.getNorth()) / T), y1 = Math.floor(mercY(b.getSouth()) / T);
+      if ((x1 - x0 + 1) * (y1 - y0 + 1) > 40) return;
+      for (var x = x0; x <= x1; x++) for (var y = y0; y <= y1; y++) {
+        var key = x + ',' + y;
+        if (liveTiles[key]) continue;
+        liveTiles[key] = 1;
+        liveQueue.push([x * T, y * T, (x + 1) * T, (y + 1) * T]);
+      }
+      liveNext();
+    });
+  }
   map.on('dragstart', function () { userMove = true; });
   map.on('zoomstart', function (e) { if (e && e.originalEvent) userMove = true; });
-  map.on('moveend', function () { if (userMove) { userMove = false; followView(); } draw(); persist(); if (P.kind === 'list') { clearTimeout(listTimer); listTimer = setTimeout(renderPanel, 90); } });
+  map.on('moveend', function () { if (userMove) { userMove = false; followView(); } liveFetch(); draw(); persist(); if (P.kind === 'list') { clearTimeout(listTimer); listTimer = setTimeout(renderPanel, 90); } });
   map.on('resize', requestDraw);
   map.on('load', draw);
   // 출처 표시는 처음부터 접어 둔다. 오른쪽 아래 (i)를 누르면 펼쳐진다.
