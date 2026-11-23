@@ -144,11 +144,13 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 .cell:hover { border-color: var(--ink-3); }
 .cell.on { background: var(--inv); border-color: var(--inv); color: var(--on-inv); }
 .cell.on small { color: inherit; opacity: .7; }
-.cell.all { grid-column: 1 / -1; }
+/* 맨 위의 "전체" 단추(전국, 경기 전체, 수원시 전체 등)는 모두 같은 보랏빛 파랑으로 맞춘다. 지도에서 고른 지역을 칠하는 색과 같다. */
+.cell.all { grid-column: 1 / -1; background: rgba(106, 90, 224, .09); border-color: rgba(106, 90, 224, .28); color: var(--area); }
+.cell.all span { font-weight: 750; }
+.cell.all small { color: inherit; opacity: .75; }
+.cell.all.on { background: var(--area); border-color: var(--area); color: #fff; }
 /* 전국 단추: 다른 칸 두 개 너비로 길게 놓고, 한 단계 위라는 것이 보이게 옅은 보라 바탕을 깐다. */
-.cell.nation { justify-content: center; background: rgba(106, 90, 224, .09); border-color: rgba(106, 90, 224, .28); color: var(--area); }
-.cell.nation span { font-weight: 750; }
-.cell.nation.on { background: var(--area); border-color: var(--area); color: #fff; }
+.cell.nation { justify-content: center; }
 .cell span { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .cell small { flex: none; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .cell:disabled { opacity: .4; cursor: default; }
@@ -1739,7 +1741,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     } else {
       // 가까이서 볼 때: 카페 하나하나. 개인카페를 먼저 그리고 프랜차이즈를 위에 올린다.
       // 같은 건물의 카페들은 모아 두었다가 점 하나로 그린다.
-      var labels = [], pass2, piles = {}, wantLabel = z >= LABEL_SOME, r = dotR(0, z);
+      // 이름은 보통 LABEL_SOME(14)부터 쓴다. 동 하나를 골라 들어왔거나 찜한 곳만 볼 때는 덜 확대된 상태여도 쓴다(넓은 동은 화면에 맞추면 14가 안 된다).
+      var labels = [], pass2, piles = {}, inDong = S.reg >= 0 && rLeaf[S.reg] === 1, wantLabel = z >= LABEL_SOME || inDong || S.seen === 'want', r = dotR(0, z);
       var one = function (i) {
         var x = mx[i] * scale - ox, y = my[i] * scale - oy;
         stampDot(i, x, y, r);
@@ -1775,9 +1778,11 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
         if (full) {
           lastLayout = now; layoutGen++;
           for (k = 0; k < labels.length; k++) { var dq = labels[k]; boxes.push([dq[1] - dq[3], dq[2] - dq[3], dq[3] * 2, dq[3] * 2]); }
-          if (!all) { labels.sort(function (p, q) { return D.area[q[0]] - D.area[p[0]] || p[0] - q[0]; }); var cap = Math.round(24 + Math.max(0, z - LABEL_SOME) * 70); if (labels.length > cap) labels.length = cap; }
+          if (!all) { labels.sort(function (p, q) { return D.area[q[0]] - D.area[p[0]] || p[0] - q[0]; }); var cap = Math.round(24 + Math.max(0, z - LABEL_SOME) * 70); if (inDong || S.seen === 'want') cap = 400; if (labels.length > cap) labels.length = cap; }
         }
         var nSpots = all ? 24 : 4, padX = all ? 2 : 10, padY = all ? 1 : 5;   // 덜 확대했을 때는 이름 사이를 더 띄운다.
+        // 동 하나를 보고 있거나 찜한 곳만 볼 때는 이름을 되도록 많이 보여 준다: 모든 카페를 후보로 하고, 자리를 여덟 군데 보고, 사이를 좁힌다.
+        if (!all && (inDong || S.seen === 'want')) { nSpots = 8; padX = 4; padY = 2; }
         for (k = 0; k < labels.length; k++) {
           var lb = labels[k], ci = lb[0], ls = labelSprite(ci, lb[4]), tw = ls.tw, pick = null;
           if (full) {
