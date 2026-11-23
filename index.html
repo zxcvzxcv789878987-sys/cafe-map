@@ -40,6 +40,8 @@
   --c-ind: #8a5a3c;
   --ok: #0f8a5a;
   --hi: #1d5fe0;
+  --pri: #6a5ae0;      /* 기본색: 누른 단추와 주요 단추. 지역을 칠하는 색(--area)과 같은 보랏빛 파랑(인디고) */
+  --on-pri: #ffffff;
   --area: #6a5ae0;   /* 고른 지역을 칠하는 색. 카페 점(파랑, 주황, 갈색)이나 지도의 초록, 물색과 겹치지 않는 보라 */
   --sh-1: 0 1px 2px rgba(20, 23, 28, .10), 0 2px 10px rgba(20, 23, 28, .10);
   --sh-2: 0 2px 6px rgba(20, 23, 28, .08), 0 14px 36px rgba(20, 23, 28, .18);
@@ -78,7 +80,7 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 #chips { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; padding-top: 3px; }
 .chip { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px; border-radius: 999px; background: var(--surface); box-shadow: var(--sh-1); font-size: 14px; font-weight: 600; white-space: nowrap; flex: none; }
 .chip:hover { background: var(--surface-2); }
-.chip[aria-pressed=true] { background: var(--inv); color: var(--on-inv); }
+.chip[aria-pressed=true] { background: var(--pri); color: var(--on-pri); }
 .chip .dot { width: 9px; height: 9px; border-radius: 50%; }
 .chip svg.i { width: 16px; height: 16px; }
 .chip[data-act=want][aria-pressed=true] svg.i { fill: currentColor; }
@@ -127,15 +129,15 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 .sec { padding: 12px 16px 4px; font-size: 12px; font-weight: 650; color: var(--ink-3); letter-spacing: .03em; }
 .note { margin: 0; padding: 8px 16px 10px; font-size: 12.5px; color: var(--ink-3); }
 .ask { margin: 2px 14px 8px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--ink-2); }
-.ask .btn { flex: none; background: var(--inv); color: var(--on-inv); }
+.ask .btn { flex: none; background: var(--pri); color: var(--on-pri); }
 .empty { padding: 28px 24px 30px; text-align: center; color: var(--ink-2); display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .empty b { font-size: 15px; color: var(--ink); }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 16px; border-radius: 11px; font-weight: 650; font-size: 14px; background: var(--surface-2); text-decoration: none; color: var(--ink); }
 .btn:hover { background: var(--line); }
-.btn.pri { background: var(--inv); color: var(--on-inv); }
-.btn.pri:hover { opacity: .88; background: var(--inv); }
+.btn.pri { background: var(--pri); color: var(--on-pri); }
+.btn.pri:hover { opacity: .88; background: var(--pri); }
 .btn.sm { height: 34px; font-size: 13px; padding: 0 12px; }
-.btn[aria-pressed=true] { background: var(--inv); color: var(--on-inv); }
+.btn[aria-pressed=true] { background: var(--pri); color: var(--on-pri); }
 
 .crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; padding: 0 10px 8px; flex: none; }
 .crumbs button { font-size: 13.5px; font-weight: 600; color: var(--ink-3); padding: 5px 6px; border-radius: 7px; }
@@ -145,7 +147,7 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 2px 14px 12px; }
 .cell { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; text-align: left; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
 .cell:hover { border-color: var(--ink-3); }
-.cell.on { background: var(--inv); border-color: var(--inv); color: var(--on-inv); }
+.cell.on { background: var(--pri); border-color: var(--pri); color: var(--on-pri); }
 .cell.on small { color: inherit; opacity: .7; }
 /* 맨 위의 "전체" 단추(전국, 경기 전체, 수원시 전체 등)는 모두 같은 보랏빛 파랑으로 맞춘다. 지도에서 고른 지역을 칠하는 색과 같다. */
 .cell.all { grid-column: 1 / -1; background: rgba(106, 90, 224, .09); border-color: rgba(106, 90, 224, .28); color: var(--area); }
@@ -163,7 +165,7 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 .pick { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 8px 16px; }
 .pick:hover { background: var(--surface-2); }
 .pick .box { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid var(--line-2); display: grid; place-items: center; flex: none; color: transparent; }
-.pick[aria-pressed=true] .box { background: var(--inv); border-color: var(--inv); color: var(--on-inv); }
+.pick[aria-pressed=true] .box { background: var(--pri); border-color: var(--pri); color: var(--on-pri); }
 .pick .box svg.i { width: 14px; height: 14px; stroke-width: 2.6; }
 .pick .name { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pick .pin { width: 28px; height: 28px; font-size: 12.5px; }
@@ -248,13 +250,13 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .rec .acts { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .opt.quiet { border-color: transparent; color: var(--ink-3); padding: 0 8px; }
 .opt.quiet:hover { color: var(--ink); border-color: var(--line-2); }
-.opt.quiet[aria-pressed=true] { background: var(--inv); border-color: var(--inv); color: var(--on-inv); }
+.opt.quiet[aria-pressed=true] { background: var(--pri); border-color: var(--pri); color: var(--on-pri); }
 .opt.quiet[aria-pressed=true] svg.i { fill: none; }
 /* 주소 옆의 길찾기 */
 .facts .go { color: var(--ink); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line-2); font-size: 12.5px; font-weight: 650; }
 .facts .go:hover { border-color: var(--ink-3); }
 .facts .go svg.i { width: 14px; height: 14px; }
-.opt[aria-pressed=true] { background: var(--inv); border-color: var(--inv); color: var(--on-inv); }
+.opt[aria-pressed=true] { background: var(--pri); border-color: var(--pri); color: var(--on-pri); }
 /* 단추 안에 적는 사람 수(그렇게 기록한 사람이 몇 명인지) */
 .opt .n { margin-left: 6px; font-weight: 700; font-variant-numeric: tabular-nums; opacity: .5; }
 .opt[aria-pressed=true] .n { opacity: .8; }
@@ -276,7 +278,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 /* 콘센트와 넓이를 한눈에 보여 주는 단추. 누르면 기록하는 판이 열린다. */
 .sum { flex: none; display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 10px 0 13px; border-radius: 999px; border: 1px solid transparent; background: var(--surface-2); font-size: 13px; font-weight: 700; cursor: pointer; }
 .sum:hover { border-color: var(--ink-3); }
-.sum[aria-pressed=true] { background: var(--inv); border-color: var(--inv); color: var(--on-inv); }
+.sum[aria-pressed=true] { background: var(--pri); border-color: var(--pri); color: var(--on-pri); }
 .sum .st { display: inline-flex; align-items: center; gap: 5px; }
 .sum .st i { width: 8px; height: 8px; border-radius: 50%; background: var(--line-2); }
 .sum .st.yes i { background: var(--ok); }
@@ -333,7 +335,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 @media (min-width: 761px) { #panel[data-kind=detail][data-embed] { width: 440px !important; } }
 
 /* 아래쪽: 개수 단추, 지도 단추 */
-#count { position: absolute; z-index: 15; left: 50%; bottom: 22px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 18px; border-radius: 999px; background: var(--inv); color: var(--on-inv); font-weight: 650; box-shadow: var(--sh-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+#count { position: absolute; z-index: 15; left: 50%; bottom: 22px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 18px; border-radius: 999px; background: var(--pri); color: var(--on-pri); font-weight: 650; box-shadow: var(--sh-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
 #count:hover { opacity: .9; }
 #count svg.i { width: 16px; height: 16px; }
 #ctrl { position: absolute; right: 14px; bottom: 44px; z-index: 15; display: flex; flex-direction: column; gap: 8px; }
@@ -342,13 +344,14 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 #nav > * { pointer-events: auto; }
 .npair { display: flex; gap: 8px; }
 .nbtn { display: inline-flex; align-items: center; gap: 6px; height: 42px; padding: 0 16px 0 13px; border-radius: 12px; background: var(--surface); box-shadow: var(--sh-1); font-weight: 650; white-space: nowrap; }
-.nbtn:hover, .nbtn[aria-pressed=true] { background: var(--inv); color: var(--on-inv); }
+.nbtn:hover, .nbtn[aria-pressed=true] { background: var(--pri); color: var(--on-pri); }
 .cbtn { width: 42px; height: 42px; display: grid; place-items: center; background: var(--surface); border-radius: 12px; box-shadow: var(--sh-1); color: var(--ink); }
 .cbtn:hover { background: var(--surface-2); }
 .cgroup { display: flex; flex-direction: column; background: var(--surface); border-radius: 12px; box-shadow: var(--sh-1); overflow: hidden; }
 .cgroup .cbtn { box-shadow: none; border-radius: 0; }
 .cgroup .cbtn + .cbtn { border-top: 1px solid var(--line); }
-#toast { position: absolute; left: 50%; bottom: 78px; transform: translateX(-50%); z-index: 40; background: var(--inv); color: var(--on-inv); padding: 10px 16px; border-radius: 10px; font-weight: 600; max-width: calc(100% - 32px); box-shadow: var(--sh-2); }
+#toast.new { background: #37b24d; color: #fff; }
+#toast { width: max-content; position: absolute; left: 50%; bottom: 78px; transform: translateX(-50%); z-index: 40; background: var(--inv); color: var(--on-inv); padding: 10px 16px; border-radius: 10px; font-weight: 600; max-width: calc(100% - 32px); box-shadow: var(--sh-2); }
 .maplibregl-map { font-family: var(--font); }
 .maplibregl-ctrl-attrib { background: color-mix(in srgb, var(--surface) 85%, transparent) !important; color: var(--ink-3); font-size: 11px; }
 .maplibregl-ctrl-attrib a { color: var(--ink-3); }
@@ -1736,7 +1739,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
         var tg = tags[k];
         var bx = tg.x - tg.w / 2, by = tg.y - tg.h / 2, hot = hoverPill === tg.r;
         ctx.save(); ctx.shadowColor = 'rgba(15,20,30,.22)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 2;
-        rr(bx, by, tg.w, tg.h, 14); ctx.fillStyle = hot ? C.inv : C.surface; ctx.fill(); ctx.restore();
+        rr(bx, by, tg.w, tg.h, 14); ctx.fillStyle = hot ? C.area : C.surface; ctx.fill(); ctx.restore();
         ctx.font = '600 12.5px ' + FONT; ctx.fillStyle = hot ? C.onInv : (tg.num ? C.ink3 : C.ink); ctx.fillText(tg.name, bx + 10, tg.y + .5);
         if (tg.num) { ctx.font = '750 12.5px ' + FONT; ctx.fillStyle = hot ? C.onInv : C.ink; ctx.fillText(tg.num, bx + 16 + tg.w1, tg.y + .5); }
         hits.push({ x0: bx, y0: by, x1: bx + tg.w, y1: by + tg.h, reg: tg.r });
@@ -2087,7 +2090,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     return p;
   }
   var toastTimer = 0;
-  function toast(t) { var x = $('toast'); x.textContent = t; x.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { x.hidden = true; }, 3800); }
+  function toast(t, kind) { var x = $('toast'); x.textContent = t; x.className = kind || ''; x.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { x.hidden = true; }, 3800); }
 
   // ----- 카드 하나를 돌려 쓴다 -----
   var panel = $('panel'), P = { kind: null, prev: null, anchor: null, cafe: -1 };
@@ -2292,7 +2295,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       return;
     }
     // 새로 오픈을 켤 때 기준(1년)을 잠깐 알려 준다.
-    if (act === 'fresh') { S.fresh = S.fresh ? 0 : 12; if (S.fresh) toast('오픈한 지 1년 이하인 카페만 보여요'); }
+    if (act === 'fresh') { S.fresh = S.fresh ? 0 : 12; if (S.fresh) toast('오픈 1년 이하 카페만 보여요', 'new'); }
     if (act === 'reset') resetFilter();
     if (P.kind === 'region' || P.kind === 'filter') closePanel();
     changed();
