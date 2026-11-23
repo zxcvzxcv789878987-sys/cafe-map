@@ -639,6 +639,10 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 
   var rAll = new Int32Array(NR);
   for (i = 0; i < N; i++) if (!dabang[i]) for (var ra = dongReg[D.dongOf[i]]; ra >= 0; ra = rParent[ra]) rAll[ra]++;
+  // 지역마다 카페가 모여 있는 곳의 가운데. 이름표의 제자리를 정할 때 쓴다.
+  var rCx = new Float64Array(NR), rCy = new Float64Array(NR);
+  for (i = 0; i < N; i++) if (!dabang[i]) for (ra = dongReg[D.dongOf[i]]; ra >= 0; ra = rParent[ra]) { rCx[ra] += mx[i]; rCy[ra] += my[i]; }
+  for (i = 0; i < NR; i++) if (rAll[i]) { rCx[i] /= rAll[i]; rCy[i] /= rAll[i]; }
 
   // ================= 상태 =================
   var STORE = 'cafemap.v6';
@@ -902,7 +906,10 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   window.cafeMap = map;
   var ldEl = document.getElementById('loading'); if (ldEl) ldEl.hidden = true;   // 자료를 다 읽었으니 로딩 표시를 내린다.
   window.cafeDraw = function () { draw(); };   // 시험용: 그리는 데 걸리는 시간을 잴 때 쓴다.
-  window.cafeTest = { layout: function (r) { var L = tagLayout(r), W = map.getContainer().clientWidth, o = {}; regChildren(r).forEach(function (k) { if (L[k]) { var sh = shapeOf(k); o[rName[k]] = [Math.round((L[k].x - L[k].ax) * 512 * Math.pow(2, map.getZoom())), Math.round((L[k].y - L[k].ay) * 512 * Math.pow(2, map.getZoom())), sh ? Math.round(Math.sqrt((sh.bb[2] - sh.bb[0]) * (sh.bb[3] - sh.bb[1])) * 512 * Math.pow(2, map.getZoom())) : -1]; } }); return o; }, name: function (r) { return rName[r]; }, follow: function () { followView(); return S.reg < 0 ? '전국' : regPath(S.reg); }, reg: function () { return S.reg < 0 ? '전국' : regPath(S.reg); },
+  window.cafeTest = { layout: function (r) { var L = tagLayout(r), sc = 512 * Math.pow(2, L.zoom), o = {}; regChildren(r).forEach(function (k) { if (L[k]) o[rName[k]] = [Math.round((L[k].x - L[k].ax) * sc), Math.round((L[k].y - L[k].ay) * sc), L[k].z ? +(L[k].z - L.zoom).toFixed(2) : 0, inShape(k, L[k].x, L[k].y) ? 1 : 0, L[k].zc ? +(L[k].zc - L.zoom).toFixed(2) : 0]; }); return o; },
+    go: function (path) { if (!path) { goRegion(-1); return -1; } for (var k = 0; k < NR; k++) if (regPath(k) === path) { goRegion(k); return k; } return null; },
+    cur: function () { return S.reg; }, trimmed: function () { var o = []; for (var k = 0; k < NR; k++) if (rAll[k] >= 200 && fitBox(k)[0] !== rBox[k * 4] | fitBox(k)[2] !== rBox[k * 4 + 2] | fitBox(k)[1] !== rBox[k * 4 + 1] | fitBox(k)[3] !== rBox[k * 4 + 3]) o.push(regPath(k)); return o; }, relayout: function () { layoutCache = {}; draw(); },
+    anchor: function (path) { for (var k = 0; k < NR; k++) if (regPath(k) === path) { var a = tagAnchor(k), ll = mercToLngLat(a.x, a.y); return [+ll[0].toFixed(3), +ll[1].toFixed(3)]; } return null; }, name: function (r) { return rName[r]; }, follow: function () { followView(); return S.reg < 0 ? '전국' : regPath(S.reg); }, reg: function () { return S.reg < 0 ? '전국' : regPath(S.reg); },
     // 경계 점검용: 지역마다 경계가 있는지, 그 지역 카페 가운데 몇 곳이 그 경계 안에 찍히는지 센다.
     moved: dongMoved,
     live: function (key) { liveKey = key; liveOn = !D.kakao && !!D.kid; liveFetch(); return liveOn; },
@@ -1156,36 +1163,125 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     }
     ctx.save(); if ('filter' in ctx) ctx.filter = 'blur(5px)'; ctx.globalAlpha = .22; ctx.fillStyle = C.area; ctx.fill(); ctx.restore();
   }
-  // 이름표 자리 잡기. 좁은 지역부터 차례로 놓는다.
-  // 좁은 지역(서울 같은 곳)은 이름표가 조금만 벗어나도 남의 땅 위에 놓이므로 먼저 제자리를 차지하게 하고,
-  // 넓은 지역(경기 같은 곳)은 이미 놓인 이름표를 피해 자기 땅 안의 가장 가까운 빈 곳으로 간다. 자기 땅 안에 빈 곳이 없으면 가장 가까운 빈 곳으로 간다.
+  // ----- 이름표의 제자리 -----
+  // 그 지역 땅 안에서, 경계에서 넉넉히 떨어져 있으면서 카페가 모여 있는 쪽에 가까운 곳으로 정한다.
+  // 땅 한가운데만 찾으면 서울을 둘러싼 경기는 북쪽 끝(연천, 포천)이, 섬이 많은 인천은 강화도가 뽑힌다.
+  // 사람들이 그 지역이라고 떠올리는 곳은 사람(카페)이 모여 있는 쪽이라서 그쪽으로 당긴다.
+  var anchorCache = {}, PULL = .35;
+  function tagAnchor(r) {
+    if (anchorCache[r]) return anchorCache[r];
+    var sh = shapeOf(r), o = r * 4, out;
+    if (!sh) out = { x: (rBox[o] + rBox[o + 2]) / 2, y: (rBox[o + 1] + rBox[o + 3]) / 2, size: Math.sqrt((rBox[o + 2] - rBox[o]) * (rBox[o + 3] - rBox[o + 1])) };
+    else {
+      var cx = rAll[r] ? rCx[r] : sh.lx, cy = rAll[r] ? rCy[r] : sh.ly, bb = sh.bb, best = null;
+      var edge = function (x, y) {   // 경계선까지의 거리
+        var m = Infinity;
+        for (var k = 0; k < sh.rings.length; k++) {
+          var a = sh.rings[k];
+          for (var i = 0, j = a.length - 2; i < a.length; j = i, i += 2) {
+            var ex = a[i] - a[j], ey = a[i + 1] - a[j + 1], L = ex * ex + ey * ey, t = L ? ((x - a[j]) * ex + (y - a[j + 1]) * ey) / L : 0;
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            var dx = x - a[j] - t * ex, dy = y - a[j + 1] - t * ey, d = dx * dx + dy * dy;
+            if (d < m) m = d;
+          }
+        }
+        return Math.sqrt(m);
+      };
+      var scan = function (x0, y0, x1, y1, n) {
+        for (var p = 0; p <= n; p++) for (var q = 0; q <= n; q++) {
+          var x = x0 + (x1 - x0) * p / n, y = y0 + (y1 - y0) * q / n;
+          if (!inShape(r, x, y)) continue;
+          var sc = edge(x, y) - PULL * Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+          if (!best || sc > best.s) best = { x: x, y: y, s: sc };
+        }
+      };
+      var bw = bb[2] - bb[0], bh = bb[3] - bb[1];
+      scan(bb[0], bb[1], bb[2], bb[3], 24);
+      scan(cx - bw / 8, cy - bh / 8, cx + bw / 8, cy + bh / 8, 12);   // 섬이 멀리 흩어진 지역은 큰 눈금에 본토가 잘 안 걸려서, 카페가 모인 곳 둘레를 한 번 더 본다.
+      if (best) scan(best.x - bw / 24, best.y - bh / 24, best.x + bw / 24, best.y + bh / 24, 8);
+      if (!best) best = { x: sh.lx, y: sh.ly };
+      // 크기는 제자리가 놓인 땅덩이 하나로 잰다(먼 섬까지 합친 범위로 재면 이름표가 움직여도 되는 거리가 터무니없이 커진다).
+      var area = 0;
+      sh.rings.forEach(function (a) {
+        var inside = false, x0 = 1, y0 = 1, x1 = 0, y1 = 0;
+        for (var i = 0, j = a.length - 2; i < a.length; j = i, i += 2) {
+          if ((a[i + 1] > best.y) !== (a[j + 1] > best.y) && best.x < (a[j] - a[i]) * (best.y - a[i + 1]) / (a[j + 1] - a[i + 1]) + a[i]) inside = !inside;
+          if (a[i] < x0) x0 = a[i]; if (a[i] > x1) x1 = a[i]; if (a[i + 1] < y0) y0 = a[i + 1]; if (a[i + 1] > y1) y1 = a[i + 1];
+        }
+        if (inside && (x1 - x0) * (y1 - y0) > area) area = (x1 - x0) * (y1 - y0);
+      });
+      out = { x: best.x, y: best.y, size: Math.sqrt(area || bw * bh) };
+    }
+    return (anchorCache[r] = out);
+  }
+  // ----- 이름표 자리 잡기 -----
+  // 1. 이름표는 자기 땅 위에 놓는다. 다른 이름표와 겹치면 자기 땅 안에서만 조금 비켜 선다. 좁은 지역일수록 덜 움직인다.
+  // 2. 그래도 자리가 없으면 남의 땅으로 밀어내지 않는다. 지도를 더 확대해서 자리가 생겼을 때 나오게 한다.
+  //    누가 먼저 보일지는 카페가 많은 순서로 정하고, 보이기로 한 이름표끼리는 좁은 지역이 먼저 제자리를 차지한다(넓은 지역은 비켜 설 땅이 넉넉하다).
+  // 3. 전국 화면의 시도만은 하나도 숨기지 않는다. 자기 땅 안에 자리가 없으면 가장 가까운 빈 곳에 둔다(서울 옆 인천처럼 땅이 이름표보다 작은 경우).
   var SPOTS = (function () {
     var out = [];
-    for (var dx = -150; dx <= 150; dx += 6) for (var dy = -150; dy <= 150; dy += 6) out.push([dx, dy, dx * dx + dy * dy * 1.6]);   // 위아래로 밀리는 것을 조금 더 꺼린다.
+    for (var dx = -148; dx <= 148; dx += 4) for (var dy = -148; dy <= 148; dy += 4) out.push([dx, dy, Math.sqrt(dx * dx + dy * dy * 2.25)]);   // 이름표는 옆으로 길어서, 위아래로 비키면 옆으로 비킬 때보다 제자리에서 더 벗어나 보인다.
     return out.sort(function (a, b) { return a[2] - b[2]; });
   })();
-  function placeTags(t, W, top, bottom, scale, ox, oy) {
-    var GAP = 6, done = [];
-    t.slice().sort(function (a, b) { return a.size - b.size; }).forEach(function (T) {
-      function free(x, y) {
-        if (x < T.w / 2 + 8 || x > W - T.w / 2 - 8 || y < top || y > bottom) return false;
-        for (var k = 0; k < done.length; k++) { var B = done[k]; if (Math.abs(B.x - x) < (B.w + T.w) / 2 + GAP && Math.abs(B.y - y) < (B.h + T.h) / 2 + GAP) return false; }
-        return true;
+  // list(좁은 지역부터)를 차례로 앉힌다. fixed는 이미 자리가 정해져 움직이지 않는 이름표. 못 앉는 이름표가 나오면 그 이름표를 돌려준다.
+  function seatTags(list, fixed, scale, area) {
+    var GAP = 3, LIM = .6, done = fixed.slice(), pos = [];
+    for (var n = 0; n < list.length; n++) {
+      var T = list[n], X = T.gx * scale, Y = T.gy * scale, lim = T.loose ? 1e9 : Math.max(8, Math.min(64, T.size * scale * LIM)), hit = null;
+      // 화면 범위는 그 안이나 바로 옆에 있는 이름표에만 적용한다. 화면 밖 먼 섬의 이름표는 그 섬 위에 그대로 둔다.
+      var box = area && X > area.x0 - 40 && X < area.x1 + 40 && Y > area.y0 - 40 && Y < area.y1 + 40 ? area : null;
+      if (box) { X = Math.max(box.x0 + T.w / 2 + 6, Math.min(box.x1 - T.w / 2 - 6, X)); Y = Math.max(box.y0, Math.min(box.y1, Y)); }
+      for (var k = 0; k < SPOTS.length; k++) {
+        var sp = SPOTS[k];
+        if (sp[2] > lim) break;
+        var x = X + sp[0], y = Y + sp[1], ok = true;
+        if (box && (x < box.x0 + T.w / 2 + 6 || x > box.x1 - T.w / 2 - 6 || y < box.y0 || y > box.y1)) continue;
+        for (var q = 0; q < done.length; q++) { var B = done[q]; if (Math.abs(B.px - x) < (B.w + T.w) / 2 + GAP && Math.abs(B.py - y) < (B.h + T.h) / 2 + GAP) { ok = false; break; } }
+        if (!ok || (!T.loose && !inShape(T.r, x / scale, y / scale))) continue;
+        hit = [x, y]; break;
       }
-      var best = null, k, sp;
-      // 먼저 자기 땅 안에서(멀어도 90픽셀까지), 없으면 어디든 가장 가까운 빈 곳.
-      for (k = 0; k < SPOTS.length && !best; k++) {
-        sp = SPOTS[k];
-        if (sp[2] > 90 * 90) break;
-        if (free(T.ax + sp[0], T.ay + sp[1]) && inShape(T.r, (T.ax + sp[0] + ox) / scale, (T.ay + sp[1] + oy) / scale)) best = sp;
-      }
-      for (k = 0; k < SPOTS.length && !best; k++) { sp = SPOTS[k]; if (free(T.ax + sp[0], T.ay + sp[1])) best = sp; }
-      if (best) { T.x = T.ax + best[0]; T.y = T.ay + best[1]; }
-      else { T.x = Math.max(T.w / 2 + 8, Math.min(W - T.w / 2 - 8, T.ax)); T.y = Math.max(top, Math.min(bottom, T.ay)); }
-      done.push(T);
-    });
+      if (!hit) return { fail: T };
+      done.push({ px: hit[0], py: hit[1], w: T.w, h: T.h }); pos.push(hit);
+    }
+    return { pos: pos };
   }
-  function regBounds(r) { var o = r * 4; return [mercToLngLat(rBox[o], rBox[o + 3]), mercToLngLat(rBox[o + 2], rBox[o + 1])]; }
+  // 이 배율에서 놓을 수 있는 이름표를 놓고(지도 좌표 fx, fy를 적어 둔다), 못 놓은 것을 돌려준다.
+  function placeTags(tags, fixed, scale, box, force) {
+    // 앉히는 순서: 화면에서 이름표보다 작은 지역(비켜 설 땅이 없다)끼리는 카페가 많은 쪽이 먼저, 그다음은 좁은 지역부터.
+    var key = function (t) { return Math.max(t.size * scale, 48); }, bySize = function (a, b) { return key(a) - key(b) || b.cnt - a.cnt; }, inl = [], pos = [], left = [];
+    tags.slice().sort(function (a, b) { return b.cnt - a.cnt; }).forEach(function (T) {
+      var trial = inl.concat([T]).sort(bySize), res = seatTags(trial, fixed, scale, box);
+      for (var tries = 0; force && res.fail && !res.fail.loose && tries < trial.length; tries++) { res.fail.loose = true; res = seatTags(trial, fixed, scale, box); }
+      if (res.pos) { inl = trial; pos = res.pos; } else left.push(T);
+    });
+    inl.forEach(function (T, n) { T.fx = pos[n][0] / scale; T.fy = pos[n][1] / scale; T.set = true; });
+    return left;
+  }
+  // 그 지역을 화면에 맞출 때의 범위. 보통은 카페가 있는 범위 전체다.
+  // 다만 멀리 떨어진 섬 몇 곳 때문에 범위가 훨씬 넓어지는 지역(인천의 백령도, 경북의 울릉도)은 본토가 화면에서 너무 작아져서 이름표를 놓을 자리가 없다.
+  // 그래서 가장자리 2% 안쪽에 뚝 떨어진 틈(나머지 폭의 20%보다 큰 틈)이 있으면 그 바깥은 빼고 맞춘다. 빠진 섬은 지도를 옮기면 그대로 보인다.
+  // 틈 없이 이어진 지역은 건드리지 않는다(변두리가 한산할 뿐인 지역을 자르면 경계선이 화면 밖으로 잘린다).
+  var fitBoxCache = {};
+  function fitBox(r) {
+    if (fitBoxCache[r]) return fitBoxCache[r];
+    var o = r * 4, b = [rBox[o], rBox[o + 1], rBox[o + 2], rBox[o + 3]];
+    if (rAll[r] >= 200) {
+      var xs = [], ys = [];
+      for (var i = 0; i < N; i++) { if (dabang[i]) continue; for (var q = dongReg[D.dongOf[i]]; q >= 0; q = rParent[q]) if (q === r) { xs.push(mx[i]); ys.push(my[i]); break; } }
+      var cut = function (v) {
+        v.sort(function (p, q2) { return p - q2; });
+        var n = v.length, m = Math.floor(n * .02), gap = (v[n - 1 - m] - v[m]) * .2, lo = 0, hi = n - 1, k;
+        for (k = m; k > 0; k--) if (v[k] - v[k - 1] > gap) { lo = k; break; }
+        for (k = n - 1 - m; k < n - 1; k++) if (v[k + 1] - v[k] > gap) { hi = k; break; }
+        return [v[lo], v[hi]];
+      };
+      var cx = cut(xs), cy = cut(ys), t = [cx[0], cy[0], cx[1], cy[1]];
+      if (t[2] > t[0] && t[3] > t[1] && (t[2] - t[0]) * (t[3] - t[1]) < .75 * (b[2] - b[0]) * (b[3] - b[1])) b = t;   // 범위가 4분의 1 넘게 줄어들 때만
+    }
+    return (fitBoxCache[r] = b);
+  }
+  function regBounds(r) { var b = fitBox(r); return [mercToLngLat(b[0], b[3]), mercToLngLat(b[2], b[1])]; }
   // 이름표 자리는 지도 위에 고정한다. 확대하거나 축소해도, 지도를 옮겨도 같은 곳에 붙어 있다.
   // 그 지역이 화면에 딱 맞게 들어오는 배율에서 겹치지 않게 한 번만 펴고, 그 자리를 지도 좌표로 기억해 둔다.
   var layoutCache = {};
@@ -1195,19 +1291,54 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     var out = {}, cam = map.cameraForBounds(parent < 0 ? KOREA : regBounds(parent), { padding: fitPad(), maxZoom: 15.5 });
     if (!cam) return out;
     var c = maplibregl.LngLat.convert(cam.center), scale = 512 * Math.pow(2, cam.zoom);
-    var ox = (c.lng + 180) / 360 * scale - W / 2, oy = mercY(c.lat) * scale - H / 2, tags = [];
-    regChildren(parent).forEach(function (k) {
-      if (!rAll[k]) return;
-      // 처음 자리는 그 지역 경계 안의 가운데. 경계 자료가 없으면 카페가 있는 범위의 가운데.
-      var sh = shapeOf(k), o = k * 4, gx = sh ? sh.lx : (rBox[o] + rBox[o + 2]) / 2, gy = sh ? sh.ly : (rBox[o + 1] + rBox[o + 3]) / 2;
-      ctx.font = '600 12.5px ' + FONT; var w = ctx.measureText(rName[k]).width + 20;
-      if (inCity(parent)) { ctx.font = '750 12.5px ' + FONT; w += ctx.measureText(fmt(rAll[k])).width + 6; }
-      // m: 버티는 힘. 지역이 화면에서 작을수록 크다.
-      var size = Math.sqrt(sh ? (sh.bb[2] - sh.bb[0]) * (sh.bb[3] - sh.bb[1]) : (rBox[o + 2] - rBox[o]) * (rBox[o + 3] - rBox[o + 1])) * scale;
-      tags.push({ r: k, ax: gx * scale - ox, ay: gy * scale - oy, x: gx * scale - ox, y: gy * scale - oy, w: w, h: 28, size: size });
-    });
-    placeTags(tags, W, mobile.matches ? 150 : 96, H - 92, scale, ox, oy);
-    tags.forEach(function (t) { out[t.r] = { x: (t.x + ox) / scale, y: (t.y + oy) / scale, ax: (t.ax + ox) / scale, ay: (t.ay + oy) / scale }; });
+    var ox = (c.lng + 180) / 360 * scale - W / 2, oy = mercY(c.lat) * scale - H / 2;
+    var box0 = { x0: ox, x1: ox + W, y0: oy + (mobile.matches ? 150 : 96), y1: oy + H - 92 };   // 위쪽 단추와 아래쪽 단추에 가리지 않는 범위
+    var byCnt = function (a, b) { return b.cnt - a.cnt; }, STEP = .35;
+    // full: 처음부터 개수까지 적은 너비로 놓아 본다. 아니면 이름만으로 놓고, 남는 자리에 개수를 붙인다.
+    function run(full) {
+      var tags = [];
+      regChildren(parent).forEach(function (k) {
+        if (!rAll[k]) return;
+        var an = tagAnchor(k);
+        ctx.font = '600 12.5px ' + FONT; var w = ctx.measureText(rName[k]).width + 20, wf = w;
+        if (inCity(parent)) { ctx.font = '750 12.5px ' + FONT; wf += ctx.measureText(fmt(rAll[k])).width + 6; }
+        // w: 지금 너비, wf: 개수까지 적었을 때의 너비. z: 이름표가 나오는 배율, zc: 개수가 붙는 배율(-1은 아직 못 붙임).
+        tags.push({ r: k, gx: an.x, gy: an.y, size: an.size, cnt: rAll[k], w: full ? wf : w, wf: wf, h: 28, z: 0, zc: full || wf === w ? 0 : -1 });
+      });
+      // 개수 붙이기: 이름표를 옮기지 않고 그 자리에서 넓혀도 옆 이름표와 닿지 않을 때만 붙인다. 카페가 많은 지역부터.
+      function widen(sc, zoom, box) {
+        var on = tags.filter(function (t) { return t.set; });
+        on.filter(function (t) { return t.zc < 0; }).sort(byCnt).forEach(function (T) {
+          var x = T.fx * sc, y = T.fy * sc;
+          if (box && x > box.x0 && x < box.x1 && (x < box.x0 + T.wf / 2 + 6 || x > box.x1 - T.wf / 2 - 6)) return;
+          for (var q = 0; q < on.length; q++) { var B = on[q]; if (B !== T && Math.abs(B.fx * sc - x) < (B.w + T.wf) / 2 + 3 && Math.abs(B.fy * sc - y) < (B.h + T.h) / 2 + 3) return; }
+          T.w = T.wf; T.zc = zoom;
+        });
+      }
+      // 먼저 그 지역이 화면에 딱 맞게 들어온 배율에서 놓는다.
+      var left = placeTags(tags, [], scale, box0, parent < 0), hidden = left.length;
+      widen(scale, 0, box0);
+      // 자리가 없던 이름표와 개수는 조금씩 확대해 가며 자리가 나는 배율을 찾는다. 이미 놓인 이름표는 지도 위 그 자리에 그대로 있다.
+      var step = 1, pending = function () { return left.length || tags.some(function (t) { return t.set && t.zc < 0; }); };
+      for (; pending() && step <= 18; step++) {
+        var s2 = scale * Math.pow(2, step * STEP), zoom = cam.zoom + step * STEP, batch = left;
+        var fixed = tags.filter(function (t) { return t.set; }).map(function (t) { return { px: t.fx * s2, py: t.fy * s2, w: t.w, h: t.h }; });
+        batch.forEach(function (t) { t.z = zoom; });
+        left = placeTags(batch, fixed, s2, null, false);
+        widen(s2, zoom, null);
+      }
+      left.forEach(function (t) { t.fx = t.gx; t.fy = t.gy; });
+      // 개수는 처음부터 보이는 이름표 모두에 붙일 수 있는 배율이 되었을 때 한꺼번에 붙인다(어떤 곳은 개수가 있고 어떤 곳은 없으면 어색하다).
+      var zcAll = 0;
+      tags.forEach(function (t) { if (t.zc < 0) t.zc = cam.zoom + step * STEP; if (!t.z && t.zc > zcAll) zcAll = t.zc; });
+      tags.forEach(function (t) { t.zc = Math.max(t.zc, zcAll); });
+      return { tags: tags, hidden: hidden };
+    }
+    // 넓은 화면에서는 개수까지 적어도 다 들어간다. 개수 때문에 숨는 이름표가 생기는 좁은 화면에서만 이름을 먼저 놓는다.
+    var res = run(true);
+    if (res.hidden) { var bare = run(false); if (bare.hidden < res.hidden) res = bare; }
+    res.tags.forEach(function (t) { out[t.r] = { x: t.fx, y: t.fy, ax: t.gx, ay: t.gy, z: t.z, zc: t.zc }; });
+    out.zoom = cam.zoom;
     return (layoutCache[key] = out);
   }
   // 마우스를 올린 지역에 속한 동을 표시해 둔다. 경계 자료가 없는 지역의 범위를 칠할 때 쓴다.
@@ -1358,16 +1489,17 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       // 멀리서 볼 때: 지역 이름표에 개수만 적는다.
       if (hoverPill >= 0) drawExtent(hoverPill, z, scale, ox, oy, x0, x1, y0, y1);
       // 이름표는 고른 지역의 바로 아래 단계만 보여 준다. 전국이면 시도, 경기를 골랐으면 그 안의 시, 수원시를 골랐으면 그 안의 구.
+      // 좁은 화면에서 자기 땅 위에 놓을 자리가 없던 이름표는 그 자리가 나는 배율(ps.z)까지 확대했을 때 나온다.
       var kids = regChildren(S.reg), tags = [], lay = tagLayout(S.reg);
       for (var kc = 0; kc < kids.length; kc++) {
         k = kids[kc];
         var ps = lay[k];
-        if (!rCnt[k] || !ps) continue;
+        if (!rCnt[k] || !ps || z < ps.z - .001) continue;
         // 기억해 둔 지도 좌표를 지금 화면 좌표로 바꾸기만 한다. 그때그때 자리를 다시 잡지 않는다.
         px = ps.x * scale - ox; py = ps.y * scale - oy;
         if (px < -90 || px > W + 90 || py < -30 || py > H + 30) continue;
-        // 개수는 시 안으로 들어왔을 때만 이름 옆에 적는다.
-        var name = rName[k], num = inCity(S.reg) ? fmt(rCnt[k]) : '';
+        // 개수는 시 안으로 들어왔을 때만 이름 옆에 적는다. 좁은 화면에서 옆 이름표와 닿는 곳은 이름만 보이다가, 확대해서 자리가 나면(ps.zc) 개수가 붙는다.
+        var name = rName[k], num = inCity(S.reg) && z >= ps.zc - .001 ? fmt(rCnt[k]) : '';
         ctx.font = '600 12.5px ' + FONT; var w1 = ctx.measureText(name).width;
         ctx.font = '750 12.5px ' + FONT; var w2 = num ? ctx.measureText(num).width + 6 : 0;
         tags.push({ r: k, ax: ps.ax * scale - ox, ay: ps.ay * scale - oy, x: px, y: py, w: w1 + w2 + 20, h: 28, w1: w1, name: name, num: num });
