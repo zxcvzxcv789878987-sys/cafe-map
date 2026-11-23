@@ -89,6 +89,11 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 .ib { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; color: var(--ink-2); flex: none; }
 .ib:hover { background: var(--surface-2); color: var(--ink); }
 .ph .ib.back { margin-left: -8px; }
+/* 카페 카드: 제목 줄을 따로 두지 않고 뒤로, 닫기 단추만 오른쪽 위에 띄워서 지도 볼 자리를 넓힌다. */
+.ph.mini { position: absolute; top: 4px; right: 4px; padding: 0; min-height: 0; z-index: 2; }
+.ph.mini h2 { display: none; }
+.ph.mini + .scroll .detail { padding-top: 16px; }
+.ph.mini + .scroll .detail h1 { padding-right: 72px; }
 .scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
 .sort { display: flex; background: var(--surface-2); border-radius: 9px; padding: 2px; flex: none; }
 .sort button { font-size: 12.5px; font-weight: 600; color: var(--ink-3); padding: 5px 10px; border-radius: 7px; }
@@ -188,15 +193,23 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .opt { height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line-2); font-size: 13px; font-weight: 600; }
 .opt:hover { border-color: var(--ink-3); }
 .opt[aria-pressed=true] { background: var(--inv); border-color: var(--inv); color: var(--on-inv); }
-.rec { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
-.rec .k { font-size: 12.5px; color: var(--ink-3); font-weight: 600; }
+/* 단추 안에 적는 사람 수(그렇게 기록한 사람이 몇 명인지) */
+.opt .n { margin-left: 6px; font-weight: 700; font-variant-numeric: tabular-nums; opacity: .5; }
+.opt[aria-pressed=true] .n { opacity: .8; }
+.rec { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; align-items: center; padding-top: 12px; border-top: 1px solid var(--line); }
+.rec .k { font-size: 13px; color: var(--ink-3); }
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 /* 카페 카드 안에 띄우는 카카오맵, 네이버지도 화면 */
-.embed { display: flex; flex-direction: column; gap: 6px; }
-.embed iframe { width: 100%; height: min(540px, 62vh); border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
+/* 지도를 띄운 카드는 쓸 수 있는 높이를 다 쓰고, 그 안에서 지도가 남는 자리를 전부 차지한다. */
+#panel[data-kind=detail][data-embed] { height: 100%; }
+#panel[data-kind=detail] .scroll { display: flex; flex-direction: column; }
+#panel[data-kind=detail] .detail { flex: 1 0 auto; }
+.embed { display: flex; flex-direction: column; gap: 6px; flex: 1 0 auto; min-height: 360px; }
+.embed[hidden] { display: none; }
+.embed iframe { width: 100%; flex: 1; min-height: 330px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
 .embed a { align-self: flex-end; font-size: 12.5px; font-weight: 600; color: var(--ink-3); text-decoration: none; }
 .embed a:hover { color: var(--ink); }
-@media (min-width: 761px) { #panel[data-kind=detail][data-embed] { width: 400px !important; } }
+@media (min-width: 761px) { #panel[data-kind=detail][data-embed] { width: 420px !important; } }
 
 /* 아래쪽: 개수 단추, 지도 단추 */
 #count { position: absolute; z-index: 15; left: 50%; bottom: 22px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 18px; border-radius: 999px; background: var(--inv); color: var(--on-inv); font-weight: 650; box-shadow: var(--sh-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -226,7 +239,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   #chips::-webkit-scrollbar { display: none; }
   #panel { left: 0 !important; right: 0; top: auto !important; bottom: 0; width: auto !important; max-height: 62% !important; border-radius: 20px 20px 0 0; }
   #panel[data-kind=region], #panel[data-kind=brand], #panel[data-kind=search], #panel[data-kind=list] { max-height: 74% !important; }
-  #panel[data-kind=detail][data-embed] { max-height: 90% !important; }
+  #panel[data-kind=detail][data-embed] { max-height: 92% !important; }
   #count { bottom: calc(22px + env(safe-area-inset-bottom, 0px)); }
   #ctrl { right: 12px; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); }
   #ctrl .cgroup { display: none; }
@@ -546,10 +559,12 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     for (var k = 0; k < NR; k++) if (regPath(k) === saved.reg) { S.reg = k; return; }
   })();
   // 콘센트 좌석 기록. 자료가 어디에도 없어서, 쓰는 사람들이 카페를 눌러 직접 적고 그 기록을 모두가 같이 본다.
-  //   o: 1 콘센트 좌석 있음, -1 없음.  c: 그 자리 의자 종류 글자들(n 일반, w 벽면 고정, s 스탠드형)
+  //   o: 1 콘센트 좌석 있음, -1 없음.  c: 그 자리 종류 글자들(w 벽면 고정 소파, s 바 테이블, n 일반 테이블)
   // 내가 적은 것(myO, myC)은 이 기기에 저장하고, 서버가 정해져 있으면(share.js) 서버에도 올린다.
   // 지도와 필터는 모두의 기록을 모은 결과(outlet, chair)를 쓴다.
-  var CHAIRS = [['n', '일반 의자', 1], ['w', '벽면 고정 의자', 2], ['s', '스탠드형 의자', 4]];
+  // 자리 종류: [저장하는 글자, 화면 이름, 비트, votes 안의 자리]. 의자 모양이 아니라 자리(탁자) 모양으로 나눈다.
+  // 바 테이블에 일반 의자가 놓인 곳처럼 의자만 보고는 고르기 애매한 경우가 있어서다. 콘센트가 드문 일반 테이블을 맨 뒤에 둔다.
+  var CHAIRS = [['w', '벽면 고정 소파', 2, 3], ['s', '바 테이블', 4, 4], ['n', '일반 테이블', 1, 2]];
   var outlet = new Int8Array(N), chair = new Uint8Array(N), myO = new Int8Array(N), myC = new Uint8Array(N);
   var votes = {};      // 다른 사람들의 기록을 카페별로 센 것. 카페 번호 -> [있음, 없음, 일반 의자, 벽면 고정, 스탠드형]
   function chairBits(str) { var m = 0; CHAIRS.forEach(function (c) { if ((str || '').indexOf(c[0]) >= 0) m |= c[2]; }); return m; }
@@ -1606,7 +1621,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     // 2. 콘센트 좌석
     var b = el('div', 'set'), n = seatCount();
     b.appendChild(toggleRow('콘센트 좌석 있는 곳만', S.outlet, function (v) { S.outlet = v; apply(); }));
-    b.appendChild(el('h3', null, '그 자리의 의자'));
+    b.appendChild(el('h3', null, '자리 종류'));
     var row = el('div', 'opts');
     CHAIRS.forEach(function (c) {
       var bt = btn('opt', c[1], function () { if (S.chairs[c[0]]) delete S.chairs[c[0]]; else S.chairs[c[0]] = true; bt.setAttribute('aria-pressed', String(!!S.chairs[c[0]])); apply(); });
@@ -1614,7 +1629,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       row.appendChild(bt);
     });
     b.appendChild(row);
-    b.appendChild(el('p', null, '의자를 고르지 않으면 종류와 상관없이 나와요. 콘센트 좌석은 자료가 없어서, 누군가 카페를 눌러 기록해 둔 곳만 나와요. ' + (shareOn ? '기록은 모두가 같이 봐요. ' : '') + '지금까지 콘센트 좌석이 있다고 기록된 곳은 ' + fmt(n) + '곳이에요.'));
+    b.appendChild(el('p', null, '자리 종류를 고르지 않으면 종류와 상관없이 나와요. 콘센트 좌석은 자료가 없어서, 누군가 카페를 눌러 기록해 둔 곳만 나와요. ' + '지금까지 콘센트 좌석이 있다고 기록된 곳은 ' + fmt(n) + '곳이에요.'));
     sc.appendChild(b);
     panel.appendChild(sc);
   }
@@ -1632,11 +1647,13 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     if (pan || outside || hiddenByCard || z < 13) map.easeTo({ center: [D.lng[i] / 1e5, D.lat[i] / 1e5], zoom: Math.max(z, pan ? 15.5 : 13.5), offset: off, duration: 500 });
     openPanel('detail'); requestDraw();
   }
-  var embedPick = load('cafemap.embed') || '';   // 카드 안에 띄울 지도: 'k' 카카오맵, 'n' 네이버지도, '' 안 띄움
+  // 카드 안에 띄울 지도: 'k' 카카오맵, 'n' 네이버지도, '' 접어 둠. 따로 고른 적이 없으면 카카오맵을 보여 준다.
+  var embedPick = load('cafemap.embed2'); if (embedPick !== 'n' && embedPick !== '') embedPick = 'k';
   function renderDetail(i) {
     var b = D.brand[i], g = grp[i], a = D.area[i], fl = D.floor[i], lat = D.lat[i] / 1e5, lng = D.lng[i] / 1e5;
     var back = P.prev ? function () { var k = P.prev; sel = -1; P.prev = null; openPanel(k); requestDraw(); } : null;
     var h = head('', null, back); h.appendChild(closeBtn()); panel.appendChild(h);
+    h.className = 'ph mini';   // 제목 줄을 따로 두지 않고 뒤로, 닫기 단추만 오른쪽 위에 띄운다.
     var sc = el('div', 'scroll'), d = el('div', 'detail'), top = el('div');
     top.appendChild(el('h1', null, D.name[i]));
     var kind = el('div', 'kind'); kind.appendChild(dotEl(g)); kind.appendChild(el('span', null, b < 0 ? '개인카페' : GROUPS[g].label + ' · ' + D.brands[b][0])); top.appendChild(kind);
@@ -1644,31 +1661,31 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     var dl = el('dl', 'facts'), addr = fullAddr(i);
     function fact(k) { dl.appendChild(el('dt', null, k)); var dd = el('dd'); dl.appendChild(dd); return dd; }
     var f1 = fact('주소'); f1.appendChild(el('span', null, addr + (fl > 0 ? ' ' + fl + '층' : fl < 0 ? ' 지하' : '')));
-    f1.appendChild(btn('link', '복사', function () {
-      var done = function () { toast('주소를 복사했어요'); };
-      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(addr).then(done, function () { toast(addr); }); else toast(addr);
-    }));
     var f2 = fact('넓이');
     if (a > 0) { f2.appendChild(el('b', null, pyeong(a) + '평')); f2.appendChild(el('small', null, fmt(a) + '㎡' + (a >= S.bigPy * PYEONG ? ' · 대형' : ''))); } else f2.appendChild(el('small', null, '자료 없음'));
-    d.appendChild(dl);
-    // 콘센트 좌석 기록. 있음을 고르면 그 자리 의자 종류를 고를 수 있다.
+    // 콘센트 좌석 기록. 투표처럼 단추마다 그렇게 기록한 사람 수를 적는다(아무도 안 했으면 0).
+    // 눌린 단추가 내 기록이다. 자리 종류를 누르면 콘센트 좌석이 있다는 뜻이므로 "있어요"도 같이 켠다.
     var rec = el('div', 'rec'), r1 = el('div', 'opts'), r2 = el('div', 'opts');
-    var yes = btn('opt', '콘센트 좌석 있음'), no = btn('opt', '없음'), chairBtns = [];
-    r1.appendChild(yes); r1.appendChild(no);
-    CHAIRS.forEach(function (c) {
-      var bt = btn('opt', c[1], function () { myC[i] ^= c[2]; store(); });
-      chairBtns.push([bt, c[2]]); r2.appendChild(bt);
+    function voteBtn(text, fn) { var bt = btn('opt', text, fn), n = el('span', 'n', '0'); bt.appendChild(n); return [bt, n, text]; }
+    function setBtn(x, on, count) {
+      x[0].setAttribute('aria-pressed', String(on)); x[1].textContent = count;
+      x[0].setAttribute('aria-label', x[2] + ', ' + count + '명이 기록' + (on ? ', 내 기록' : ''));
+    }
+    var yes = voteBtn('있어요', function () { myO[i] = myO[i] === 1 ? 0 : 1; store(); });
+    var no = voteBtn('없어요', function () { myO[i] = myO[i] === -1 ? 0 : -1; store(); });
+    r1.appendChild(yes[0]); r1.appendChild(no[0]);
+    var chairBtns = CHAIRS.map(function (c) {
+      var x = voteBtn(c[1], function () { if (myO[i] !== 1) { myO[i] = 1; myC[i] = 0; } myC[i] ^= c[2]; store(); });
+      r2.appendChild(x[0]);
+      return [x, c];
     });
-    var cap = el('div', 'k', '그 자리의 의자 (여러 개 고를 수 있어요)'), info = el('div', 'k');
-    rec.appendChild(el('div', 'k', '노트북 작업')); rec.appendChild(r1); rec.appendChild(cap); rec.appendChild(r2); rec.appendChild(info);
-    // 단추는 내가 적은 것을 보여 주고, 아래 한 줄은 다른 사람들 것까지 합친 수를 보여 준다.
+    rec.appendChild(el('div', 'k', '콘센트 좌석')); rec.appendChild(r1);
+    rec.appendChild(el('div', 'k', '자리 종류')); rec.appendChild(r2);
     function sync() {
-      yes.setAttribute('aria-pressed', String(myO[i] === 1)); no.setAttribute('aria-pressed', String(myO[i] === -1));
-      cap.hidden = r2.hidden = myO[i] !== 1;
-      chairBtns.forEach(function (x) { x[0].setAttribute('aria-pressed', String((myC[i] & x[1]) !== 0)); });
-      var v = votes[i];
-      info.hidden = !v;
-      if (v) info.textContent = '지금까지 기록: 있음 ' + (v[0] + (myO[i] === 1 ? 1 : 0)) + '명, 없음 ' + (v[1] + (myO[i] === -1 ? 1 : 0)) + '명';
+      var v = votes[i] || [0, 0, 0, 0, 0];
+      setBtn(yes, myO[i] === 1, v[0] + (myO[i] === 1 ? 1 : 0));
+      setBtn(no, myO[i] === -1, v[1] + (myO[i] === -1 ? 1 : 0));
+      chairBtns.forEach(function (cb) { var on = (myC[i] & cb[1][2]) !== 0; setBtn(cb[0], on, v[cb[1][3]] + (on ? 1 : 0)); });
     }
     function store() {
       if (myO[i] !== 1) myC[i] = 0;
@@ -1676,10 +1693,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       if (S.outlet) refilter();
       requestDraw();
     }
-    yes.addEventListener('click', function () { myO[i] = myO[i] === 1 ? 0 : 1; store(); });
-    no.addEventListener('click', function () { myO[i] = myO[i] === -1 ? 0 : -1; store(); });
-    sync(); d.appendChild(rec);
-    // 카카오맵, 네이버지도 단추. 누르면 그 가게 화면을 카드 안에 바로 띄우고, 한 번 더 누르면 접는다.
+    sync();
+    // 카카오맵, 네이버지도 단추. 고른 쪽의 가게 화면을 카드 안에 바로 띄우고, 눌린 단추를 한 번 더 누르면 접는다.
     // 마지막에 고른 쪽을 기억해 두었다가 다음 카페를 열 때도 같은 쪽을 바로 띄운다.
     // 카카오는 장소 번호(D.kid)가 있어야 가게 화면을 띄울 수 있다. 번호가 없는 카페는 예전처럼 새 창으로 연다.
     var kakaoOut = 'https://map.kakao.com/link/map/' + encodeURIComponent(D.name[i].replace(/,/g, ' ')) + ',' + lat + ',' + lng;
@@ -1692,6 +1707,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     var links = el('div', 'two'), box = el('div', 'embed'), tabs = {};
     function show(which) {
       box.textContent = '';
+      // 카카오맵을 골랐는데 이 카페의 장소 번호가 없으면 네이버지도를 대신 보여 준다.
+      if (which === 'k' && !SRC.k) which = 'n';
       var src = SRC[which];
       for (var t in tabs) tabs[t].setAttribute('aria-pressed', String(t === which && !!src));
       if (!src) { box.hidden = true; panel.removeAttribute('data-embed'); return; }
@@ -1708,14 +1725,14 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       else {
         bt = btn('btn', x[1], function () {
           embedPick = bt.getAttribute('aria-pressed') === 'true' ? '' : x[0];
-          save('cafemap.embed', embedPick); show(embedPick);
-          if (embedPick) box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          save('cafemap.embed2', embedPick); show(embedPick);
         });
         tabs[x[0]] = bt;
       }
       links.appendChild(bt);
     });
-    d.appendChild(links); d.appendChild(box);
+    // 카드에 놓는 순서: 이름 바로 아래에 지도, 그 아래 주소와 넓이, 맨 아래에 콘센트 좌석 기록
+    d.appendChild(links); d.appendChild(box); d.appendChild(dl); d.appendChild(rec);
     show(embedPick);
     sc.appendChild(d); panel.appendChild(sc);
   }
