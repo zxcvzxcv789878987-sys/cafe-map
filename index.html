@@ -549,10 +549,12 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   function inCity(r) { return r >= 0 && (rParent[r] >= 0 || CITY_SIDO[rName[r]] === 1); }
   rootKids.sort(function (p, q) { var a = SIDO_ORDER.indexOf(rName[p]), c = SIDO_ORDER.indexOf(rName[q]); return (a < 0 ? 99 : a) - (c < 0 ? 99 : c); });
   rKids.forEach(function (k) { k.sort(function (p, q) { return rName[p].localeCompare(rName[q], 'ko'); }); });
-  // 카페가 속한 동을 지도에 그리는 경계에 맞춘다.
-  // 자료에 적힌 동은 주소 기준이고, 지도에 찍는 자리는 매장 좌표이며, 경계선은 단순하게 다듬은 것이라서
-  // 경계 근처의 카페는 "그 동 카페인데 경계선 밖에 찍히는" 일이 생긴다. 그러면 동을 골랐을 때 범위 밖에 점이 보인다.
-  // 그래서 찍히는 자리가 자기 동의 경계 밖이면, 그 자리를 품고 있는 동으로 옮겨 적는다(품는 동을 못 찾으면 그대로 둔다).
+  // 카페가 속한 동을 바로잡는다. 경계선은 통계청의 행정동 경계(vuski/admdongkor)이고 건드리지 않는다.
+  // 카페 자료에 적힌 동(주소 기준)과 경계 파일이 크게 어긋나는 동이 전국에 30곳 있었다. 그 자리의 행정동을 다른 지도(카카오)에 물어서 어느 쪽이 맞는지 가렸다(2026-11).
+  //  - STALE_DONG 16곳: 카페 자료의 동 이름이 옛것이다(동이 쪼개지거나 경계가 바뀜). 이 동으로 적힌 카페 중 경계 밖에 찍히는 곳은 그 자리를 품는 동으로 옮긴다.
+  //  - 나머지 13곳(인천 남동구 구월3동, 경남 창원시 성산구 중앙동 등)은 경계 파일 쪽이 실제와 다르다. 카페 자료가 맞으므로 그대로 두고, 그 동들은 경계선 밖에 점이 찍힐 수 있다.
+  //  - 경계선 바로 옆 건물(경계 자료에 수십 m 오차가 있다)도 주소에 적힌 동을 그대로 둔다.
+  var STALE_DONG = {"강원 삼척시 성내동": 1, "경기 고양시 덕양구 흥도동": 1, "경기 고양시 일산서구 송포동": 1, "경남 양산시 양주동": 1, "경남 창원시 마산회원구 봉암동": 1, "대구 달서구 장기동": 1, "대전 서구 갈마1동": 1, "대전 서구 갈마2동": 1, "대전 유성구 노은2동": 1, "부산 부산진구 부전2동": 1, "서울 강서구 가양1동": 1, "인천 검단구 오류왕길동": 1, "전북 전주시 덕진구 덕진동": 1, "전북 전주시 덕진구 송천1동": 1, "충남 서산시 동문1동": 1, "충남 천안시 서북구 불당1동": 1};
   var dongMoved = 0;
   (function () {
     SHAPES = window.REGION_SHAPES || {}; shapeCache = {};
@@ -570,7 +572,6 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       }
       return ok;
     }
-    // node 아래에서 그 점을 품는 동을 찾는다. skip은 이미 확인한 가지.
     function findDong(node, x, y, skip) {
       var kids = node < 0 ? rootKids : rKids[node];
       for (var k = 0; k < kids.length; k++) {
@@ -584,13 +585,14 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       }
       return -1;
     }
+    var stale = D.dong.map(function (d, k) { return STALE_DONG[regPath(dongReg[k])] === 1; });
     for (var i = 0; i < N; i++) {
-      var r = dongReg[D.dongOf[i]], x = mx[i], y = my[i];
-      if (inside(r, x, y) !== false) continue;
-      // 같은 구의 다른 동, 같은 시의 다른 구, 그 위 순서로 넓혀 가며 찾는다.
-      var found = -1, from = r, up = rParent[r];
+      var d0 = D.dongOf[i];
+      if (!stale[d0] || inside(dongReg[d0], mx[i], my[i]) !== false) continue;
+      // 같은 구의 다른 동, 같은 시의 다른 구, 그 위 순서로 넓혀 가며 그 자리를 품는 동을 찾는다.
+      var found = -1, from = dongReg[d0], up = rParent[from];
       for (;;) {
-        found = findDong(up, x, y, from);
+        found = findDong(up, mx[i], my[i], from);
         if (found >= 0 || up < 0) break;
         from = up; up = rParent[up];
       }
@@ -820,7 +822,15 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   }, mapAt));
   window.cafeMap = map;
   window.cafeDraw = function () { draw(); };   // 시험용: 그리는 데 걸리는 시간을 잴 때 쓴다.
-  window.cafeTest = { layout: function (r) { var L = tagLayout(r), W = map.getContainer().clientWidth, o = {}; regChildren(r).forEach(function (k) { if (L[k]) { var sh = shapeOf(k); o[rName[k]] = [Math.round((L[k].x - L[k].ax) * 512 * Math.pow(2, map.getZoom())), Math.round((L[k].y - L[k].ay) * 512 * Math.pow(2, map.getZoom())), sh ? Math.round(Math.sqrt((sh.bb[2] - sh.bb[0]) * (sh.bb[3] - sh.bb[1])) * 512 * Math.pow(2, map.getZoom())) : -1]; } }); return o; }, name: function (r) { return rName[r]; }, follow: function () { followView(); return S.reg < 0 ? '전국' : regPath(S.reg); }, reg: function () { return S.reg < 0 ? '전국' : regPath(S.reg); }, moved: dongMoved };
+  window.cafeTest = { layout: function (r) { var L = tagLayout(r), W = map.getContainer().clientWidth, o = {}; regChildren(r).forEach(function (k) { if (L[k]) { var sh = shapeOf(k); o[rName[k]] = [Math.round((L[k].x - L[k].ax) * 512 * Math.pow(2, map.getZoom())), Math.round((L[k].y - L[k].ay) * 512 * Math.pow(2, map.getZoom())), sh ? Math.round(Math.sqrt((sh.bb[2] - sh.bb[0]) * (sh.bb[3] - sh.bb[1])) * 512 * Math.pow(2, map.getZoom())) : -1]; } }); return o; }, name: function (r) { return rName[r]; }, follow: function () { followView(); return S.reg < 0 ? '전국' : regPath(S.reg); }, reg: function () { return S.reg < 0 ? '전국' : regPath(S.reg); },
+    // 경계 점검용: 지역마다 경계가 있는지, 그 지역 카페 가운데 몇 곳이 그 경계 안에 찍히는지 센다.
+    moved: dongMoved,
+    audit: function () {
+      var tot = new Int32Array(NR), ins = new Int32Array(NR), out = [];
+      for (var i = 0; i < N; i++) for (var r = dongReg[D.dongOf[i]]; r >= 0; r = rParent[r]) { tot[r]++; if (shapeOf(r) && inShape(r, mx[i], my[i])) ins[r]++; }
+      for (var k = 0; k < NR; k++) out.push([regPath(k), regChain(k).length, rLeaf[k] ? 1 : 0, shapeOf(k) ? 1 : 0, tot[k], ins[k]]);
+      return out;
+    } };
   map.on('error', function (e) { console.error('지도 오류', e && e.error && e.error.message); });
   // 지도가 아이콘을 찾을 때 그 자리에서 그려서 넘겨 준다.
   map.on('styleimagemissing', function (e) {
@@ -989,7 +999,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   var viewIdx = new Int32Array(N), vc = 0, indiv = false;
   var hits = [], sel = -1, hoverI = -1, hoverPill = -1, queued = false, myLoc = null;
   // 지역 경계 모양. regions.js에 "경기 수원시 영통구" 같은 이름으로 들어 있고, 처음 쓸 때 화면 좌표계로 풀어 둔다.
-  var SHAPES = SHAPES || window.REGION_SHAPES || {}, shapeCache = shapeCache || {};   // 위에서 동을 경계에 맞출 때 먼저 채워 둔 것을 그대로 쓴다.
+  var SHAPES = SHAPES || window.REGION_SHAPES || {}, shapeCache = shapeCache || {};   // 위에서 동을 바로잡을 때 먼저 채워 둔 것을 그대로 쓴다.
   function shapeOf(r) {
     if (shapeCache[r] !== undefined) return shapeCache[r];
     var v = SHAPES[regPath(r)], out = null;
