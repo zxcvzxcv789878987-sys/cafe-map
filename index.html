@@ -147,7 +147,7 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 .pinbtn:hover { background: var(--surface-2); color: var(--ink-2); }
 .pinbtn[aria-pressed=true] { color: var(--ink); }
 .pinbtn[aria-pressed=true] svg.i { fill: currentColor; }
-.pinbar { padding: 0 14px 8px; flex: none; }
+.pinbar { padding: 0 14px 8px; flex: none; display: flex; flex-direction: column; gap: 6px; }
 .pinbar .btn { width: 100%; }
 .pick small { color: var(--ink-3); font-variant-numeric: tabular-nums; font-size: 12.5px; }
 
@@ -290,6 +290,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
      없으면(인터넷에 올린 곳에서는 없다) 공공데이터 좌표로 만든 cafes.js를 쓴다. -->
 <script src="cafes.local.js"></script>
 <script>if (!window.CAFES) document.write('<script src="cafes.js"><\/script>');</script>
+<script src="share.js"></script>
 <script src="regions.js"></script>
 <script src="landmarks.js"></script>
 <script>
@@ -532,41 +533,145 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     showAll: false,      // 구 전체 보기를 켰는가. 지역을 바꾸면 꺼진다.
     pins: {}             // 브랜드 목록 맨 위에 고정해 둔 브랜드 이름
   };
-  (saved.cats || []).forEach(function (g) { if (g !== 2) S.cats[g] = true; });   // 개인카페만 보기는 없앴다.
+  // 개인카페만 보기는 없앴다. 저가커피 칩도 없애고 브랜드 고르기 안으로 옮겼다.
+  // 예전에 저가커피 칩을 켜 둔 채 저장된 상태는 저가커피 브랜드를 전부 고른 것으로 읽는다.
+  (saved.cats || []).forEach(function (g) {
+    if (g === 0) S.cats[0] = true;
+    else if (g === 1) brandGroup.forEach(function (bg, j) { if (bg === 1) S.brands[j] = true; });
+  });
   (saved.brands || []).forEach(function (n) { for (var j = 0; j < D.brands.length; j++) if (D.brands[j][0] === n) S.brands[j] = true; });
   (saved.chairs || []).forEach(function (c) { S.chairs[c] = true; });
   (saved.pins || []).forEach(function (n) { S.pins[n] = true; });
   if (saved.reg) (function () {
     for (var k = 0; k < NR; k++) if (regPath(k) === saved.reg) { S.reg = k; return; }
   })();
-  // 콘센트 좌석 기록. 자료가 어디에도 없어서 카페를 눌러 직접 적는다. 이 기기에만 저장된다.
+  // 콘센트 좌석 기록. 자료가 어디에도 없어서, 쓰는 사람들이 카페를 눌러 직접 적고 그 기록을 모두가 같이 본다.
   //   o: 1 콘센트 좌석 있음, -1 없음.  c: 그 자리 의자 종류 글자들(n 일반, w 벽면 고정, s 스탠드형)
-  var seats = load('cafemap.seat') || {};
+  // 내가 적은 것(myO, myC)은 이 기기에 저장하고, 서버가 정해져 있으면(share.js) 서버에도 올린다.
+  // 지도와 필터는 모두의 기록을 모은 결과(outlet, chair)를 쓴다.
   var CHAIRS = [['n', '일반 의자', 1], ['w', '벽면 고정 의자', 2], ['s', '스탠드형 의자', 4]];
-  var outlet = new Int8Array(N), chair = new Uint8Array(N);
+  var outlet = new Int8Array(N), chair = new Uint8Array(N), myO = new Int8Array(N), myC = new Uint8Array(N);
+  var votes = {};      // 다른 사람들의 기록을 카페별로 센 것. 카페 번호 -> [있음, 없음, 일반 의자, 벽면 고정, 스탠드형]
   function chairBits(str) { var m = 0; CHAIRS.forEach(function (c) { if ((str || '').indexOf(c[0]) >= 0) m |= c[2]; }); return m; }
-  if (Object.keys(seats).length) (function () {
-    var seen = {}, i, k0, s0;
-    for (i = 0; i < N; i++) { k0 = keyOf(i); s0 = seats[k0]; if (s0) { seen[k0] = 1; outlet[i] = s0.o || 0; chair[i] = chairBits(s0.c); } }
-    // 기록은 "이름@좌표"로 적어 둔다. 좌표 자료를 새로 받아 카페 자리가 조금 바뀌면 이 이름표가 안 맞게 되므로,
-    // 짝을 잃은 기록은 이름이 같고 가장 가까이(500m 안) 있는 카페로 옮겨 적는다.
-    var fixed = false;
-    Object.keys(seats).forEach(function (k) {
-      if (seen[k]) return;
-      var m = /^(.*)@(-?\d+),(-?\d+)$/.exec(k);
-      if (!m) return;
-      var best = -1, bd = 500;
-      for (var j = 0; j < N; j++) if (D.name[j] === m[1] && !seats[keyOf(j)]) {
-        var d = Math.sqrt(Math.pow((D.lat[j] - m[2]) * 1.11, 2) + Math.pow((D.lng[j] - m[3]) * .89, 2));
-        if (d < bd) { bd = d; best = j; }
-      }
-      if (best < 0) return;
-      var s = seats[k]; delete seats[k]; seats[keyOf(best)] = s;
-      outlet[best] = s.o || 0; chair[best] = chairBits(s.c); fixed = true;
-    });
-    if (fixed) save('cafemap.seat', seats);
+  function chairStr(bits) { return CHAIRS.filter(function (c) { return bits & c[2]; }).map(function (c) { return c[0]; }).join(''); }
+  // 글자를 짧은 이름표로 바꾼다(같은 글자면 늘 같은 이름표).
+  function hash36(str) {
+    var h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for (var k = 0, ch; k < str.length; k++) { ch = str.charCodeAt(k); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+  }
+  // 카페마다 바뀌지 않는 이름표. 좌표는 자료를 새로 만들 때마다 달라질 수 있어서 이름과 주소로 만든다.
+  function cidOf(i) { return hash36(D.name[i] + '|' + fullAddr(i)); }
+  var idxOfCid = null;
+  function cidIndex() { if (!idxOfCid) { idxOfCid = {}; for (var j = 0; j < N; j++) idxOfCid[cidOf(j)] = j; } return idxOfCid; }
+  // 한 카페의 기록을 모은다. 있음이 더 많으면 있음, 없음이 더 많으면 없음.
+  // 수가 같으면 내 기록을 따르고, 내 기록이 없으면 있음으로 본다(본 사람이 있다는 뜻이므로).
+  function tally(i) {
+    var v = votes[i], y = (v ? v[0] : 0) + (myO[i] === 1 ? 1 : 0), n = (v ? v[1] : 0) + (myO[i] === -1 ? 1 : 0);
+    outlet[i] = y > n ? 1 : n > y ? -1 : y ? (myO[i] || 1) : 0;
+    chair[i] = outlet[i] === 1 ? ((v ? (v[2] ? 1 : 0) | (v[3] ? 2 : 0) | (v[4] ? 4 : 0) : 0) | (myO[i] === 1 ? myC[i] : 0)) : 0;
+  }
+  // 내 기록: { 카페 이름표: { o, c } }
+  var mine = load('cafemap.seat2');
+  if (!mine) (function () {
+    // 예전에는 "이름@좌표"로 적어 두었다(cafemap.seat). 처음 한 번 새 이름표로 옮겨 적는다.
+    // 좌표가 바뀌어 짝을 잃은 기록은 이름이 같고 가장 가까이(500m 안) 있는 카페로 옮긴다.
+    mine = {};
+    var old = load('cafemap.seat') || {}, keys = Object.keys(old);
+    if (keys.length) {
+      var at = {}, j;
+      for (j = 0; j < N; j++) at[keyOf(j)] = j;
+      keys.forEach(function (k) {
+        var best = at[k];
+        if (best === undefined) {
+          var m = /^(.*)@(-?\d+),(-?\d+)$/.exec(k), bd = 500;
+          if (!m) return;
+          for (var q = 0; q < N; q++) if (D.name[q] === m[1]) {
+            var d = Math.sqrt(Math.pow((D.lat[q] - m[2]) * 1.11, 2) + Math.pow((D.lng[q] - m[3]) * .89, 2));
+            if (d < bd) { bd = d; best = q; }
+          }
+        }
+        if (best !== undefined && old[k] && old[k].o) mine[cidOf(best)] = { o: old[k].o, c: old[k].c || '' };
+      });
+    }
+    save('cafemap.seat2', mine);
   })();
-  function seatCount() { var n = 0; for (var k in seats) if (seats[k].o === 1) n++; return n; }
+  if (Object.keys(mine).length) (function () {
+    var ix = cidIndex();
+    for (var k in mine) { var j = ix[k]; if (j !== undefined) { myO[j] = mine[k].o || 0; myC[j] = chairBits(mine[k].c); tally(j); } }
+  })();
+  function saveMine(i) {
+    var k = cidOf(i);
+    if (myO[i]) mine[k] = { o: myO[i], c: myO[i] === 1 ? chairStr(myC[i]) : '' }; else delete mine[k];
+    save('cafemap.seat2', mine);
+  }
+  function seatCount() { var n = 0; for (var j = 0; j < N; j++) if (outlet[j] === 1) n++; return n; }
+
+  // ----- 기록을 모두가 같이 보기 위한 서버(Firebase Realtime Database) -----
+  // share.js에 주소와 키가 적혀 있을 때만 켜진다. 비어 있으면 기록은 이 기기에만 남는다.
+  // 읽기는 누구나 할 수 있고, 쓰기는 이름 없는 계정으로 자기 기록만 할 수 있다. 계정은 처음 기록할 때 저절로 만들어진다.
+  var SHARE = window.CAFE_SHARE || {}, shareOn = !!(SHARE.key && SHARE.db);
+  var who = load('cafemap.auth'), idToken = '', idUntil = 0, srvMine = {};
+  function postJson(url, body, form) {
+    return fetch(url, { method: 'POST', headers: { 'Content-Type': form ? 'application/x-www-form-urlencoded' : 'application/json' }, body: form ? body : JSON.stringify(body) })
+      .then(function (r) { if (!r.ok) { var e = new Error('auth'); e.status = r.status; throw e; } return r.json(); });
+  }
+  function token() {
+    if (idToken && Date.now() < idUntil) return Promise.resolve(idToken);
+    function fresh() {
+      return postJson((SHARE.authUrl || 'https://identitytoolkit.googleapis.com/v1/accounts:signUp') + '?key=' + SHARE.key, { returnSecureToken: true })
+        .then(function (d) { who = { u: d.localId, r: d.refreshToken }; save('cafemap.auth', who); idToken = d.idToken; idUntil = Date.now() + (+d.expiresIn - 60) * 1000; return idToken; });
+    }
+    if (!who || !who.r) return fresh();
+    return postJson((SHARE.tokenUrl || 'https://securetoken.googleapis.com/v1/token') + '?key=' + SHARE.key, 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(who.r), true)
+      .then(function (d) { who = { u: d.user_id, r: d.refresh_token }; save('cafemap.auth', who); idToken = d.id_token; idUntil = Date.now() + (+d.expires_in - 60) * 1000; return idToken; },
+        // 계정이 없어졌을 때(400)만 새로 만든다. 인터넷이 잠깐 끊긴 것이면 다음에 다시 한다.
+        function (e) { if (e && e.status === 400) return fresh(); throw e; });
+  }
+  // 한 카페의 내 기록을 서버에 올린다(지웠으면 서버에서도 지운다).
+  function push(i, quiet) {
+    if (!shareOn) return;
+    var k = cidOf(i), rec = mine[k];
+    token().then(function (t) {
+      var url = SHARE.db + '/seats/' + k + '/' + who.u + '.json?auth=' + encodeURIComponent(t);
+      return fetch(url, rec ? { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ o: rec.o, c: rec.c, t: { '.sv': 'timestamp' } }) } : { method: 'DELETE' });
+    }).then(function (r) {
+      if (!r.ok) throw new Error('db');
+      if (rec) srvMine[k] = rec; else delete srvMine[k];
+    }).catch(function () { if (!quiet) toast('기록은 이 기기에 저장했어요. 같이 보는 곳에는 다음에 다시 올릴게요.'); });
+  }
+  // 모두의 기록을 받아 와서 카페별로 센다.
+  function pull() {
+    if (!shareOn) return;
+    fetch(SHARE.db + '/seats.json').then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); }).then(function (all) {
+      var ix = cidIndex(), k, u, j, touched = [];
+      for (j in votes) touched.push(+j);
+      votes = {}; srvMine = {};
+      for (k in all || {}) {
+        j = ix[k];
+        for (u in all[k]) {
+          var rec = all[k][u];
+          if (!rec) continue;
+          if (who && u === who.u) { srvMine[k] = rec; continue; }
+          if (j === undefined) continue;
+          var v = votes[j] || (votes[j] = [0, 0, 0, 0, 0]);
+          if (rec.o === 1) { v[0]++; var bits = chairBits(rec.c); if (bits & 1) v[2]++; if (bits & 2) v[3]++; if (bits & 4) v[4]++; }
+          else if (rec.o === -1) v[1]++;
+        }
+        if (j !== undefined) touched.push(j);
+      }
+      touched.forEach(tally);
+      // 이 기기의 내 기록과 서버에 있는 내 기록이 다르면 이 기기 것으로 맞춘다(올리다 실패한 것이 여기서 다시 올라간다).
+      for (k in mine) if (!srvMine[k] || srvMine[k].o !== mine[k].o || (srvMine[k].c || '') !== (mine[k].c || '')) { j = ix[k]; if (j !== undefined) push(j, true); }
+      for (k in srvMine) if (!mine[k]) { j = ix[k]; if (j !== undefined) push(j, true); }
+      if (S.outlet) refilter();
+      requestDraw();
+      if (P.kind === 'laptop') renderPanel();
+    }).catch(function () { /* 서버에 닿지 못하면 이 기기의 기록만으로 보여 준다 */ });
+  }
+  pull();
   function nKeys(o) { return Object.keys(o).length; }
   function persist() {
     var c = map.getCenter();
@@ -1167,8 +1272,21 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     else if (opt.caret) c.appendChild(icon('down'));
     return c;
   }
+  // 저가커피 브랜드만 골라 보고 있는지. 'all' 전부, 'part' 몇 곳을 뺀 상태, '' 아님
+  function lowList() { var out = []; for (var j = 0; j < D.brands.length; j++) if (brandGroup[j] === 1) out.push(j); return out; }
+  function lowState() {
+    var ks = Object.keys(S.brands);
+    if (!ks.length || nKeys(S.cats) || !ks.every(function (j) { return brandGroup[j] === 1; })) return '';
+    return ks.length === lowList().length ? 'all' : ks.length > 1 ? 'part' : '';
+  }
+  function toggleLowOnly() {
+    var on = lowState();
+    S.brands = {};
+    if (!on) { S.cats = {}; lowList().forEach(function (j) { S.brands[j] = true; }); }
+  }
   function brandLabel() {
-    var ks = Object.keys(S.brands), names = ks.map(function (j) { return D.brands[j][0]; });
+    var ks = Object.keys(S.brands), names = ks.map(function (j) { return D.brands[j][0]; }), low = lowState();
+    if (low) return low === 'all' ? '저가커피' : '저가커피 ' + ks.length + '개 브랜드';
     if (S.cats[0]) names.unshift('프랜차이즈');
     return names.length ? names[0] + (names.length > 1 ? ' 외 ' + (names.length - 1) : '') : '';
   }
@@ -1199,9 +1317,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     var box = $('chips'), bl = brandLabel();
     box.textContent = '';
     box.appendChild(regionChip());
-    box.appendChild(chip('저가커피', S.cats[1] === true, 'cat-1', { dot: 1 }));
     if (pinnedList().length) box.appendChild(chip('내 브랜드', onlyPinned(), 'mine', { icon: 'tack' }));
-    box.appendChild(chip(bl || '브랜드', !!bl, 'brand', { dot: 0, caret: true, sub: bl ? ['brand-clear', 'x', '브랜드 해제'] : null }));
+    box.appendChild(chip(bl || '브랜드', !!bl, 'brand', { dot: lowState() ? 1 : 0, caret: true, sub: bl ? ['brand-clear', 'x', '브랜드 해제'] : null }));
     // 노트북 작업 칩 하나에 대형카페와 콘센트 좌석 조건이 들어 있다. 켜진 조건 수를 옆에 적는다.
     var nLap = (S.big ? 1 : 0) + (S.outlet ? 1 : 0);
     box.appendChild(chip('노트북 작업' + (nLap ? ' ' + nLap : ''), nLap > 0, 'laptop', { icon: 'laptop', caret: true }));
@@ -1260,7 +1377,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     var dt = distText(i); if (dt) bits.push(dt);
     body.appendChild(el('span', 'meta', bits.join(' · ')));
     r.appendChild(body);
-    if (outlet[i] === 1) { var t = el('span', 'tag'); t.appendChild(icon('laptop')); t.title = '콘센트 좌석이 있다고 기록한 곳'; r.appendChild(t); }
+    if (outlet[i] === 1) { var t = el('span', 'tag'); t.appendChild(icon('laptop')); t.title = '콘센트 좌석이 있다고 기록된 곳'; r.appendChild(t); }
     r.addEventListener('click', function () { selectCafe(i, true, from); });
     r.addEventListener('mouseenter', function () { hoverI = i; requestDraw(); });
     r.addEventListener('mouseleave', function () { if (hoverI === i) { hoverI = -1; requestDraw(); } });
@@ -1416,10 +1533,19 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       return wrap;
     }
     function brandRow(j) { return row(D.brands[j][0], brandGroup[j], '', j, S.brands[j] === true, brandCount[j], function () { if (S.brands[j]) delete S.brands[j]; else S.brands[j] = true; apply(); }); }
+    var lowSec = null;      // 목록 안의 저가커피 묶음 제목. 저가커피만 보기를 켜면 여기로 내려 보낸다.
     function fillBar() {
       bar.textContent = '';
+      // 저가커피만 보기: 저가커피 브랜드를 한꺼번에 고른다. 그다음 목록에서 빼고 싶은 브랜드를 하나씩 끌 수 있다.
+      var low = lowState(), nLow = lowList().length;
+      var lb = btn('btn sm', low === 'all' ? '저가커피만 보는 중 (' + nLow + '개 브랜드)' : low === 'part' ? '저가커피 ' + nKeys(S.brands) + '개 브랜드만 보는 중' : '저가커피만 보기', function () {
+        toggleLowOnly(); apply(); fill();
+        if (lowState() && lowSec) sc.scrollTop = lowSec.offsetTop - sc.offsetTop;
+      });
+      lb.setAttribute('aria-pressed', String(!!low));
+      lb.insertBefore(dotEl(1), lb.firstChild);
+      bar.appendChild(lb);
       var pl = pinnedList();
-      bar.hidden = !pl.length;
       if (!pl.length) return;
       var on = onlyPinned();
       var b = btn('btn sm', on ? '고정한 브랜드만 보는 중' : '고정한 브랜드 ' + pl.length + '곳만 보기', function () { togglePinnedOnly(); apply(); fill(); });
@@ -1427,7 +1553,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       bar.appendChild(b);
     }
     function fill() {
-      sc.textContent = '';
+      sc.textContent = ''; lowSec = null;
       fillBar();
       var q = brandQ.replace(/\s/g, '').toLowerCase(), any = false, pl = pinnedList();
       function byCount(a, b) { return brandCount[b] - brandCount[a]; }
@@ -1445,7 +1571,9 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
         }
         if (!list.length) return;
         any = true;
-        sc.appendChild(el('div', 'sec', GROUPS[g].label));
+        var sec = el('div', 'sec', GROUPS[g].label);
+        if (g === 1) lowSec = sec;
+        sc.appendChild(sec);
         list.sort(byCount).forEach(function (j) { sc.appendChild(brandRow(j)); });
       });
       if (!any && q) sc.appendChild(el('p', 'note', '그런 이름의 브랜드가 목록에 없어요. 맨 위 검색창에서 카페 이름으로 찾아보세요.'));
@@ -1486,7 +1614,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       row.appendChild(bt);
     });
     b.appendChild(row);
-    b.appendChild(el('p', null, '의자를 고르지 않으면 종류와 상관없이 나와요. 콘센트 좌석은 자료가 없어서, 카페를 눌러 직접 기록한 곳만 나와요. 지금까지 기록한 곳은 ' + n + '곳이에요.'));
+    b.appendChild(el('p', null, '의자를 고르지 않으면 종류와 상관없이 나와요. 콘센트 좌석은 자료가 없어서, 누군가 카페를 눌러 기록해 둔 곳만 나와요. ' + (shareOn ? '기록은 모두가 같이 봐요. ' : '') + '지금까지 콘센트 좌석이 있다고 기록된 곳은 ' + fmt(n) + '곳이에요.'));
     sc.appendChild(b);
     panel.appendChild(sc);
   }
@@ -1528,27 +1656,28 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     var yes = btn('opt', '콘센트 좌석 있음'), no = btn('opt', '없음'), chairBtns = [];
     r1.appendChild(yes); r1.appendChild(no);
     CHAIRS.forEach(function (c) {
-      var bt = btn('opt', c[1], function () { chair[i] ^= c[2]; store(); });
+      var bt = btn('opt', c[1], function () { myC[i] ^= c[2]; store(); });
       chairBtns.push([bt, c[2]]); r2.appendChild(bt);
     });
-    var cap = el('div', 'k', '그 자리의 의자 (여러 개 고를 수 있어요)');
-    rec.appendChild(el('div', 'k', '노트북 작업')); rec.appendChild(r1); rec.appendChild(cap); rec.appendChild(r2);
+    var cap = el('div', 'k', '그 자리의 의자 (여러 개 고를 수 있어요)'), info = el('div', 'k');
+    rec.appendChild(el('div', 'k', '노트북 작업')); rec.appendChild(r1); rec.appendChild(cap); rec.appendChild(r2); rec.appendChild(info);
+    // 단추는 내가 적은 것을 보여 주고, 아래 한 줄은 다른 사람들 것까지 합친 수를 보여 준다.
     function sync() {
-      yes.setAttribute('aria-pressed', String(outlet[i] === 1)); no.setAttribute('aria-pressed', String(outlet[i] === -1));
-      cap.hidden = r2.hidden = outlet[i] !== 1;
-      chairBtns.forEach(function (x) { x[0].setAttribute('aria-pressed', String((chair[i] & x[1]) !== 0)); });
+      yes.setAttribute('aria-pressed', String(myO[i] === 1)); no.setAttribute('aria-pressed', String(myO[i] === -1));
+      cap.hidden = r2.hidden = myO[i] !== 1;
+      chairBtns.forEach(function (x) { x[0].setAttribute('aria-pressed', String((myC[i] & x[1]) !== 0)); });
+      var v = votes[i];
+      info.hidden = !v;
+      if (v) info.textContent = '지금까지 기록: 있음 ' + (v[0] + (myO[i] === 1 ? 1 : 0)) + '명, 없음 ' + (v[1] + (myO[i] === -1 ? 1 : 0)) + '명';
     }
     function store() {
-      var k = keyOf(i);
-      if (!outlet[i]) { delete seats[k]; chair[i] = 0; }
-      else seats[k] = { o: outlet[i], c: outlet[i] === 1 ? CHAIRS.filter(function (c) { return chair[i] & c[2]; }).map(function (c) { return c[0]; }).join('') : '' };
-      if (outlet[i] !== 1) chair[i] = 0;
-      save('cafemap.seat', seats); sync();
+      if (myO[i] !== 1) myC[i] = 0;
+      saveMine(i); tally(i); sync(); push(i);
       if (S.outlet) refilter();
       requestDraw();
     }
-    yes.addEventListener('click', function () { outlet[i] = outlet[i] === 1 ? 0 : 1; store(); });
-    no.addEventListener('click', function () { outlet[i] = outlet[i] === -1 ? 0 : -1; store(); });
+    yes.addEventListener('click', function () { myO[i] = myO[i] === 1 ? 0 : 1; store(); });
+    no.addEventListener('click', function () { myO[i] = myO[i] === -1 ? 0 : -1; store(); });
     sync(); d.appendChild(rec);
     // 카카오맵, 네이버지도 단추. 누르면 그 가게 화면을 카드 안에 바로 띄우고, 한 번 더 누르면 접는다.
     // 마지막에 고른 쪽을 기억해 두었다가 다음 카페를 열 때도 같은 쪽을 바로 띄운다.
