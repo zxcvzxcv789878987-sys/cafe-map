@@ -6,5 +6,5 @@
 window.CAFE_SHARE = {
   key: 'AIzaSyDhIfiAF6logObWpjQq_deLOxdu-VK_mTM',
   db: 'https://cafe-map-486ae-default-rtdb.firebaseio.com',
-  google: ''
+  google: '591551793146-5f7t31sr9iom3p8vmhg3b9gac3kicu43.apps.googleusercontent.com'
 };
