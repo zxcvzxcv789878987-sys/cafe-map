@@ -204,6 +204,11 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .macc .who b { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .macc .who small { font-size: 12.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mlist a { color: inherit; }
+/* 환경설정에서 여러 개 중 하나를 고르는 줄 */
+.mopt { display: flex; flex-direction: column; gap: 8px; font-weight: 650; font-size: 15px; }
+.mopt .sort { display: grid; grid-template-columns: repeat(3, 1fr); padding: 3px; border-radius: 11px; }
+.mopt .sort button { height: 32px; font-size: 13px; border-radius: 8px; padding: 0 4px; white-space: nowrap; }
+.macc + .link { align-self: flex-start; margin-left: -6px; }
 .mlist { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--ink-2); }
 .link { font-size: 12.5px; font-weight: 650; color: var(--ink-3); padding: 1px 6px; border-radius: 6px; }
 .link:hover { background: var(--surface-2); color: var(--ink); }
@@ -755,6 +760,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     sort: saved.sort === 'size' ? 'size' : 'near',
     seen: saved.seen === 'want' ? 'want' : 'all',   // 찜한 곳만 보기: all 전부, want 찜한 곳만
     outline: saved.outline !== false,   // 환경설정: 고른 지역의 경계선과 색칠을 보일지
+    start: saved.start === 'korea' || saved.start === 'me' ? saved.start : 'last',   // 환경설정: 시작할 때 보여 줄 곳. last 마지막에 보던 곳, korea 전국, me 내 위치
     fresh: saved.fresh ? 12 : 0,   // 새로 연 카페만 보기: 0 전부, 12 개업 1년 이내(기간을 고르게 했다가 선택지가 많다는 말을 듣고 하나로 줄였다)
     showAll: false,      // 구 전체 보기를 켰는가. 지역을 바꾸면 꺼진다.
     pins: {},            // 압정으로 목록 맨 위에 고정해 둔 브랜드 이름
@@ -768,7 +774,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   (saved.brands || []).forEach(function (n) { for (var j = 0; j < D.brands.length; j++) if (D.brands[j][0] === n) S.brands[j] = true; });
   (saved.chairs || []).forEach(function (c) { S.chairs[c] = true; });
   (saved.pins || []).forEach(function (n) { S.pins[n] = true; });
-  if (saved.reg) (function () {
+  if (saved.reg && S.start === 'last') (function () {
     for (var k = 0; k < NR; k++) if (regPath(k) === saved.reg) { S.reg = k; return; }
   })();
   // 콘센트 좌석 기록. 자료가 어디에도 없어서, 쓰는 사람들이 카페를 눌러 직접 적고 그 기록을 모두가 같이 본다.
@@ -1069,6 +1075,26 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       Promise.all([pull(), pullGone(), pullWant()]).then(function () { toast('로그인했어요'); if (P.kind === 'menu') renderPanel(); if (then) then(); });
     }, function () { $('lmsg').textContent = '로그인하지 못했어요. 다시 해 주세요.'; });
   }
+  // 계정 삭제: 서버에 있는 내 투표, 폐업 신고, 찜을 모두 지운 다음 계정을 없앤다. 되돌릴 수 없어서 한 번 더 묻는다.
+  function deleteAccount() {
+    if (!signedIn() || !window.confirm('계정을 삭제하면 내 투표와 찜이 모두 지워지고 되돌릴 수 없어요. 삭제할까요?')) return;
+    var cleared = false;
+    token().then(function (t) {
+      var a = encodeURIComponent(t), jobs = [], k;
+      for (k in mine) jobs.push(fetch(SHARE.db + '/v2/seats/' + k + '/' + who.u + '.json?auth=' + a, { method: 'DELETE' }));
+      for (k in goneMine) jobs.push(fetch(SHARE.db + '/v2/gone/' + k + '/' + who.u + '.json?auth=' + a, { method: 'DELETE' }));
+      jobs.push(fetch(SHARE.db + '/v2/want/' + who.u + '.json?auth=' + a, { method: 'DELETE' }));
+      return Promise.all(jobs).then(function (rs) {
+        if (rs.some(function (r) { return !r.ok; })) throw new Error('db');
+        cleared = true;
+        return postJson('https://identitytoolkit.googleapis.com/v1/accounts:delete?key=' + SHARE.key, { idToken: t });
+      });
+    }).then(function () { logout(); toast('계정을 삭제했어요'); }, function () {
+      // 로그인한 지 오래되면 계정 지우기가 거절될 수 있다. 기록은 이미 지워졌으니, 다시 로그인해서 한 번 더 누르게 한다.
+      if (cleared) { logout(); toast('투표와 찜은 지웠어요. 계정까지 지우려면 다시 로그인해서 한 번 더 눌러 주세요.'); }
+      else toast('삭제하지 못했어요. 잠시 뒤에 다시 해 주세요.');
+    });
+  }
   function logout() {
     who = null; save('cafemap.auth', null); idToken = ''; idUntil = 0;
     mine = {}; goneMine = {}; save('cafemap.seat2', mine); save('cafemap.gone', goneMine);
@@ -1085,7 +1111,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     save(STORE, {
       cats: Object.keys(S.cats).map(Number), brands: Object.keys(S.brands).map(function (j) { return D.brands[j][0]; }),
       reg: S.reg >= 0 ? regPath(S.reg) : null,
-      big: S.big, bigPy: S.bigPy, outlet: S.outlet, chairs: Object.keys(S.chairs), sort: S.sort, pins: Object.keys(S.pins), tab: S.tab, seen: S.seen, fresh: S.fresh, outline: S.outline,
+      big: S.big, bigPy: S.bigPy, outlet: S.outlet, chairs: Object.keys(S.chairs), sort: S.sort, pins: Object.keys(S.pins), tab: S.tab, seen: S.seen, fresh: S.fresh, outline: S.outline, start: S.start,
       view: [c.lat, c.lng, +map.getZoom().toFixed(2)]
     });
   }
@@ -1126,7 +1152,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   var KOREA = [[124.8, 33.0], [130.2, 38.7]];
   // 배경 지도는 길, 공원, 물에 색이 들어간 일반 지도다. PC가 어두운 모드여도 늘 같은 지도를 쓴다.
   function styleUrl() { return 'https://tiles.openfreemap.org/styles/liberty'; }
-  var mapAt = saved.view ? { center: [saved.view[1], saved.view[0]], zoom: saved.view[2] }
+  var mapAt = saved.view && S.start === 'last' ? { center: [saved.view[1], saved.view[0]], zoom: saved.view[2] }
     : { bounds: KOREA, fitBoundsOptions: { padding: { top: 110, bottom: 70, left: 30, right: 30 } } };
   var map = new maplibregl.Map(Object.assign({
     container: 'map',
@@ -2207,6 +2233,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
         whoEl.appendChild(el('b', null, who.n || '구글 계정'));
         whoEl.appendChild(el('small', null, who.e || '로그인되어 있어요'));
         row.appendChild(whoEl); row.appendChild(btn('btn sm', '로그아웃', logout));
+        acc.appendChild(row); row = null;
+        acc.appendChild(btn('link', '계정 삭제', deleteAccount));
         // 예전에 로그인해서 메일과 이름을 적어 두지 않은 경우, 한 번 물어 와서 채운다.
         if (!who.e) token().then(function (t) { return postJson('https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=' + SHARE.key, { idToken: t }); }).then(function (d) {
           var u = d.users && d.users[0];
@@ -2217,12 +2245,22 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
         whoEl.appendChild(el('small', null, '투표와 찜은 로그인해야 할 수 있어요'));
         row.appendChild(whoEl); row.appendChild(btn('btn sm pri', '로그인', function () { openLogin(null); }));
       }
-      acc.appendChild(row); sc.appendChild(acc);
+      if (row) acc.appendChild(row);
+      sc.appendChild(acc);
     }
     // 환경설정
     var conf = el('div', 'fsec');
     conf.appendChild(el('div', 'ftitle', '환경설정'));
     conf.appendChild(toggleRow('지역 경계 보이기', S.outline, function (v) { S.outline = v; persist(); requestDraw(); }));
+    // 시작할 때 보여 줄 곳: 다음에 열 때부터 적용된다.
+    var st = el('div', 'mopt'), stTabs = el('div', 'sort');
+    st.appendChild(el('span', null, '시작할 때 보여 줄 곳'));
+    [['last', '마지막 본 곳'], ['korea', '전국'], ['me', '내 위치']].forEach(function (o) {
+      var bt = btn(null, o[1], function () { S.start = o[0]; persist(); renderPanel(); });
+      bt.setAttribute('aria-pressed', String(S.start === o[0]));
+      stTabs.appendChild(bt);
+    });
+    st.appendChild(stTabs); conf.appendChild(st);
     sc.appendChild(conf);
     var info = el('div', 'fsec'), ul = el('ul', 'mlist');
     info.style.borderBottom = '0';
@@ -2857,6 +2895,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   window.addEventListener('resize', renderChips);
 
   refilter(); draw(); renderChips();
+  // 환경설정에서 "내 위치"에서 시작하기로 했으면 열자마자 내 위치로 간다(위치 허용을 묻는다).
+  if (S.start === 'me') locateMe();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { FONT = getComputedStyle(document.body).fontFamily; layoutCache = {}; draw(); renderChips(); });
 })();
 </script>
