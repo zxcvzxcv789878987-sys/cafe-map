@@ -29,6 +29,20 @@
       }
     },
     "v2": {
+      "tags": {
+        ".read": true,
+        "$cafe": {
+          ".validate": "$cafe.matches(/^[0-9a-z]+$/) && $cafe.length <= 12",
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'",
+            ".validate": "newData.hasChildren(['t'])",
+            "h": { ".validate": "newData.val() === 1" },
+            "p": { ".validate": "newData.val() === 1" },
+            "t": { ".validate": "newData.val() === now" },
+            "$other": { ".validate": false }
+          }
+        }
+      },
       "want": {
         "$uid": {
           ".read": "auth != null && auth.uid === $uid",

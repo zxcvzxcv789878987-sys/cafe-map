@@ -479,6 +479,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 <script src="cafes.local.js"></script>
 <script>if (!window.CAFES) document.write('<script src="cafes.js"><\/script>');</script>
 <script src="share.js"></script>
+<script src="removed.js"></script>
 <script src="kakao.js"></script>
 <script src="regions.js"></script>
 <script src="landmarks.js"></script>
@@ -758,10 +759,13 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     reg: -1,             // 고른 지역 칸. -1이면 전국.
     big: !!saved.big, bigPy: saved.bigPy || 100,
     outlet: !!saved.outlet,   // 콘센트 좌석이 있다고 기록한 곳만 보기
+    h24: !!saved.h24,         // 24시간이라고 알려진 곳만 보기
+    park: !!saved.park,       // 주차가 된다고 알려진 곳만 보기
     chairs: {},               // 그 자리 의자 종류로 더 좁히기. n 일반 의자, w 벽면 고정 의자, s 스탠드형 의자
     sort: saved.sort === 'size' ? 'size' : 'near',
     seen: saved.seen === 'want' ? 'want' : 'all',   // 찜한 곳만 보기: all 전부, want 찜한 곳만
     outline: saved.outline !== false,   // 환경설정: 고른 지역의 경계선과 색칠을 보일지
+    nav: saved.nav === 'naver' || saved.nav === 'tmap' ? saved.nav : 'kakao',   // 환경설정: 길찾기에 쓸 지도 앱
     start: saved.start === 'korea' || saved.start === 'me' ? saved.start : 'last',   // 환경설정: 시작할 때 보여 줄 곳. last 마지막에 보던 곳, korea 전국, me 내 위치
     fresh: saved.fresh ? 12 : 0,   // 새로 연 카페만 보기: 0 전부, 12 개업 1년 이내(기간을 고르게 했다가 선택지가 많다는 말을 듣고 하나로 줄였다)
     showAll: false,      // 구 전체 보기를 켰는가. 지역을 바꾸면 꺼진다.
@@ -858,12 +862,41 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   })();
   function nKeysEarly(o) { for (var k in o) return 1; return 0; }
   function setWant(i, on) { var k = cidOf(i); want[i] = on ? 1 : 0; if (on) wanted[k] = 1; else delete wanted[k]; save('cafemap.want', wanted); pushWantKey(k, on); }
+  // 폐업 신고가 들어와서 운영자가 확인하고 지우기로 한 카페(removed.js의 이름표 목록). 다음 자료 갱신 전에도 바로 지도에서 빠진다.
+  var removed = new Uint8Array(N);
+  (function () {
+    var list = window.CAFE_REMOVED || [];
+    if (!list.length) return;
+    var ix = cidIndex();
+    list.forEach(function (k) { var j = ix[k]; if (j !== undefined) removed[j] = 1; });
+  })();
   function setGone(i, on) {
     var k = cidOf(i);
     myGone[i] = on ? 1 : 0;
     if (on) goneMine[k] = 1; else delete goneMine[k];
     save('cafemap.gone', goneMine);
     pushGone(i);
+  }
+  // 24시간, 주차 가능: 전국을 덮는 공식 자료가 없어서 사용자 투표로 모은다(한 사람이 "맞아요" 한 번).
+  // 비트 1은 24시간, 2는 주차 가능. tagMine: 내 표시 { 카페 이름표: 비트 }, tagVotes: 다른 사람 수 { 카페: [24시간, 주차] }, tagOn: 그렇다고 알려진 카페.
+  // 이름에 "24시"가 든 카페는 가게가 스스로 밝힌 것이라 투표가 없어도 24시간으로 본다.
+  var tagMine = load('cafemap.tags') || {}, myTag = new Uint8Array(N), tagVotes = {}, tagOn = new Uint8Array(N);
+  var NAME24 = /24\s*시|24\s*h(?![a-z])/i, name24 = new Uint8Array(N);
+  function tagTally(i) {
+    var v = tagVotes[i] || [0, 0];
+    tagOn[i] = (name24[i] || v[0] || (myTag[i] & 1) ? 1 : 0) | (v[1] || (myTag[i] & 2) ? 2 : 0);
+  }
+  (function () {
+    var ix = null, k, j;
+    for (j = 0; j < N; j++) if (NAME24.test(D.name[j])) { name24[j] = 1; tagOn[j] = 1; }
+    for (k in tagMine) { ix = ix || cidIndex(); j = ix[k]; if (j !== undefined) { myTag[j] = tagMine[k]; tagTally(j); } }
+  })();
+  function setTag(i, bit) {
+    var k = cidOf(i);
+    myTag[i] ^= bit;
+    if (myTag[i]) tagMine[k] = myTag[i]; else delete tagMine[k];
+    save('cafemap.tags', tagMine);
+    tagTally(i); pushTag(k, myTag[i]);
   }
   function seatCount() { var n = 0; for (var j = 0; j < N; j++) if (outlet[j] === 1) n++; return n; }
 
@@ -967,6 +1000,45 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       return fetch(url, on ? { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ t: { '.sv': 'timestamp' } }) } : { method: 'DELETE' });
     }).then(function (r) { if (!r.ok) throw new Error('db'); }).catch(function () { /* 다음에 열 때 다시 올린다 */ });
   }
+  // 24시간, 주차 표시도 같은 서버에 올리고 받는다(v2/tags/<카페>/<내 계정>: { h, p, t }). 로그인 방식일 때만 쓴다.
+  function pushTag(k, bits) {
+    if (!loginOn) return;
+    token().then(function (t) {
+      var url = SHARE.db + '/v2/tags/' + k + '/' + who.u + '.json?auth=' + encodeURIComponent(t), body = { t: { '.sv': 'timestamp' } };
+      if (bits & 1) body.h = 1;
+      if (bits & 2) body.p = 1;
+      return fetch(url, bits ? { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : { method: 'DELETE' });
+    }).then(function (r) { if (!r.ok) throw new Error('db'); }).catch(function () { toast('표시는 이 기기에 저장했어요. 같이 보는 곳에는 다음에 다시 올릴게요.'); });
+  }
+  function pullTags() {
+    if (!loginOn) return Promise.resolve();
+    return fetch(SHARE.db + '/v2/tags.json').then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); }).then(function (all) {
+      var ix = cidIndex(), k, u, j, srv = {};
+      tagVotes = {};
+      for (k in all || {}) {
+        j = ix[k];
+        for (u in all[k]) {
+          var rec = all[k][u], bits = (rec && rec.h === 1 ? 1 : 0) | (rec && rec.p === 1 ? 2 : 0);
+          if (who && u === who.u) { if (bits) srv[k] = bits; continue; }
+          if (j === undefined) continue;
+          var v = tagVotes[j] || (tagVotes[j] = [0, 0]);
+          if (bits & 1) v[0]++;
+          if (bits & 2) v[1]++;
+        }
+      }
+      // 서버의 내 계정 것이 기준이다(로그인하지 않았으면 비운다).
+      tagMine = signedIn() ? srv : {};
+      save('cafemap.tags', tagMine);
+      for (j = 0; j < N; j++) myTag[j] = 0;
+      for (k in tagMine) { j = ix[k]; if (j !== undefined) myTag[j] = tagMine[k]; }
+      for (j = 0; j < N; j++) tagOn[j] = name24[j];
+      for (k in tagVotes) tagTally(+k);
+      for (k in tagMine) { j = ix[k]; if (j !== undefined) tagTally(j); }
+      if (S.h24 || S.park) refilter();
+      requestDraw();
+    }).catch(function () { /* 서버에 닿지 못하면 이 기기의 표시만으로 보여 준다 */ });
+  }
+  pullTags();
   function pullGone() {
     if (!shareOn) return Promise.resolve();
     return fetch(SHARE.db + ROOT + '/gone.json').then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); }).then(function (all) {
@@ -1074,7 +1146,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       idToken = d.idToken; idUntil = Date.now() + (+d.expiresIn - 60) * 1000;
       var then = loginThen; closeLogin();
       // 서버에 있던 내 투표를 먼저 받아 온 다음, 누르려던 투표를 이어서 한다.
-      Promise.all([pull(), pullGone(), pullWant()]).then(function () { toast('로그인했어요'); if (P.kind === 'menu') renderPanel(); if (then) then(); });
+      Promise.all([pull(), pullGone(), pullWant(), pullTags()]).then(function () { toast('로그인했어요'); if (P.kind === 'menu') renderPanel(); if (then) then(); });
     }, function () { $('lmsg').textContent = '로그인하지 못했어요. 다시 해 주세요.'; });
   }
   // 계정 삭제: 서버에 있는 내 투표, 폐업 신고, 찜을 모두 지운 다음 계정을 없앤다. 되돌릴 수 없어서 한 번 더 묻는다.
@@ -1085,6 +1157,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       var a = encodeURIComponent(t), jobs = [], k;
       for (k in mine) jobs.push(fetch(SHARE.db + '/v2/seats/' + k + '/' + who.u + '.json?auth=' + a, { method: 'DELETE' }));
       for (k in goneMine) jobs.push(fetch(SHARE.db + '/v2/gone/' + k + '/' + who.u + '.json?auth=' + a, { method: 'DELETE' }));
+      for (k in tagMine) jobs.push(fetch(SHARE.db + '/v2/tags/' + k + '/' + who.u + '.json?auth=' + a, { method: 'DELETE' }));
       jobs.push(fetch(SHARE.db + '/v2/want/' + who.u + '.json?auth=' + a, { method: 'DELETE' }));
       return Promise.all(jobs).then(function (rs) {
         if (rs.some(function (r) { return !r.ok; })) throw new Error('db');
@@ -1103,7 +1176,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     // 찜도 계정에 있는 것이므로 이 기기에서는 비운다.
     wanted = {}; want.fill(0); save('cafemap.want', wanted); save('cafemap.wantSynced', null);
     if (S.seen === 'want') S.seen = 'all';
-    applyMine(); pull(); pullGone(); refilter(); requestDraw(); renderChips();
+    tagMine = {}; save('cafemap.tags', tagMine);
+    applyMine(); pull(); pullGone(); pullTags(); refilter(); requestDraw(); renderChips();
     if (P.kind === 'detail' || P.kind === 'menu' || P.kind === 'list') renderPanel();
     toast('로그아웃했어요');
   }
@@ -1113,7 +1187,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     save(STORE, {
       cats: Object.keys(S.cats).map(Number), brands: Object.keys(S.brands).map(function (j) { return D.brands[j][0]; }),
       reg: S.reg >= 0 ? regPath(S.reg) : null,
-      big: S.big, bigPy: S.bigPy, outlet: S.outlet, chairs: Object.keys(S.chairs), sort: S.sort, pins: Object.keys(S.pins), tab: S.tab, seen: S.seen, fresh: S.fresh, outline: S.outline, start: S.start,
+      big: S.big, bigPy: S.bigPy, outlet: S.outlet, h24: S.h24, park: S.park, chairs: Object.keys(S.chairs), sort: S.sort, pins: Object.keys(S.pins), tab: S.tab, seen: S.seen, fresh: S.fresh, outline: S.outline, start: S.start, nav: S.nav,
       view: [c.lat, c.lng, +map.getZoom().toFixed(2)]
     });
   }
@@ -1140,7 +1214,9 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       if (ok && S.seen === 'want') ok = want[i] === 1;
       if (ok && S.fresh) { var ma = monthsAgo(i); ok = ma >= 0 && ma < S.fresh; }
       // 없어진 카페: 내가 없다고 한 곳만 내 지도에서 뺀다. 남들이 없다고 한 곳은 빼지 않고 카드에서 알린다.
-      if (ok && myGone[i] === 1) ok = false;
+      if (ok && (myGone[i] === 1 || removed[i] === 1)) ok = false;
+      if (ok && S.h24 && !(tagOn[i] & 1)) ok = false;
+      if (ok && S.park && !(tagOn[i] & 2)) ok = false;
       if (ok) { r = dongReg[D.dongOf[i]]; rCnt[r]++; rSx[r] += mx[i]; rSy[r] += my[i]; }
       pass[i] = ok && regMask[D.dongOf[i]] ? 1 : 0;
       if (pass[i]) n++;
@@ -2273,6 +2349,15 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     var conf = el('div', 'fsec');
     conf.appendChild(el('div', 'ftitle', '환경설정'));
     conf.appendChild(toggleRow('지역 경계', S.outline, function (v) { S.outline = v; refilter(); draw(); renderChips(); persist(); }));
+    // 길찾기 앱: 카페 카드의 길찾기를 눌렀을 때 열 지도 앱.
+    var nv = el('div', 'mopt'), nvTabs = el('div', 'sort');
+    nv.appendChild(el('span', null, '길찾기 앱'));
+    [['kakao', '카카오맵'], ['naver', '네이버지도'], ['tmap', '티맵']].forEach(function (o) {
+      var bt = btn(null, o[1], function () { S.nav = o[0]; persist(); renderPanel(); });
+      bt.setAttribute('aria-pressed', String(S.nav === o[0]));
+      nvTabs.appendChild(bt);
+    });
+    nv.appendChild(nvTabs); conf.appendChild(nv);
     // 앱 시작 위치: 다음에 열 때부터 적용된다.
     var st = el('div', 'mopt'), stTabs = el('div', 'sort');
     st.appendChild(el('span', null, '앱 시작 위치'));
@@ -2300,7 +2385,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   $('menuBtn').addEventListener('click', function () { if (P.kind === 'menu') closePanel(); else { P.prev = null; openPanel('menu'); } });
 
   // ----- 필터 칩 -----
-  function anyFilter() { return nKeys(S.brands) || S.big || S.outlet; }
+  function anyFilter() { return nKeys(S.brands) || S.big || S.outlet || S.h24 || S.park; }
   function chip(label, on, act, opt) {
     opt = opt || {};
     var c = el('button', 'chip' + (opt.cls ? ' ' + opt.cls : '')); c.type = 'button'; c.dataset.act = act;
@@ -2333,9 +2418,11 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     if (bl) parts.push(bl);
     if (S.big) parts.push(S.bigPy + '평 이상');
     if (S.outlet) parts.push('콘센트');
+    if (S.h24) parts.push('24시간');
+    if (S.park) parts.push('주차');
     return parts.join(' · ');
   }
-  function resetFilter() { S.cats = {}; S.brands = {}; S.tab = 'all'; S.big = false; S.outlet = false; S.chairs = {}; }
+  function resetFilter() { S.cats = {}; S.brands = {}; S.tab = 'all'; S.big = false; S.outlet = false; S.chairs = {}; S.h24 = false; S.park = false; }
   // 필터 카드의 조건에 더해 찜, 새로 연 카페 칩까지 모두 푼다.
   function resetAll() { resetFilter(); S.seen = 'all'; S.fresh = 0; }
   function regionChip() {
@@ -2587,7 +2674,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     return l;
   }
   function renderFilter() {
-    var h = head('필터'), clear = btn('link', '모두 풀기', function () { resetFilter(); apply(); fillLap(); fillSeen(); fillNew(); fillTabs(); fill(); });
+    var h = head('필터'), clear = btn('link', '모두 풀기', function () { resetFilter(); apply(); fillLap(); fillConv(); fillSeen(); fillNew(); fillTabs(); fill(); });
     h.appendChild(clear); h.appendChild(closeBtn()); panel.appendChild(h);
     var sc = el('div', 'scroll'); panel.appendChild(sc);
     // 맨 아래 "적용하기": 조건은 누르는 대로 지도에 바로 반영되지만, 폰에서는 카드가 지도를 가려서 바뀐 것이 안 보인다.
@@ -2603,6 +2690,14 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     var lap = el('div', 'fsec'); sc.appendChild(lap);
     function fillSeen() {}
     function fillNew() {}
+    // 편의: 24시간, 주차 가능(사용자들이 알려 준 곳).
+    var conv = el('div', 'fsec');
+    function fillConv() {
+      conv.textContent = '';
+      conv.appendChild(el('div', 'ftitle', '편의'));
+      conv.appendChild(toggleRow('24시간', S.h24, function (v) { S.h24 = v; apply(); }));
+      conv.appendChild(toggleRow('주차 가능', S.park, function (v) { S.park = v; apply(); }));
+    }
     function fillLap() {
       lap.textContent = '';
       lap.appendChild(el('div', 'ftitle', '노트북 작업'));
@@ -2629,6 +2724,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     }
 
     // 2. 브랜드: 전체 목록에서 고른다. "저가커피만"을 켜면 저가커피 브랜드만 목록에 나오고 전부 고른 채로 시작한다(하나씩 뺄 수 있다).
+    sc.appendChild(conv); fillConv();
     var bh = el('div', 'bhead'), tabs = el('div');
     bh.appendChild(el('div', 'ftitle', '브랜드'));
     var s = el('label', 'search inset'); s.appendChild(icon('search'));
@@ -2724,7 +2820,18 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     var f1 = fact('주소'); f1.appendChild(el('span', null, addr + (fl > 0 ? ' ' + fl + '층' : fl < 0 ? ' 지하' : '')));
     // 길찾기: 카카오맵의 길찾기 화면을 새 창(폰은 카카오맵 앱)으로 연다. 카카오 장소 번호가 있으면 그 가게로, 없으면 이름과 좌표로 찾는다.
     var go = el('a', 'go'); go.target = '_blank'; go.rel = 'noopener';
-    go.href = 'https://map.kakao.com/link/to/' + (pid ? pid : encodeURIComponent(D.name[i].replace(/,/g, ' ')) + ',' + lat + ',' + lng);
+    // 환경설정에서 고른 지도 앱으로 연다. 카카오맵은 앱이 없어도 웹으로 열리는 주소다.
+    // 네이버지도와 티맵은 앱을 바로 부르는 주소라서 폰에서만 쓰고, 앱이 없으면 아무 일도 일어나지 않으므로 잠시 뒤에 알려 준다. 컴퓨터에서는 카카오맵으로 연다.
+    var nm = encodeURIComponent(D.name[i]), kakaoTo = 'https://map.kakao.com/link/to/' + (pid ? pid : encodeURIComponent(D.name[i].replace(/,/g, ' ')) + ',' + lat + ',' + lng);
+    var appTo = !mobile.matches ? '' : S.nav === 'naver' ? 'nmap://route/public?dlat=' + lat + '&dlng=' + lng + '&dname=' + nm + '&appname=' + encodeURIComponent(location.hostname || 'cafemap')
+      : S.nav === 'tmap' ? 'tmap://route?goalname=' + nm + '&goalx=' + lng + '&goaly=' + lat + '&rGoName=' + nm + '&rGoX=' + lng + '&rGoY=' + lat : '';
+    go.href = appTo || kakaoTo;
+    if (appTo) {
+      go.removeAttribute('target');
+      go.addEventListener('click', function () {
+        setTimeout(function () { if (!document.hidden) toast((S.nav === 'naver' ? '네이버지도' : '티맵') + ' 앱이 열리지 않았어요. 메뉴의 환경설정에서 길찾기 앱을 바꿀 수 있어요.'); }, 1800);
+      });
+    }
     go.appendChild(icon('route')); go.appendChild(document.createTextNode('길찾기'));
     f1.appendChild(go);
     var f2 = fact('넓이');
@@ -2755,6 +2862,12 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     k1.appendChild(total);
     k2.classList.add('wide'); r2.className = 'opts one';
     rec.appendChild(k1); rec.appendChild(r1); rec.appendChild(k2); rec.appendChild(r2);
+    // 편의: 24시간, 주차 가능. 그렇다고 아는 사람이 누른다. 숫자는 누른 사람 수.
+    var rT = el('div', 'opts');
+    var b24 = voteBtn('24시간', function () { setTag(i, 1); sync(); if (S.h24) refilter(); requestDraw(); });
+    var bPk = voteBtn('주차 가능', function () { setTag(i, 2); sync(); if (S.park) refilter(); requestDraw(); });
+    rT.appendChild(b24[0]); rT.appendChild(bPk[0]);
+    rec.appendChild(el('div', 'k', '편의')); rec.appendChild(rT);
     // 셋째 줄: 찜과 없어진 카페 표시.
     var r3 = el('div', 'opts');
     var bWant = btn('opt', null, function () { needLogin(function () { setWant(i, !want[i]); sync(); if (S.seen !== 'all') refilter(); requestDraw(); }); });
@@ -2772,6 +2885,9 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       var ny = v[0] + (myO[i] === 1 ? 1 : 0), nn = v[1] + (myO[i] === -1 ? 1 : 0);
       total.textContent = ny + nn ? '총 ' + (ny + nn) + '명 투표' : '아직 투표 없음';
       bWant.setAttribute('aria-pressed', String(want[i] === 1));
+      var tv = tagVotes[i] || [0, 0];
+      setBtn(b24, (myTag[i] & 1) !== 0, tv[0] + (myTag[i] & 1 ? 1 : 0));
+      setBtn(bPk, (myTag[i] & 2) !== 0, tv[1] + (myTag[i] & 2 ? 1 : 0));
       setBtn(bGone, myGone[i] === 1, (goneVotes[i] || 0) + (myGone[i] === 1 ? 1 : 0));
       bGone[1].hidden = bGone[1].textContent === '0';   // 신고가 없으면 숫자를 적지 않는다.
       k2.hidden = r2.hidden = ny === 0;
