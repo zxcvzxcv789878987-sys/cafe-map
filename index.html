@@ -1915,6 +1915,15 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     if (cur >= 0 && isUnder(fresh, cur) && inBox(cur, x, y) && z >= fitZoom(cur) - KEEP) return down(cur);
     return fresh;
   }
+  // 그 자리를 품는 가장 작은 지역(동). 어느 지역에도 들지 않으면 -1.
+  function leafAt(x, y) {
+    for (var r = -1; ;) {
+      var kids = regChildren(r), next = -1;
+      for (var k = 0; k < kids.length; k++) if (rAll[kids[k]] && inShape(kids[k], x, y)) { next = kids[k]; break; }
+      if (next < 0) return r;
+      r = next;
+    }
+  }
   function followView() {
     var c = map.getCenter(), r = regionFor((c.lng + 180) / 360, mercY(c.lat), map.getZoom());
     if (r === S.reg) return;
@@ -2878,7 +2887,28 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       } else me.setLngLat(ll);
       myLoc = { x: (ll[0] + 180) / 360, y: mercY(ll[1]) };
       // 내 위치로는 휙 넘어가지 않고 천천히 옮긴다(멀수록 더 오래, 길어도 3.5초). 갑자기 화면이 바뀌어 놀란다는 말을 들었다.
-      if (done) done(); else map.flyTo({ center: ll, zoom: Math.max(map.getZoom(), 15), speed: .7, curve: 1.2, maxDuration: 3500, essential: true });
+      if (done) { done(); return; }
+      // 내 위치로는 휙 넘어가지 않고 천천히 옮긴다. 멀수록, 배율이 많이 바뀔수록 오래 걸리게 하되 1초에서 3.5초 사이로 한다.
+      // (maxDuration을 쓰면 그보다 오래 걸릴 이동은 움직임 없이 바로 넘어가 버려서 쓰지 않는다.)
+      var zTo = Math.max(map.getZoom(), 15), p0 = map.project(ll), box = map.getContainer();
+      var far = Math.hypot(p0.x - box.clientWidth / 2, p0.y - box.clientHeight / 2) / Math.max(1, box.clientWidth);
+      var dur = Math.max(1000, Math.min(3500, 900 + 450 * Math.abs(zTo - map.getZoom()) + 350 * Math.min(far, 6)));
+      // 도착하면 고른 지역을 내가 있는 동으로 바꾼다. (지도가 스스로 움직인 것이라 지역 따라가기가 돌지 않아서, 전국이나 도에 머물러 있었다.)
+      var here = leafAt(myLoc.x, myLoc.y);
+      userMove = false;
+      if (here >= 0) {
+        var arrive = function () {
+          var c = map.project(ll), w = map.getContainer();
+          if (Math.abs(c.x - w.clientWidth / 2) > 60 || Math.abs(c.y - w.clientHeight / 2) > 60) return;   // 아직 도착하지 않았거나 손으로 다른 곳으로 옮겼다.
+          map.off('moveend', arrive);
+          if (S.reg === here) return;
+          S.reg = here; S.showAll = false; hoverPill = -1;
+          refilter(); renderChips(); draw(); persist();
+        };
+        map.on('moveend', arrive);
+        setTimeout(function () { map.off('moveend', arrive); }, 8000);
+      }
+      map.flyTo({ center: ll, zoom: zTo, duration: dur, curve: 1.2, essential: true });
     }, function () { toast('위치를 가져오지 못했어요. 브라우저에서 위치 권한을 허용해 주세요.'); }, { enableHighAccuracy: true, timeout: 10000 });
   }
   // 누르면 동전처럼 뒤집히면서 "OO 전체 보기"(흰색)와 "동별로 보기"(기본색)가 바뀐다. 글자와 색은 뒤집히는 중간에 바꾼다.
