@@ -82,6 +82,8 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 .chip .dot { width: 9px; height: 9px; border-radius: 50%; }
 .chip svg.i { width: 16px; height: 16px; }
 .chip[data-act=want][aria-pressed=true] svg.i { fill: currentColor; }
+/* 찜은 켜면 분홍빛 빨강(지도의 하트 표시와 같은 색). */
+.chip[data-act=want][aria-pressed=true], .opt.heart[aria-pressed=true] { background: #e64980; border-color: #e64980; color: #fff; }
 .chip .sub { display: grid; place-items: center; width: 22px; height: 22px; margin-right: -7px; border-radius: 50%; opacity: .75; }
 .chip .sub:hover { opacity: 1; background: rgba(128, 128, 128, .35); }
 .chip.crumb { padding: 0 5px 0 12px; gap: 1px; cursor: default; }
@@ -194,6 +196,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .macc .who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .macc .who b { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .macc .who small { font-size: 12.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mlist a { color: inherit; }
 .mlist { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--ink-2); }
 .link { font-size: 12.5px; font-weight: 650; color: var(--ink-3); padding: 1px 6px; border-radius: 6px; }
 .link:hover { background: var(--surface-2); color: var(--ink); }
@@ -233,13 +236,17 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .opt svg.i { width: 15px; height: 15px; vertical-align: -3px; margin-right: 5px; }
 .opt[aria-pressed=true] svg.i { fill: currentColor; }
 /* 카드 맨 아래 줄: 왼쪽에 찜, 오른쪽에 폐업 신고. 폐업 신고는 자주 누르는 단추가 아니라서 테두리 없이 옅게 둔다. */
+/* 콘센트 있는 자리: 이름표를 위에 두고 단추 셋을 한 줄에 같은 너비로 놓는다. */
+.rec .k.wide { grid-column: 1 / -1; margin-bottom: -2px; }
+.rec .opts.one { grid-column: 1 / -1; flex-wrap: nowrap; }
+.rec .opts.one .opt { flex: 1; min-width: 0; padding: 0 6px; white-space: nowrap; font-size: 12.5px; }
 .rec .acts { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .opt.quiet { border-color: transparent; color: var(--ink-3); padding: 0 8px; }
 .opt.quiet:hover { color: var(--ink); border-color: var(--line-2); }
 .opt.quiet[aria-pressed=true] { background: var(--inv); border-color: var(--inv); color: var(--on-inv); }
 .opt.quiet[aria-pressed=true] svg.i { fill: none; }
 /* 주소 옆의 길찾기 */
-.facts .go { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line-2); font-size: 12.5px; font-weight: 650; }
+.facts .go { color: var(--ink); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line-2); font-size: 12.5px; font-weight: 650; }
 .facts .go:hover { border-color: var(--ink-3); }
 .facts .go svg.i { width: 14px; height: 14px; }
 .opt[aria-pressed=true] { background: var(--inv); border-color: var(--inv); color: var(--on-inv); }
@@ -398,6 +405,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></symbol>
   <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7.500-4.600-7.500-10.200A4.300 4.300 0 0 1 12 7.300a4.300 4.300 0 0 1 7.500 2.500C19.500 15.400 12 20 12 20z"/></symbol>
   <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4.500 7h15M4.500 12h15M4.500 17h15"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3.500l2 5.900 5.900 2-5.900 2-2 5.900-2-5.900-5.900-2 5.900-2z"/></symbol>
   <symbol id="i-flag" viewBox="0 0 24 24"><path d="M6 21V4.500M6 5h11l-2.300 3.750L17 12.500H6"/></symbol>
   <symbol id="i-route" viewBox="0 0 24 24"><path d="M12 3 21 12l-9 9-9-9z"/><path d="M9 14.500v-2.500a1 1 0 0 1 1-1h4.500M12.800 9l1.900 2-1.900 2"/></symbol>
   <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3M8 7l4-4 4 4M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"/></symbol>
@@ -1107,8 +1115,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     // 지도 안의 한글은 화면 글꼴과 같은 글꼴로 그린다.
     localIdeographFontFamily: '"Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
   }, mapAt));
-  // 지도 출처 단추(i). 폰에서는 왼쪽 아래(내 위치 단추 위), 컴퓨터에서는 오른쪽 아래.
-  map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: '카페: 소상공인 상가정보(2026.9), 넓이와 개업: 행정안전부 인허가, 경계: 통계청 SGIS (vuski/admdongkor)' }), mobile.matches ? 'bottom-left' : 'bottom-right');
+  // 지도 출처는 지도 구석의 i 단추 대신 메뉴(줄 세 개 단추)의 "지도 자료"에 적는다.
   window.cafeMap = map;
   var ldEl = document.getElementById('loading'); if (ldEl) ldEl.hidden = true;   // 자료를 다 읽었으니 로딩 표시를 내린다.
   window.cafeDraw = function () { draw(); };   // 시험용: 그리는 데 걸리는 시간을 잴 때 쓴다.
@@ -2169,7 +2176,15 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     var info = el('div', 'fsec'), ul = el('ul', 'mlist');
     info.style.borderBottom = '0';
     info.appendChild(el('div', 'ftitle', '지도 자료'));
-    ['카페 ' + fmt(N) + '곳', '카페 목록: 소상공인시장진흥공단 상가정보', '넓이와 개업: 행정안전부 인허가 자료', '지역 경계: 통계청 SGIS', '배경 지도: OpenFreeMap, OpenStreetMap'].forEach(function (t) { ul.appendChild(el('li', null, t)); });
+    ['카페 ' + fmt(N) + '곳', '카페 목록: 소상공인시장진흥공단 상가정보', '넓이와 개업: 행정안전부 인허가 자료', '지역 경계: 통계청 SGIS (vuski/admdongkor)'].forEach(function (t) { ul.appendChild(el('li', null, t)); });
+    // 배경 지도의 출처 표시(예전에는 지도 구석의 i 단추에 있었다). 자료를 쓰는 조건이라 링크와 함께 남긴다.
+    var li = el('li', null, '배경 지도: ');
+    [['OpenFreeMap', 'https://openfreemap.org/'], ['© OpenMapTiles', 'https://www.openmaptiles.org/'], ['© OpenStreetMap contributors', 'https://www.openstreetmap.org/copyright']].forEach(function (x, n) {
+      var a2 = el('a', null, x[0]); a2.href = x[1]; a2.target = '_blank'; a2.rel = 'noopener';
+      if (n) li.appendChild(document.createTextNode(', '));
+      li.appendChild(a2);
+    });
+    ul.appendChild(li);
     info.appendChild(ul); sc.appendChild(info);
   }
   $('menuBtn').addEventListener('click', function () { if (P.kind === 'menu') closePanel(); else { P.prev = null; openPanel('menu'); } });
@@ -2239,7 +2254,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     box.appendChild(chip('필터', !!fl, 'filter', { icon: 'filter', caret: true, sub: fl ? ['reset', 'x', '필터 모두 풀기'] : null }));
     // 찜한 곳만 보기, 새로 연 카페(개업 1년 이내)만 보기는 누르면 바로 켜지고 꺼지는 칩이다.
     box.appendChild(chip('찜', S.seen === 'want', 'want', { icon: 'heart', aria: '찜한 곳만 보기' }));
-    if (D.since) box.appendChild(chip('새로 연 카페', !!S.fresh, 'fresh', { aria: '개업 1년 이내인 카페만 보기' }));
+    if (D.since) { var nc = chip('새로 오픈', !!S.fresh, 'fresh', { icon: 'spark', aria: '오픈한 지 1년 이하인 카페만 보기' }); nc.title = '오픈한 지 1년 이하인 카페만 보기'; box.appendChild(nc); }
     // 지역을 골라 들어간 동안에만 오른쪽 아래에 뒤로, 처음부터 단추를 보여 준다.
     $('nav').hidden = S.reg < 0;
     // 구(또는 구가 없는 시, 군)를 골랐을 때만 "전체 보기" 단추를 보여 준다. 누르면 동을 고르지 않고도 그 구의 카페가 전부 점으로 나온다.
@@ -2265,7 +2280,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       else needLogin(function () { S.seen = 'want'; if (P.kind) closePanel(); showWanted(); });
       return;
     }
-    if (act === 'fresh') S.fresh = S.fresh ? 0 : 12;
+    // 새로 오픈을 켤 때 기준(1년)을 잠깐 알려 준다.
+    if (act === 'fresh') { S.fresh = S.fresh ? 0 : 12; if (S.fresh) toast('오픈한 지 1년 이하인 카페만 보여요'); }
     if (act === 'reset') resetFilter();
     if (P.kind === 'region' || P.kind === 'filter') closePanel();
     changed();
@@ -2309,7 +2325,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   var askNear = false;     // 위치를 모르는 채로 가까운 순을 눌렀는가
   function renderList() {
     var wantOnly = S.seen === 'want';
-    var h = head(wantOnly ? '찜한 곳' : S.reg >= 0 ? rName[S.reg] : '이 화면', fmt(vc) + '곳'), sc = el('div', 'scroll'), k;
+    var h = head(wantOnly ? '찜한 곳' : S.reg >= 0 ? rName[S.reg] : '이 화면', fmt(vc) + '곳' + (S.fresh ? ' · 오픈 1년 이하' : '')), sc = el('div', 'scroll'), k;
     if (vc) {
       var sort = el('div', 'sort');
       // 가까운 순은 내 위치를 알아야 쓸 수 있다. 위치를 모르면 넓은 순으로 보여 주고, 가까운 순을 누르면 위치를 허용해 달라고 알린다.
@@ -2622,10 +2638,12 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     // 둘째 줄: 있다고 한 사람이 있을 때만, 그 콘센트가 어떤 자리에 있는지를 묻는다.
     var k1 = el('div', 'k', '콘센트 좌석'), total = el('small'), k2 = el('div', 'k', '콘센트 있는 자리');
     k1.appendChild(total);
+    k2.classList.add('wide'); r2.className = 'opts one';
     rec.appendChild(k1); rec.appendChild(r1); rec.appendChild(k2); rec.appendChild(r2);
     // 셋째 줄: 찜과 없어진 카페 표시.
     var r3 = el('div', 'opts');
     var bWant = btn('opt', null, function () { needLogin(function () { setWant(i, !want[i]); sync(); if (S.seen !== 'all') refilter(); requestDraw(); }); });
+    bWant.classList.add('heart');
     bWant.appendChild(icon('heart')); bWant.appendChild(document.createTextNode('찜'));
     // 폐업 신고: 가 보니 이 카페가 없을 때 누른다. 내 지도에서는 바로 빠지고, 다른 사람에게는 신고 수로 보인다.
     var bGone = voteBtn('폐업 신고', function () { setGone(i, !myGone[i]); sync(); refilter(); requestDraw(); });
