@@ -211,6 +211,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .opt[aria-pressed=true] .n { opacity: .8; }
 .rec { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; align-items: center; padding-top: 12px; border-top: 1px solid var(--line); }
 .rec .k { font-size: 13px; color: var(--ink-3); }
+.rec .k small { display: block; margin-top: 2px; font-size: 11.5px; font-weight: 650; color: var(--ink-2); }
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 /* 카페 카드 안에 띄우는 카카오맵, 네이버지도 화면 */
 /* 카페 카드: 얇은 머리줄(이름, 단추) 아래를 카카오맵의 그 가게 화면이 전부 차지한다.
@@ -234,6 +235,12 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .sum .sz { color: var(--ink-3); font-variant-numeric: tabular-nums; padding-left: 7px; border-left: 1px solid var(--line-2); }
 .sum[aria-pressed=true] .sz { color: inherit; opacity: .75; border-color: rgba(255, 255, 255, .3); }
 .sum .i { width: 14px; height: 14px; opacity: .6; }
+/* 같은 건물 묶음을 눌렀을 때 점 위에 뜨는 목록 */
+#pile { position: absolute; z-index: 24; transform: translate(-50%, -100%); min-width: 160px; max-width: 270px; max-height: 232px; overflow-y: auto; padding: 6px; background: var(--surface); border-radius: 14px; box-shadow: var(--sh-2); }
+.prow { display: flex; align-items: center; gap: 9px; width: 100%; padding: 7px 10px 7px 8px; border-radius: 9px; text-align: left; font-size: 14px; font-weight: 650; }
+.prow:hover { background: var(--surface-2); }
+.prow .pin { flex: none; }
+.prow span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .none { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); color: var(--ink-3); font-size: 13px; }
 /* 카드는 아래에서 위로 올라오며 나타난다. */
 @keyframes sheetUp { from { transform: translateY(100%); } to { transform: none; } }
@@ -475,57 +482,40 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     if (dabang[i]) sc -= 50;
     score[i] = Math.max(0, Math.min(100, sc));
   }
-  // 같은 건물에 있어서 좌표가 똑같은 카페들은 지도 위에서 실제 거리로 조금씩 떼어 놓는다.
-  // 화면 픽셀이 아니라 미터로 떼기 때문에, 다른 카페들처럼 확대하면 벌어지고 축소하면 모인다.
-  // 가운데부터 벌집 모양으로 채워 나가고, 이웃끼리 14m 떨어진다.
-  var GAP = 14;
+  // 같은 건물이라 좌표가 똑같은 카페들은 억지로 떼어 놓지 않는다. 실제와 맞지도 않는 자리에 놓게 되기 때문이다.
+  // 한 점으로 묶어 개수를 적고, 누르면 그 건물의 카페 이름을 보여 준다(네이버 지도가 하는 방식).
+  //   pileOf[i]: 같은 좌표에 있는 카페들 가운데 맨 앞 번호. 혼자 있는 카페는 -1.
+  // 좌표가 조금만 다른 이웃(14m 안쪽)은 지금처럼 서로 밀어서 14m로 벌린다. 아이콘 지름을 14m보다 크지 않게 그리므로 아이콘끼리 겹치지 않는다.
+  var GAP = 14, pileOf = new Int32Array(N).fill(-1);
   (function () {
-    var at = {}, i, k;
-    for (i = 0; i < N; i++) { k = D.lat[i] + ',' + D.lng[i]; (at[k] = at[k] || []).push(i); }
-    // 벌집 자리: 가운데 한 칸, 그 둘레 여섯 칸, 그 바깥 열두 칸 순서
-    function spots(n) {
-      var out = [[0, 0]], DIR = [[1, 0], [0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1]];
-      for (var ring = 1; out.length < n; ring++) {
-        var q = 0, r = -ring;
-        for (var d = 0; d < 6; d++) for (var t = 0; t < ring; t++) { out.push([q, r]); q += DIR[d][0]; r += DIR[d][1]; }
-      }
-      return out.slice(0, n).map(function (h) { return [(h[0] + h[1] / 2) * GAP, h[1] * .866 * GAP]; });
+    var at = new Map(), u = new Int32Array(N), ux = [], uy = [], ulat = [], i, j, it, moved, f;
+    for (i = 0; i < N; i++) {
+      var key = D.lat[i] * 16777216 + D.lng[i], first = at.get(key);
+      if (first === undefined) { at.set(key, i); u[i] = ux.length; ux.push(mx[i]); uy.push(my[i]); ulat.push(D.lat[i]); }
+      else { u[i] = u[first]; pileOf[i] = first; pileOf[first] = first; }
     }
-    for (k in at) {
-      var g = at[k];
-      if (g.length < 2) continue;
-      var sp = spots(g.length), cx = 0, cy = 0, j;
-      for (j = 0; j < sp.length; j++) { cx += sp[j][0]; cy += sp[j][1]; }
-      cx /= sp.length; cy /= sp.length;
-      // 1미터가 지도 좌표로 얼마인지(위도에 따라 다르다)
-      var unit = 1 / (40075016 * Math.cos(D.lat[g[0]] / 1e5 * Math.PI / 180));
-      for (j = 0; j < g.length; j++) { mx[g[j]] += (sp[j][0] - cx) * unit; my[g[j]] += (sp[j][1] - cy) * unit; }
-    }
-  })();
-  // 좌표가 조금만 다른 이웃 카페도 서로 14m보다 가까우면, 그만큼 벌어질 때까지 양쪽을 똑같이 민다.
-  // 이렇게 해 두고 아이콘 지름을 실제 거리 14m보다 크지 않게 그리면 아이콘끼리 겹칠 일이 없다.
-  // 지도를 잘게 나눈 칸에 카페를 담아 두고 바로 옆 칸끼리만 견준다. 더 밀 것이 없을 때까지 되풀이한다.
-  (function () {
-    var M = 1 << 18, head = new Int32Array(M), next = new Int32Array(N), gap = new Float64Array(N), i, j, it, moved, f;
-    for (i = 0; i < N; i++) gap[i] = GAP / (40075016 * Math.cos(D.lat[i] / 1e5 * Math.PI / 180));
+    // 서로 다른 자리끼리만 밀어낸다. 지도를 잘게 나눈 칸에 담아 두고 바로 옆 칸끼리만 견준다.
+    var n = ux.length, M = 1 << 18, head = new Int32Array(M), next = new Int32Array(n), gap = new Float64Array(n);
+    for (i = 0; i < n; i++) gap[i] = GAP / (40075016 * Math.cos(ulat[i] / 1e5 * Math.PI / 180));
     var cell = GAP / (40075016 * Math.cos(39.5 * Math.PI / 180));
     for (it = 0; it < 80; it++) {
       head.fill(-1);
-      for (i = 0; i < N; i++) { var h = (Math.imul(Math.floor(mx[i] / cell), 73856093) ^ Math.imul(Math.floor(my[i] / cell), 19349663)) & (M - 1); next[i] = head[h]; head[h] = i; }
+      for (i = 0; i < n; i++) { var h = (Math.imul(Math.floor(ux[i] / cell), 73856093) ^ Math.imul(Math.floor(uy[i] / cell), 19349663)) & (M - 1); next[i] = head[h]; head[h] = i; }
       moved = 0;
-      for (i = 0; i < N; i++) {
-        var cx = Math.floor(mx[i] / cell), cy = Math.floor(my[i] / cell), g = gap[i];
+      for (i = 0; i < n; i++) {
+        var cx = Math.floor(ux[i] / cell), cy = Math.floor(uy[i] / cell), g = gap[i];
         for (var ax = -1; ax <= 1; ax++) for (var ay = -1; ay <= 1; ay++)
           for (j = head[(Math.imul(cx + ax, 73856093) ^ Math.imul(cy + ay, 19349663)) & (M - 1)]; j >= 0; j = next[j]) {
             if (j <= i) continue;
-            var dx = mx[j] - mx[i], dy = my[j] - my[i], d = Math.sqrt(dx * dx + dy * dy);
+            var dx = ux[j] - ux[i], dy = uy[j] - uy[i], d = Math.sqrt(dx * dx + dy * dy);
             if (d >= g * .98) continue;
             if (d < g * 1e-4) { dx = Math.cos(i * 2.399963); dy = Math.sin(i * 2.399963); f = g / 2; } else f = (g - d) / 2 / d;
-            mx[i] -= dx * f; my[i] -= dy * f; mx[j] += dx * f; my[j] += dy * f; moved++;
+            ux[i] -= dx * f; uy[i] -= dy * f; ux[j] += dx * f; uy[j] += dy * f; moved++;
           }
       }
       if (!moved) break;
     }
+    for (i = 0; i < N; i++) { mx[i] = ux[u[i]]; my[i] = uy[u[i]]; }
   })();
   function keyOf(i) { return D.name[i] + '@' + D.lat[i] + ',' + D.lng[i]; }
   function fmt(n) { return n.toLocaleString('ko-KR'); }
@@ -602,12 +592,12 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     for (var k = 0; k < NR; k++) if (regPath(k) === saved.reg) { S.reg = k; return; }
   })();
   // 콘센트 좌석 기록. 자료가 어디에도 없어서, 쓰는 사람들이 카페를 눌러 직접 적고 그 기록을 모두가 같이 본다.
-  //   o: 1 콘센트 좌석 있음, -1 없음.  c: 그 자리 종류 글자들(w 벽면 고정 소파, s 바 테이블, n 일반 테이블)
+  //   o: 1 콘센트 좌석 있음, -1 없음.  c: 콘센트가 있는 자리의 종류 글자들(w 벽면 소파, s 바 의자, n 일반 의자)
   // 내가 적은 것(myO, myC)은 이 기기에 저장하고, 서버가 정해져 있으면(share.js) 서버에도 올린다.
   // 지도와 필터는 모두의 기록을 모은 결과(outlet, chair)를 쓴다.
-  // 자리 종류: [저장하는 글자, 화면 이름, 비트, votes 안의 자리]. 의자 모양이 아니라 자리(탁자) 모양으로 나눈다.
-  // 바 테이블에 일반 의자가 놓인 곳처럼 의자만 보고는 고르기 애매한 경우가 있어서다. 콘센트가 드문 일반 테이블을 맨 뒤에 둔다.
-  var CHAIRS = [['w', '벽면 고정 소파', 2, 3], ['s', '바 테이블', 4, 4], ['n', '일반 테이블', 1, 2]];
+  // 콘센트가 있는 자리가 어떤 자리인가: [저장하는 글자, 화면 이름, 비트, votes 안의 자리, 설명].
+  // 벽면 소파(벽에 붙은 긴 소파), 바 의자(창가 같은 곳의 높은 의자), 일반 의자(옮길 수 있는 보통 의자). 콘센트가 드문 일반 의자를 맨 뒤에 둔다.
+  var CHAIRS = [['w', '벽면 소파', 2, 3, '벽에 붙어 고정된 긴 소파'], ['s', '바 의자', 4, 4, '높은 바 테이블의 의자. 보통 창가에 있다'], ['n', '일반 의자', 1, 2, '자리를 자유롭게 옮길 수 있는 보통 의자']];
   var outlet = new Int8Array(N), chair = new Uint8Array(N), myO = new Int8Array(N), myC = new Uint8Array(N);
   var votes = {};      // 다른 사람들의 기록을 카페별로 센 것. 카페 번호 -> [있음, 없음, 일반 의자, 벽면 고정, 스탠드형]
   function chairBits(str) { var m = 0; CHAIRS.forEach(function (c) { if ((str || '').indexOf(c[0]) >= 0) m |= c[2]; }); return m; }
@@ -1119,11 +1109,12 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     if (outlet[i] === 1) outletBadge(px, py, r);
   }
   // 이름 조각(흰 테두리를 두른 글씨). 글씨 너비도 같이 기억한다.
-  function labelSprite(i) {
-    var sp = labSprites[i];
+  function labelSprite(i, n) {
+    // n이 2 이상이면 같은 건물 묶음의 이름표("첫 가게 외 1").
+    var key = n > 1 ? i + '+' + n : i, sp = labSprites[key];
     if (sp) return sp;
     if (nLabSprites > 2500) { labSprites = {}; nLabSprites = 0; }
-    var text = clip(D.name[i], 16), cv = document.createElement('canvas'), c2 = cv.getContext('2d');
+    var text = n > 1 ? clip(D.name[i], 12) + ' 외 ' + (n - 1) : clip(D.name[i], 16), cv = document.createElement('canvas'), c2 = cv.getContext('2d');
     c2.font = '600 12px ' + FONT;
     var tw = c2.measureText(text).width;
     cv.width = Math.ceil((tw + 8) * DPR); cv.height = Math.ceil(20 * DPR);
@@ -1132,7 +1123,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     c2.lineWidth = 3.5; c2.lineJoin = 'round'; c2.strokeStyle = C.surface; c2.strokeText(text, 4, 10.5);
     c2.fillStyle = C.ink; c2.fillText(text, 4, 10.5);
     nLabSprites++;
-    return (labSprites[i] = { cv: cv, tw: tw });
+    return (labSprites[key] = { cv: cv, tw: tw });
   }
   // 이름을 놓을 자리 후보. 점 바로 옆 네 곳, 대각선 네 곳, 그다음 조금씩 더 떨어진 자리 열여섯 곳(모두 24곳).
   function labelSpot(n, X, Y, r, tw) {
@@ -1148,7 +1139,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       default: return [X - g2 * .7 - tw, Y - v];
     }
   }
-  var labSpot = new Int8Array(N).fill(-1), lastLayout = 0;   // 카페마다 지난번에 이름을 놓은 자리
+  var labSpot = new Int8Array(N).fill(-1), labGen = new Int32Array(N), layoutGen = 1, lastLayout = 0;   // 카페마다 지난번에 이름을 놓은 자리와 그때의 차례 번호
+  var LABEL_ALL = 15.6, LABEL_SOME = 14;   // 이 배율부터 이름을 전부 / 자리가 되는 만큼만 보여 준다.
   function outletBadge(px, py, r) { ctx.beginPath(); ctx.arc(px + r * .72, py - r * .72, 3.6, 0, 6.2832); ctx.fillStyle = C.ok; ctx.fill(); ctx.lineWidth = 1.4; ctx.strokeStyle = C.surface; ctx.stroke(); }
   function drawDot(i, px, py, r) { paintDot(i, px, py, r); if (outlet[i] === 1) outletBadge(px, py, r); }
   function paintDot(i, px, py, r) {
@@ -1252,38 +1244,63 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       }
     } else {
       // 가까이서 볼 때: 카페 하나하나. 개인카페를 먼저 그리고 프랜차이즈를 위에 올린다.
-      var labels = [], pass2;
+      // 같은 건물의 카페들은 모아 두었다가 점 하나로 그린다.
+      var labels = [], pass2, piles = {}, wantLabel = z >= LABEL_SOME, r = dotR(0, z);
+      var one = function (i) {
+        var x = mx[i] * scale - ox, y = my[i] * scale - oy;
+        stampDot(i, x, y, r);
+        hits.push({ x: x, y: y, r: Math.max(r + 3, 9), i: i });
+        if (wantLabel) labels.push([i, x, y, r, 1]);
+      };
       for (pass2 = 0; pass2 < 2; pass2++) for (k = 0; k < vc; k++) {
         i = viewIdx[k];
+        if (pileOf[i] >= 0) { if (pass2 === 0) (piles[pileOf[i]] = piles[pileOf[i]] || []).push(i); continue; }
         if ((grp[i] !== 2) !== (pass2 === 1) || i === sel) continue;
-        px = mx[i] * scale - ox; py = my[i] * scale - oy;
-        var r = dotR(i, z);
-        stampDot(i, px, py, r);
-        hits.push({ x: px, y: py, r: Math.max(r + 3, 9), i: i });
-        if (z >= 15.6 && labels.length < 400) labels.push([i, px, py, r]);
+        one(i);
+      }
+      for (var pk in piles) {
+        var mem = piles[pk];
+        if (mem.length === 1) { if (mem[0] !== sel) one(mem[0]); continue; }
+        // 묶음 점: 어두운 동그라미에 카페 수를 적는다. 작게 그릴 때는 숫자 없이 점만.
+        px = mx[mem[0]] * scale - ox; py = my[mem[0]] * scale - oy;
+        var pr = r >= 8 ? r + 1 : r;
+        ctx.beginPath(); ctx.arc(px, py, pr, 0, 6.2832); ctx.fillStyle = C.inv; ctx.fill();
+        ctx.lineWidth = 1.6; ctx.strokeStyle = C.surface; ctx.stroke();
+        if (r >= 8) { ctx.font = '750 ' + Math.round(pr * 1.05) + 'px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = C.onInv; ctx.fillText(mem.length, px, py + .5); }
+        hits.push({ x: px, y: py, r: Math.max(pr + 3, 9), pile: mem });
+        if (wantLabel) labels.push([mem[0], px, py, pr, mem.length]);
       }
       if (labels.length) {
-        // 이름은 화면에 보이는 모든 카페에 다 쓴다. 누구 것을 먼저 쓰는 순서는 없다.
-        // 이름이 다른 이름이나 다른 카페의 아이콘을 가리지 않게 빈 자리를 찾는다.
-        // 점 바로 옆 네 곳, 대각선 네 곳, 그다음 조금씩 더 떨어진 자리 열여섯 곳 순서로 본다. 다 막혀 있으면 오른쪽에 그냥 쓴다.
-        // 자리 찾기는 지도가 멈춰 있을 때, 그리고 움직이는 동안에는 0.2초에 한 번만 한다.
-        // 그 사이 프레임에서는 지난번에 놓은 자리를 그대로 쓴다(이름이 점을 따라 같이 움직인다).
-        var now = performance.now(), full = !map.isMoving() || now - lastLayout > 200, boxes = [];
+        // 이름 붙이기. 카카오맵과 네이버 지도처럼, 덜 확대했을 때는 서로 겹치지 않고 들어갈 수 있는 이름만 보여 주고 확대할수록 더 보여 준다.
+        //   LABEL_ALL(15.6)부터: 화면의 모든 카페에 이름을 쓴다. 겹치면 점 둘레의 다른 자리(24곳)로 옮기고, 다 막혀 있으면 오른쪽에 그냥 쓴다.
+        //   그보다 덜 확대했을 때: 넓은 카페부터 차례로, 점 바로 둘레(8곳)에 다른 이름이나 다른 점을 가리지 않는 자리가 있을 때만 쓴다.
+        //     (두 지도는 인기 순으로 먼저 보여 주지만 우리에게는 그 자료가 없어서 넓이를 쓴다. 프랜차이즈와 개인카페를 가리지 않는다.)
+        // 자리 찾기는 지도가 멈춰 있을 때, 그리고 움직이는 동안에는 0.2초에 한 번만 한다. 그 사이에는 지난번 자리를 그대로 쓴다.
+        var all = z >= LABEL_ALL, now = performance.now(), full = !map.isMoving() || now - lastLayout > 200, boxes = [];
+        if (all && labels.length > 400) labels.length = 400;
         if (full) {
-          lastLayout = now;
+          lastLayout = now; layoutGen++;
           for (k = 0; k < labels.length; k++) { var dq = labels[k]; boxes.push([dq[1] - dq[3], dq[2] - dq[3], dq[3] * 2, dq[3] * 2]); }
+          if (!all) { labels.sort(function (p, q) { return D.area[q[0]] - D.area[p[0]] || p[0] - q[0]; }); if (labels.length > 300) labels.length = 300; }
         }
+        var nSpots = all ? 24 : 8;
         for (k = 0; k < labels.length; k++) {
-          var lb = labels[k], ls = labelSprite(lb[0]), tw = ls.tw, pick = null;
+          var lb = labels[k], ci = lb[0], ls = labelSprite(ci, lb[4]), tw = ls.tw, pick = null;
           if (full) {
-            for (var sp = 0; sp < 24 && !pick; sp++) {
+            for (var sp = 0; sp < nSpots && !pick; sp++) {
               var cand2 = labelSpot(sp, lb[1], lb[2], lb[3], tw), lx = cand2[0], ly = cand2[1] - 8, free = true;
               for (j = 0; j < boxes.length; j++) { var bq = boxes[j]; if (lx < bq[0] + bq[2] + 2 && lx + tw + 2 > bq[0] && ly < bq[1] + bq[3] + 1 && ly + 16 + 1 > bq[1]) { free = false; break; } }
-              if (free) { pick = cand2; labSpot[lb[0]] = sp; }
+              if (free) { pick = cand2; labSpot[ci] = sp; }
             }
-            if (!pick) { pick = labelSpot(0, lb[1], lb[2], lb[3], tw); labSpot[lb[0]] = 0; }
+            if (!pick && all) { pick = labelSpot(0, lb[1], lb[2], lb[3], tw); labSpot[ci] = 0; }
+            if (!pick) { labSpot[ci] = -1; continue; }
+            labGen[ci] = layoutGen;
             boxes.push([pick[0], pick[1] - 8, tw, 16]);
-          } else pick = labelSpot(labSpot[lb[0]] < 0 ? 0 : labSpot[lb[0]], lb[1], lb[2], lb[3], tw);
+          } else {
+            // 지난번 자리 찾기에서 이름을 놓은 카페만 그 자리에 다시 그린다. 이름을 전부 쓰는 배율에서는 새로 들어온 카페도 오른쪽에 쓴다.
+            if (labGen[ci] !== layoutGen || labSpot[ci] < 0) { if (!all) continue; pick = labelSpot(0, lb[1], lb[2], lb[3], tw); }
+            else pick = labelSpot(labSpot[ci], lb[1], lb[2], lb[3], tw);
+          }
           ctx.drawImage(ls.cv, pick[0] - 4, pick[1] - 10, tw + 8, 20);
         }
       }
@@ -1306,6 +1323,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       }
     }
     renderCount();
+    placePile(scale, ox, oy);
   }
 
   function hit(p) {
@@ -1375,8 +1393,30 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     if (ni !== hoverI || np !== hoverPill) { hoverI = ni; setHoverReg(np); requestDraw(); }
   });
   map.on('mouseout', function () { if (hoverI >= 0 || hoverPill >= 0) { hoverI = -1; hoverPill = -1; requestDraw(); } });
+  // 같은 건물 묶음을 눌렀을 때 점 위에 뜨는 작은 목록
+  var pileBox = document.createElement('div'), pileAt = null;
+  pileBox.id = 'pile'; pileBox.hidden = true; $('app').appendChild(pileBox);
+  function closePile() { pileAt = null; pileBox.hidden = true; }
+  function openPile(mem) {
+    pileBox.textContent = '';
+    mem.slice().sort(function (a, b) { return D.name[a] < D.name[b] ? -1 : 1; }).forEach(function (i) {
+      var row = btn('prow', null, function () { closePile(); selectCafe(i, false, null); });
+      row.appendChild(pinEl(i)); row.appendChild(el('span', null, D.name[i]));
+      pileBox.appendChild(row);
+    });
+    pileAt = { x: mx[mem[0]], y: my[mem[0]] };
+    pileBox.hidden = false; pileBox.scrollTop = 0;
+    requestDraw();
+  }
+  function placePile(scale, ox, oy) {
+    if (!pileAt) return;
+    pileBox.style.left = (pileAt.x * scale - ox) + 'px';
+    pileBox.style.top = (pileAt.y * scale - oy - 18) + 'px';
+  }
   map.on('click', function (e) {
     var h = hit(e.point);
+    if (h && h.pile) { closePanel(); openPile(h.pile); return; }
+    closePile();
     if (!h) { closePanel(); return; }
     if (h.reg !== undefined) { closePanel(); setRegion(h.reg, true); return; }
     selectCafe(h.i, false, null);
@@ -1813,6 +1853,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   function fullAddr(i) { var d = D.dongOf[i], g = dongSgg[d]; var sido = D.sido[sggSido[g]], sg = D.sgg[g][0]; return (sg === sido ? sido : sido + ' ' + sg) + ' ' + D.road[i]; }
   function selectCafe(i, pan, from) {
     sel = i; P.cafe = i; P.prev = from;
+    if (pileAt) closePile();
     // 지역을 골라 둔 채로 다른 동의 카페를 찾아가면, 지역을 그 카페의 동으로 바꿔서 주변 카페도 같이 보이게 한다.
     if (S.reg >= 0 && !regMask[D.dongOf[i]]) { S.reg = dongReg[D.dongOf[i]]; S.showAll = false; hoverPill = -1; refilter(); renderChips(); persist(); }
     var z = map.getZoom(), pt = map.project([D.lng[i] / 1e5, D.lat[i] / 1e5]), box = map.getContainer(), W = box.clientWidth, H = box.clientHeight;
@@ -1853,13 +1894,20 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     r1.appendChild(yes[0]); r1.appendChild(no[0]);
     var chairBtns = CHAIRS.map(function (c) {
       var x = voteBtn(c[1], function () { if (myO[i] !== 1) { myO[i] = 1; myC[i] = 0; } myC[i] ^= c[2]; store(); });
+      x[0].title = c[4];
       r2.appendChild(x[0]);
       return [x, c];
     });
-    rec.appendChild(el('div', 'k', '콘센트 좌석')); rec.appendChild(r1);
-    rec.appendChild(el('div', 'k', '자리 종류')); rec.appendChild(r2);
+    // 첫 줄: 콘센트 좌석이 있는지. 옆에 지금까지 몇 명이 투표했는지 적는다(내가 처음이면 "총 1명 투표").
+    // 둘째 줄: 있다고 한 사람이 있을 때만, 그 콘센트가 어떤 자리에 있는지를 묻는다.
+    var k1 = el('div', 'k', '콘센트 좌석'), total = el('small'), k2 = el('div', 'k', '콘센트 있는 자리');
+    k1.appendChild(total);
+    rec.appendChild(k1); rec.appendChild(r1); rec.appendChild(k2); rec.appendChild(r2);
     function sync() {
       var v = votes[i] || [0, 0, 0, 0, 0];
+      var ny = v[0] + (myO[i] === 1 ? 1 : 0), nn = v[1] + (myO[i] === -1 ? 1 : 0);
+      total.textContent = ny + nn ? '총 ' + (ny + nn) + '명 투표' : '아직 투표 없음';
+      k2.hidden = r2.hidden = ny === 0;
       setBtn(yes, myO[i] === 1, v[0] + (myO[i] === 1 ? 1 : 0));
       setBtn(no, myO[i] === -1, v[1] + (myO[i] === -1 ? 1 : 0));
       chairBtns.forEach(function (cb) { var on = (myC[i] & cb[1][2]) !== 0; setBtn(cb[0], on, v[cb[1][3]] + (on ? 1 : 0)); });
@@ -1883,7 +1931,9 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       info.appendChild(icon('down'));
       sum = function () {
         st.className = 'st' + (outlet[i] === 1 ? ' yes' : outlet[i] === -1 ? ' no' : '');
-        stText.textContent = outlet[i] === 1 ? '콘센트 있어요' : outlet[i] === -1 ? '콘센트 없어요' : '콘센트';
+        // 몇 명이 그렇게 투표했는지도 같이 적는다(내가 처음이면 1명).
+        var v = votes[i] || [0, 0], ny = v[0] + (myO[i] === 1 ? 1 : 0), nn = v[1] + (myO[i] === -1 ? 1 : 0);
+        stText.textContent = outlet[i] === 1 ? '콘센트 있어요 ' + ny + '명' : outlet[i] === -1 ? '콘센트 없어요 ' + nn + '명' : '콘센트';
       };
       sum();
       var openPop = function (on) { pop.hidden = scrim.hidden = !on; info.setAttribute('aria-pressed', String(on)); };
