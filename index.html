@@ -765,7 +765,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     sort: saved.sort === 'size' ? 'size' : 'near',
     seen: saved.seen === 'want' ? 'want' : 'all',   // 찜한 곳만 보기: all 전부, want 찜한 곳만
     outline: saved.outline !== false,   // 환경설정: 고른 지역의 경계선과 색칠을 보일지
-    nav: saved.nav === 'naver' || saved.nav === 'tmap' ? saved.nav : 'kakao',   // 환경설정: 길찾기에 쓸 지도 앱
+    nav: saved.nav === 'naver' ? 'naver' : 'kakao',   // 환경설정: 길찾기에 쓸 지도 앱(티맵은 여는 주소를 확인할 수 없고 실제로 안 열려서 뺐다)
     start: saved.start === 'korea' || saved.start === 'me' ? saved.start : 'last',   // 환경설정: 시작할 때 보여 줄 곳. last 마지막에 보던 곳, korea 전국, me 내 위치
     fresh: saved.fresh ? 12 : 0,   // 새로 연 카페만 보기: 0 전부, 12 개업 1년 이내(기간을 고르게 했다가 선택지가 많다는 말을 듣고 하나로 줄였다)
     showAll: false,      // 구 전체 보기를 켰는가. 지역을 바꾸면 꺼진다.
@@ -2352,7 +2352,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     // 길찾기 앱: 카페 카드의 길찾기를 눌렀을 때 열 지도 앱.
     var nv = el('div', 'mopt'), nvTabs = el('div', 'sort');
     nv.appendChild(el('span', null, '길찾기 앱'));
-    [['kakao', '카카오맵'], ['naver', '네이버지도'], ['tmap', '티맵']].forEach(function (o) {
+    nvTabs.style.gridTemplateColumns = 'repeat(2, 1fr)';
+    [['kakao', '카카오맵'], ['naver', '네이버지도']].forEach(function (o) {
       var bt = btn(null, o[1], function () { S.nav = o[0]; persist(); renderPanel(); });
       bt.setAttribute('aria-pressed', String(S.nav === o[0]));
       nvTabs.appendChild(bt);
@@ -2821,15 +2822,14 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     // 길찾기: 카카오맵의 길찾기 화면을 새 창(폰은 카카오맵 앱)으로 연다. 카카오 장소 번호가 있으면 그 가게로, 없으면 이름과 좌표로 찾는다.
     var go = el('a', 'go'); go.target = '_blank'; go.rel = 'noopener';
     // 환경설정에서 고른 지도 앱으로 연다. 카카오맵은 앱이 없어도 웹으로 열리는 주소다.
-    // 네이버지도와 티맵은 앱을 바로 부르는 주소라서 폰에서만 쓰고, 앱이 없으면 아무 일도 일어나지 않으므로 잠시 뒤에 알려 준다. 컴퓨터에서는 카카오맵으로 연다.
+    // 네이버지도는 앱을 바로 부르는 주소라서 폰에서만 쓰고, 앱이 없으면 아무 일도 일어나지 않으므로 잠시 뒤에 알려 준다. 컴퓨터에서는 카카오맵으로 연다.
     var nm = encodeURIComponent(D.name[i]), kakaoTo = 'https://map.kakao.com/link/to/' + (pid ? pid : encodeURIComponent(D.name[i].replace(/,/g, ' ')) + ',' + lat + ',' + lng);
-    var appTo = !mobile.matches ? '' : S.nav === 'naver' ? 'nmap://route/public?dlat=' + lat + '&dlng=' + lng + '&dname=' + nm + '&appname=' + encodeURIComponent(location.hostname || 'cafemap')
-      : S.nav === 'tmap' ? 'tmap://route?goalname=' + nm + '&goalx=' + lng + '&goaly=' + lat + '&rGoName=' + nm + '&rGoX=' + lng + '&rGoY=' + lat : '';
+    var appTo = mobile.matches && S.nav === 'naver' ? 'nmap://route/public?dlat=' + lat + '&dlng=' + lng + '&dname=' + nm + '&appname=' + encodeURIComponent(location.hostname || 'cafemap') : '';
     go.href = appTo || kakaoTo;
     if (appTo) {
       go.removeAttribute('target');
       go.addEventListener('click', function () {
-        setTimeout(function () { if (!document.hidden) toast((S.nav === 'naver' ? '네이버지도' : '티맵') + ' 앱이 열리지 않았어요. 메뉴의 환경설정에서 길찾기 앱을 바꿀 수 있어요.'); }, 1800);
+        setTimeout(function () { if (!document.hidden) toast('네이버지도 앱이 열리지 않았어요. 메뉴의 환경설정에서 길찾기 앱을 바꿀 수 있어요.'); }, 1800);
       });
     }
     go.appendChild(icon('route')); go.appendChild(document.createTextNode('길찾기'));
