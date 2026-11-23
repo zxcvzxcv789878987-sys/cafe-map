@@ -289,6 +289,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 #nav { position: absolute; z-index: 15; right: 66px; bottom: 44px; display: flex; gap: 8px; }
 #nav { pointer-events: none; }
 #nav > * { pointer-events: auto; }
+.npair { display: flex; gap: 8px; }
 .nbtn { display: inline-flex; align-items: center; gap: 6px; height: 42px; padding: 0 16px 0 13px; border-radius: 12px; background: var(--surface); box-shadow: var(--sh-1); font-weight: 650; white-space: nowrap; }
 .nbtn:hover, .nbtn[aria-pressed=true] { background: var(--inv); color: var(--on-inv); }
 .cbtn { width: 42px; height: 42px; display: grid; place-items: center; background: var(--surface); border-radius: 12px; box-shadow: var(--sh-1); color: var(--ink); }
@@ -312,14 +313,31 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   #panel { left: 0 !important; right: 0; top: auto !important; bottom: 0; width: auto !important; max-height: 62% !important; border-radius: 20px 20px 0 0; }
   #panel[data-kind=region], #panel[data-kind=filter], #panel[data-kind=search], #panel[data-kind=list] { max-height: 74% !important; }
   #panel[data-kind=detail][data-embed] { max-height: 94% !important; }
-  #count { bottom: calc(22px + env(safe-area-inset-bottom, 0px)); }
-  #ctrl { right: 12px; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); }
+  /* 지역 경로가 길어도 필터 칩이 화면 밖으로 밀려나지 않게 한다(경로 쪽을 줄인다. fitCrumb). */
+  .chip.crumb { padding: 0 3px 0 10px; }
+  .chip.crumb button { padding: 0 6px; }
+  .chip.crumb button.more { padding: 0 4px; letter-spacing: 1px; }
+  .chip > span:not(.sub) { overflow: hidden; text-overflow: ellipsis; max-width: 46vw; }
+  /* 아래쪽 단추는 한 줄에 맞춘다. 왼쪽 내 위치, 가운데 "이 화면 N곳", 오른쪽 뒤로와 처음부터. 높이와 둥글기도 같게 한다. */
+  #count { height: 44px; padding: 0 15px; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); }
+  #ctrl { left: 12px; right: auto; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); }
   #ctrl .cgroup { display: none; }
-  .maplibregl-ctrl-bottom-right { right: 56px; }
-  #nav { right: 12px; left: 12px; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); flex-wrap: wrap-reverse; justify-content: flex-end; }
-  .sheet-open #count, .sheet-open #ctrl, .sheet-open #nav { display: none; }
+  #ctrl .cbtn { width: 44px; height: 44px; border-radius: 50%; }
+  #nav { right: 12px; left: auto; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); flex-direction: column; align-items: flex-end; gap: 10px; }
+  #nav .nbtn { height: 44px; border-radius: 999px; }
+  .npair { gap: 0; background: var(--surface); border-radius: 999px; box-shadow: var(--sh-1); overflow: hidden; }
+  #nav .npair .nbtn { width: 44px; padding: 0; justify-content: center; border-radius: 0; box-shadow: none; }
+  .npair .nbtn + .nbtn { border-left: 1px solid var(--line); }
+  .npair .nbtn .t { display: none; }
+  .npair .nbtn svg.i { width: 20px; height: 20px; }
+  /* 지도 출처(i)는 내 위치 단추 바로 위에 가운데를 맞춰 둔다. */
+  .maplibregl-ctrl-bottom-left { left: 12px; bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+  .maplibregl-ctrl-bottom-left .maplibregl-ctrl-attrib { margin: 0 0 0 10px; }
+  .sheet-open #count, .sheet-open #ctrl, .sheet-open #nav, .sheet-open .maplibregl-ctrl-bottom-left { display: none; }
   #toast { bottom: auto; top: calc(122px + env(safe-area-inset-top, 0px)); }
 }
+/* 아주 좁은 폰에서는 개수 단추의 아이콘을 빼서 양옆 단추와 닿지 않게 한다. */
+@media (max-width: 370px) { #count svg.i { display: none; } }
 </style>
 </head>
 <body>
@@ -359,8 +377,10 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   <button id="count" type="button" hidden></button>
   <div id="nav" hidden>
     <button class="nbtn" id="navAll" type="button" aria-pressed="false" hidden></button>
-    <button class="nbtn" id="navBack" type="button"><svg class="i"><use href="#i-back"/></svg>뒤로</button>
-    <button class="nbtn" id="navHome" type="button"><svg class="i"><use href="#i-home"/></svg>처음부터</button>
+    <span class="npair">
+      <button class="nbtn" id="navBack" type="button" aria-label="뒤로"><svg class="i"><use href="#i-back"/></svg><span class="t">뒤로</span></button>
+      <button class="nbtn" id="navHome" type="button" aria-label="처음부터"><svg class="i"><use href="#i-home"/></svg><span class="t">처음부터</span></button>
+    </span>
   </div>
   <div id="ctrl">
     <button class="cbtn" id="locate" type="button" aria-label="내 위치로 이동"><svg class="i"><use href="#i-locate"/></svg></button>
@@ -901,10 +921,12 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     container: 'map',
     minZoom: 5.2, maxZoom: 19, maxBounds: [[121, 31], [134.5, 40.5]],
     dragRotate: false, pitchWithRotate: false, touchPitch: false,
-    attributionControl: { compact: true, customAttribution: '카페: 소상공인 상가정보(2026.9), 넓이: 행정안전부 인허가, 경계: 통계청 SGIS (vuski/admdongkor)' },
+    attributionControl: false,
     // 지도 안의 한글은 화면 글꼴과 같은 글꼴로 그린다.
     localIdeographFontFamily: '"Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
   }, mapAt));
+  // 지도 출처 단추(i). 폰에서는 왼쪽 아래(내 위치 단추 위), 컴퓨터에서는 오른쪽 아래.
+  map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: '카페: 소상공인 상가정보(2026.9), 넓이: 행정안전부 인허가, 경계: 통계청 SGIS (vuski/admdongkor)' }), mobile.matches ? 'bottom-left' : 'bottom-right');
   window.cafeMap = map;
   var ldEl = document.getElementById('loading'); if (ldEl) ldEl.hidden = true;   // 자료를 다 읽었으니 로딩 표시를 내린다.
   window.cafeDraw = function () { draw(); };   // 시험용: 그리는 데 걸리는 시간을 잴 때 쓴다.
@@ -1948,19 +1970,29 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     return parts.join(' · ');
   }
   function resetFilter() { S.cats = {}; S.brands = {}; S.tab = 'all'; S.big = false; S.outlet = false; S.chairs = {}; S.seen = 'all'; }
-  function regionChip() {
+  // hide: 앞쪽 단계 몇 개를 "…" 하나로 접을지. 폰에서 경로가 길 때 쓴다. 지금 지역은 접지 않는다.
+  function regionChip(hide) {
     if (S.reg < 0) return chip('지역', false, 'region', { icon: 'pin', caret: true });
     var c = el('span', 'chip crumb'), chain = regChain(S.reg);
     c.setAttribute('aria-pressed', 'true');
     c.appendChild(icon('pin'));
-    function seg(text, act, cur) { var b = el('button', cur ? 'cur' : null, text); b.type = 'button'; b.dataset.act = act; if (cur) b.appendChild(icon('down')); c.appendChild(b); }
+    function seg(text, act, cur, cls) { var b = el('button', cur ? 'cur' : cls || null, text); b.type = 'button'; b.dataset.act = act; if (cur) b.appendChild(icon('down')); c.appendChild(b); return b; }
     seg('전국', 'reg-go--1', false);
+    // 접힌 단계는 "…"로 보이고, 누르면 지역 카드가 열려 전체 경로를 고를 수 있다.
+    if (hide) { c.appendChild(icon('right')); seg('…', 'region', false, 'more').setAttribute('aria-label', '지역 경로 전체 보기'); }
     chain.forEach(function (r, n) {
       var last = n === chain.length - 1;
+      if (n < (hide || 0) && !last) return;
       c.appendChild(icon('right'));
       seg(rName[r], last ? 'region' : 'reg-go-' + r, last);
     });
     return c;
+  }
+  // 칩 줄이 화면 너비를 넘으면(필터 칩이 밀려 나가면) 지역 경로의 앞 단계부터 하나씩 접는다.
+  function fitCrumb() {
+    var box = $('chips');
+    if (S.reg < 0 || !mobile.matches) return;
+    for (var hide = 1, n = regChain(S.reg).length; hide < n && box.scrollWidth > box.clientWidth + 1; hide++) box.replaceChild(regionChip(hide), box.firstChild);
   }
   // 지금 고른 지역의 바로 아래가 동인가. 그럴 때만 전체 보기를 쓸 수 있다.
   function canShowAll() { return S.reg >= 0 && !rLeaf[S.reg] && rKids[S.reg].length > 0 && rLeaf[rKids[S.reg][0]] === 1; }
@@ -1972,6 +2004,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     box.appendChild(regionChip());
     // 걸러 보기와 설정은 필터 칩 하나에 다 들어 있다. 켜 둔 조건이 있으면 칩에 적고, 옆의 x로 한 번에 푼다.
     box.appendChild(chip(fl || '필터', !!fl, 'filter', { icon: 'filter', caret: true, sub: fl ? ['reset', 'x', '필터 모두 풀기'] : null }));
+    fitCrumb();
     // 지역을 골라 들어간 동안에만 오른쪽 아래에 뒤로, 처음부터 단추를 보여 준다.
     $('nav').hidden = S.reg < 0;
     // 구(또는 구가 없는 시, 군)를 골랐을 때만 "전체 보기" 단추를 보여 준다. 누르면 동을 고르지 않고도 그 구의 카페가 전부 점으로 나온다.
@@ -2476,10 +2509,11 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   $('zin').addEventListener('click', function () { userMove = true; map.zoomIn(); });
   $('zout').addEventListener('click', function () { userMove = true; map.zoomOut(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePanel(); });
-  mobile.addEventListener('change', function () { if (P.kind) placePanel(); draw(); });
+  mobile.addEventListener('change', function () { if (P.kind) placePanel(); draw(); renderChips(); });
+  window.addEventListener('resize', renderChips);
 
   refilter(); draw(); renderChips();
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { FONT = getComputedStyle(document.body).fontFamily; layoutCache = {}; draw(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { FONT = getComputedStyle(document.body).fontFamily; layoutCache = {}; draw(); renderChips(); });
 })();
 </script>
 </body>
