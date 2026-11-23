@@ -4,7 +4,8 @@
 #
 # 순서
 #   1. 카페 목록: 소상공인시장진흥공단 상가(상권)정보 (공공데이터포털 15083033, 3개월마다 새 파일이 나온다)
-#   2. 넓이와 영업 상태: 행정안전부 인허가 자료 3종 (휴게음식점, 제과점, 일반음식점)
+#   2. 넓이, 영업 상태, 문 연 달: 행정안전부 인허가 자료 3종 (휴게음식점, 제과점, 일반음식점)
+#      카페 목록에 아직 없는 최근 열두 달의 개업 카페도 여기서 더한다(build.py 2-1).
 #   3. 카카오맵의 전국 카페 목록(좌표, 장소 번호)과 이름으로 다시 물어보기
 #   4. cafes.js(올리는 것, 공공데이터 좌표)와 cafes.local.js(이 컴퓨터용, 카카오 좌표) 만들기
 #   5. 점검: 카페 수가 지난번과 크게 다르면 멈추고 예전 파일을 그대로 둔다
@@ -79,7 +80,7 @@ atch = re.search(r'"atchFileId"\s*:\s*"([^"]+)"', json.dumps(info))
 if not atch:
     stop('상가정보 파일 번호(atchFileId)를 받지 못했다.')
 zip_path = os.path.join(WORK, 'sangga.zip')
-if state.get('sangga') == atch.group(1) and os.path.exists(zip_path) and os.path.exists(os.path.join(WORK, 'cafes_raw.csv')):
+if state.get('sangga') == atch.group(1) and os.path.exists(zip_path) and os.path.exists(os.path.join(WORK, 'cafes_raw.csv')) and os.path.exists(os.path.join(WORK, 'buildings.csv')):
     say('   지난번과 같은 파일이라 다시 받지 않는다.')
 else:
     n = download('https://www.data.go.kr/cmm/cmm/fileDownload.do?atchFileId=%s&fileDetailSn=1' % atch.group(1), zip_path)

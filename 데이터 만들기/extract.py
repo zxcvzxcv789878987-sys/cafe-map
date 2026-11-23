@@ -1,4 +1,6 @@
 # 상가정보 zip에서 카페만 뽑아 cafes_raw.csv로 저장하고, 상호명 빈도를 top_names.txt로 남긴다.
+# 그리고 모든 업종의 가게에서 건물마다 한 줄씩(도로명주소, 시도, 시군구, 행정동, 좌표) 뽑아 buildings.csv로 저장한다.
+# 인허가 자료에는 행정동과 위경도가 없어서, 최근 문 연 카페를 인허가 자료에서 더할 때 이 표에서 같은 건물을 찾아 붙인다.
 import zipfile, sys, io, csv, collections
 
 zpath, outdir = sys.argv[1], sys.argv[2]
@@ -10,9 +12,13 @@ keep = ['상가업소번호', '상호명', '지점명', '상권업종소분류�
 cnt = collections.Counter()
 cat = collections.Counter()
 total = 0
-with open(f'{outdir}/cafes_raw.csv', 'w', encoding='utf-8', newline='') as out:
+bkeep = ['도로명주소', '시도명', '시군구명', '행정동명', '경도', '위도']
+seen = set()
+with open(f'{outdir}/cafes_raw.csv', 'w', encoding='utf-8', newline='') as out, open(f'{outdir}/buildings.csv', 'w', encoding='utf-8', newline='') as bout:
     w = csv.writer(out)
     w.writerow(keep)
+    bw = csv.writer(bout)
+    bw.writerow(bkeep)
     for n in z.namelist():
         if not n.endswith('.csv'):
             continue
@@ -21,7 +27,12 @@ with open(f'{outdir}/cafes_raw.csv', 'w', encoding='utf-8', newline='') as out:
         h = next(r)
         idx = {k: h.index(k) for k in keep}
         i_mid = h.index('상권업종중분류명')
+        bidx = [h.index(k) for k in bkeep]
+        i_bld = h.index('건물관리번호')
         for row in r:
+            if row[i_bld] not in seen and row[bidx[0]].strip() and row[bidx[4]].strip():
+                seen.add(row[i_bld])
+                bw.writerow([row[i].strip() for i in bidx])
             if row[i_mid].strip() == '비알코올' or '카페' in row[idx['상권업종소분류명']]:
                 cat[(row[i_mid].strip(), row[idx['상권업종소분류명']].strip())] += 1
             if row[idx['상권업종소분류명']].strip() != '카페':

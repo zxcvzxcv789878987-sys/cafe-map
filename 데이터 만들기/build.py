@@ -75,8 +75,19 @@ def similar(a, b):
 lic = collections.defaultdict(list)
 # 주소별로 영업 중인 곳과 폐업 신고된 곳의 이름. 면적이 없는 줄도 다 모은다. 문 닫은 카페를 가려내는 데 쓴다.
 open_names, closed_names = collections.defaultdict(list), collections.defaultdict(list)
+# 주소별 영업 중인 인허가 전부(넓이가 없는 줄도). 문 연 달(인허가일자)을 붙이고, 카페 목록에 아직 없는 최근 개업 카페를 찾는 데 쓴다.
+# [이름(다듬은 것), 브랜드, 인허가 연월(YYYYMM), 업태, 넓이, 원래 이름, 도로명주소, 일반음식점 자료인가]
+lic_all = collections.defaultdict(list)
+
+
+def ym_of(d):
+    d = re.sub(r'[^0-9]', '', d)
+    return int(d[:6]) if len(d) >= 6 and '1900' <= d[:4] <= '2100' and '01' <= d[4:6] <= '12' else 0
+
+
 lic_rows = 0
 for path in license_files:
+    is_general = 'general' in os.path.basename(path)
     with open(path, encoding='cp949', errors='replace', newline='') as f:
         r = csv.reader(f)
         h = next(r)
@@ -84,6 +95,7 @@ for path in license_files:
         i_state, i_name, i_addr = ih['영업상태명'], ih['사업장명'], ih['도로명주소']
         i_a1, i_a2 = ih.get('시설총규모'), ih.get('소재지면적')
         i_type = ih.get('업태구분명')
+        i_date = ih.get('인허가일자')
         for row in r:
             if len(row) != len(h):
                 continue
@@ -104,6 +116,8 @@ for path in license_files:
                     area = max(area, float(row[i] or 0))
                 except ValueError:
                     pass
+            lic_all[k].append([n, brand_of(n), ym_of(row[i_date]) if i_date is not None else 0, row[i_type] if i_type is not None else '',
+                               area if 0 < area <= 30000 else 0.0, row[i_name].strip(), row[i_addr], is_general])
             if area <= 0 or area > 30000:
                 continue
             lic[k].append((n, brand_of(n), area, row[i_type] if i_type is not None else ''))
@@ -115,6 +129,9 @@ CAFE_TYPES = ('커피숍', '다방', '기타 휴게음식점', '제과점영업'
 rows = list(csv.DictReader(open(os.path.join(workdir, 'cafes_raw.csv'), encoding='utf-8')))
 names, lats, lngs, bidx, areas, dongs, roads, floors = [], [], [], [], [], [], [], []
 closed = []      # 인허가 자료에서 같은 주소, 비슷한 이름이 폐업으로만 나오는 카페
+since = []       # 문 연 달(인허가일자의 연월, YYYYMM). 인허가 자료에서 같은 주소, 같은 이름을 찾은 카페만. 모르면 0.
+used = set()     # 카페와 짝지어진 인허가 줄 (주소, 그 주소 안 순번)
+at_addr = collections.defaultdict(list)   # 주소별로, 카페 목록에 있는 카페가 인허가와 짝이 지어졌는가
 ltypes = []      # 넓이를 가져온 인허가의 업태(한식, 커피숍 등). 이름으로 맞춘 경우만 적는다.
 # 지역은 시도 > 시군구 > 행정동 세 단계로 번호를 매긴다.
 sido_ix, sgg_ix, dong_ix = {}, {}, {}
@@ -162,6 +179,24 @@ for r in rows:
                 stat['이름 불일치'] += 1
     else:
         stat['주소 없음'] += 1
+    # 문 연 달: 같은 주소의 영업 중 인허가 가운데 이름이 같은 곳의 인허가일자. 이름이 다르면 붙이지 않는다(남의 날짜를 빌려 오지 않는다).
+    ym = 0
+    if k and k in lic_all:
+        full = norm(raw + branch)
+        bj, bs = -1, 0.0
+        for j, c in enumerate(lic_all[k]):
+            if b >= 0:
+                s = 1.0 + similar(full, c[0]) if c[1] == b else 0.0
+            else:
+                s = similar(n, c[0])
+            if s > bs:
+                bj, bs = j, s
+        if bs >= 0.6:
+            ym = lic_all[k][bj][2]
+            used.add((k, bj))
+    if k:
+        at_addr[k].append(ym > 0)
+    since.append(ym)
     disp = raw if not branch or branch in raw else raw + ' ' + branch
     sido, sgg, dong = r['시도명'].strip(), r['시군구명'].strip() or r['시도명'].strip(), r['행정동명'].strip() or '기타'
     si = sido_ix.setdefault(sido, len(sido_ix))
@@ -181,6 +216,70 @@ for r in rows:
     dongs.append(di)
     roads.append(road)
     floors.append(-1 if fl.startswith('지') else int(fl) if fl.isdigit() else 0)
+
+# 2-1. 카페 목록(상가정보)은 석 달에 한 번 나와서 최근에 문 연 카페가 빠져 있다. 인허가 자료에서 최근 열두 달 사이에 허가받은 카페를 더한다.
+#   - 업태가 커피숍, 전통찻집이거나, 이름으로 브랜드를 알아본 곳이거나, 휴게음식점(일반음식점은 업태가 까페인 곳) 가운데 이름에 카페, 커피가 든 곳만.
+#   - 인허가 자료에는 행정동과 위경도가 없다. 상가정보에 같은 건물(도로명주소)이 있을 때만 그 건물의 행정동과 좌표를 붙여서 더한다. 없으면 더하지 않는다.
+#   - 그 주소에 인허가와 짝을 못 지은 카페가 이미 있으면 같은 가게일 수 있으므로 더하지 않는다(두 번 찍히지 않게).
+NEW_TYPES = ('커피숍', '전통찻집')
+NEW_WORD = re.compile(r'카페|까페|커피|coffee|cafe', re.I)
+NOT_NEW = re.compile(r'호프|포차|부동산|공인중개|당구|노래|pc방|피씨방|편의점|만화카페|키즈카페|보드게임|보드카페|스터디카페|독서실|웨딩|뷔페|학원|네일|식당|다방|주점|술|pc\s*\)?\s*(?:카페|cafe|방)|피씨\s*(?:\(pc\))?\s*(?:카페|방)|스터디|만화|키즈|보드|룸카페|사주|타로|휴게실', re.I)
+FLOOR = re.compile(r'(지하)?\s*(\d+)\s*층')
+bpath = os.path.join(workdir, 'buildings.csv')
+added = collections.Counter()
+if os.path.exists(bpath):
+    latest = max((c[2] for v in lic_all.values() for c in v), default=0)
+    cut = (latest // 100 - 1) * 100 + latest % 100          # 열두 달 전
+    want = collections.defaultdict(list)
+    for k, v in lic_all.items():
+        for j, c in enumerate(v):
+            if c[2] < cut or (k, j) in used:
+                continue
+            nm = c[5]
+            if NOT_NEW.search(nm):
+                continue
+            ok = (not c[7] and (c[3] in NEW_TYPES or c[1] >= 0)) or (NEW_WORD.search(nm) and (c[3] == '까페' if c[7] else c[3] in ('기타 휴게음식점', '떡카페', '아이스크림', '제과점영업')))
+            if ok:
+                want[k].append(c)
+    bld = {}
+    with open(bpath, encoding='utf-8', newline='') as f:
+        r2 = csv.reader(f)
+        next(r2)
+        for row in r2:
+            k = addr_key(row[0])
+            if k in want and k not in bld:
+                bld[k] = row
+    for k, v in want.items():
+        if k not in bld:
+            added['건물을 못 찾아 넣지 않음'] += len(v)
+            continue
+        if not all(at_addr.get(k, [])):
+            added['같은 주소에 짝 없는 카페가 있어 넣지 않음'] += len(v)
+            continue
+        got = []
+        for c in v:
+            if any(similar(c[0], g[0]) >= 0.6 for g in got):
+                added['같은 가게가 두 줄'] += 1
+                continue
+            got.append(c)
+            row = bld[k]
+            sido, sgg, dong = row[1], row[2] or row[1], row[3] or '기타'
+            si = sido_ix.setdefault(sido, len(sido_ix))
+            gi = sgg_ix.setdefault((si, sgg), len(sgg_ix))
+            di = dong_ix.setdefault((gi, dong), len(dong_ix))
+            road = row[0]
+            pre = row[1] + ' ' + row[2] + ' '
+            if road.startswith(pre):
+                road = road[len(pre):]
+            m = FLOOR.search(c[6])
+            names.append(c[5]); ltypes.append(c[3]); closed.append(False); since.append(c[2])
+            lats.append(round(float(row[5]) * 1e5)); lngs.append(round(float(row[4]) * 1e5))
+            bidx.append(brand_of(c[5].replace(' ', ''))); areas.append(0 if c[3] == '뷔페식' else round(c[4]))
+            dongs.append(di); roads.append(road)
+            floors.append(0 if not m else -1 if m.group(1) else int(m.group(2)))
+            added['넣음'] += 1
+    print('최근 열두 달(%d 이후) 인허가에서 더한 카페' % cut, dict(added))
+print('문 연 달을 아는 카페', sum(1 for y in since if y), '/', len(since))
 
 # 3. 좌표를 카카오에서 받은 실제 매장 좌표로 바꾼다.
 #    공공데이터 좌표는 건물 주소의 좌표라서 같은 건물의 카페가 한 점에 포개지고, 실제 매장 자리와도 어긋난다.
@@ -293,9 +392,11 @@ if os.path.exists(places_path):
     print('카카오 좌표로 바꾼 카페', len(new_xy), '두 줄이라 한 줄로 합친 카페', len(dups))
 if drop:
     keep = [i for i in range(len(names)) if i not in drop]
-    names, lats, lngs, bidx, areas, dongs, roads, floors, in_kakao, kid, pub_lats, pub_lngs = (
-        [arr[i] for i in keep] for arr in (names, lats, lngs, bidx, areas, dongs, roads, floors, in_kakao, kid, pub_lats, pub_lngs))
+    names, lats, lngs, bidx, areas, dongs, roads, floors, in_kakao, kid, pub_lats, pub_lngs, since = (
+        [arr[i] for i in keep] for arr in (names, lats, lngs, bidx, areas, dongs, roads, floors, in_kakao, kid, pub_lats, pub_lngs, since))
 print(len(names), dict(stat))
+ys = collections.Counter(y for y in since if y)
+print('문 연 달을 아는 카페(남은 것)', sum(ys.values()), '최근 달:', sorted(ys.items())[-14:])
 got = [a for a in areas if a > 0]
 print('면적 있음', len(got), '%.1f%%' % (100 * len(got) / len(names)))
 for t in (100, 200, 330, 500, 1000):
@@ -309,6 +410,7 @@ data = {
     'name': names, 'lat': lats, 'lng': lngs, 'brand': bidx,
     'area': areas, 'dongOf': dongs, 'road': roads, 'floor': floors,
     'kid': kid,
+    'since': since,             # 문 연 달(YYYYMM, 인허가일자 기준). 모르면 0
     'kakao': in_kakao,          # 1: 카카오 지도에서 확인된 카페(좌표도 카카오 것), 0: 카카오에 없어서 공공데이터 좌표 그대로
 }
 def write(path, d):
