@@ -1124,7 +1124,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   function refilter() {
     var k, i, r;
     // 고른 지역 안에 있는 동만 통과시킨다.
-    for (k = 0; k < regMask.length; k++) { regMask[k] = S.reg < 0 ? 1 : 0; for (r = dongReg[k]; r >= 0 && !regMask[k]; r = rParent[r]) if (r === S.reg) regMask[k] = 1; }
+    // 환경설정에서 지역 경계를 껐으면 지역으로 자르지 않는다(보이지 않는 선 밖의 카페가 사라지면 이상하다).
+    for (k = 0; k < regMask.length; k++) { regMask[k] = S.reg < 0 || !S.outline ? 1 : 0; for (r = dongReg[k]; r >= 0 && !regMask[k]; r = rParent[r]) if (r === S.reg) regMask[k] = 1; }
     rCnt.fill(0); rSx.fill(0); rSy.fill(0);
     var wantChair = chairBits(Object.keys(S.chairs).join(''));
     var anySel = nKeys(S.cats) + nKeys(S.brands) > 0, minArea = S.bigPy * PYEONG, n = 0;
@@ -2251,11 +2252,11 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     // 환경설정
     var conf = el('div', 'fsec');
     conf.appendChild(el('div', 'ftitle', '환경설정'));
-    conf.appendChild(toggleRow('지역 경계 보이기', S.outline, function (v) { S.outline = v; persist(); requestDraw(); }));
-    // 시작할 때 보여 줄 곳: 다음에 열 때부터 적용된다.
+    conf.appendChild(toggleRow('지역 경계', S.outline, function (v) { S.outline = v; refilter(); draw(); renderChips(); persist(); }));
+    // 앱 시작 위치: 다음에 열 때부터 적용된다.
     var st = el('div', 'mopt'), stTabs = el('div', 'sort');
-    st.appendChild(el('span', null, '시작할 때 보여 줄 곳'));
-    [['last', '마지막 본 곳'], ['korea', '전국'], ['me', '내 위치']].forEach(function (o) {
+    st.appendChild(el('span', null, '앱 시작 위치'));
+    [['me', '내 위치'], ['korea', '전국'], ['last', '마지막 본 곳']].forEach(function (o) {
       var bt = btn(null, o[1], function () { S.start = o[0]; persist(); renderPanel(); });
       bt.setAttribute('aria-pressed', String(S.start === o[0]));
       stTabs.appendChild(bt);
@@ -2876,7 +2877,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
         me = new maplibregl.Marker({ element: d }).setLngLat(ll).addTo(map);
       } else me.setLngLat(ll);
       myLoc = { x: (ll[0] + 180) / 360, y: mercY(ll[1]) };
-      if (done) done(); else map.easeTo({ center: ll, zoom: Math.max(map.getZoom(), 15), duration: 600 });
+      // 내 위치로는 휙 넘어가지 않고 천천히 옮긴다(멀수록 더 오래, 길어도 3.5초). 갑자기 화면이 바뀌어 놀란다는 말을 들었다.
+      if (done) done(); else map.flyTo({ center: ll, zoom: Math.max(map.getZoom(), 15), speed: .7, curve: 1.2, maxDuration: 3500, essential: true });
     }, function () { toast('위치를 가져오지 못했어요. 브라우저에서 위치 권한을 허용해 주세요.'); }, { enableHighAccuracy: true, timeout: 10000 });
   }
   // 누르면 동전처럼 뒤집히면서 "OO 전체 보기"(흰색)와 "동별로 보기"(기본색)가 바뀐다. 글자와 색은 뒤집히는 중간에 바꾼다.
