@@ -250,11 +250,11 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .opt svg.i { width: 15px; height: 15px; vertical-align: -3px; margin-right: 5px; }
 .opt[aria-pressed=true] svg.i { fill: currentColor; }
 /* 카드 맨 아래 줄: 왼쪽에 찜, 오른쪽에 폐업 신고. 폐업 신고는 자주 누르는 단추가 아니라서 테두리 없이 옅게 둔다. */
-/* 콘센트 있는 자리: 이름표를 위에 두고 단추 셋을 한 줄에 같은 너비로 놓는다. */
-.rec .k.wide { grid-column: 1 / -1; margin-bottom: -2px; }
-.rec .opts.one { grid-column: 1 / -1; flex-wrap: nowrap; }
-.rec .opts.one .opt { flex: 1; min-width: 0; padding: 0 6px; white-space: nowrap; font-size: 12.5px; }
-.rec .acts { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+/* 투표 단추는 한 줄에 같은 너비로 놓는다. */
+.rec .opts.one { flex-wrap: nowrap; }
+.rec .opts.one .opt { flex: 1; min-width: 0; padding: 0 6px; white-space: nowrap; }
+.rec .opts.three .opt { font-size: 12.5px; }
+.rec .acts { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .opt.quiet { border-color: transparent; color: var(--ink-3); padding: 0 8px; }
 .opt.quiet:hover { color: var(--ink); border-color: var(--line-2); }
 .opt.quiet[aria-pressed=true] { background: var(--pri); border-color: var(--pri); color: var(--on-pri); }
@@ -266,33 +266,38 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .opt[aria-pressed=true] { background: var(--pri); border-color: var(--pri); color: var(--on-pri); }
 /* 단추 안에 적는 사람 수(그렇게 기록한 사람이 몇 명인지) */
 .opt .n { margin-left: 6px; font-weight: 700; font-variant-numeric: tabular-nums; opacity: .5; }
+.opt .n:empty { display: none; }
 .opt[aria-pressed=true] .n { opacity: .8; }
-.rec { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; align-items: center; padding-top: 12px; border-top: 1px solid var(--line); }
-.rec .k { font-size: 13px; color: var(--ink-3); }
-.rec .k small { display: block; margin-top: 2px; font-size: 11.5px; font-weight: 650; color: var(--ink-2); }
+/* 카드의 투표 칸: 콘센트 좌석 덩어리와 편의 덩어리. 덩어리마다 제목 오른쪽에 몇 명이 투표했는지 적는다. */
+.rec { display: flex; flex-direction: column; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+.rec .vh { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.rec .vh b { font-size: 14px; font-weight: 700; }
+.rec .vh small { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.rec .sep { height: 1px; background: var(--line); margin: 4px 0; }
+/* 콘센트가 있다고 한 사람이 있을 때만 펼쳐지는 딸린 물음(어느 자리에 있는지). 아래로 스르륵 열리고 닫힌다. */
+.rec .more { display: grid; grid-template-rows: 0fr; margin-top: -10px; transition: grid-template-rows .24s ease, margin-top .24s ease; }
+.rec .more.on { grid-template-rows: 1fr; margin-top: 0; }
+.rec .more > div { overflow: hidden; min-height: 0; }
+.rec .more .in { display: flex; flex-direction: column; gap: 7px; margin-left: 2px; padding-left: 10px; border-left: 2px solid var(--pri); }
+.rec .more .q { font-size: 12px; color: var(--ink-3); }
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 /* 카페 카드 안에 띄우는 카카오맵, 네이버지도 화면 */
 /* 카페 카드: 얇은 머리줄(이름, 단추) 아래를 카카오맵의 그 가게 화면이 전부 차지한다.
-   주소, 넓이, 콘센트 좌석 기록은 머리줄의 단추를 누르면 지도 위에 덮여 나온다. */
+   주소, 넓이, 투표는 머리줄의 "정보·투표" 단추를 누르면 지도 위로 내려온다. */
 #panel[data-kind=detail][data-embed] { height: 100%; }
-/* 머리줄: 맨 위 가운데의 손잡이 막대, 그 아래 왼쪽에 카페 아이콘과 종류, 오른쪽에 콘센트와 넓이를 적은 단추.
+/* 머리줄: 맨 위 가운데의 손잡이 막대, 그 아래 왼쪽에 카페 아이콘과 종류, 오른쪽에 "정보·투표" 단추.
    머리줄을 잡고 아래로 쓸어내리면 카드가 내려가며 닫힌다. */
 .dh { position: relative; display: flex; align-items: center; gap: 8px; padding: 16px 12px 10px 14px; flex: none; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
 .dh::before { content: ""; position: absolute; left: 50%; top: 6px; width: 38px; height: 4px; margin-left: -19px; border-radius: 2px; background: var(--line-2); }
 .dh .pin { flex: none; }
 .dh .kd { flex: 1; min-width: 0; font-size: 14px; font-weight: 750; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dh .ib { flex: none; }
-/* 콘센트와 넓이를 한눈에 보여 주는 단추. 누르면 기록하는 판이 열린다. */
-.sum { flex: none; display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 10px 0 13px; border-radius: 999px; border: 1px solid transparent; background: var(--surface-2); font-size: 13px; font-weight: 700; cursor: pointer; }
+/* 주소, 넓이, 투표가 든 판을 여닫는 단추. 판이 열려 있으면 화살표가 위를 본다. */
+.sum { flex: none; display: inline-flex; align-items: center; gap: 5px; height: 36px; padding: 0 10px 0 13px; border-radius: 999px; border: 1px solid transparent; background: var(--surface-2); font-size: 13px; font-weight: 700; cursor: pointer; }
 .sum:hover { border-color: var(--ink-3); }
 .sum[aria-pressed=true] { background: var(--pri); border-color: var(--pri); color: var(--on-pri); }
-.sum .st { display: inline-flex; align-items: center; gap: 5px; }
-.sum .st i { width: 8px; height: 8px; border-radius: 50%; background: var(--line-2); }
-.sum .st.yes i { background: var(--ok); }
-.sum .st.no i { background: var(--ink-3); }
-.sum .sz { color: var(--ink-3); font-variant-numeric: tabular-nums; padding-left: 7px; border-left: 1px solid var(--line-2); }
-.sum[aria-pressed=true] .sz { color: inherit; opacity: .75; border-color: rgba(255, 255, 255, .3); }
-.sum .i { width: 14px; height: 14px; opacity: .6; }
+.sum .i { width: 14px; height: 14px; opacity: .6; transition: transform .24s ease; }
+.sum[aria-pressed=true] .i { transform: rotate(180deg); }
 /* 같은 건물 묶음을 눌렀을 때 점 위에 뜨는 목록 */
 #pile { position: absolute; z-index: 24; transform: translate(-50%, -100%); min-width: 160px; max-width: 270px; max-height: 232px; overflow-y: auto; padding: 6px; background: var(--surface); border-radius: 14px; box-shadow: var(--sh-2); }
 .prow { display: flex; align-items: center; gap: 9px; width: 100%; padding: 7px 10px 7px 8px; border-radius: 9px; text-align: left; font-size: 14px; font-weight: 650; }
@@ -315,7 +320,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .sk-map i { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: #d3d7de; border: 2px solid #fff; }
 @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 @media (max-width: 760px) { .sk-bar { width: calc(100% - 28px); } }
-/* 콘센트와 넓이 단추: 처음 한 번만 살짝 커졌다 돌아오며 눈에 띄게 한다. */
+/* 정보·투표 단추: 처음 한 번만 살짝 커졌다 돌아오며 눈에 띄게 한다. */
 @keyframes nudge { 0%, 100% { transform: scale(1); } 40% { transform: scale(1.08); } }
 .sum.nudge { animation: nudge .6s ease 0.5s 2; }
 @media (prefers-reduced-motion: reduce) { .sum.nudge, .sk::after, .sk-map::after { animation: none; } }
@@ -326,7 +331,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 #panel.rise { animation: cardUp .26s cubic-bezier(.2, .8, .2, 1); }
 @media (max-width: 760px) { #panel.rise { animation: sheetUp .32s cubic-bezier(.2, .8, .2, 1); } }
 @media (prefers-reduced-motion: reduce) { #panel.rise { animation: none; } }
-.dbody { position: relative; flex: 1; min-height: 0; border-top: 1px solid var(--line); }
+.dbody { position: relative; flex: 1; min-height: 0; overflow: hidden; border-top: 1px solid var(--line); }
 /* 투표할 때 뜨는 로그인 창 */
 #login { position: absolute; inset: 0; z-index: 60; background: rgba(15, 20, 30, .45); display: grid; place-items: center; padding: 20px; }
 .lbox { width: min(340px, 100%); background: var(--surface); border-radius: 18px; box-shadow: var(--sh-2); padding: 22px 20px 14px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
@@ -337,8 +342,12 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 /* 다른 사람들이 없어졌다고 알린 카페: 카드 윗줄 아래에 한 줄로 알린다. */
 .gonebar { flex: none; padding: 7px 14px; font-size: 12.5px; font-weight: 650; color: var(--ink); background: color-mix(in srgb, #f59f00 16%, var(--surface)); border-top: 1px solid var(--line); }
 .dbody iframe { display: block; width: 100%; height: 100%; border: 0; background: var(--surface-2); }
-.dscrim { position: absolute; inset: 0; z-index: 1; background: rgba(15, 20, 30, .28); }
-.dpop { position: absolute; left: 0; right: 0; top: 0; z-index: 2; max-height: 100%; overflow-y: auto; background: var(--surface); padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px; border-radius: 0 0 18px 18px; box-shadow: 0 12px 28px rgba(15, 20, 30, .22); }
+/* 판은 머리줄 아래에서 아래로 스르륵 내려오고, 닫을 때는 위로 스르륵 올라간다. 닫힌 동안에는 눌리지 않게 숨긴다. */
+.dscrim { position: absolute; inset: 0; z-index: 1; background: rgba(15, 20, 30, .28); opacity: 0; visibility: hidden; transition: opacity .26s ease, visibility 0s .26s; }
+.dscrim.on { opacity: 1; visibility: visible; transition: opacity .26s ease; }
+.dpop { position: absolute; left: 0; right: 0; top: 0; z-index: 2; max-height: 100%; overflow-y: auto; background: var(--surface); padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px; border-radius: 0 0 18px 18px; box-shadow: 0 12px 28px rgba(15, 20, 30, .22); transform: translateY(-102%); visibility: hidden; transition: transform .28s cubic-bezier(.4, 0, .6, 1), visibility 0s .28s; }
+.dpop.on { transform: none; visibility: visible; transition: transform .3s cubic-bezier(.2, .8, .2, 1); }
+@media (prefers-reduced-motion: reduce) { .dscrim, .dscrim.on, .dpop, .dpop.on, .rec .more, .sum .i { transition: none; } }
 @media (min-width: 761px) { #panel[data-kind=detail][data-embed] { width: 440px !important; } }
 
 /* 아래쪽: 개수 단추, 지도 단추 */
@@ -878,7 +887,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     pushGone(i);
   }
   // 24시간, 주차 가능: 전국을 덮는 공식 자료가 없어서 사용자 투표로 모은다(한 사람이 "맞아요" 한 번).
-  // 비트 1은 24시간, 2는 주차 가능. tagMine: 내 표시 { 카페 이름표: 비트 }, tagVotes: 다른 사람 수 { 카페: [24시간, 주차] }, tagOn: 그렇다고 알려진 카페.
+  // 비트 1은 24시간, 2는 주차 가능. tagMine: 내 표시 { 카페 이름표: 비트 }, tagVotes: 다른 사람 수 { 카페: [24시간, 주차, 하나라도 누른 사람] }, tagOn: 그렇다고 알려진 카페.
   // 이름에 "24시"가 든 카페는 가게가 스스로 밝힌 것이라 투표가 없어도 24시간으로 본다.
   var tagMine = load('cafemap.tags') || {}, myTag = new Uint8Array(N), tagVotes = {}, tagOn = new Uint8Array(N);
   var NAME24 = /24\s*시|24\s*h(?![a-z])/i, name24 = new Uint8Array(N);
@@ -1021,9 +1030,10 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
           var rec = all[k][u], bits = (rec && rec.h === 1 ? 1 : 0) | (rec && rec.p === 1 ? 2 : 0);
           if (who && u === who.u) { if (bits) srv[k] = bits; continue; }
           if (j === undefined) continue;
-          var v = tagVotes[j] || (tagVotes[j] = [0, 0]);
+          var v = tagVotes[j] || (tagVotes[j] = [0, 0, 0]);
           if (bits & 1) v[0]++;
           if (bits & 2) v[1]++;
+          if (bits) v[2]++;
         }
       }
       // 서버의 내 계정 것이 기준이다(로그인하지 않았으면 비운다).
@@ -2804,7 +2814,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     openPanel('detail'); requestDraw();
   }
   // 카페 카드. 머리줄(이름, 단추) 아래를 카카오맵의 그 가게 화면으로 꽉 채운다.
-  // 주소, 넓이, 콘센트 좌석 기록은 머리줄의 "콘센트·넓이" 단추를 누르면 지도 위에 덮여 나온다.
+  // 주소, 넓이, 투표는 머리줄의 "정보·투표" 단추를 누르면 지도 위로 내려온다.
   // 카카오 장소 번호가 없는 카페는 띄울 화면이 없어서, 그 내용을 카드에 바로 보여 준다.
   function renderDetail(i) {
     var b = D.brand[i], g = grp[i], a = D.area[i], fl = D.floor[i], lat = D.lat[i] / 1e5, lng = D.lng[i] / 1e5;
@@ -2839,37 +2849,42 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     // 문 연 달. 인허가 자료에서 같은 가게를 찾은 카페만 안다. 모르면 줄을 넣지 않는다.
     var ym = D.since ? D.since[i] : 0;
     if (ym) { var f3 = fact('개업'), ago = monthsAgo(i); f3.appendChild(el('b', null, Math.floor(ym / 100) + '년 ' + (ym % 100) + '월')); if (ago < 3) f3.appendChild(el('small', null, '허가받은 달이에요. 아직 문 열기 전일 수 있어요')); else if (ago < 12) { var nw = el('small', 'newmark'); nw.appendChild(icon('spark')); nw.appendChild(document.createTextNode('새로 열었어요')); f3.appendChild(nw); } }
-    // 콘센트 좌석 기록. 투표처럼 단추마다 그렇게 기록한 사람 수를 적는다(아무도 안 했으면 0).
-    // 눌린 단추가 내 기록이다. 자리 종류를 누르면 콘센트 좌석이 있다는 뜻이므로 "있어요"도 같이 켠다.
-    var rec = el('div', 'rec'), r1 = el('div', 'opts'), r2 = el('div', 'opts');
-    function voteBtn(text, fn) { var bt = btn('opt', text, function () { needLogin(fn); }), n = el('span', 'n', '0'); bt.appendChild(n); return [bt, n, text]; }
+    // 투표 칸. 콘센트 좌석 덩어리와 편의 덩어리로 나누고, 덩어리마다 제목 오른쪽에 몇 명이 투표했는지 적는다.
+    // 단추 안의 숫자는 그렇게 기록한 사람 수다(아무도 없으면 적지 않는다). 눌린 단추가 내 기록이다.
+    var rec = el('div', 'rec'), r1 = el('div', 'opts one'), r2 = el('div', 'opts one three');
+    function voteBtn(text, fn) { var bt = btn('opt', text, function () { needLogin(fn); }), n = el('span', 'n'); bt.appendChild(n); return [bt, n, text]; }
     function setBtn(x, on, count) {
-      x[0].setAttribute('aria-pressed', String(on)); x[1].textContent = count;
+      x[0].setAttribute('aria-pressed', String(on)); x[1].textContent = count ? count + '명' : '';
       x[0].setAttribute('aria-label', x[2] + ', ' + count + '명이 기록' + (on ? ', 내 기록' : ''));
     }
+    function vhead(title) { var hd = el('div', 'vh'), sm = el('small'); hd.appendChild(el('b', null, title)); hd.appendChild(sm); rec.appendChild(hd); return sm; }
+    function people(n) { return n ? n + '명 투표' : '아직 투표 없음'; }
+    // 콘센트 좌석: 있는지 없는지. 있다고 한 사람이 있을 때만 그 아래에 어느 자리에 있는지를 묻는 칸이 펼쳐진다.
+    // 자리 종류를 누르면 콘센트 좌석이 있다는 뜻이므로 "있어요"도 같이 켠다.
+    var total = vhead('콘센트 좌석');
     var yes = voteBtn('있어요', function () { myO[i] = myO[i] === 1 ? 0 : 1; store(); });
     var no = voteBtn('없어요', function () { myO[i] = myO[i] === -1 ? 0 : -1; store(); });
     r1.appendChild(yes[0]); r1.appendChild(no[0]);
+    rec.appendChild(r1);
     var chairBtns = CHAIRS.map(function (c) {
       var x = voteBtn(c[1], function () { if (myO[i] !== 1) { myO[i] = 1; myC[i] = 0; } myC[i] ^= c[2]; store(); });
       x[0].title = c[4];
       r2.appendChild(x[0]);
       return [x, c];
     });
-    // 첫 줄: 콘센트 좌석이 있는지. 옆에 지금까지 몇 명이 투표했는지 적는다(내가 처음이면 "총 1명 투표").
-    // 둘째 줄: 있다고 한 사람이 있을 때만, 그 콘센트가 어떤 자리에 있는지를 묻는다.
-    var k1 = el('div', 'k', '콘센트 좌석'), total = el('small'), k2 = el('div', 'k', '콘센트 있는 자리');
-    k1.appendChild(total);
-    k2.classList.add('wide'); r2.className = 'opts one';
-    rec.appendChild(k1); rec.appendChild(r1); rec.appendChild(k2); rec.appendChild(r2);
-    // 편의: 24시간, 주차 가능. 그렇다고 아는 사람이 누른다. 숫자는 누른 사람 수.
-    var rT = el('div', 'opts');
+    var more = el('div', 'more'), moreClip = el('div'), moreIn = el('div', 'in');
+    moreIn.appendChild(el('div', 'q', '어느 자리에 있나요')); moreIn.appendChild(r2);
+    moreClip.appendChild(moreIn); more.appendChild(moreClip); rec.appendChild(more);
+    rec.appendChild(el('div', 'sep'));
+    // 편의: 24시간, 주차 가능. 그렇다고 아는 사람이 누른다.
+    var totalT = vhead('편의'), rT = el('div', 'opts one');
     var b24 = voteBtn('24시간', function () { setTag(i, 1); sync(); if (S.h24) refilter(); requestDraw(); });
     var bPk = voteBtn('주차 가능', function () { setTag(i, 2); sync(); if (S.park) refilter(); requestDraw(); });
     rT.appendChild(b24[0]); rT.appendChild(bPk[0]);
-    rec.appendChild(el('div', 'k', '편의')); rec.appendChild(rT);
-    // 셋째 줄: 찜과 없어진 카페 표시.
-    var r3 = el('div', 'opts');
+    rec.appendChild(rT);
+    rec.appendChild(el('div', 'sep'));
+    // 맨 아랫줄: 찜과 폐업 신고.
+    var r3 = el('div', 'acts');
     var bWant = btn('opt', null, function () { needLogin(function () { setWant(i, !want[i]); sync(); if (S.seen !== 'all') refilter(); requestDraw(); }); });
     bWant.classList.add('heart');
     bWant.appendChild(icon('heart')); bWant.appendChild(document.createTextNode('찜'));
@@ -2877,20 +2892,19 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     var bGone = voteBtn('폐업 신고', function () { setGone(i, !myGone[i]); sync(); refilter(); requestDraw(); });
     bGone[0].classList.add('quiet'); bGone[0].insertBefore(icon('flag'), bGone[0].firstChild);
     bGone[0].title = '가 보니 이 카페가 없을 때 눌러 주세요';
-    r3.className = 'acts';
     r3.appendChild(bWant); r3.appendChild(bGone[0]);
     rec.appendChild(r3);
     function sync() {
       var v = votes[i] || [0, 0, 0, 0, 0];
       var ny = v[0] + (myO[i] === 1 ? 1 : 0), nn = v[1] + (myO[i] === -1 ? 1 : 0);
-      total.textContent = ny + nn ? '총 ' + (ny + nn) + '명 투표' : '아직 투표 없음';
+      total.textContent = people(ny + nn);
       bWant.setAttribute('aria-pressed', String(want[i] === 1));
-      var tv = tagVotes[i] || [0, 0];
+      var tv = tagVotes[i] || [0, 0, 0];
+      totalT.textContent = people((tv[2] || 0) + (myTag[i] ? 1 : 0));
       setBtn(b24, (myTag[i] & 1) !== 0, tv[0] + (myTag[i] & 1 ? 1 : 0));
       setBtn(bPk, (myTag[i] & 2) !== 0, tv[1] + (myTag[i] & 2 ? 1 : 0));
       setBtn(bGone, myGone[i] === 1, (goneVotes[i] || 0) + (myGone[i] === 1 ? 1 : 0));
-      bGone[1].hidden = bGone[1].textContent === '0';   // 신고가 없으면 숫자를 적지 않는다.
-      k2.hidden = r2.hidden = ny === 0;
+      more.classList.toggle('on', ny > 0); more.inert = ny === 0;
       setBtn(yes, myO[i] === 1, v[0] + (myO[i] === 1 ? 1 : 0));
       setBtn(no, myO[i] === -1, v[1] + (myO[i] === -1 ? 1 : 0));
       chairBtns.forEach(function (cb) { var on = (myC[i] & cb[1][2]) !== 0; setBtn(cb[0], on, v[cb[1][3]] + (on ? 1 : 0)); });
@@ -2899,27 +2913,23 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       if (myO[i] !== 1) myC[i] = 0;
       saveMine(i); tally(i); sync(); push(i);
       if (S.outlet) refilter();
-      requestDraw(); sum();
+      requestDraw();
     }
     sync();
-    var sum = function () {};
     var body = null;
     if (pid) {
       // 지도 위에 덮이는 판. 단추를 다시 누르거나 판 바깥의 어두운 곳을 누르면 닫힌다.
-      var scrim = el('div', 'dscrim'), pop = el('div', 'dpop');
-      // 머리줄 오른쪽 단추: 콘센트 좌석이 있는지와 넓이를 바로 보여 주고, 누르면 판이 열린다.
-      var info = btn('sum', null, function () { openPop(pop.hidden); }), st = el('span', 'st'), stText = el('span');
-      st.appendChild(el('i')); st.appendChild(stText); info.appendChild(st);
-      if (a > 0) info.appendChild(el('span', 'sz', pyeong(a) + '평'));
+      var scrim = el('div', 'dscrim'), pop = el('div', 'dpop'), popOn = false;
+      // 머리줄 오른쪽 단추: 누르면 주소, 넓이, 투표가 든 판이 아래로 내려오고, 다시 누르면 위로 올라가며 닫힌다.
+      var info = btn('sum', '정보·투표', function () { openPop(!popOn); });
       info.appendChild(icon('down'));
-      sum = function () {
-        st.className = 'st' + (outlet[i] === 1 ? ' yes' : outlet[i] === -1 ? ' no' : '');
-        // 몇 명이 그렇게 투표했는지도 같이 적는다(내가 처음이면 1명).
-        var v = votes[i] || [0, 0], ny = v[0] + (myO[i] === 1 ? 1 : 0), nn = v[1] + (myO[i] === -1 ? 1 : 0);
-        stText.textContent = outlet[i] === 1 ? '콘센트 있어요 ' + ny + '명' : outlet[i] === -1 ? '콘센트 없어요 ' + nn + '명' : '콘센트';
+      // 폰에서 카드가 반만 올라와 있으면 판이 다 보이지 않으므로, 판을 열 때 카드도 끝까지 올린다.
+      var openPop = function (on) {
+        popOn = on;
+        pop.classList.toggle('on', on); scrim.classList.toggle('on', on); pop.inert = !on;
+        info.setAttribute('aria-pressed', String(on));
+        if (on && mobile.matches && snap !== 'full') setSnap('full', true);
       };
-      sum();
-      var openPop = function (on) { pop.hidden = scrim.hidden = !on; info.setAttribute('aria-pressed', String(on)); };
       info.setAttribute('aria-haspopup', 'dialog');
       scrim.addEventListener('click', function () { openPop(false); });
       pop.appendChild(dl); pop.appendChild(rec);
@@ -2961,7 +2971,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   // 머리줄을 잡고 끌면 카드가 손가락을 따라 움직인다.
   // 폰에서 카카오맵 화면이 든 카드는 두 단계다: 반만 보이는 상태에서 올리면 전체, 전체에서 내리면 반, 반에서 더 내리면 닫힘.
   // 머리줄을 톡 누르면 반과 전체를 오간다. 그 밖의 카드는 내리면 닫히기만 한다.
-  var nudged = false;      // 콘센트와 넓이 단추를 이번에 연 뒤로 한 번 강조했는가
+  var nudged = false;      // 정보·투표 단추를 이번에 연 뒤로 한 번 강조했는가
   function sheetDrag(h) {
     var on = false, y0 = 0, dy = 0, t0 = 0, base = 0, two = false;
     h.addEventListener('pointerdown', function (e) {
