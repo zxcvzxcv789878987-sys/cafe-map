@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>카페 지도</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ffffff">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <!-- 검색 사이트에 잡히지 않게 한다. 주소를 아는 사람만 연다. -->
 <meta name="robots" content="noindex, nofollow">
 <!-- 휴대폰 홈 화면에 추가하면 앱처럼 꽉 찬 화면으로 열린다. -->
@@ -225,7 +230,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .dh .kd { flex: 1; min-width: 0; font-size: 14px; font-weight: 750; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dh .ib { flex: none; }
 /* 콘센트와 넓이를 한눈에 보여 주는 단추. 누르면 기록하는 판이 열린다. */
-.sum { flex: none; display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 10px 0 12px; border-radius: 999px; border: 1px solid var(--line-2); font-size: 13px; font-weight: 650; cursor: pointer; }
+.sum { flex: none; display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 10px 0 13px; border-radius: 999px; border: 1px solid transparent; background: var(--surface-2); font-size: 13px; font-weight: 700; cursor: pointer; }
 .sum:hover { border-color: var(--ink-3); }
 .sum[aria-pressed=true] { background: var(--inv); border-color: var(--inv); color: var(--on-inv); }
 .sum .st { display: inline-flex; align-items: center; gap: 5px; }
@@ -241,6 +246,14 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .prow:hover { background: var(--surface-2); }
 .prow .pin { flex: none; }
 .prow span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 처음 열 때 자료를 받는 동안 보이는 표시 */
+#loading { position: absolute; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: var(--surface-2); color: var(--ink-2); font-size: 14px; font-weight: 600; }
+#loading i { width: 30px; height: 30px; border-radius: 50%; border: 3px solid var(--line-2); border-top-color: var(--ink); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+/* 콘센트와 넓이 단추: 처음 한 번만 살짝 커졌다 돌아오며 눈에 띄게 한다. */
+@keyframes nudge { 0%, 100% { transform: scale(1); } 40% { transform: scale(1.08); } }
+.sum.nudge { animation: nudge .6s ease 0.5s 2; }
+@media (prefers-reduced-motion: reduce) { .sum.nudge, #loading i { animation: none; } }
 .none { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); color: var(--ink-3); font-size: 13px; }
 /* 카드는 아래에서 위로 올라오며 나타난다. */
 @keyframes sheetUp { from { transform: translateY(100%); } to { transform: none; } }
@@ -342,6 +355,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     </div>
   </div>
   <div id="toast" hidden></div>
+  <div id="loading"><i></i><span>카페 11만 곳을 불러오는 중</span></div>
 </div>
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
@@ -627,6 +641,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     outlet: !!saved.outlet,   // 콘센트 좌석이 있다고 기록한 곳만 보기
     chairs: {},               // 그 자리 의자 종류로 더 좁히기. n 일반 의자, w 벽면 고정 의자, s 스탠드형 의자
     sort: saved.sort === 'size' ? 'size' : 'near',
+    seen: saved.seen === 'only' || saved.seen === 'not' ? saved.seen : 'all',   // 가 본 곳: all 전부, only 가 본 곳만, not 가 본 곳 빼고
     showAll: false,      // 구 전체 보기를 켰는가. 지역을 바꾸면 꺼진다.
     pins: {},            // 내 브랜드로 담아 둔 브랜드 이름
     tab: saved.tab === 'low' || saved.tab === 'mine' ? saved.tab : 'all'   // 브랜드 목록에 보여 줄 묶음: all 전체, low 저가커피, mine 내 브랜드
@@ -706,6 +721,25 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     if (myO[i]) mine[k] = { o: myO[i], c: myO[i] === 1 ? chairStr(myC[i]) : '' }; else delete mine[k];
     save('cafemap.seat2', mine);
   }
+  // 가 본 곳: 이 기기에만 적어 둔다(다른 사람과 나누지 않는다). { 카페 이름표: 1 }
+  var visited = load('cafemap.visited') || {}, seen = new Uint8Array(N);
+  // 없어진 카페: 가 보니 없더라는 표시. 내 것은 이 기기에 적고 서버에도 올려서, 여러 사람이 같은 말을 하면 지도에서 뺀다.
+  var goneMine = load('cafemap.gone') || {}, myGone = new Uint8Array(N), goneVotes = {};
+  (function () {
+    if (!nKeysEarly(visited) && !nKeysEarly(goneMine)) return;
+    var ix = cidIndex(), k, j;
+    for (k in visited) { j = ix[k]; if (j !== undefined) seen[j] = 1; }
+    for (k in goneMine) { j = ix[k]; if (j !== undefined) myGone[j] = 1; }
+  })();
+  function nKeysEarly(o) { for (var k in o) return 1; return 0; }
+  function setSeen(i, on) { var k = cidOf(i); seen[i] = on ? 1 : 0; if (on) visited[k] = 1; else delete visited[k]; save('cafemap.visited', visited); }
+  function setGone(i, on) {
+    var k = cidOf(i);
+    myGone[i] = on ? 1 : 0;
+    if (on) goneMine[k] = 1; else delete goneMine[k];
+    save('cafemap.gone', goneMine);
+    pushGone(i);
+  }
   function seatCount() { var n = 0; for (var j = 0; j < N; j++) if (outlet[j] === 1) n++; return n; }
 
   // ----- 기록을 모두가 같이 보기 위한 서버(Firebase Realtime Database) -----
@@ -771,13 +805,41 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     }).catch(function () { /* 서버에 닿지 못하면 이 기기의 기록만으로 보여 준다 */ });
   }
   pull();
+  // 없어진 카페 표시도 같은 서버에 올리고 받는다(gone/<카페>/<내 계정>).
+  function pushGone(i) {
+    if (!shareOn) return;
+    var k = cidOf(i), on = myGone[i] === 1;
+    token().then(function (t) {
+      var url = SHARE.db + '/gone/' + k + '/' + who.u + '.json?auth=' + encodeURIComponent(t);
+      return fetch(url, on ? { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ t: { '.sv': 'timestamp' } }) } : { method: 'DELETE' });
+    }).then(function (r) { if (!r.ok) throw new Error('db'); }).catch(function () { /* 다음에 열 때 다시 올린다 */ });
+  }
+  function pullGone() {
+    if (!shareOn) return;
+    fetch(SHARE.db + '/gone.json').then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); }).then(function (all) {
+      var ix = cidIndex(), mineOnServer = {}, k, u, j;
+      goneVotes = {};
+      for (k in all || {}) {
+        j = ix[k];
+        for (u in all[k]) {
+          if (who && u === who.u) { mineOnServer[k] = 1; continue; }
+          if (j !== undefined) goneVotes[j] = (goneVotes[j] || 0) + 1;
+        }
+      }
+      // 이 기기의 내 표시와 서버가 다르면 이 기기 것으로 맞춘다.
+      for (k in goneMine) if (!mineOnServer[k]) { j = ix[k]; if (j !== undefined) pushGone(j); }
+      for (k in mineOnServer) if (!goneMine[k]) { j = ix[k]; if (j !== undefined) pushGone(j); }
+      refilter(); requestDraw();
+    }).catch(function () { /* 서버에 닿지 못하면 내 표시만으로 보여 준다 */ });
+  }
+  pullGone();
   function nKeys(o) { return Object.keys(o).length; }
   function persist() {
     var c = map.getCenter();
     save(STORE, {
       cats: Object.keys(S.cats).map(Number), brands: Object.keys(S.brands).map(function (j) { return D.brands[j][0]; }),
       reg: S.reg >= 0 ? regPath(S.reg) : null,
-      big: S.big, bigPy: S.bigPy, outlet: S.outlet, chairs: Object.keys(S.chairs), sort: S.sort, pins: Object.keys(S.pins), tab: S.tab,
+      big: S.big, bigPy: S.bigPy, outlet: S.outlet, chairs: Object.keys(S.chairs), sort: S.sort, pins: Object.keys(S.pins), tab: S.tab, seen: S.seen,
       view: [c.lat, c.lng, +map.getZoom().toFixed(2)]
     });
   }
@@ -797,6 +859,9 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       var ok = !dabang[i] && (!anySel || S.cats[grp[i]] === true || (b >= 0 && S.brands[b] === true));
       if (ok && S.big && D.area[i] < minArea) ok = false;
       if (ok && S.outlet) ok = outlet[i] === 1 && (!wantChair || (chair[i] & wantChair) !== 0);
+      if (ok && S.seen !== 'all') ok = (seen[i] === 1) === (S.seen === 'only');
+      // 없어진 카페: 내가 없다고 했거나, 다른 사람 두 명 이상이 없다고 한 곳은 지도에서 뺀다.
+      if (ok && (myGone[i] === 1 || (goneVotes[i] || 0) >= 2)) ok = false;
       if (ok) { r = dongReg[D.dongOf[i]]; rCnt[r]++; rSx[r] += mx[i]; rSy[r] += my[i]; }
       pass[i] = ok && regMask[D.dongOf[i]] ? 1 : 0;
       if (pass[i]) n++;
@@ -822,6 +887,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     localIdeographFontFamily: '"Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
   }, mapAt));
   window.cafeMap = map;
+  var ldEl = document.getElementById('loading'); if (ldEl) ldEl.hidden = true;   // 자료를 다 읽었으니 로딩 표시를 내린다.
   window.cafeDraw = function () { draw(); };   // 시험용: 그리는 데 걸리는 시간을 잴 때 쓴다.
   window.cafeTest = { layout: function (r) { var L = tagLayout(r), W = map.getContainer().clientWidth, o = {}; regChildren(r).forEach(function (k) { if (L[k]) { var sh = shapeOf(k); o[rName[k]] = [Math.round((L[k].x - L[k].ax) * 512 * Math.pow(2, map.getZoom())), Math.round((L[k].y - L[k].ay) * 512 * Math.pow(2, map.getZoom())), sh ? Math.round(Math.sqrt((sh.bb[2] - sh.bb[0]) * (sh.bb[3] - sh.bb[1])) * 512 * Math.pow(2, map.getZoom())) : -1]; } }); return o; }, name: function (r) { return rName[r]; }, follow: function () { followView(); return S.reg < 0 ? '전국' : regPath(S.reg); }, reg: function () { return S.reg < 0 ? '전국' : regPath(S.reg); },
     // 경계 점검용: 지역마다 경계가 있는지, 그 지역 카페 가운데 몇 곳이 그 경계 안에 찍히는지 센다.
@@ -1170,6 +1236,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     }
     ctx.drawImage(sp, px - half, py - half, half * 2, half * 2);
     if (outlet[i] === 1) outletBadge(px, py, r);
+    if (seen[i] === 1) seenBadge(px, py, r);
   }
   // 이름 조각(흰 테두리를 두른 글씨). 글씨 너비도 같이 기억한다.
   function labelSprite(i, n) {
@@ -1205,7 +1272,13 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   var labSpot = new Int8Array(N).fill(-1), labGen = new Int32Array(N), layoutGen = 1, lastLayout = 0;   // 카페마다 지난번에 이름을 놓은 자리와 그때의 차례 번호
   var LABEL_ALL = 15.6, LABEL_SOME = 14;   // 이 배율부터 이름을 전부 / 자리가 되는 만큼만 보여 준다.
   function outletBadge(px, py, r) { ctx.beginPath(); ctx.arc(px + r * .72, py - r * .72, 3.6, 0, 6.2832); ctx.fillStyle = C.ok; ctx.fill(); ctx.lineWidth = 1.4; ctx.strokeStyle = C.surface; ctx.stroke(); }
-  function drawDot(i, px, py, r) { paintDot(i, px, py, r); if (outlet[i] === 1) outletBadge(px, py, r); }
+  // 가 본 곳은 점 오른쪽 아래에 작은 체크를 붙인다.
+  function seenBadge(px, py, r) {
+    var x = px + r * .72, y = py + r * .72;
+    ctx.beginPath(); ctx.arc(x, y, 4.2, 0, 6.2832); ctx.fillStyle = C.inv; ctx.fill(); ctx.lineWidth = 1.2; ctx.strokeStyle = C.surface; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - 2, y + .1); ctx.lineTo(x - .5, y + 1.6); ctx.lineTo(x + 2.1, y - 1.5); ctx.lineWidth = 1.3; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = C.onInv; ctx.stroke();
+  }
+  function drawDot(i, px, py, r) { paintDot(i, px, py, r); if (outlet[i] === 1) outletBadge(px, py, r); if (seen[i] === 1) seenBadge(px, py, r); }
   function paintDot(i, px, py, r) {
     var g = grp[i], im = g !== 2 && r >= 8 ? brandImg[D.brand[i]] : null;
     if (im && im.ok) {
@@ -1344,15 +1417,15 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
         if (full) {
           lastLayout = now; layoutGen++;
           for (k = 0; k < labels.length; k++) { var dq = labels[k]; boxes.push([dq[1] - dq[3], dq[2] - dq[3], dq[3] * 2, dq[3] * 2]); }
-          if (!all) { labels.sort(function (p, q) { return D.area[q[0]] - D.area[p[0]] || p[0] - q[0]; }); if (labels.length > 300) labels.length = 300; }
+          if (!all) { labels.sort(function (p, q) { return D.area[q[0]] - D.area[p[0]] || p[0] - q[0]; }); var cap = Math.round(24 + Math.max(0, z - LABEL_SOME) * 70); if (labels.length > cap) labels.length = cap; }
         }
-        var nSpots = all ? 24 : 8;
+        var nSpots = all ? 24 : 4, padX = all ? 2 : 10, padY = all ? 1 : 5;   // 덜 확대했을 때는 이름 사이를 더 띄운다.
         for (k = 0; k < labels.length; k++) {
           var lb = labels[k], ci = lb[0], ls = labelSprite(ci, lb[4]), tw = ls.tw, pick = null;
           if (full) {
             for (var sp = 0; sp < nSpots && !pick; sp++) {
               var cand2 = labelSpot(sp, lb[1], lb[2], lb[3], tw), lx = cand2[0], ly = cand2[1] - 8, free = true;
-              for (j = 0; j < boxes.length; j++) { var bq = boxes[j]; if (lx < bq[0] + bq[2] + 2 && lx + tw + 2 > bq[0] && ly < bq[1] + bq[3] + 1 && ly + 16 + 1 > bq[1]) { free = false; break; } }
+              for (j = 0; j < boxes.length; j++) { var bq = boxes[j]; if (lx < bq[0] + bq[2] + padX && lx + tw + padX > bq[0] && ly < bq[1] + bq[3] + padY && ly + 16 + padY > bq[1]) { free = false; break; } }
               if (free) { pick = cand2; labSpot[ci] = sp; }
             }
             if (!pick && all) { pick = labelSpot(0, lb[1], lb[2], lb[3], tw); labSpot[ci] = 0; }
@@ -1475,6 +1548,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       for (var k = 0; k < data.length; k++) {
         var i = kidIndex.get(+data[k].id);
         if (i === undefined || live[i]) continue;
+        liveFrom.set(i, [mx[i], my[i]]);
         mx[i] = (+data[k].x + 180) / 360; my[i] = mercY(+data[k].y); live[i] = 1; got.push(i);
       }
       if (pg.hasNextPage && pg.current < 3) { liveCalls++; pg.nextPage(); } else done();
@@ -1495,13 +1569,25 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       if (!moved) break;
     }
   }
+  // 건물 자리에 찍혀 있던 점이 실제 자리로 툭 옮겨 가지 않고 0.35초 동안 미끄러져 가게 한다.
+  var liveFrom = new Map();
+  function liveGlide(got) {
+    var items = got.map(function (i) { var f = liveFrom.get(i) || [mx[i], my[i]]; liveFrom.delete(i); return [i, f[0], f[1], mx[i], my[i]]; });
+    var t0 = performance.now();
+    (function step() {
+      var t = Math.min(1, (performance.now() - t0) / 350), e = 1 - Math.pow(1 - t, 3);
+      for (var k = 0; k < items.length; k++) { var it = items[k]; mx[it[0]] = it[1] + (it[3] - it[1]) * e; my[it[0]] = it[2] + (it[4] - it[2]) * e; }
+      draw();
+      if (t < 1) requestAnimationFrame(step);
+    })();
+  }
   function liveNext() {
     if (liveBusy || !liveQueue.length) return;
     liveBusy = true;
     var t = liveQueue.shift(), got = [];
     liveAsk(t[0], t[1], t[2], t[3], 0, got, function () {
       liveBusy = false;
-      if (got.length) { liveSpread(got); requestDraw(); }
+      if (got.length) { liveSpread(got); liveGlide(got); }
       liveNext();
     });
   }
@@ -1528,6 +1614,17 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   map.on('moveend', function () { if (userMove) { userMove = false; followView(); } liveFetch(); draw(); persist(); if (P.kind === 'list') { clearTimeout(listTimer); listTimer = setTimeout(renderPanel, 90); } });
   map.on('resize', requestDraw);
   map.on('load', draw);
+  // 주소 끝에 #c=이름표가 붙어 있으면 그 카페를 바로 연다(카드의 "링크 복사"로 만든 주소).
+  function openFromHash() {
+    var m = /[#&]c=([0-9a-z]+)/.exec(location.hash);
+    if (!m) return;
+    var i = cidIndex()[m[1]];
+    if (i !== undefined) selectCafe(i, true, null);
+  }
+  map.once('load', openFromHash);
+  window.addEventListener('hashchange', openFromHash);
+  // 폰 홈 화면에 앱처럼 추가해서 쓸 수 있게, 그리고 두 번째부터 빨리 뜨게 한다(인터넷 주소로 열었을 때만).
+  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});
   // 출처 표시는 처음부터 접어 둔다. 오른쪽 아래 (i)를 누르면 펼쳐진다.
   (function foldAttrib() {
     var a = document.querySelector('.maplibregl-ctrl-attrib');
@@ -1652,7 +1749,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   }
 
   // ----- 필터 칩 -----
-  function anyFilter() { return nKeys(S.brands) || S.big || S.outlet; }
+  function anyFilter() { return nKeys(S.brands) || S.big || S.outlet || S.seen !== 'all'; }
   function chip(label, on, act, opt) {
     opt = opt || {};
     var c = el('button', 'chip' + (opt.cls ? ' ' + opt.cls : '')); c.type = 'button'; c.dataset.act = act;
@@ -1685,9 +1782,10 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     if (bl) parts.push(bl);
     if (S.big) parts.push(S.bigPy + '평 이상');
     if (S.outlet) parts.push('콘센트');
+    if (S.seen !== 'all') parts.push(S.seen === 'only' ? '가 본 곳' : '안 가 본 곳');
     return parts.join(' · ');
   }
-  function resetFilter() { S.cats = {}; S.brands = {}; S.tab = 'all'; S.big = false; S.outlet = false; S.chairs = {}; }
+  function resetFilter() { S.cats = {}; S.brands = {}; S.tab = 'all'; S.big = false; S.outlet = false; S.chairs = {}; S.seen = 'all'; }
   function regionChip() {
     if (S.reg < 0) return chip('지역', false, 'region', { icon: 'pin', caret: true });
     var c = el('span', 'chip crumb'), chain = regChain(S.reg);
@@ -1910,7 +2008,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     return l;
   }
   function renderFilter() {
-    var h = head('필터'), clear = btn('link', '모두 풀기', function () { resetFilter(); apply(); fillLap(); fillTabs(); fill(); });
+    var h = head('필터'), clear = btn('link', '모두 풀기', function () { resetFilter(); apply(); fillLap(); fillSeen(); fillTabs(); fill(); });
     h.appendChild(clear); h.appendChild(closeBtn()); panel.appendChild(h);
     var sc = el('div', 'scroll'); panel.appendChild(sc);
     function apply() { refilter(); draw(); renderChips(); persist(); clear.hidden = !anyFilter(); }
@@ -1918,6 +2016,20 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 
     // 1. 노트북 작업: 대형카페, 콘센트 좌석. 켠 조건의 세부 설정만 그 아래에 펼친다.
     var lap = el('div', 'fsec'); sc.appendChild(lap);
+    // 가 본 곳: 전부 / 가 본 곳만 / 가 본 곳 빼고
+    var seenBox = el('div', 'fsec'), seenTabs = el('div', 'sort');
+    seenBox.appendChild(el('div', 'ftitle', '가 본 곳')); seenBox.appendChild(seenTabs); sc.appendChild(seenBox);
+    seenTabs.style.display = 'grid'; seenTabs.style.gridTemplateColumns = 'repeat(3, 1fr)'; seenTabs.style.padding = '3px'; seenTabs.style.borderRadius = '11px';
+    function fillSeen() {
+      seenTabs.textContent = '';
+      [['all', '전부'], ['only', '가 본 곳만'], ['not', '가 본 곳 빼고']].forEach(function (o) {
+        var bt = btn(null, o[1], function () { S.seen = o[0]; apply(); fillSeen(); });
+        bt.style.height = '32px'; bt.style.fontSize = '13px'; bt.style.borderRadius = '8px';
+        bt.setAttribute('aria-pressed', String(S.seen === o[0]));
+        seenTabs.appendChild(bt);
+      });
+    }
+    fillSeen();
     function fillLap() {
       lap.textContent = '';
       lap.appendChild(el('div', 'ftitle', '노트북 작업'));
@@ -1980,6 +2092,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       wrap.appendChild(pb);
       return wrap;
     }
+    var moreOpen = {};
     function fill() {
       list.textContent = '';
       var q = brandQ.replace(/\s/g, '').toLowerCase();
@@ -1991,7 +2104,14 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
           var part = rows.filter(function (j) { return brandGroup[j] === g; });
           if (!part.length) return;
           list.appendChild(el('div', 'sec', GROUPS[g].label));
-          part.forEach(function (j) { list.appendChild(brandRow(j)); });
+          // 매장이 많은 순으로 20개만 먼저 보여 주고, 나머지는 "더 보기"를 눌러야 나온다. 고른 브랜드는 늘 보인다.
+          var first = part.filter(function (j, n) { return n < 20 || moreOpen[g] || S.brands[j] === true; });
+          first.forEach(function (j) { list.appendChild(brandRow(j)); });
+          if (first.length < part.length) {
+            var more = btn('btn sm', GROUPS[g].label + ' ' + (part.length - first.length) + '개 더 보기', function () { moreOpen[g] = true; fill(); });
+            more.style.margin = '6px 14px 2px';
+            list.appendChild(more);
+          }
         });
       } else rows.forEach(function (j) { list.appendChild(brandRow(j)); });
       if (!rows.length) list.appendChild(el('p', 'note', q ? '그런 이름의 브랜드가 없어요.' : '브랜드 옆의 압정을 누르면 여기에 담겨요.'));
@@ -2053,10 +2173,26 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     var k1 = el('div', 'k', '콘센트 좌석'), total = el('small'), k2 = el('div', 'k', '콘센트 있는 자리');
     k1.appendChild(total);
     rec.appendChild(k1); rec.appendChild(r1); rec.appendChild(k2); rec.appendChild(r2);
+    // 셋째 줄: 내 기록(가 봤어요)과 없어진 카페 표시, 그리고 이 카페로 바로 오는 링크.
+    var r3 = el('div', 'opts');
+    var bSeen = btn('opt', '가 봤어요', function () { setSeen(i, !seen[i]); sync(); if (S.seen !== 'all') refilter(); requestDraw(); });
+    var bGone = voteBtn('없어졌어요', function () { setGone(i, !myGone[i]); sync(); refilter(); requestDraw(); });
+    bGone[0].title = '가 보니 이 카페가 없을 때 누른다. 여러 사람이 누르면 지도에서 빠진다';
+    var bLink = btn('opt', '링크 복사', function () {
+      var base = location.protocol === 'file:' ? 'https://zxcvzxcv789878987-sys.github.io/cafe-map/' : location.origin + location.pathname;
+      var url = base + '#c=' + cidOf(i);
+      if (navigator.share && mobile.matches) navigator.share({ title: D.name[i], url: url }).catch(function () {});
+      else if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { toast('이 카페로 바로 오는 링크를 복사했어요'); }, function () { toast(url); });
+      else toast(url);
+    });
+    r3.appendChild(bSeen); r3.appendChild(bGone[0]); r3.appendChild(bLink);
+    rec.appendChild(el('div', 'k', '내 기록')); rec.appendChild(r3);
     function sync() {
       var v = votes[i] || [0, 0, 0, 0, 0];
       var ny = v[0] + (myO[i] === 1 ? 1 : 0), nn = v[1] + (myO[i] === -1 ? 1 : 0);
       total.textContent = ny + nn ? '총 ' + (ny + nn) + '명 투표' : '아직 투표 없음';
+      bSeen.setAttribute('aria-pressed', String(seen[i] === 1));
+      setBtn(bGone, myGone[i] === 1, (goneVotes[i] || 0) + (myGone[i] === 1 ? 1 : 0));
       k2.hidden = r2.hidden = ny === 0;
       setBtn(yes, myO[i] === 1, v[0] + (myO[i] === 1 ? 1 : 0));
       setBtn(no, myO[i] === -1, v[1] + (myO[i] === -1 ? 1 : 0));
@@ -2097,6 +2233,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       body = el('div', 'dbody'); body.appendChild(fr); body.appendChild(scrim); body.appendChild(pop);
       openPop(false);
       h.appendChild(info);
+      if (!nudged) { nudged = true; info.classList.add('nudge'); }
       panel.setAttribute('data-embed', '');
     } else {
       // 카카오맵에 없는 카페: 띄울 화면이 없으므로 이름과 내용을 카드에 바로 적고, 없다는 것만 알린다.
@@ -2112,6 +2249,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     panel.appendChild(h); panel.appendChild(body);
   }
   // 머리줄을 잡고 아래로 쓸어내리면 카드가 따라 내려가다가, 충분히 내렸거나 빠르게 내렸으면 닫힌다.
+  var nudged = false;      // 콘센트와 넓이 단추를 이번에 연 뒤로 한 번 강조했는가
   function sheetDrag(h) {
     var on = false, y0 = 0, dy = 0, t0 = 0;
     h.addEventListener('pointerdown', function (e) {
