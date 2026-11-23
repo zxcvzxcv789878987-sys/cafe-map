@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>카페 지도</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ffffff">
@@ -66,6 +66,8 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 .search:focus-within { color: var(--ink); box-shadow: var(--sh-1), 0 0 0 2px var(--ink); }
 .search input { flex: 1; min-width: 0; border: 0; background: none; outline: none; color: var(--ink); font-size: 15px; }
 .search input::placeholder { color: var(--ink-3); }
+/* 아이폰은 글씨가 16px보다 작은 입력 칸을 누르면 화면 전체를 확대해 버린다. 손가락으로 쓰는 기기에서는 16px로 맞춘다. */
+@media (max-width: 760px), (pointer: coarse) { .search input { font-size: 16px; } }
 .search input::-webkit-search-cancel-button { display: none; }
 #qClear { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; color: var(--ink-3); }
 #qClear:hover { background: var(--surface-2); color: var(--ink); }
