@@ -35,6 +35,7 @@
   --c-ind: #8a5a3c;
   --ok: #0f8a5a;
   --hi: #1d5fe0;
+  --area: #6a5ae0;   /* 고른 지역을 칠하는 색. 카페 점(파랑, 주황, 갈색)이나 지도의 초록, 물색과 겹치지 않는 보라 */
   --sh-1: 0 1px 2px rgba(20, 23, 28, .10), 0 2px 10px rgba(20, 23, 28, .10);
   --sh-2: 0 2px 6px rgba(20, 23, 28, .08), 0 14px 36px rgba(20, 23, 28, .18);
   color-scheme: light;
@@ -108,6 +109,8 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 .row .tag svg.i { width: 16px; height: 16px; }
 .sec { padding: 12px 16px 4px; font-size: 12px; font-weight: 650; color: var(--ink-3); letter-spacing: .03em; }
 .note { margin: 0; padding: 8px 16px 10px; font-size: 12.5px; color: var(--ink-3); }
+.ask { margin: 2px 14px 8px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--ink-2); }
+.ask .btn { flex: none; background: var(--inv); color: var(--on-inv); }
 .empty { padding: 28px 24px 30px; text-align: center; color: var(--ink-2); display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .empty b { font-size: 15px; color: var(--ink); }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 16px; border-radius: 11px; font-weight: 650; font-size: 14px; background: var(--surface-2); text-decoration: none; color: var(--ink); }
@@ -128,6 +131,10 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 .cell.on { background: var(--inv); border-color: var(--inv); color: var(--on-inv); }
 .cell.on small { color: inherit; opacity: .7; }
 .cell.all { grid-column: 1 / -1; }
+/* 전국 단추: 다른 칸 두 개 너비로 길게 놓고, 한 단계 위라는 것이 보이게 옅은 보라 바탕을 깐다. */
+.cell.nation { justify-content: center; background: rgba(106, 90, 224, .09); border-color: rgba(106, 90, 224, .28); color: var(--area); }
+.cell.nation span { font-weight: 750; }
+.cell.nation.on { background: var(--area); border-color: var(--area); color: #fff; }
 .cell span { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .cell small { flex: none; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .cell:disabled { opacity: .4; cursor: default; }
@@ -546,6 +553,10 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   function regPath(r) { var out = []; while (r >= 0) { out.unshift(rName[r]); r = rParent[r]; } return out.join(' '); }
   function regChain(r) { var out = []; while (r >= 0) { out.unshift(r); r = rParent[r]; } return out; }
   function regChildren(r) { return r < 0 ? rootKids : rKids[r]; }
+  // 시 안으로 들어와 있는가. 서울 같은 특별시, 광역시는 그 자체가 시다.
+  // 전국이나 도 단계에서는 카페 개수와 "이 화면 N곳"을 보여 주지 않는다(그 단계에서는 보지 않는 숫자라서).
+  var CITY_SIDO = { '서울': 1, '부산': 1, '대구': 1, '인천': 1, '대전': 1, '울산': 1, '세종': 1 };
+  function inCity(r) { return r >= 0 && (rParent[r] >= 0 || CITY_SIDO[rName[r]] === 1); }
   rootKids.sort(function (p, q) { var a = SIDO_ORDER.indexOf(rName[p]), c = SIDO_ORDER.indexOf(rName[q]); return (a < 0 ? 99 : a) - (c < 0 ? 99 : c); });
   rKids.forEach(function (k) { k.sort(function (p, q) { return rName[p].localeCompare(rName[q], 'ko'); }); });
   (function boxes() {
@@ -928,7 +939,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     function v(n) { return cs.getPropertyValue(n).trim(); }
     COL = GROUPS.map(function (g) { return v(g.css); });
     TXT = COL.map(function (c) { return lum(c) > 0.6 ? '#221503' : '#ffffff'; });
-    C = { surface: v('--surface'), ink: v('--ink'), ink3: v('--ink-3'), inv: v('--inv'), onInv: v('--on-inv'), ok: v('--ok'), hi: v('--hi') };
+    C = { surface: v('--surface'), ink: v('--ink'), ink3: v('--ink-3'), inv: v('--inv'), onInv: v('--on-inv'), ok: v('--ok'), hi: v('--hi'), area: v('--area') };
   }
   readColors();
 
@@ -958,7 +969,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     }
     return (shapeCache[r] = out);
   }
-  // 고른 지역(시도, 시, 구, 동 어느 단계든)의 경계선을 그린다. 안은 칠하지 않는다.
+  // 고른 지역(시도, 시, 구, 동 어느 단계든)의 땅 전체를 옅게 칠하고 경계선을 두른다.
   function drawOutline(r, scale, ox, oy) {
     var sh = shapeOf(r);
     if (!sh) return;
@@ -970,8 +981,9 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       ctx.closePath();
     }
     ctx.lineJoin = 'round';
-    ctx.globalAlpha = .7; ctx.lineWidth = 5; ctx.strokeStyle = C.surface; ctx.stroke();
-    ctx.globalAlpha = 1; ctx.lineWidth = 2.5; ctx.strokeStyle = C.hi; ctx.stroke();
+    ctx.globalAlpha = .1; ctx.fillStyle = C.area; ctx.fill('evenodd');
+    ctx.globalAlpha = .75; ctx.lineWidth = 4.5; ctx.strokeStyle = C.surface; ctx.stroke();
+    ctx.globalAlpha = 1; ctx.lineWidth = 2; ctx.strokeStyle = C.area; ctx.stroke();
   }
   // 어떤 점이 그 지역 안에 있는가. inBox는 카페가 있는 네모 범위로, inShape는 실제 경계로 본다.
   function inBox(r, x, y) { var o = r * 4; return x >= rBox[o] && x <= rBox[o + 2] && y >= rBox[o + 1] && y <= rBox[o + 3]; }
@@ -997,9 +1009,9 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
         for (i = 2; i < a.length; i += 2) ctx.lineTo(a[i] * scale - ox, a[i + 1] * scale - oy);
         ctx.closePath();
       }
-      // 범위는 파란색으로 칠한다. 옅게 채우고 경계선은 진하게.
-      ctx.globalAlpha = .13; ctx.fillStyle = C.hi; ctx.fill('evenodd');
-      ctx.globalAlpha = 1; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.strokeStyle = C.hi; ctx.stroke();
+      // 마우스를 올린 지역도 고른 지역과 같은 색으로, 조금 더 진하게 칠한다.
+      ctx.globalAlpha = .18; ctx.fillStyle = C.area; ctx.fill('evenodd');
+      ctx.globalAlpha = 1; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.strokeStyle = C.area; ctx.stroke();
       ctx.globalAlpha = 1;
       return;
     }
@@ -1010,7 +1022,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       px = mx[i] * scale - ox; py = my[i] * scale - oy;
       ctx.moveTo(px + R, py); ctx.arc(px, py, R, 0, 6.2832);
     }
-    ctx.save(); if ('filter' in ctx) ctx.filter = 'blur(5px)'; ctx.globalAlpha = .22; ctx.fillStyle = C.hi; ctx.fill(); ctx.restore();
+    ctx.save(); if ('filter' in ctx) ctx.filter = 'blur(5px)'; ctx.globalAlpha = .22; ctx.fillStyle = C.area; ctx.fill(); ctx.restore();
   }
   // 이름표 자리 잡기. 좁은 지역부터 차례로 놓는다.
   // 좁은 지역(서울 같은 곳)은 이름표가 조금만 벗어나도 남의 땅 위에 놓이므로 먼저 제자리를 차지하게 하고,
@@ -1056,8 +1068,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       if (!rAll[k]) return;
       // 처음 자리는 그 지역 경계 안의 가운데. 경계 자료가 없으면 카페가 있는 범위의 가운데.
       var sh = shapeOf(k), o = k * 4, gx = sh ? sh.lx : (rBox[o] + rBox[o + 2]) / 2, gy = sh ? sh.ly : (rBox[o + 1] + rBox[o + 3]) / 2;
-      ctx.font = '600 12.5px ' + FONT; var w = ctx.measureText(rName[k]).width;
-      ctx.font = '750 12.5px ' + FONT; w += ctx.measureText(fmt(rAll[k])).width + 26;
+      ctx.font = '600 12.5px ' + FONT; var w = ctx.measureText(rName[k]).width + 20;
+      if (inCity(parent)) { ctx.font = '750 12.5px ' + FONT; w += ctx.measureText(fmt(rAll[k])).width + 6; }
       // m: 버티는 힘. 지역이 화면에서 작을수록 크다.
       var size = Math.sqrt(sh ? (sh.bb[2] - sh.bb[0]) * (sh.bb[3] - sh.bb[1]) : (rBox[o + 2] - rBox[o]) * (rBox[o + 3] - rBox[o + 1])) * scale;
       tags.push({ r: k, ax: gx * scale - ox, ay: gy * scale - oy, x: gx * scale - ox, y: gy * scale - oy, w: w, h: 28, size: size });
@@ -1213,10 +1225,11 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
         // 기억해 둔 지도 좌표를 지금 화면 좌표로 바꾸기만 한다. 그때그때 자리를 다시 잡지 않는다.
         px = ps.x * scale - ox; py = ps.y * scale - oy;
         if (px < -90 || px > W + 90 || py < -30 || py > H + 30) continue;
-        var name = rName[k], num = fmt(rCnt[k]);
+        // 개수는 시 안으로 들어왔을 때만 이름 옆에 적는다.
+        var name = rName[k], num = inCity(S.reg) ? fmt(rCnt[k]) : '';
         ctx.font = '600 12.5px ' + FONT; var w1 = ctx.measureText(name).width;
-        ctx.font = '750 12.5px ' + FONT; var w2 = ctx.measureText(num).width;
-        tags.push({ r: k, ax: ps.ax * scale - ox, ay: ps.ay * scale - oy, x: px, y: py, w: w1 + w2 + 26, h: 28, w1: w1, name: name, num: num });
+        ctx.font = '750 12.5px ' + FONT; var w2 = num ? ctx.measureText(num).width + 6 : 0;
+        tags.push({ r: k, ax: ps.ax * scale - ox, ay: ps.ay * scale - oy, x: px, y: py, w: w1 + w2 + 20, h: 28, w1: w1, name: name, num: num });
       }
       // 이름표에는 선이나 점을 붙이지 않는다. 많이 축소해서 서로 겹치면 카페가 많은 쪽만 남기고 나머지는 숨긴다.
       tags.sort(function (p, q) { return rCnt[q.r] - rCnt[p.r]; });
@@ -1233,8 +1246,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
         var bx = tg.x - tg.w / 2, by = tg.y - tg.h / 2, hot = hoverPill === tg.r;
         ctx.save(); ctx.shadowColor = 'rgba(15,20,30,.22)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 2;
         rr(bx, by, tg.w, tg.h, 14); ctx.fillStyle = hot ? C.inv : C.surface; ctx.fill(); ctx.restore();
-        ctx.font = '600 12.5px ' + FONT; ctx.fillStyle = hot ? C.onInv : C.ink3; ctx.fillText(tg.name, bx + 10, tg.y + .5);
-        ctx.font = '750 12.5px ' + FONT; ctx.fillStyle = hot ? C.onInv : C.ink; ctx.fillText(tg.num, bx + 16 + tg.w1, tg.y + .5);
+        ctx.font = '600 12.5px ' + FONT; ctx.fillStyle = hot ? C.onInv : (tg.num ? C.ink3 : C.ink); ctx.fillText(tg.name, bx + 10, tg.y + .5);
+        if (tg.num) { ctx.font = '750 12.5px ' + FONT; ctx.fillStyle = hot ? C.onInv : C.ink; ctx.fillText(tg.num, bx + 16 + tg.w1, tg.y + .5); }
         hits.push({ x0: bx, y0: by, x1: bx + tg.w, y1: by + tg.h, reg: tg.r });
       }
     } else {
@@ -1537,8 +1550,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   // ----- 아래 개수 단추 -----
   function renderCount() {
     var c = $('count'), txt = vc ? '이 화면 ' + fmt(vc) + '곳' : '이 화면에는 없어요';
-    // 시(서울이면 구)까지 골라 들어갔을 때부터 보여 준다. 전국이나 도 단위에서는 목록이 쓸모가 없다.
-    c.hidden = !(S.reg >= 0 && rParent[S.reg] >= 0);
+    // 시 안으로 들어왔을 때부터 보여 준다. 전국이나 도 단위에서는 목록이 쓸모가 없다.
+    c.hidden = !inCity(S.reg);
     if (c.dataset.t === txt) return;
     c.dataset.t = txt; c.textContent = '';
     c.appendChild(icon('list')); c.appendChild(el('span', null, txt));
@@ -1567,13 +1580,16 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     r.addEventListener('mouseleave', function () { if (hoverI === i) { hoverI = -1; requestDraw(); } });
     return r;
   }
+  var askNear = false;     // 위치를 모르는 채로 가까운 순을 눌렀는가
   function renderList() {
     var h = head(S.reg >= 0 ? rName[S.reg] : '이 화면', fmt(vc) + '곳'), sc = el('div', 'scroll'), k;
     if (vc) {
       var sort = el('div', 'sort');
+      // 가까운 순은 내 위치를 알아야 쓸 수 있다. 위치를 모르면 넓은 순으로 보여 주고, 가까운 순을 누르면 위치를 허용해 달라고 알린다.
+      var sortNow = S.sort === 'near' && myLoc ? 'near' : 'size';
       [['near', '가까운 순'], ['size', '넓은 순']].forEach(function (o) {
-        var bt = btn(null, o[1], function () { S.sort = o[0]; renderPanel(); persist(); });
-        bt.setAttribute('aria-pressed', String(S.sort === o[0])); sort.appendChild(bt);
+        var bt = btn(null, o[1], function () { S.sort = o[0]; askNear = o[0] === 'near' && !myLoc; renderPanel(); persist(); });
+        bt.setAttribute('aria-pressed', String(sortNow === o[0])); sort.appendChild(bt);
       });
       h.appendChild(sort);
     }
@@ -1586,12 +1602,18 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       if (anyFilter()) e.appendChild(btn('btn sm', '필터 초기화', function () { resetFilter(); changed(); }));
       sc.appendChild(e); return;
     }
-    var ct = map.getCenter(), cx = myLoc ? myLoc.x : (ct.lng + 180) / 360, cy = myLoc ? myLoc.y : mercY(ct.lat), arr = [];
+    if (askNear && !myLoc) {
+      var ask = el('div', 'ask');
+      ask.appendChild(el('span', null, '가까운 순은 내 위치를 허용해야 볼 수 있어요.'));
+      ask.appendChild(btn('btn sm', '내 위치 허용하기', function () { locateMe(function () { askNear = false; if (P.kind === 'list') renderPanel(); }); }));
+      sc.appendChild(ask);
+    }
+    var cx = myLoc ? myLoc.x : 0, cy = myLoc ? myLoc.y : 0, arr = [];
     for (k = 0; k < vc; k++) arr.push(viewIdx[k]);
-    if (S.sort === 'size') arr.sort(function (p, q) { return D.area[q] - D.area[p]; });
+    if (sortNow === 'size') arr.sort(function (p, q) { return D.area[q] - D.area[p]; });
     else arr.sort(function (p, q) { return (mx[p] - cx) * (mx[p] - cx) + (my[p] - cy) * (my[p] - cy) - (mx[q] - cx) * (mx[q] - cx) - (my[q] - cy) * (my[q] - cy); });
     arr.slice(0, 60).forEach(function (i) { sc.appendChild(cafeRow(i, false, 'list')); });
-    if (arr.length > 60) sc.appendChild(el('p', 'note', (S.sort === 'size' ? '넓은' : (myLoc ? '내 위치에서 가까운' : '지도 가운데에서 가까운')) + ' 60곳이에요. 지도를 확대하면 더 좁혀져요.'));
+    if (arr.length > 60) sc.appendChild(el('p', 'note', (sortNow === 'size' ? '넓은' : '내 위치에서 가까운') + ' 60곳이에요. 지도를 확대하면 더 좁혀져요.'));
   }
 
   // ----- 검색 -----
@@ -1667,17 +1689,22 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     });
     panel.appendChild(crumbs);
     var sc = el('div', 'scroll'), grid = el('div', 'grid');
+    var nums = inCity(regBrowse);     // 개수는 시 안의 목록(구, 동)에서만 적는다.
     if (regBrowse >= 0) {
       var all = btn('cell all' + (S.reg === regBrowse ? ' on' : ''), null, function () { var r = regBrowse; closePanel(); goRegion(r); });
-      all.appendChild(el('span', null, rName[regBrowse] + ' 전체')); all.appendChild(el('small', null, fmt(rCnt[regBrowse])));
+      all.appendChild(el('span', null, rName[regBrowse] + ' 전체')); if (nums) all.appendChild(el('small', null, fmt(rCnt[regBrowse])));
       grid.appendChild(all);
+    } else {
+      var nat = btn('cell all nation' + (S.reg < 0 ? ' on' : ''), null, function () { closePanel(); goRegion(-1); });
+      nat.appendChild(el('span', null, '전국'));
+      grid.appendChild(nat);
     }
     regChildren(regBrowse).forEach(function (k) {
       var c = btn('cell' + (S.reg === k ? ' on' : ''), null, function () {
         if (rLeaf[k]) { closePanel(); goRegion(k); }
         else { regBrowse = k; goRegion(k); }
       });
-      c.appendChild(el('span', null, rName[k])); c.appendChild(el('small', null, fmt(rCnt[k])));
+      c.appendChild(el('span', null, rName[k])); if (nums) c.appendChild(el('small', null, fmt(rCnt[k])));
       if (!rCnt[k]) c.disabled = true;
       grid.appendChild(c);
     });
@@ -1912,7 +1939,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 
   // ----- 지도 단추 -----
   var me = null;
-  $('locate').addEventListener('click', function () {
+  $('locate').addEventListener('click', function () { locateMe(); });
+  function locateMe(done) {
     if (!navigator.geolocation) { toast('이 브라우저에서는 위치를 가져올 수 없어요.'); return; }
     navigator.geolocation.getCurrentPosition(function (p) {
       var ll = [p.coords.longitude, p.coords.latitude];
@@ -1922,9 +1950,9 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
         me = new maplibregl.Marker({ element: d }).setLngLat(ll).addTo(map);
       } else me.setLngLat(ll);
       myLoc = { x: (ll[0] + 180) / 360, y: mercY(ll[1]) };
-      map.easeTo({ center: ll, zoom: Math.max(map.getZoom(), 15), duration: 600 });
+      if (done) done(); else map.easeTo({ center: ll, zoom: Math.max(map.getZoom(), 15), duration: 600 });
     }, function () { toast('위치를 가져오지 못했어요. 브라우저에서 위치 권한을 허용해 주세요.'); }, { enableHighAccuracy: true, timeout: 10000 });
-  });
+  }
   $('navAll').addEventListener('click', function () { S.showAll = !S.showAll; closePanel(); draw(); renderChips(); });
   $('navBack').addEventListener('click', function () { if (S.reg >= 0) { closePanel(); goRegion(rParent[S.reg]); } });
   $('navHome').addEventListener('click', function () { closePanel(); goRegion(-1); });
