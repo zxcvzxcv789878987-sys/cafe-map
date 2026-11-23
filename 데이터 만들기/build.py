@@ -54,7 +54,8 @@ def core(n):
 
 def brand_of(n):
     for i, (_, _, pats) in enumerate(BRANDS):
-        if any(p in n for p in pats):
+        # ^로 시작하는 글자는 이름의 맨 앞에 있을 때만 맞는 것으로 본다.
+        if any(n.startswith(p[1:]) if p[0] == '^' else p in n for p in pats):
             return i
     return -1
 
@@ -72,6 +73,8 @@ def similar(a, b):
 
 # 1. 인허가 자료를 주소별로 모은다. 영업 중인 곳만.
 lic = collections.defaultdict(list)
+# 주소별로 영업 중인 곳과 폐업 신고된 곳의 이름. 면적이 없는 줄도 다 모은다. 문 닫은 카페를 가려내는 데 쓴다.
+open_names, closed_names = collections.defaultdict(list), collections.defaultdict(list)
 lic_rows = 0
 for path in license_files:
     with open(path, encoding='cp949', errors='replace', newline='') as f:
@@ -82,8 +85,17 @@ for path in license_files:
         i_a1, i_a2 = ih.get('시설총규모'), ih.get('소재지면적')
         i_type = ih.get('업태구분명')
         for row in r:
-            if len(row) != len(h) or '영업' not in row[i_state]:
+            if len(row) != len(h):
                 continue
+            k = addr_key(row[i_addr])
+            if not k:
+                continue
+            n = norm(row[i_name])
+            if '폐업' in row[i_state]:
+                closed_names[k].append(n)
+            if '영업' not in row[i_state]:
+                continue
+            open_names[k].append(n)
             area = 0.0
             for i in (i_a1, i_a2):
                 if i is None:
@@ -94,10 +106,6 @@ for path in license_files:
                     pass
             if area <= 0 or area > 30000:
                 continue
-            k = addr_key(row[i_addr])
-            if not k:
-                continue
-            n = norm(row[i_name])
             lic[k].append((n, brand_of(n), area, row[i_type] if i_type is not None else ''))
             lic_rows += 1
 print('인허가 영업 중', lic_rows, '주소', len(lic))
@@ -105,8 +113,10 @@ print('인허가 영업 중', lic_rows, '주소', len(lic))
 # 2. 카페마다 브랜드를 정하고, 같은 주소의 인허가 자료에서 이름이 가장 비슷한 곳의 면적을 가져온다.
 CAFE_TYPES = ('커피숍', '다방', '기타 휴게음식점', '제과점영업', '까페', '전통찻집')
 rows = list(csv.DictReader(open(os.path.join(workdir, 'cafes_raw.csv'), encoding='utf-8')))
-names, lats, lngs, bidx, areas, regs, roads, floors = [], [], [], [], [], [], [], []
-region_ix = {}
+names, lats, lngs, bidx, areas, dongs, roads, floors = [], [], [], [], [], [], [], []
+closed = []      # 인허가 자료에서 같은 주소, 비슷한 이름이 폐업으로만 나오는 카페
+# 지역은 시도 > 시군구 > 행정동 세 단계로 번호를 매긴다.
+sido_ix, sgg_ix, dong_ix = {}, {}, {}
 stat = collections.Counter()
 for r in rows:
     raw = r['상호명'].strip()
@@ -117,6 +127,12 @@ for r in rows:
     b = brand_of(raw.replace(' ', ''))
     area = 0.0
     k = addr_key(r['도로명주소'])
+    gone = False
+    if k and k in closed_names:
+        full_n = norm(raw + branch)
+        gone = (any(similar(full_n, cn) >= 0.6 for cn in closed_names[k])
+                and not any(similar(full_n, cn) >= 0.6 for cn in open_names.get(k, ())))
+    closed.append(gone)
     cands = lic.get(k, []) if k else []
     if cands:
         full = norm(raw + branch)
@@ -142,9 +158,10 @@ for r in rows:
     else:
         stat['주소 없음'] += 1
     disp = raw if not branch or branch in raw else raw + ' ' + branch
-    reg = (r['시도명'] + ' ' + r['시군구명']).strip()
-    if reg not in region_ix:
-        region_ix[reg] = len(region_ix)
+    sido, sgg, dong = r['시도명'].strip(), r['시군구명'].strip() or r['시도명'].strip(), r['행정동명'].strip() or '기타'
+    si = sido_ix.setdefault(sido, len(sido_ix))
+    gi = sgg_ix.setdefault((si, sgg), len(sgg_ix))
+    di = dong_ix.setdefault((gi, dong), len(dong_ix))
     road = r['도로명주소']
     pre = r['시도명'] + ' ' + r['시군구명'] + ' '
     if road.startswith(pre):
@@ -155,10 +172,69 @@ for r in rows:
     lngs.append(round(float(r['경도']) * 1e5))
     bidx.append(b)
     areas.append(round(area))
-    regs.append(region_ix[reg])
+    dongs.append(di)
     roads.append(road)
     floors.append(-1 if fl.startswith('지') else int(fl) if fl.isdigit() else 0)
 
+# 3. 좌표를 카카오에서 받은 실제 매장 좌표로 바꾼다.
+#    공공데이터 좌표는 건물 주소의 좌표라서 같은 건물의 카페가 한 점에 포개지고, 실제 매장 자리와도 어긋난다.
+#    kakao_all.py가 받아 둔 전국 카페 목록과 짝을 짓고, 못 찾은 곳은 kakao_kw.py가 이름으로 물어 둔 답에서 찾는다.
+here = os.path.dirname(os.path.abspath(__file__))
+places_path = os.path.join(here, 'kakao_places.json')
+in_kakao = [0] * len(names)
+# 카카오 운영정책은 로컬 API로 받은 좌표를 저장해 두고 쓰거나 공개하는 것을 금지한다(장소 번호와 주소는 저장해도 된다).
+# 그래서 파일을 둘로 만든다. 인터넷에 올리는 cafes.js는 공공데이터 좌표, 내 컴퓨터에서만 쓰는 cafes.local.js는 카카오 좌표.
+pub_lats, pub_lngs = lats[:], lngs[:]
+kid = [0] * len(names)        # 카카오 장소 번호. 카페 카드에서 카카오맵의 그 가게 화면을 바로 띄우는 데 쓴다.
+drop = set()
+if os.path.exists(places_path):
+    import kakao_match
+    places = json.load(open(places_path, encoding='utf-8'))['places']
+    out, dups, kstat = kakao_match.match(names, lats, lngs, bidx, roads, places)
+    new_xy = {i: (places[pid][4], places[pid][3]) for i, pid in out.items()}
+    for i, pid in out.items():
+        kid[i] = int(pid)
+    taken = set(out.values())
+    kw_path = os.path.join(here, 'kakao_kw.json')
+    kw = json.load(open(kw_path, encoding='utf-8')) if os.path.exists(kw_path) else {}
+    left = []                                 # 아직 이름으로 물어보지 않은 곳. kakao_kw.py가 읽는다.
+    for i in range(len(names)):
+        if i in out or i in dups:
+            continue
+        docs = kw.get('%s@%d,%d' % (names[i], lats[i], lngs[i]))
+        if docs is None:
+            left.append([names[i], lats[i], lngs[i]])
+            kstat['아직 이름으로 안 물어봄'] += 1
+            continue
+        hit = kakao_match.pick_by_name(names[i], bidx[i], docs, taken)
+        if hit:
+            taken.add(hit[0])
+            new_xy[i] = (hit[2], hit[1])
+            kid[i] = int(hit[0])
+            kstat['이름으로 물어서 찾음'] += 1
+        else:
+            kstat['카카오에 없음'] += 1
+    json.dump(left, open(os.path.join(here, 'kakao_left.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+    for i, (la, ln) in new_xy.items():
+        lats[i], lngs[i] = round(la * 1e5), round(ln * 1e5)
+        in_kakao[i] = 1
+    # 공공데이터에 같은 가게가 두 줄로 들어 있으면 한 줄만 남긴다. 면적은 둘 중 있는 쪽 것을 쓴다.
+    for i, i2 in dups.items():
+        areas[i2] = max(areas[i2], areas[i])
+        drop.add(i)
+    # 카카오 지도에도 없고 인허가 자료에서도 폐업 신고된 카페는 뺀다(서로 다른 두 자료가 같은 말을 하는 경우만).
+    gone_n = 0
+    for i in range(len(names)):
+        if closed[i] and not in_kakao[i] and i not in drop:
+            drop.add(i)
+            gone_n += 1
+    print('카카오에 없고 폐업 신고된 카페(뺌)', gone_n)
+    print('카카오 좌표', dict(kstat))
+    print('카카오 좌표로 바꾼 카페', len(new_xy), '두 줄이라 한 줄로 합친 카페', len(dups))
+if drop:
+    keep = [i for i in range(len(names)) if i not in drop]
+    names, lats, lngs, bidx, areas, dongs, roads, floors, in_kakao, kid, pub_lats, pub_lngs = (
+        [arr[i] for i in keep] for arr in (names, lats, lngs, bidx, areas, dongs, roads, floors, in_kakao, kid, pub_lats, pub_lngs))
 print(len(names), dict(stat))
 got = [a for a in areas if a > 0]
 print('면적 있음', len(got), '%.1f%%' % (100 * len(got) / len(names)))
@@ -167,12 +243,25 @@ for t in (100, 200, 330, 500, 1000):
 
 data = {
     'brands': [[n, g] for n, g, _ in BRANDS],
-    'regions': list(region_ix),
+    'sido': list(sido_ix),
+    'sgg': [[n, si] for (si, n) in sgg_ix],
+    'dong': [[n, gi] for (gi, n) in dong_ix],
     'name': names, 'lat': lats, 'lng': lngs, 'brand': bidx,
-    'area': areas, 'region': regs, 'road': roads, 'floor': floors,
+    'area': areas, 'dongOf': dongs, 'road': roads, 'floor': floors,
+    'kid': kid,
+    'kakao': in_kakao,          # 1: 카카오 지도에서 확인된 카페(좌표도 카카오 것), 0: 카카오에 없어서 공공데이터 좌표 그대로
 }
-with open(outpath, 'w', encoding='utf-8') as o:
-    o.write('window.CAFES=')
-    json.dump(data, o, ensure_ascii=False, separators=(',', ':'))
-    o.write(';')
-print('저장', outpath, os.path.getsize(outpath))
+def write(path, d):
+    with open(path, 'w', encoding='utf-8') as o:
+        o.write('window.CAFES=')
+        json.dump(d, o, ensure_ascii=False, separators=(',', ':'))
+        o.write(';')
+    print('저장', path, os.path.getsize(path))
+
+
+local = dict(data)
+data['lat'], data['lng'] = pub_lats, pub_lngs
+del data['kakao']
+write(outpath, data)                                    # 공개용: 공공데이터 좌표
+if os.path.exists(places_path):
+    write(outpath[:-3] + '.local.js', local)            # 내 컴퓨터용: 카카오 좌표

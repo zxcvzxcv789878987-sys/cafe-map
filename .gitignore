@@ -1,0 +1,13 @@
+.claude/
+__pycache__/
+*.lnk
+kakao_key.txt
+kakao_places.json
+kakao_places.json.tmp
+kakao_kw.json
+kakao_kw.json.tmp
+kakao_left.json
+cafes.local.js
+kakao_all.py
+kakao_kw.py
+kakao_match.py

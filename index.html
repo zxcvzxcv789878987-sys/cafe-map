@@ -10,352 +10,923 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="카페 지도">
-<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#171d1b" media="(prefers-color-scheme: dark)">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%23fff' stroke='%237a5236' stroke-width='5'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%230f7b6c'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#ffffff">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%2314171c'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23f59f0a'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
-/* 배치: 왼쪽에 필터 패널, 나머지는 전부 지도. 좁은 화면에서는 패널이 아래에서 올라오는 서랍이 된다. */
+/* 배치: 화면 전체가 지도. 위에 검색창과 필터 칩 한 줄만 떠 있다.
+   그 밖의 것(지역 고르기, 브랜드 고르기, 목록, 카페 정보)은 필요할 때만 뜨는 카드 하나에 번갈아 나온다.
+   PC에서는 카드가 왼쪽 위에, 휴대폰에서는 아래에서 올라온다. */
 :root {
-  --bg: #eef1f0;
-  --panel: #ffffff;
-  --fg: #17201d;
-  --muted: #5d6965;
-  --line: #dde4e1;
-  --soft: #f3f6f5;
-  --accent: #0f7b6c;
-  --on-accent: #ffffff;
-  --c-fr: #0f7b6c;
-  --c-low: #e08a00;
-  --c-des: #c2457a;
-  --c-ind: #7a5236;
-  --halo: #ffffff;
-  --shadow: 0 6px 24px rgba(20, 40, 35, .16);
+  --bg: #f1f3f6;
+  --surface: #ffffff;
+  --surface-2: #f3f5f8;
+  --ink: #14171c;
+  --ink-2: #4b5462;
+  --ink-3: #8b93a1;
+  --line: #e7eaee;
+  --line-2: #d3d8df;
+  --inv: #14171c;
+  --on-inv: #ffffff;
+  --c-low: #f59f0a;
+  --c-fr: #2463eb;
+  --c-ind: #8a5a3c;
+  --ok: #0f8a5a;
+  --hi: #1d5fe0;
+  --sh-1: 0 1px 2px rgba(20, 23, 28, .10), 0 2px 10px rgba(20, 23, 28, .10);
+  --sh-2: 0 2px 6px rgba(20, 23, 28, .08), 0 14px 36px rgba(20, 23, 28, .18);
+  color-scheme: light;
   --font: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0f1413;
-    --panel: #171d1b;
-    --fg: #e8eeeb;
-    --muted: #9aa7a2;
-    --line: #2b3431;
-    --soft: #1f2725;
-    --accent: #3ec1ac;
-    --on-accent: #06201b;
-    --c-fr: #2bb39d;
-    --c-low: #f2b632;
-    --c-des: #e56fa1;
-    --c-ind: #c9946c;
-    --halo: #171d1b;
-    --shadow: 0 6px 24px rgba(0, 0, 0, .5);
-    color-scheme: dark;
-  }
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { height: 100%; margin: 0; }
-body { font-family: var(--font); font-size: 14px; color: var(--fg); background: var(--bg); display: flex; overflow: hidden; }
+body { font-family: var(--font); font-size: 14px; line-height: 1.45; color: var(--ink); background: var(--bg); overflow: hidden; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
 button, input { font: inherit; color: inherit; }
-button { cursor: pointer; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button { cursor: pointer; border: 0; background: none; padding: 0; }
+:focus-visible { outline: 2px solid var(--c-fr); outline-offset: 2px; border-radius: 6px; }
+svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
-#panel { width: 340px; flex: none; background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; z-index: 1000; }
-#panel header { padding: 18px 18px 12px; display: flex; flex-direction: column; gap: 10px; }
-h1 { font-size: 20px; font-weight: 750; margin: 0; letter-spacing: -.01em; }
-#total { color: var(--muted); font-variant-numeric: tabular-nums; }
-#total b { color: var(--fg); font-weight: 650; }
-#scroll { overflow-y: auto; padding: 0 18px 18px; display: flex; flex-direction: column; gap: 22px; min-height: 0; }
-section { display: flex; flex-direction: column; gap: 10px; }
-h2 { font-size: 12px; font-weight: 650; color: var(--muted); margin: 0; letter-spacing: .04em; }
-.hint { color: var(--muted); font-size: 12.5px; line-height: 1.5; margin: 0; }
-
-#q { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--soft); }
-#results { display: flex; flex-direction: column; max-height: 260px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; }
-#results button { text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line); padding: 8px 12px; display: flex; flex-direction: column; gap: 2px; }
-#results button:last-child { border-bottom: 0; }
-#results button:hover { background: var(--soft); }
-#results small { color: var(--muted); }
-#results p { margin: 0; padding: 10px 12px; color: var(--muted); }
-
-.row { display: flex; flex-wrap: wrap; gap: 6px; }
-.preset { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 6px 12px; font-size: 13px; }
-.preset:hover { background: var(--soft); }
-
-.group { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-.group-head { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
-.group-head label { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; cursor: pointer; font-weight: 600; white-space: nowrap; }
-.dot { width: 12px; height: 12px; border-radius: 50%; flex: none; box-shadow: 0 0 0 2px var(--panel), 0 0 0 3px var(--line); }
-.count { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12.5px; font-weight: 400; }
-.more { border: 0; background: none; color: var(--accent); font-size: 12.5px; padding: 4px 2px; white-space: nowrap; }
-.brands { border-top: 1px solid var(--line); background: var(--soft); padding: 8px 12px 10px; display: flex; flex-direction: column; gap: 6px; }
-.brands .tools { display: flex; gap: 12px; }
-.brands .tools button { border: 0; background: none; color: var(--accent); font-size: 12.5px; padding: 2px 0; }
-.brands ul { list-style: none; margin: 0; padding: 0; max-height: 230px; overflow-y: auto; display: flex; flex-direction: column; }
-.brands li label { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; }
-.brands li span.n { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); flex: none; margin: 0; }
-
-.seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--soft); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 3px; }
-.seg button { border: 0; background: none; border-radius: 7px; padding: 8px 6px; font-weight: 550; }
-.seg button[aria-pressed=true] { background: var(--accent); color: var(--on-accent); }
-.slider { display: flex; flex-direction: column; gap: 4px; }
-.slider output { font-weight: 650; font-variant-numeric: tabular-nums; }
-input[type=range] { width: 100%; accent-color: var(--accent); }
-.check { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-footer { color: var(--muted); font-size: 12px; line-height: 1.55; border-top: 1px solid var(--line); padding-top: 14px; }
-footer a { color: inherit; }
-
-#mapwrap { flex: 1; position: relative; min-width: 0; }
+#app { position: relative; height: 100%; }
 #map { position: absolute; inset: 0; background: var(--bg); }
-#status { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 900; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; box-shadow: var(--shadow); font-variant-numeric: tabular-nums; white-space: nowrap; max-width: calc(100% - 24px); overflow: hidden; text-overflow: ellipsis; }
-.fab { position: absolute; z-index: 900; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; box-shadow: var(--shadow); font-weight: 600; }
-#locate { right: 12px; bottom: 96px; }
-#openFilters { display: none; left: 12px; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); }
-#toast { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 950; background: var(--fg); color: var(--panel); padding: 10px 16px; border-radius: 10px; max-width: calc(100% - 32px); }
 #dots { position: absolute; left: 0; top: 0; pointer-events: none; }
+
+/* 위쪽 한 줄: 검색 + 칩 */
+#bar { position: absolute; z-index: 20; top: 14px; left: 14px; right: 14px; display: flex; align-items: flex-start; gap: 10px; pointer-events: none; }
+#bar > * { pointer-events: auto; }
+.search { display: flex; align-items: center; gap: 8px; width: 300px; flex: none; height: 44px; padding: 0 6px 0 14px; background: var(--surface); border-radius: 14px; box-shadow: var(--sh-1); color: var(--ink-3); }
+.search:focus-within { color: var(--ink); box-shadow: var(--sh-1), 0 0 0 2px var(--ink); }
+.search input { flex: 1; min-width: 0; border: 0; background: none; outline: none; color: var(--ink); font-size: 15px; }
+.search input::placeholder { color: var(--ink-3); }
+.search input::-webkit-search-cancel-button { display: none; }
+#qClear { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; color: var(--ink-3); }
+#qClear:hover { background: var(--surface-2); color: var(--ink); }
+#chips { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; padding-top: 3px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px; border-radius: 999px; background: var(--surface); box-shadow: var(--sh-1); font-size: 14px; font-weight: 600; white-space: nowrap; flex: none; }
+.chip:hover { background: var(--surface-2); }
+.chip[aria-pressed=true] { background: var(--inv); color: var(--on-inv); }
+.chip .dot { width: 9px; height: 9px; border-radius: 50%; }
+.chip svg.i { width: 16px; height: 16px; }
+.chip .sub { display: grid; place-items: center; width: 22px; height: 22px; margin-right: -7px; border-radius: 50%; opacity: .75; }
+.chip .sub:hover { opacity: 1; background: rgba(128, 128, 128, .35); }
+.chip.crumb { padding: 0 5px 0 12px; gap: 1px; cursor: default; }
+.chip.crumb button { height: 28px; padding: 0 7px; border-radius: 999px; font-weight: 600; opacity: .68; display: inline-flex; align-items: center; gap: 3px; }
+.chip.crumb button.cur { opacity: 1; }
+.chip.crumb button:hover { opacity: 1; background: rgba(128, 128, 128, .32); }
+.chip.crumb > svg.i { width: 12px; height: 12px; opacity: .5; }
+.chip.crumb > svg.i:first-child { width: 16px; height: 16px; opacity: 1; margin-right: 3px; }
+.chip.crumb button svg.i { width: 14px; height: 14px; }
+.chip.ghost { background: none; box-shadow: none; color: var(--ink-2); padding: 0 8px; text-shadow: 0 0 6px var(--surface), 0 0 6px var(--surface); }
+.chip.ghost:hover { color: var(--ink); }
+
+/* 카드 하나: 메뉴, 목록, 카페 정보가 번갈아 나온다 */
+#panel { position: absolute; z-index: 25; width: 360px; max-height: calc(100% - 96px); display: flex; flex-direction: column; background: var(--surface); border-radius: 18px; box-shadow: var(--sh-2); overflow: hidden; }
+.ph { display: flex; align-items: center; gap: 6px; padding: 12px 10px 8px 16px; min-height: 52px; flex: none; }
+.ph h2 { flex: 1; min-width: 0; margin: 0; font-size: 16px; font-weight: 750; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ph h2 small { font-size: 13px; font-weight: 500; color: var(--ink-3); margin-left: 6px; font-variant-numeric: tabular-nums; }
+.ib { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; color: var(--ink-2); flex: none; }
+.ib:hover { background: var(--surface-2); color: var(--ink); }
+.ph .ib.back { margin-left: -8px; }
+.scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+.sort { display: flex; background: var(--surface-2); border-radius: 9px; padding: 2px; flex: none; }
+.sort button { font-size: 12.5px; font-weight: 600; color: var(--ink-3); padding: 5px 10px; border-radius: 7px; }
+.sort button[aria-pressed=true] { background: var(--surface); color: var(--ink); box-shadow: var(--sh-1); }
+
+.row { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 9px 16px; }
+.row:hover { background: var(--surface-2); }
+.pin { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; flex: none; font-size: 13px; font-weight: 750; background: var(--c); color: var(--t, #fff); }
+.pin svg.i { width: 16px; height: 16px; }
+.pin.logo { background: #fff; box-shadow: 0 0 0 2px var(--c); }
+.pin.logo img { width: 68%; height: 68%; object-fit: contain; border-radius: 3px; }
+.pin.logo.full img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.row .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.row .name { font-weight: 650; font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .meta { font-size: 12.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.row .tag { flex: none; color: var(--ok); display: grid; }
+.row .tag svg.i { width: 16px; height: 16px; }
+.sec { padding: 12px 16px 4px; font-size: 12px; font-weight: 650; color: var(--ink-3); letter-spacing: .03em; }
+.note { margin: 0; padding: 8px 16px 10px; font-size: 12.5px; color: var(--ink-3); }
+.empty { padding: 28px 24px 30px; text-align: center; color: var(--ink-2); display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.empty b { font-size: 15px; color: var(--ink); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 16px; border-radius: 11px; font-weight: 650; font-size: 14px; background: var(--surface-2); text-decoration: none; color: var(--ink); }
+.btn:hover { background: var(--line); }
+.btn.pri { background: var(--inv); color: var(--on-inv); }
+.btn.pri:hover { opacity: .88; background: var(--inv); }
+.btn.sm { height: 34px; font-size: 13px; padding: 0 12px; }
+.btn[aria-pressed=true] { background: var(--inv); color: var(--on-inv); }
+
+.crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; padding: 0 10px 8px; flex: none; }
+.crumbs button { font-size: 13.5px; font-weight: 600; color: var(--ink-3); padding: 5px 6px; border-radius: 7px; }
+.crumbs button:hover { background: var(--surface-2); color: var(--ink); }
+.crumbs button.on { color: var(--ink); }
+.crumbs svg.i { width: 13px; height: 13px; color: var(--ink-3); }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 2px 14px 12px; }
+.cell { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; text-align: left; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
+.cell:hover { border-color: var(--ink-3); }
+.cell.on { background: var(--inv); border-color: var(--inv); color: var(--on-inv); }
+.cell.on small { color: inherit; opacity: .7; }
+.cell.all { grid-column: 1 / -1; }
+.cell span { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.cell small { flex: none; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.cell:disabled { opacity: .4; cursor: default; }
+
+.inset { margin: 0 14px 6px; width: auto; height: 40px; box-shadow: none; background: var(--surface-2); flex: none; }
+.inset:focus-within { box-shadow: 0 0 0 2px var(--ink); }
+.pick { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 8px 16px; }
+.pick:hover { background: var(--surface-2); }
+.pick .box { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid var(--line-2); display: grid; place-items: center; flex: none; color: transparent; }
+.pick[aria-pressed=true] .box { background: var(--inv); border-color: var(--inv); color: var(--on-inv); }
+.pick .box svg.i { width: 14px; height: 14px; stroke-width: 2.6; }
+.pick .name { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pick .pin { width: 28px; height: 28px; font-size: 12.5px; }
+.brow { display: flex; align-items: center; }
+.brow .pick { flex: 1; min-width: 0; padding-right: 6px; }
+.pinbtn { width: 38px; height: 38px; display: grid; place-items: center; flex: none; margin-right: 8px; border-radius: 50%; color: var(--line-2); }
+.pinbtn:hover { background: var(--surface-2); color: var(--ink-2); }
+.pinbtn[aria-pressed=true] { color: var(--ink); }
+.pinbtn[aria-pressed=true] svg.i { fill: currentColor; }
+.pinbar { padding: 0 14px 8px; flex: none; }
+.pinbar .btn { width: 100%; }
+.pick small { color: var(--ink-3); font-variant-numeric: tabular-nums; font-size: 12.5px; }
+
+.pad { padding: 2px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+.pad output { font-size: 20px; font-weight: 750; font-variant-numeric: tabular-nums; }
+.pad output small { font-size: 13px; font-weight: 500; color: var(--ink-3); margin-left: 6px; }
+.pad p { margin: 0; font-size: 12.5px; color: var(--ink-3); }
+input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
+
+.detail { padding: 0 16px 14px; display: flex; flex-direction: column; gap: 12px; }
+.detail h1 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -.02em; line-height: 1.3; overflow-wrap: anywhere; }
+.kind { display: flex; align-items: center; gap: 7px; margin-top: 4px; color: var(--ink-2); font-size: 13.5px; font-weight: 550; }
+.kind .dot { width: 9px; height: 9px; border-radius: 50%; }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: 7px 14px; margin: 0; align-items: center; }
+.facts dt { color: var(--ink-3); font-size: 13px; }
+.facts dd { margin: 0; min-width: 0; overflow-wrap: anywhere; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.facts dd b { font-weight: 700; font-variant-numeric: tabular-nums; }
+.facts dd small { color: var(--ink-3); font-size: 12.5px; }
+.link { font-size: 12.5px; font-weight: 650; color: var(--ink-3); padding: 1px 6px; border-radius: 6px; }
+.link:hover { background: var(--surface-2); color: var(--ink); }
+.meter { display: inline-flex; gap: 3px; }
+.meter i { width: 14px; height: 6px; border-radius: 3px; background: var(--line-2); }
+.meter i.on { background: var(--ok); }
+.mine { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 10px; border-top: 1px solid var(--line); }
+.mine span { font-size: 12.5px; color: var(--ink-3); margin-right: auto; }
+.set { padding: 4px 16px 14px; display: flex; flex-direction: column; gap: 9px; }
+.set + .set { border-top: 1px solid var(--line); padding-top: 14px; }
+.set h3 { margin: 4px 0 0; font-size: 12.5px; font-weight: 650; color: var(--ink-3); }
+.set p { margin: 0; font-size: 12.5px; color: var(--ink-3); }
+.set output { font-size: 17px; font-weight: 750; font-variant-numeric: tabular-nums; }
+.set output small { font-size: 13px; font-weight: 500; color: var(--ink-3); margin-left: 6px; }
+.switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; font-weight: 650; font-size: 15px; }
+.switch input { appearance: none; width: 42px; height: 24px; border-radius: 999px; background: var(--line-2); position: relative; margin: 0; cursor: pointer; flex: none; }
+.switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: var(--sh-1); transition: transform .15s; }
+.switch input:checked { background: var(--ok); }
+.switch input:checked::after { transform: translateX(18px); }
+.opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.opt { height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line-2); font-size: 13px; font-weight: 600; }
+.opt:hover { border-color: var(--ink-3); }
+.opt[aria-pressed=true] { background: var(--inv); border-color: var(--inv); color: var(--on-inv); }
+.rec { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+.rec .k { font-size: 12.5px; color: var(--ink-3); font-weight: 600; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+/* 카페 카드 안에 띄우는 카카오맵, 네이버지도 화면 */
+.embed { display: flex; flex-direction: column; gap: 6px; }
+.embed iframe { width: 100%; height: min(540px, 62vh); border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
+.embed a { align-self: flex-end; font-size: 12.5px; font-weight: 600; color: var(--ink-3); text-decoration: none; }
+.embed a:hover { color: var(--ink); }
+@media (min-width: 761px) { #panel[data-kind=detail][data-embed] { width: 400px !important; } }
+
+/* 아래쪽: 개수 단추, 지도 단추 */
+#count { position: absolute; z-index: 15; left: 50%; bottom: 22px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 18px; border-radius: 999px; background: var(--inv); color: var(--on-inv); font-weight: 650; box-shadow: var(--sh-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+#count:hover { opacity: .9; }
+#count svg.i { width: 16px; height: 16px; }
+#ctrl { position: absolute; right: 14px; bottom: 44px; z-index: 15; display: flex; flex-direction: column; gap: 8px; }
+#nav { position: absolute; z-index: 15; right: 66px; bottom: 44px; display: flex; gap: 8px; }
+#nav { pointer-events: none; }
+#nav > * { pointer-events: auto; }
+.nbtn { display: inline-flex; align-items: center; gap: 6px; height: 42px; padding: 0 16px 0 13px; border-radius: 12px; background: var(--surface); box-shadow: var(--sh-1); font-weight: 650; white-space: nowrap; }
+.nbtn:hover, .nbtn[aria-pressed=true] { background: var(--inv); color: var(--on-inv); }
+.cbtn { width: 42px; height: 42px; display: grid; place-items: center; background: var(--surface); border-radius: 12px; box-shadow: var(--sh-1); color: var(--ink); }
+.cbtn:hover { background: var(--surface-2); }
+.cgroup { display: flex; flex-direction: column; background: var(--surface); border-radius: 12px; box-shadow: var(--sh-1); overflow: hidden; }
+.cgroup .cbtn { box-shadow: none; border-radius: 0; }
+.cgroup .cbtn + .cbtn { border-top: 1px solid var(--line); }
+#toast { position: absolute; left: 50%; bottom: 78px; transform: translateX(-50%); z-index: 40; background: var(--inv); color: var(--on-inv); padding: 10px 16px; border-radius: 10px; font-weight: 600; max-width: calc(100% - 32px); box-shadow: var(--sh-2); }
 .maplibregl-map { font-family: var(--font); }
-.maplibregl-popup { z-index: 5; }
-.maplibregl-popup-content { background: var(--panel); color: var(--fg); border-radius: 14px; box-shadow: var(--shadow); padding: 14px 16px; width: 282px; max-width: calc(100vw - 32px); }
-.maplibregl-popup-anchor-bottom .maplibregl-popup-tip, .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip, .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip { border-top-color: var(--panel); }
-.maplibregl-popup-anchor-top .maplibregl-popup-tip, .maplibregl-popup-anchor-top-left .maplibregl-popup-tip, .maplibregl-popup-anchor-top-right .maplibregl-popup-tip { border-bottom-color: var(--panel); }
-.maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: var(--panel); }
-.maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: var(--panel); }
-.maplibregl-popup-close-button { color: var(--muted); font-size: 20px; padding: 2px 8px; }
-.maplibregl-ctrl-group { background: var(--panel); }
-.maplibregl-ctrl-attrib { background: color-mix(in srgb, var(--panel) 82%, transparent) !important; color: var(--muted); }
-.maplibregl-ctrl-attrib a { color: var(--muted); }
-@media (prefers-color-scheme: dark) { .maplibregl-ctrl-group button .maplibregl-ctrl-icon { filter: invert(1); } }
-.me { width: 18px; height: 18px; border-radius: 50%; background: #2f6fed; border: 3px solid #fff; box-shadow: 0 0 0 2px rgba(47,111,237,.35); }
-.card { display: flex; flex-direction: column; gap: 10px; font-size: 13.5px; }
-.card h3 { margin: 0; font-size: 16px; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; padding-right: 14px; }
-.card .kind { display: flex; align-items: center; gap: 8px; color: var(--muted); }
-.card dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 5px 10px; }
-.card dt { color: var(--muted); }
-.card dd { margin: 0; overflow-wrap: anywhere; }
-.card .marks { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.card .marks button { border: 1px solid var(--line); background: var(--soft); border-radius: 9px; padding: 8px 4px; font-size: 12.5px; }
-.card .marks button[aria-pressed=true] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-.card .links { display: flex; gap: 14px; }
-.card .links a { color: var(--accent); font-weight: 600; text-decoration: none; }
-.card .links a:hover { text-decoration: underline; }
+.maplibregl-ctrl-attrib { background: color-mix(in srgb, var(--surface) 85%, transparent) !important; color: var(--ink-3); font-size: 11px; }
+.maplibregl-ctrl-attrib a { color: var(--ink-3); }
+.me { width: 18px; height: 18px; border-radius: 50%; background: #2463eb; border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(36, 99, 235, .22); }
 
 @media (max-width: 760px) {
-  body { display: block; }
-  #mapwrap { position: absolute; inset: 0; }
-  #panel { position: absolute; left: 0; right: 0; bottom: 0; width: auto; max-height: 76%; border-right: 0; border-top: 1px solid var(--line); border-radius: 18px 18px 0 0; box-shadow: var(--shadow); transform: translateY(105%); transition: transform .22s ease; padding-bottom: env(safe-area-inset-bottom, 0px); }
-  #panel.open { transform: none; }
-  #panel header { flex-direction: row; align-items: center; justify-content: space-between; }
-  #openFilters { display: block; }
-  #panel #closeFilters { display: block; }
-  .maplibregl-ctrl-bottom-right { bottom: 0; }
-  #openFilters { bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
-  #locate { bottom: 110px; }
+  #bar { top: calc(10px + env(safe-area-inset-top, 0px)); left: 0; right: 0; flex-direction: column; gap: 0; }
+  .search { width: auto; align-self: stretch; margin: 0 12px; height: 46px; }
+  #chips { flex-wrap: nowrap; overflow-x: auto; align-self: stretch; padding: 8px 12px 10px; scrollbar-width: none; }
+  #chips::-webkit-scrollbar { display: none; }
+  #panel { left: 0 !important; right: 0; top: auto !important; bottom: 0; width: auto !important; max-height: 62% !important; border-radius: 20px 20px 0 0; }
+  #panel[data-kind=region], #panel[data-kind=brand], #panel[data-kind=search], #panel[data-kind=list] { max-height: 74% !important; }
+  #panel[data-kind=detail][data-embed] { max-height: 90% !important; }
+  #count { bottom: calc(22px + env(safe-area-inset-bottom, 0px)); }
+  #ctrl { right: 12px; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); }
+  #ctrl .cgroup { display: none; }
+  .maplibregl-ctrl-bottom-right { right: 56px; }
+  #nav { right: 12px; left: 12px; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); flex-wrap: wrap-reverse; justify-content: flex-end; }
+  .sheet-open #count, .sheet-open #ctrl, .sheet-open #nav { display: none; }
+  #toast { bottom: auto; top: calc(122px + env(safe-area-inset-top, 0px)); }
 }
-#closeFilters { display: none; border: 1px solid var(--line); background: var(--soft); border-radius: 9px; padding: 6px 12px; }
-@media (prefers-reduced-motion: reduce) { #panel { transition: none; } }
 </style>
 </head>
 <body>
-<aside id="panel" aria-label="필터">
-  <header>
-    <div>
-      <h1>카페 지도</h1>
-      <div id="total">불러오는 중</div>
-    </div>
-    <button id="closeFilters" type="button">닫기</button>
-  </header>
-  <div id="scroll">
-    <section>
-      <h2>이름으로 찾기</h2>
-      <input id="q" type="search" placeholder="예: 스타벅스 강남, 테라로사" autocomplete="off">
-      <div id="results" hidden></div>
-    </section>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.500-3.500"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.100 7-11.500A7 7 0 0 0 5 9.500c0 5.400 7 11.500 7 11.500z"/><circle cx="12" cy="9.500" r="2.500"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+  <symbol id="i-laptop" viewBox="0 0 24 24"><path d="M5 15.500V7a1.500 1.500 0 0 1 1.500-1.500h11A1.500 1.500 0 0 1 19 7v8.500"/><path d="M2.500 15.500h19l-1.200 2.600a1 1 0 0 1-.900.600H4.600a1 1 0 0 1-.900-.600z"/></symbol>
+  <symbol id="i-size" viewBox="0 0 24 24"><path d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.500 4.500 4.500L19 7.500"/></symbol>
+  <symbol id="i-locate" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7.500"/><path d="M12 2v2.500M12 19.500V22M2 12h2.500M19.500 12H22"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.500 12 4l8 7.500M6.500 10v9.500h11V10"/></symbol>
+  <symbol id="i-cup" viewBox="0 0 24 24"><path d="M5 8h11v5a5.500 5.500 0 0 1-11 0z"/><path d="M16 9.500h1.500a2.250 2.250 0 0 1 0 4.500H16M6 20h9"/></symbol>
+  <symbol id="i-tack" viewBox="0 0 24 24"><path d="M9 3.500h6l-.800 5.300 3.300 3.400V14h-4.700v6l-.800 1.500-.800-1.500v-6H6.500v-1.800l3.300-3.400z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.010M4 12h.010M4 18h.010"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24"><path d="M14 5h5v5M19 5l-8 8M10 6H6a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-4"/></symbol>
+</svg>
 
-    <section>
-      <h2>종류</h2>
-      <div class="row" id="presets"></div>
-      <div id="groups" style="display:flex;flex-direction:column;gap:8px"></div>
-      <label class="check"><input type="checkbox" id="hideDabang" checked> 옛날식 다방은 숨기기</label>
-    </section>
-
-    <section>
-      <h2>크기</h2>
-      <div class="seg" id="segBig">
-        <button type="button" data-v="0" aria-pressed="true">전체</button>
-        <button type="button" data-v="1" aria-pressed="false">대형만</button>
-      </div>
-      <div class="slider">
-        <label for="bigMin">대형 기준: <output id="bigOut"></output></label>
-        <input type="range" id="bigMin" min="100" max="1000" step="10" value="330">
-      </div>
-      <p class="hint">매장 면적은 음식점 인허가 자료에서 가져왔어요. 면적을 모르는 카페(전체의 약 18%)는 대형만 볼 때 빠져요.</p>
-    </section>
-
-    <section>
-      <h2>노트북 작업</h2>
-      <div class="seg" id="segLap">
-        <button type="button" data-v="0" aria-pressed="true">전체</button>
-        <button type="button" data-v="1" aria-pressed="false">작업하기 좋은 곳</button>
-      </div>
-      <p class="hint">콘센트나 와이파이 자료는 없어서, 매장 넓이와 브랜드로 추정해요. 카페를 눌러 직접 표시하면 그 표시가 추정보다 먼저예요.</p>
-    </section>
-
-    <footer>
-      카페 위치와 이름: 소상공인시장진흥공단 상가(상권)정보, 2026년 9월 기준.<br>
-      매장 면적: 행정안전부 지방행정 인허가 자료(휴게음식점, 일반음식점, 제과점).<br>
-      브랜드는 상호명으로 자동 분류해서 일부 틀릴 수 있어요.
-    </footer>
-  </div>
-</aside>
-
-<main id="mapwrap">
+<div id="app">
   <div id="map"></div>
-  <div id="status" role="status">지도를 불러오는 중</div>
-  <button class="fab" id="locate" type="button">내 위치</button>
-  <button class="fab" id="openFilters" type="button">필터</button>
+  <div id="bar">
+    <label class="search">
+      <svg class="i"><use href="#i-search"/></svg>
+      <input id="q" type="search" placeholder="카페 이름이나 동네 검색" autocomplete="off" enterkeyhint="search">
+      <button id="qClear" type="button" aria-label="검색어 지우기" hidden><svg class="i"><use href="#i-x"/></svg></button>
+    </label>
+    <div id="chips" role="toolbar" aria-label="필터"></div>
+  </div>
+  <section id="panel" hidden></section>
+  <button id="count" type="button" hidden></button>
+  <div id="nav" hidden>
+    <button class="nbtn" id="navAll" type="button" aria-pressed="false" hidden></button>
+    <button class="nbtn" id="navBack" type="button"><svg class="i"><use href="#i-back"/></svg>뒤로</button>
+    <button class="nbtn" id="navHome" type="button"><svg class="i"><use href="#i-home"/></svg>처음부터</button>
+  </div>
+  <div id="ctrl">
+    <button class="cbtn" id="locate" type="button" aria-label="내 위치로 이동"><svg class="i"><use href="#i-locate"/></svg></button>
+    <div class="cgroup">
+      <button class="cbtn" id="zin" type="button" aria-label="확대"><svg class="i"><use href="#i-plus"/></svg></button>
+      <button class="cbtn" id="zout" type="button" aria-label="축소"><svg class="i"><use href="#i-minus"/></svg></button>
+    </div>
+  </div>
   <div id="toast" hidden></div>
-</main>
+</div>
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="cafes.js"></script>
+<!-- 카페 자료는 두 벌이다. 내 컴퓨터에만 있는 cafes.local.js(카카오 좌표)가 있으면 그것을 쓰고,
+     없으면(인터넷에 올린 곳에서는 없다) 공공데이터 좌표로 만든 cafes.js를 쓴다. -->
+<script src="cafes.local.js"></script>
+<script>if (!window.CAFES) document.write('<script src="cafes.js"><\/script>');</script>
+<script src="regions.js"></script>
+<script src="landmarks.js"></script>
 <script>
 (function () {
   'use strict';
   var D = window.CAFES;
   var $ = function (id) { return document.getElementById(id); };
   if (!D || !window.maplibregl) {
-    $('status').textContent = !D ? 'cafes.js 파일을 찾지 못했어요. index.html과 같은 폴더에 있어야 해요.' : '지도 라이브러리를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.';
-    $('total').textContent = '';
+    var t0 = $('toast'); t0.hidden = false;
+    t0.textContent = !D ? 'cafes.js 파일을 찾지 못했어요. index.html과 같은 폴더에 있어야 해요.' : '지도 라이브러리를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.';
     return;
   }
 
-  // ---------- 데이터 준비 ----------
+  // ================= 데이터 준비 =================
   var N = D.name.length;
+  // 종류 번호: 0 프랜차이즈, 1 저가커피, 2 개인카페
   var GROUPS = [
-    { key: 'P', label: '일반 프랜차이즈', css: '--c-fr' },
-    { key: 'L', label: '저가커피', css: '--c-low' },
-    { key: 'D', label: '디저트·음료', css: '--c-des' },
-    { key: 'I', label: '개인카페', css: '--c-ind' }
+    { label: '프랜차이즈', css: '--c-fr' },
+    { label: '저가커피', css: '--c-low' },
+    { label: '개인카페', css: '--c-ind' }
   ];
-  var G_OF = { P: 0, L: 1, D: 2 };
+  // 공차, 설빙 같은 디저트와 음료 브랜드도 프랜차이즈로 본다.
+  var G_OF = { P: 0, L: 1, D: 0 };
   var brandGroup = D.brands.map(function (b) { return G_OF[b[1]]; });
-  // 앉아서 일하기 좋은 편인 브랜드에 주는 가산점
+  var INITIAL_FIX = { '커피에반하다': '반', '카페051': '5', '메가MGC커피': '메', '읍천리382': '읍', '플러스82': '플', '디저트39': '디' };
+  var brandInitial = D.brands.map(function (b) { return INITIAL_FIX[b[0]] || b[0].replace(/^(더|카페|커피)(?=.)/, '').charAt(0); });
+  // 브랜드 아이콘 주소. 그 브랜드의 공식 사이트 아이콘이나 공식 앱 아이콘을 인터넷에서 그때그때 불러온다(파일로 복사해 두지 않는다).
+  // 선명한 것만 골랐다. 주소를 못 찾았거나 16픽셀짜리밖에 없는 브랜드, 불러오기에 실패한 브랜드는 첫 글자 아이콘으로 나온다.
+  var BRAND_ICON = {
+    '감성커피': 'https://gamsungcoffee.com/favicon.ico?favicon.57dc3956.ico',
+    '공차': 'https://www.gong-cha.co.kr/favicon/android-chrome-512x512.png',
+    '나이스카페인클럽': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/8b/97/9e/8b979e1b-61c6-6c02-182d-4d7a2c74d160/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg',
+    '달콤커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/9b/93/41/9b934102-2951-07d0-57ab-5e648892156e/AppIcon-0-0-1x_U007emarketing-0-8-0-0-85-220.png/512x512bb.jpg',
+    '댄싱컵': 'https://dancingcup.co.kr/images/favi.ico',
+    '더리터': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/c1/0e/bd/c10ebde0-99d6-3cbb-48d2-81b67eec6f92/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg',
+    '더벤티': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/63/eb/7b/63eb7bfb-881c-bfd1-885a-b1538eac826e/AppIcon-0-0-1x_U007emarketing-0-7-0-85-220.png/512x512bb.jpg',
+    '드롭탑': 'https://framerusercontent.com/images/ht8OraWVX8dphvQwY0AY918akW4.png',
+    '디저트39': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/a3/04/a2/a304a2f3-85a6-29cd-7e07-34d0dd900333/AppIcon-0-0-1x_U007emarketing-0-11-0-85-220.png/512x512bb.jpg',
+    '만랩커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/a5/fa/08/a5fa08ce-f662-2011-c559-c9c96211377d/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg',
+    '매머드커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/17/a2/73/17a273e4-8081-0b34-e82d-8c3f4d702773/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg',
+    '매스커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/bc/63/fe/bc63fed4-89d1-3d3b-b07f-ea47a123b4d6/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg',
+    '메가MGC커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/6a/31/d6/6a31d670-d28a-7ce7-9197-d52b8c3892cd/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg',
+    '모리커피': 'https://cdn.imweb.me/upload/S2021073187c966d5c639d/19fc9c9b5020e.ico',
+    '바나타이거': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/03/16/ec/0316ec02-6b41-9ef8-4b9e-3b9d20e41667/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg',
+    '바나프레소': 'https://banapresso.com/apple-touch-icon.png',
+    '백억커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/f9/d8/f3/f9d8f356-6966-3545-0023-72d72f0ed3b0/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg',
+    '벌크커피': 'https://www.bulkcoffee.co.kr/wp-content/uploads/2023/07/bulkcoffee_favicon.png',
+    '벤티프레소': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/e2/b4/d6/e2b4d6e9-0b6b-8b35-abc5-8691cc9e8f8b/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg',
+    '블루보틀': 'https://kr.bluebottlecoffee.com/cdn/shop/files/bbck-favicon.png?crop=center&height=48&v=1724386983&width=48',
+    '블루샥': 'https://www.blushaak.co.kr/favicon.ico?favicon.0b3bf435.ico',
+    '빽다방': 'https://paikdabang.com/favicon.png',
+    '설빙': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/ed/2b/3e/ed2b3e6b-7631-68de-55f1-afed729801a1/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg',
+    '스타벅스': 'https://www.starbucks.co.kr/favicon.ico',
+    '아마스빈': 'https://is1-ssl.mzstatic.com/image/thumb/Purple124/v4/76/a1/4a/76a14acc-749f-adda-453c-ba018bba49fd/AppIcon-0-0-1x_U007emarketing-0-0-0-5-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-0.png/512x512bb.jpg',
+    '아임일리터': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/38/bd/8b/38bd8b16-26b4-8f77-035e-e7421747c33b/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg',
+    '아티제': 'https://cafeartisee.com/icons-2da2944fede54285473056d90e31d474/apple-touch-icon-1024x1024.png',
+    '요거프레소': 'https://www.google.com/s2/favicons?sz=128&domain=yogerpresso.co.kr',
+    '요아정': 'https://yoajung.co.kr/images/yoajungfavi.ico',
+    '우지커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/e9/d2/29/e9d22920-bdb6-73ed-c28b-d6abe6c95cb9/oozy_coffee_appicon-0-0-1x_U007ephone-0-1-0-sRGB-85-220.png/512x512bb.jpg',
+    '원유로스페셜티': 'https://cdn.imweb.me/thumbnail/20220526/70420f83c9239.png',
+    '이디야': 'https://ediya.com/images/ico/favicon.ico',
+    '쥬씨': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/7c/16/3f/7c163ffb-a720-6019-5130-ba07dbceef99/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg',
+    '천씨씨커피': 'https://1000cccoffee.com/images/favi.ico',
+    '청자다방': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/8a/e1/20/8ae12007-4420-7bd3-6016-0ed8d8ca4a3e/CheongJaDaBangAppIcon-0-0-1x_U007ephone-0-1-0-sRGB-85-220.png/512x512bb.jpg',
+    '카페051': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/a7/c4/14/a7c41470-be72-359b-d410-083d2dc5298d/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg',
+    '카페게이트': 'https://cdn.imweb.me/thumbnail/20250410/a3328609595d0.png',
+    '카페베네': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/54/ba/c7/54bac73f-6d65-4899-3ffb-b7bad55d39c2/AppIcon-0-0-1x_U007emarketing-0-11-0-85-220.png/512x512bb.jpg',
+    '카페봄봄': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/7c/5e/15/7c5e15e6-b2e5-ba73-679c-9c117c66053d/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg',
+    '카페인중독': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/74/24/3e/74243ec7-b9d2-9ba9-881a-77b896838bd9/AppIcon-0-0-1x_U007emarketing-0-6-0-85-220.png/512x512bb.jpg',
+    '카페일리터': 'https://cafe1liter.com/favicon.ico',
+    '커피니': 'https://www.google.com/s2/favicons?sz=128&domain=coffeenie.co.kr',
+    '커피마마': 'https://coffeemama.co.kr/favicon32.ico',
+    '커피명가': 'https://www.google.com/s2/favicons?sz=128&domain=myungga.com',
+    '커피베이': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/15/91/ec/1591ecf9-5fc9-c2d5-b0b5-81cb150eb041/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg',
+    '커피빈': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/50/4b/7e/504b7eeb-2c37-379e-ec2e-3a69ab37fd6b/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/512x512bb.jpg',
+    '커피사피엔스': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/bc/6b/c8/bc6bc831-9e8a-673a-1ca0-143cf4e52583/AppIcon-0-0-1x_U007emarketing-0-11-0-85-220.png/512x512bb.jpg',
+    '커피에반하다': 'https://coffeebanhada.com/image/touch.png',
+    '커피온리': 'https://static.wixstatic.com/media/5993f5_d322725ab616421080e5dace19f87bef%7Emv2.jpg/v1/fill/w_192%2Ch_192%2Clg_1%2Cusm_0.66_1.00_0.01/5993f5_d322725ab616421080e5dace19f87bef%7Emv2.jpg',
+    '컴포즈커피': 'https://composecoffee.com/files/attach/xeicon/favicon.dark.ico?t=1788901166',
+    '탐앤탐스': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/53/c3/94/53c39434-0e0c-2002-1c53-a0ce6608e2dd/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg',
+    '테라로사': 'https://www.google.com/s2/favicons?sz=128&domain=terarosa.com',
+    '테라커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/ec/a6/f6/eca6f663-8770-a78e-ed2f-5c81b1590fb6/AppIcon-0-0-1x_U007ephone-0-11-0-85-220.png/512x512bb.jpg',
+    '텐퍼센트커피': 'https://tenpercentcoffee.com/images/logo20261014.ico?v=20261022',
+    '투썸플레이스': 'https://www.google.com/s2/favicons?sz=128&domain=twosome.co.kr',
+    '트리플에이커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/05/a0/c8/05a0c848-af61-6528-186e-97fca50cb52f/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg',
+    '파스쿠찌': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/ab/83/5f/ab835ffe-0b69-5975-732f-22b2fef02f75/AppIcon-0-0-1x_U007emarketing-0-8-0-0-85-220.png/512x512bb.jpg',
+    '포트캔커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/13/91/0c/13910c0f-efba-0f90-3a29-b2a42300f217/AppIcon_portcancoffee-0-0-1x_U007ephone-0-1-0-sRGB-85-220.png/512x512bb.jpg',
+    '폴바셋': 'https://www.google.com/s2/favicons?sz=128&domain=baristapaulbassett.co.kr',
+    '플러스82': 'https://cafeplus82.com/kor/favicon.ico',
+    '하삼동커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/90/97/b0/9097b00a-a104-3c7b-a579-a27e48ac8969/AppIcon-0-0-1x_U007emarketing-0-7-0-85-220.png/512x512bb.jpg',
+    '하이오커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/91/08/d2/9108d2c9-97e2-c4b9-2eb8-28e142e8db6d/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg',
+    '할리스': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/57/89/93/5789936e-d4f7-ef08-bd94-132d774bf21a/AppIcon-0-0-1x_U007emarketing-0-3-0-85-220.png/512x512bb.jpg',
+    '해쉬커피': 'https://cdn.imweb.me/thumbnail/20260716/7c8aedc60ba7d.png',
+    '핸즈커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/db/5e/61/db5e61c2-edd9-4260-aad0-6d1450ef51d2/AppIcon-0-0-1x_U007emarketing-0-11-0-85-220.png/512x512bb.jpg'
+  };
+  function iconUrl(j) { return BRAND_ICON[D.brands[j][0]] || ''; }
+  var brandImg = D.brands.map(function (b, j) {
+    var u = iconUrl(j);
+    if (!u) return null;
+    var im = new Image();
+    im.onload = function () { im.ok = true; if (typeof requestDraw === 'function') requestDraw(); };
+    // 앱 아이콘은 네모 가득 색이 차 있어서 동그라미에 꽉 채우고, 사이트 아이콘은 모서리가 잘리지 않게 안쪽에 넣는다.
+    im.full = /mzstatic/.test(u);
+    im.src = u;
+    return im;
+  });
+  // 오래 앉아 있기 좋은 편인 브랜드에 주는 가산점
   var LAP_BONUS = { '스타벅스': 15, '투썸플레이스': 15, '할리스': 20, '탐앤탐스': 15, '커피빈': 10, '엔제리너스': 10, '파스쿠찌': 10, '카페베네': 10, '드롭탑': 10, '폴바셋': 5 };
-  var LAP_OK = 65;
+  var LAP_OK = 65, PYEONG = 3.3058;
 
   var grp = new Uint8Array(N), dabang = new Uint8Array(N), score = new Uint8Array(N);
   var mx = new Float64Array(N), my = new Float64Array(N);
   var pass = new Uint8Array(N), mark = new Int8Array(N);
-  var brandCount = new Int32Array(D.brands.length), indieCount = 0;
-  for (var i = 0; i < N; i++) {
-    var b = D.brand[i];
-    if (b < 0) { grp[i] = 3; indieCount++; if (/다방/.test(D.name[i])) dabang[i] = 1; }
+  var brandCount = new Int32Array(D.brands.length);
+  function mercY(lat) { var s = Math.sin(lat * Math.PI / 180); return 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI); }
+  function mercToLngLat(x, y) { return [x * 360 - 180, Math.atan(Math.sinh(Math.PI * (1 - 2 * y))) * 180 / Math.PI]; }
+  var i, b;
+  for (i = 0; i < N; i++) {
+    b = D.brand[i];
+    if (b < 0) { grp[i] = 2; if (/다방/.test(D.name[i])) dabang[i] = 1; }
     else { grp[i] = brandGroup[b]; brandCount[b]++; }
-    var lat = D.lat[i] / 1e5, lng = D.lng[i] / 1e5, s = Math.sin(lat * Math.PI / 180);
-    mx[i] = (lng + 180) / 360;
-    my[i] = 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI);
+    mx[i] = (D.lng[i] / 1e5 + 180) / 360;
+    my[i] = mercY(D.lat[i] / 1e5);
     var a = D.area[i];
     var sc = a <= 0 ? 40 : a < 40 ? 10 : a < 80 ? 30 : a < 150 ? 50 : a < 300 ? 68 : 82;
     if (b >= 0) {
       var bonus = LAP_BONUS[D.brands[b][0]];
-      sc += bonus !== undefined ? bonus : grp[i] === 1 ? -25 : grp[i] === 2 ? -20 : 0;
+      sc += bonus !== undefined ? bonus : grp[i] === 1 ? -25 : 0;
     }
     if (dabang[i]) sc -= 50;
     score[i] = Math.max(0, Math.min(100, sc));
   }
+  // 같은 건물에 있어서 좌표가 똑같은 카페들은 지도 위에서 실제 거리로 조금씩 떼어 놓는다.
+  // 화면 픽셀이 아니라 미터로 떼기 때문에, 다른 카페들처럼 확대하면 벌어지고 축소하면 모인다.
+  // 가운데부터 벌집 모양으로 채워 나가고, 이웃끼리 14m 떨어진다.
+  var GAP = 14;
+  (function () {
+    var at = {}, i, k;
+    for (i = 0; i < N; i++) { k = D.lat[i] + ',' + D.lng[i]; (at[k] = at[k] || []).push(i); }
+    // 벌집 자리: 가운데 한 칸, 그 둘레 여섯 칸, 그 바깥 열두 칸 순서
+    function spots(n) {
+      var out = [[0, 0]], DIR = [[1, 0], [0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1]];
+      for (var ring = 1; out.length < n; ring++) {
+        var q = 0, r = -ring;
+        for (var d = 0; d < 6; d++) for (var t = 0; t < ring; t++) { out.push([q, r]); q += DIR[d][0]; r += DIR[d][1]; }
+      }
+      return out.slice(0, n).map(function (h) { return [(h[0] + h[1] / 2) * GAP, h[1] * .866 * GAP]; });
+    }
+    for (k in at) {
+      var g = at[k];
+      if (g.length < 2) continue;
+      var sp = spots(g.length), cx = 0, cy = 0, j;
+      for (j = 0; j < sp.length; j++) { cx += sp[j][0]; cy += sp[j][1]; }
+      cx /= sp.length; cy /= sp.length;
+      // 1미터가 지도 좌표로 얼마인지(위도에 따라 다르다)
+      var unit = 1 / (40075016 * Math.cos(D.lat[g[0]] / 1e5 * Math.PI / 180));
+      for (j = 0; j < g.length; j++) { mx[g[j]] += (sp[j][0] - cx) * unit; my[g[j]] += (sp[j][1] - cy) * unit; }
+    }
+  })();
+  // 좌표가 조금만 다른 이웃 카페도 서로 14m보다 가까우면, 그만큼 벌어질 때까지 양쪽을 똑같이 민다.
+  // 이렇게 해 두고 아이콘 지름을 실제 거리 14m보다 크지 않게 그리면 아이콘끼리 겹칠 일이 없다.
+  // 지도를 잘게 나눈 칸에 카페를 담아 두고 바로 옆 칸끼리만 견준다. 더 밀 것이 없을 때까지 되풀이한다.
+  (function () {
+    var M = 1 << 18, head = new Int32Array(M), next = new Int32Array(N), gap = new Float64Array(N), i, j, it, moved, f;
+    for (i = 0; i < N; i++) gap[i] = GAP / (40075016 * Math.cos(D.lat[i] / 1e5 * Math.PI / 180));
+    var cell = GAP / (40075016 * Math.cos(39.5 * Math.PI / 180));
+    for (it = 0; it < 80; it++) {
+      head.fill(-1);
+      for (i = 0; i < N; i++) { var h = (Math.imul(Math.floor(mx[i] / cell), 73856093) ^ Math.imul(Math.floor(my[i] / cell), 19349663)) & (M - 1); next[i] = head[h]; head[h] = i; }
+      moved = 0;
+      for (i = 0; i < N; i++) {
+        var cx = Math.floor(mx[i] / cell), cy = Math.floor(my[i] / cell), g = gap[i];
+        for (var ax = -1; ax <= 1; ax++) for (var ay = -1; ay <= 1; ay++)
+          for (j = head[(Math.imul(cx + ax, 73856093) ^ Math.imul(cy + ay, 19349663)) & (M - 1)]; j >= 0; j = next[j]) {
+            if (j <= i) continue;
+            var dx = mx[j] - mx[i], dy = my[j] - my[i], d = Math.sqrt(dx * dx + dy * dy);
+            if (d >= g * .98) continue;
+            if (d < g * 1e-4) { dx = Math.cos(i * 2.399963); dy = Math.sin(i * 2.399963); f = g / 2; } else f = (g - d) / 2 / d;
+            mx[i] -= dx * f; my[i] -= dy * f; mx[j] += dx * f; my[j] += dy * f; moved++;
+          }
+      }
+      if (!moved) break;
+    }
+  })();
   function keyOf(i) { return D.name[i] + '@' + D.lat[i] + ',' + D.lng[i]; }
+  function fmt(n) { return n.toLocaleString('ko-KR'); }
+  function pyeong(a) { return Math.round(a / PYEONG); }
 
-  // ---------- 저장해 둔 상태 ----------
-  var STORE = 'cafemap.v2';
+  // ================= 지역: 시도 > 시(군, 구) > 구 > 동 =================
+  // 자료에는 "수원시 영통구"처럼 시와 구가 한 칸에 붙어 있다. 이것을 수원시 아래 영통구로 나눠서
+  // 구가 있는 시도 다른 시와 같은 단계에 나오게 한다. 지역 하나하나가 번호(R)를 가진 칸이고, 부모 칸을 가리킨다.
+  var SIDO_SHORT = { '서울특별시': '서울', '경기도': '경기', '인천광역시': '인천', '강원특별자치도': '강원', '대전광역시': '대전', '세종특별자치시': '세종', '충청북도': '충북', '충청남도': '충남', '전남광주통합특별시': '광주·전남', '광주광역시': '광주', '전라남도': '전남', '전북특별자치도': '전북', '부산광역시': '부산', '대구광역시': '대구', '울산광역시': '울산', '경상북도': '경북', '경상남도': '경남', '제주특별자치도': '제주' };
+  var SIDO_ORDER = ['서울', '경기', '인천', '강원', '대전', '세종', '충북', '충남', '광주·전남', '광주', '전남', '전북', '부산', '대구', '울산', '경북', '경남', '제주'];
+  var sggSido = D.sgg.map(function (g) { return g[1]; }), dongSgg = D.dong.map(function (d) { return d[1]; });
+  var rName = [], rParent = [], rLeaf = [], rKids = [], rootKids = [];
+  function addReg(name, parent, leaf) { rName.push(name); rParent.push(parent); rLeaf.push(leaf ? 1 : 0); rKids.push([]); var id = rName.length - 1; (parent < 0 ? rootKids : rKids[parent]).push(id); return id; }
+  var sidoReg = D.sido.map(function (n) { return addReg(SIDO_SHORT[n] || n, -1, false); });
+  var cityReg = {}, sggReg = D.sgg.map(function (g) {
+    var t = g[0].split(' '), si = sidoReg[g[1]];
+    if (t.length < 2) return addReg(g[0], si, false);
+    var key = g[1] + '|' + t[0];
+    if (cityReg[key] === undefined) cityReg[key] = addReg(t[0], si, false);
+    return addReg(t.slice(1).join(' '), cityReg[key], false);
+  });
+  var dongReg = D.dong.map(function (d) { return addReg(d[0], sggReg[d[1]], true); });
+  var NR = rName.length;
+  var rCnt = new Int32Array(NR), rSx = new Float64Array(NR), rSy = new Float64Array(NR), rBox = new Float64Array(NR * 4);
+  function regPath(r) { var out = []; while (r >= 0) { out.unshift(rName[r]); r = rParent[r]; } return out.join(' '); }
+  function regChain(r) { var out = []; while (r >= 0) { out.unshift(r); r = rParent[r]; } return out; }
+  function regChildren(r) { return r < 0 ? rootKids : rKids[r]; }
+  rootKids.sort(function (p, q) { var a = SIDO_ORDER.indexOf(rName[p]), c = SIDO_ORDER.indexOf(rName[q]); return (a < 0 ? 99 : a) - (c < 0 ? 99 : c); });
+  rKids.forEach(function (k) { k.sort(function (p, q) { return rName[p].localeCompare(rName[q], 'ko'); }); });
+  (function boxes() {
+    var k, r;
+    for (k = 0; k < NR; k++) { rBox[k * 4] = 2; rBox[k * 4 + 1] = 2; rBox[k * 4 + 2] = -1; rBox[k * 4 + 3] = -1; }
+    for (var i = 0; i < N; i++) for (r = dongReg[D.dongOf[i]]; r >= 0; r = rParent[r]) {
+      var o = r * 4;
+      if (mx[i] < rBox[o]) rBox[o] = mx[i]; if (my[i] < rBox[o + 1]) rBox[o + 1] = my[i];
+      if (mx[i] > rBox[o + 2]) rBox[o + 2] = mx[i]; if (my[i] > rBox[o + 3]) rBox[o + 3] = my[i];
+    }
+  })();
+
+  var rAll = new Int32Array(NR);
+  for (i = 0; i < N; i++) if (!dabang[i]) for (var ra = dongReg[D.dongOf[i]]; ra >= 0; ra = rParent[ra]) rAll[ra]++;
+
+  // ================= 상태 =================
+  var STORE = 'cafemap.v6';
   function load(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
   function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* 저장이 막힌 브라우저에서는 그냥 넘어간다 */ } }
   var saved = load(STORE) || {};
-  var marks = load(STORE + '.marks') || {};
+  var marks = load('cafemap.marks') || load('cafemap.v2.marks') || {};
+  // 종류와 브랜드는 "고른 것을 모두 보여 준다". 아무것도 안 고르면 전부 보인다.
   var S = {
-    brandOn: D.brands.map(function (b) { return !(saved.off && saved.off.indexOf(b[0]) >= 0); }),
-    indie: saved.indie !== false,
-    big: !!saved.big,
-    bigMin: saved.bigMin || 330,
-    laptop: !!saved.laptop,
-    hideDabang: saved.hideDabang !== false
+    cats: {}, brands: {},
+    reg: -1,             // 고른 지역 칸. -1이면 전국.
+    big: !!saved.big, bigPy: saved.bigPy || 100,
+    outlet: !!saved.outlet,   // 콘센트 좌석이 있다고 기록한 곳만 보기
+    chairs: {},               // 그 자리 의자 종류로 더 좁히기. n 일반 의자, w 벽면 고정 의자, s 스탠드형 의자
+    sort: saved.sort === 'size' ? 'size' : 'near',
+    showAll: false,      // 구 전체 보기를 켰는가. 지역을 바꾸면 꺼진다.
+    pins: {}             // 브랜드 목록 맨 위에 고정해 둔 브랜드 이름
   };
-  if (Object.keys(marks).length) for (i = 0; i < N; i++) { var m = marks[keyOf(i)]; if (m) mark[i] = m; }
+  (saved.cats || []).forEach(function (g) { if (g !== 2) S.cats[g] = true; });   // 개인카페만 보기는 없앴다.
+  (saved.brands || []).forEach(function (n) { for (var j = 0; j < D.brands.length; j++) if (D.brands[j][0] === n) S.brands[j] = true; });
+  (saved.chairs || []).forEach(function (c) { S.chairs[c] = true; });
+  (saved.pins || []).forEach(function (n) { S.pins[n] = true; });
+  if (saved.reg) (function () {
+    for (var k = 0; k < NR; k++) if (regPath(k) === saved.reg) { S.reg = k; return; }
+  })();
+  // 콘센트 좌석 기록. 자료가 어디에도 없어서 카페를 눌러 직접 적는다. 이 기기에만 저장된다.
+  //   o: 1 콘센트 좌석 있음, -1 없음.  c: 그 자리 의자 종류 글자들(n 일반, w 벽면 고정, s 스탠드형)
+  var seats = load('cafemap.seat') || {};
+  var CHAIRS = [['n', '일반 의자', 1], ['w', '벽면 고정 의자', 2], ['s', '스탠드형 의자', 4]];
+  var outlet = new Int8Array(N), chair = new Uint8Array(N);
+  function chairBits(str) { var m = 0; CHAIRS.forEach(function (c) { if ((str || '').indexOf(c[0]) >= 0) m |= c[2]; }); return m; }
+  if (Object.keys(seats).length) (function () {
+    var seen = {}, i, k0, s0;
+    for (i = 0; i < N; i++) { k0 = keyOf(i); s0 = seats[k0]; if (s0) { seen[k0] = 1; outlet[i] = s0.o || 0; chair[i] = chairBits(s0.c); } }
+    // 기록은 "이름@좌표"로 적어 둔다. 좌표 자료를 새로 받아 카페 자리가 조금 바뀌면 이 이름표가 안 맞게 되므로,
+    // 짝을 잃은 기록은 이름이 같고 가장 가까이(500m 안) 있는 카페로 옮겨 적는다.
+    var fixed = false;
+    Object.keys(seats).forEach(function (k) {
+      if (seen[k]) return;
+      var m = /^(.*)@(-?\d+),(-?\d+)$/.exec(k);
+      if (!m) return;
+      var best = -1, bd = 500;
+      for (var j = 0; j < N; j++) if (D.name[j] === m[1] && !seats[keyOf(j)]) {
+        var d = Math.sqrt(Math.pow((D.lat[j] - m[2]) * 1.11, 2) + Math.pow((D.lng[j] - m[3]) * .89, 2));
+        if (d < bd) { bd = d; best = j; }
+      }
+      if (best < 0) return;
+      var s = seats[k]; delete seats[k]; seats[keyOf(best)] = s;
+      outlet[best] = s.o || 0; chair[best] = chairBits(s.c); fixed = true;
+    });
+    if (fixed) save('cafemap.seat', seats);
+  })();
+  function seatCount() { var n = 0; for (var k in seats) if (seats[k].o === 1) n++; return n; }
+  function nKeys(o) { return Object.keys(o).length; }
   function persist() {
     var c = map.getCenter();
     save(STORE, {
-      off: D.brands.filter(function (b, j) { return !S.brandOn[j]; }).map(function (b) { return b[0]; }),
-      indie: S.indie, big: S.big, bigMin: S.bigMin, laptop: S.laptop, hideDabang: S.hideDabang,
+      cats: Object.keys(S.cats).map(Number), brands: Object.keys(S.brands).map(function (j) { return D.brands[j][0]; }),
+      reg: S.reg >= 0 ? regPath(S.reg) : null,
+      big: S.big, bigPy: S.bigPy, outlet: S.outlet, chairs: Object.keys(S.chairs), sort: S.sort, pins: Object.keys(S.pins),
       view: [c.lat, c.lng, +map.getZoom().toFixed(2)]
     });
   }
 
-  // ---------- 지도 ----------
-  // 배경 지도는 OpenFreeMap(키가 필요 없는 OpenStreetMap 벡터 지도)이다.
-  var dark = window.matchMedia('(prefers-color-scheme: dark)');
-  function styleUrl() { return 'https://tiles.openfreemap.org/styles/' + (dark.matches ? 'dark' : 'liberty'); }
-  var view = saved.view || [37.47, 127.02, 10];
-  var map = new maplibregl.Map({
-    container: 'map', center: [view[1], view[0]], zoom: view[2],
-    minZoom: 6, maxZoom: 19, maxBounds: [[121, 31], [134.5, 40.5]],
-    dragRotate: false, pitchWithRotate: false, touchPitch: false, attributionControl: { compact: true }
-  });
+  // ================= 필터 계산 =================
+  var regMask = new Uint8Array(D.dong.length), totalPass = 0;
+  function refilter() {
+    var k, i, r;
+    // 고른 지역 안에 있는 동만 통과시킨다.
+    for (k = 0; k < regMask.length; k++) { regMask[k] = S.reg < 0 ? 1 : 0; for (r = dongReg[k]; r >= 0 && !regMask[k]; r = rParent[r]) if (r === S.reg) regMask[k] = 1; }
+    rCnt.fill(0); rSx.fill(0); rSy.fill(0);
+    var wantChair = chairBits(Object.keys(S.chairs).join(''));
+    var anySel = nKeys(S.cats) + nKeys(S.brands) > 0, minArea = S.bigPy * PYEONG, n = 0;
+    for (i = 0; i < N; i++) {
+      var b = D.brand[i];
+      // 옛날식 다방은 늘 뺀다.
+      var ok = !dabang[i] && (!anySel || S.cats[grp[i]] === true || (b >= 0 && S.brands[b] === true));
+      if (ok && S.big && D.area[i] < minArea) ok = false;
+      if (ok && S.outlet) ok = outlet[i] === 1 && (!wantChair || (chair[i] & wantChair) !== 0);
+      if (ok) { r = dongReg[D.dongOf[i]]; rCnt[r]++; rSx[r] += mx[i]; rSy[r] += my[i]; }
+      pass[i] = ok && regMask[D.dongOf[i]] ? 1 : 0;
+      if (pass[i]) n++;
+    }
+    // 부모 칸은 늘 자식보다 번호가 작다. 뒤에서부터 더해 올라간다.
+    for (k = NR - 1; k >= 0; k--) { r = rParent[k]; if (r >= 0) { rCnt[r] += rCnt[k]; rSx[r] += rSx[k]; rSy[r] += rSy[k]; } }
+    totalPass = n;
+  }
+
+  // ================= 지도 =================
+  var mobile = window.matchMedia('(max-width: 760px)');
+  var KOREA = [[124.8, 33.0], [130.2, 38.7]];
+  // 배경 지도는 길, 공원, 물에 색이 들어간 일반 지도다. PC가 어두운 모드여도 늘 같은 지도를 쓴다.
+  function styleUrl() { return 'https://tiles.openfreemap.org/styles/liberty'; }
+  var mapAt = saved.view ? { center: [saved.view[1], saved.view[0]], zoom: saved.view[2] }
+    : { bounds: KOREA, fitBoundsOptions: { padding: { top: 110, bottom: 70, left: 30, right: 30 } } };
+  var map = new maplibregl.Map(Object.assign({
+    container: 'map',
+    minZoom: 5.2, maxZoom: 19, maxBounds: [[121, 31], [134.5, 40.5]],
+    dragRotate: false, pitchWithRotate: false, touchPitch: false,
+    attributionControl: { compact: true, customAttribution: '카페: 소상공인 상가정보(2026.9), 넓이: 행정안전부 인허가, 경계: 통계청 SGIS (vuski/admdongkor)' },
+    // 지도 안의 한글은 화면 글꼴과 같은 글꼴로 그린다.
+    localIdeographFontFamily: '"Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
+  }, mapAt));
   window.cafeMap = map;
   map.on('error', function (e) { console.error('지도 오류', e && e.error && e.error.message); });
+  // 지도가 아이콘을 찾을 때 그 자리에서 그려서 넘겨 준다.
+  map.on('styleimagemissing', function (e) {
+    var ic = ICONS[e.id.replace('ic-', '')];
+    if (ic && !map.hasImage(e.id)) map.addImage(e.id, drawIcon(ic[0], ic[1]), { pixelRatio: 2 });
+  });
   map.touchZoomRotate.disableRotation();
   map.keyboard.disableRotation();
-  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
-  // 지도 스타일을 받아서 지명을 한글로 바꾼 뒤 적용한다.
+  // 지도 스타일을 받아서 원래 있던 글씨와 기호를 전부 뺀 뒤, 위치를 가늠하는 기준점만 다시 넣는다.
+  // 기준은 네이버 지도다. 다만 "누가 개별로 운영하는 영업장과 작은 시설"은 넣지 않는다.
+  //   넣는 것: 교통(지하철 노선과 역, 버스 정류장, 터미널), 지명(동 이름, 길 이름, 강, 산),
+  //            주거 단지(아파트), 학교와 대학, 종합병원, 공원, 공공기관(구청, 주민센터, 우체국, 경찰서, 소방서, 도서관), 박물관
+  //   빼는 것: 가게, 식당, 술집, 다른 카페, 편의점, 은행, 주유소, 숙박, 교회 같은 종교 시설, 의원과 치과, 약국, 학원, 사무실
+  // 지도에서 가게로 보이는 것은 카페뿐이어야 한다. 기준점 글씨는 카페 이름보다 작고 옅게 쓴다.
+  var LM = window.LANDMARKS || { lines: [], stations: [], apts: [] };
+  // 종류별 아이콘. 동그란 바탕에 흰 그림을 직접 그린다. [바탕색, 그림]
+  var ICONS = {
+    school: ['#5b82d6', 'cap'], univ: ['#3f6fd1', 'cap'], apt: ['#8b94a3', 'apt'], hospital: ['#d9484d', 'cross'],
+    park: ['#2f9a5c', 'tree'], civic: ['#6b7482', 'hall'], museum: ['#8a6f55', 'hall'], bus: ['#6f8fc4', 'bus'], terminal: ['#4a5d80', 'bus']
+  };
+  function drawIcon(color, glyph) {
+    var S = 44, c = document.createElement('canvas'); c.width = c.height = S;
+    var g = c.getContext('2d');
+    g.scale(S / 22, S / 22);
+    g.beginPath(); g.arc(11, 11, 10.4, 0, 6.2832); g.fillStyle = '#ffffff'; g.fill();
+    g.beginPath(); g.arc(11, 11, 9, 0, 6.2832); g.fillStyle = color; g.fill();
+    g.fillStyle = '#ffffff';
+    if (glyph === 'cross') { g.fillRect(9.6, 6, 2.8, 10); g.fillRect(6, 9.6, 10, 2.8); }
+    else if (glyph === 'cap') {
+      g.beginPath(); g.moveTo(4.4, 9.6); g.lineTo(11, 6.3); g.lineTo(17.6, 9.6); g.lineTo(11, 12.9); g.closePath(); g.fill();
+      g.beginPath(); g.moveTo(7.4, 12.3); g.lineTo(7.4, 14.6); g.quadraticCurveTo(11, 17.2, 14.6, 14.6); g.lineTo(14.6, 12.3); g.lineTo(11, 14.1); g.closePath(); g.fill();
+    } else if (glyph === 'apt') {
+      g.fillRect(7, 5.4, 8, 11.2);
+      g.fillStyle = color;
+      [7, 9.8, 12.6].forEach(function (y) { g.fillRect(8.5, y, 1.9, 1.6); g.fillRect(11.6, y, 1.9, 1.6); });
+    } else if (glyph === 'tree') { g.beginPath(); g.arc(11, 9.3, 4.5, 0, 6.2832); g.fill(); g.fillRect(10.2, 12.6, 1.6, 4.2); }
+    else if (glyph === 'hall') {
+      g.beginPath(); g.moveTo(5, 9.5); g.lineTo(11, 5.5); g.lineTo(17, 9.5); g.closePath(); g.fill();
+      [6.5, 10.2, 13.9].forEach(function (x) { g.fillRect(x, 10.3, 1.6, 4.5); });
+      g.fillRect(5.5, 15.3, 11, 1.4);
+    } else if (glyph === 'bus') {
+      g.fillRect(6.2, 5.6, 9.6, 9.2);
+      g.beginPath(); g.arc(8.5, 15.4, 1.35, 0, 6.2832); g.arc(13.5, 15.4, 1.35, 0, 6.2832); g.fill();
+      g.fillStyle = color; g.fillRect(7.5, 7, 7, 3.1);
+    }
+    var d = g.getImageData(0, 0, S, S);
+    return { width: S, height: S, data: d.data };
+  }
+  function dec(fl) { var out = [], x = 0, y = 0; for (var k = 0; k < fl.length; k += 2) { x += fl[k]; y += fl[k + 1]; out.push([x / 1e5, y / 1e5]); } return out; }
+  function points(list, props) {
+    return { type: 'FeatureCollection', features: list.map(function (a) { return { type: 'Feature', properties: props(a), geometry: { type: 'Point', coordinates: [a[0] / 1e5, a[1] / 1e5] } }; }) };
+  }
+  // 지하철 노선, 역, 아파트 단지는 따로 받은 자료(landmarks.js)를 지도에 얹는다.
+  function landmarkSources() {
+    return {
+      'lm-subway': { type: 'geojson', data: { type: 'FeatureCollection', features: LM.lines.map(function (l) { return { type: 'Feature', properties: { c: l.c }, geometry: { type: 'MultiLineString', coordinates: l.g.map(dec) } }; }) } },
+      // 역 표시는 그 역을 지나는 노선 색으로 칠한다. 환승역은 어두운 색으로 조금 크게.
+      'lm-stations': { type: 'geojson', data: points(LM.stations, function (a) { return { name: a[2], c: a[3].length === 1 ? a[3][0] : '#2f3a4a', n: a[3].length }; }) },
+      'lm-apts': { type: 'geojson', data: points(LM.apts, function (a) { return { name: a[2] }; }) }
+    };
+  }
+  function landmarkLayers() {
+    var KO = ['coalesce', ['get', 'name:ko'], ['get', 'name']], CLS = ['get', 'class'], SUB = ['get', 'subclass'], RANK = ['get', 'rank'];
+    var HALO = { 'text-halo-color': '#ffffff', 'text-halo-width': 1.6 };
+    function z(a, va, b, vb) { return ['interpolate', ['linear'], ['zoom'], a, va, b, vb]; }
+    function text(id, layer, minzoom, filter, layout, paint) {
+      var l = { id: id, type: 'symbol', source: 'openmaptiles', 'source-layer': layer, minzoom: minzoom, filter: filter };
+      l.layout = Object.assign({ 'text-field': KO, 'text-font': ['Noto Sans Regular'], 'text-size': 11.5, 'text-max-width': 7, 'text-padding': 6 }, layout || {});
+      l.paint = Object.assign({}, HALO, paint || {});
+      return l;
+    }
+    // 아이콘 아래에 이름을 쓰는 표시. 자리가 없으면 이름은 빼고 아이콘만 남긴다.
+    function mark(id, minzoom, filter, ic, color, source) {
+      var l = text(id, 'poi', minzoom, filter, { 'icon-image': 'ic-' + ic, 'icon-size': z(14, .7, 17, .9), 'icon-padding': 2, 'text-anchor': 'top', 'text-offset': [0, .95], 'text-optional': true, 'symbol-sort-key': ['coalesce', RANK, 50] }, { 'text-color': color });
+      if (source) { l.source = source; delete l['source-layer']; delete l.filter; l.layout['text-field'] = ['get', 'name']; delete l.layout['symbol-sort-key']; }
+      return l;
+    }
+    return [
+      { id: 'lm-subway-edge', type: 'line', source: 'lm-subway', minzoom: 9.5, layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': z(10, 2.6, 16, 7.4) } },
+      { id: 'lm-subway-line', type: 'line', source: 'lm-subway', minzoom: 9.5, layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': ['get', 'c'], 'line-width': z(10, 1.4, 16, 4.6) } },
+      // 버스 정류장은 이름 없이 아이콘만 찍는다.
+      { id: 'lm-bus', type: 'symbol', source: 'openmaptiles', 'source-layer': 'poi', minzoom: 15.5, filter: ['all', ['==', CLS, 'bus'], ['==', SUB, 'bus_stop']],
+        layout: { 'icon-image': 'ic-bus', 'icon-size': z(15.5, .5, 18, .72), 'icon-padding': 1 }, paint: { 'icon-opacity': .92 } },
+      text('lm-water', 'water_name', 9, ['match', CLS, ['river', 'lake', 'bay', 'strait', 'sea'], true, false], { 'text-size': 12, 'text-letter-spacing': .08 }, { 'text-color': '#4d8fca' }),
+      text('lm-river', 'waterway', 11, ['==', CLS, 'river'], { 'symbol-placement': 'line', 'text-size': 12, 'text-letter-spacing': .08 }, { 'text-color': '#4d8fca' }),
+      text('lm-peak', 'mountain_peak', 10.5, ['all', ['==', CLS, 'peak'], ['<=', RANK, 1]], {}, { 'text-color': '#5f8a55' }),
+      text('lm-road-small', 'transportation_name', 16.2, ['all', ['match', CLS, ['tertiary', 'minor'], true, false], ['!', ['has', 'subclass']]], { 'symbol-placement': 'line', 'text-size': 11 }, { 'text-color': '#a2a8b3' }),
+      text('lm-road', 'transportation_name', 13.3, ['all', ['match', CLS, ['motorway', 'trunk', 'primary', 'secondary'], true, false], ['!', ['has', 'subclass']]], { 'symbol-placement': 'line', 'symbol-spacing': 420 }, { 'text-color': '#8d95a2' }),
+      // 자료에 건물 안 열람실이나 어린이집 같은 자잘한 곳까지 들어 있어서, 종류와 중요도 순위(rank)로 큰 곳만 고른다.
+      mark('lm-apt', 15, null, 'apt', '#6b7482', 'lm-apts'),
+      mark('lm-school', 15.2, ['all', ['==', CLS, 'school'], ['==', SUB, 'school']], 'school', '#4f74c4'),
+      mark('lm-civic', 15, ['any', ['==', SUB, 'townhall'], ['==', SUB, 'post_office'], ['match', CLS, ['police', 'fire_station'], true, false], ['all', ['==', CLS, 'library'], ['<=', RANK, 10]]], 'civic', '#5f6875'),
+      mark('lm-park', 14.8, ['all', ['==', CLS, 'park'], ['==', SUB, 'park'], ['<=', RANK, 8]], 'park', '#2f8f57'),
+      mark('lm-museum', 14.5, ['==', SUB, 'museum'], 'museum', '#7a6450'),
+      mark('lm-hospital', 14, ['all', ['==', CLS, 'hospital'], ['==', SUB, 'hospital'], ['<=', RANK, 2]], 'hospital', '#d9484d'),
+      mark('lm-terminal', 13.5, ['==', SUB, 'bus_station'], 'terminal', '#4a5d80'),
+      mark('lm-univ', 13.5, ['all', ['==', CLS, 'college'], ['==', SUB, 'university'], ['<=', RANK, 3]], 'univ', '#3f6fd1'),
+      text('lm-dong', 'place', 12.4, ['match', CLS, ['quarter', 'suburb'], true, false], { 'text-size': 13, 'text-letter-spacing': .04, 'text-padding': 10 }, { 'text-color': '#8a919d' }),
+      { id: 'lm-station-dot', type: 'circle', source: 'lm-stations', minzoom: 11,
+        paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, ['case', ['>', ['get', 'n'], 1], 2.5, 2], 16, ['case', ['>', ['get', 'n'], 1], 6.2, 5]], 'circle-color': '#ffffff', 'circle-stroke-color': ['get', 'c'], 'circle-stroke-width': z(11, 1.5, 16, 2.8) } },
+      { id: 'lm-station', type: 'symbol', source: 'lm-stations', minzoom: 12.2,
+        layout: { 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Bold'], 'text-size': 12.5, 'text-anchor': 'top', 'text-offset': [0, .6], 'text-padding': 3, 'symbol-sort-key': ['-', 0, ['get', 'n']] },
+        paint: Object.assign({ 'text-color': '#2f3a4a' }, HALO, { 'text-halo-width': 1.8 }) }
+    ];
+  }
+  // 지도 색을 네이버 지도와 비슷한 색감으로 바꾼다. 땅은 밝은 회색, 길은 흰색, 큰길은 연한 노랑, 공원은 연한 초록, 물은 하늘색.
+  // 지도 자체는 그대로 OpenFreeMap이고 색만 입힌 것이다.
+  function recolor(l) {
+    var id = l.id, p = l.paint = l.paint || {};
+    function set(k, v) { p[k] = v; }
+    if (id === 'background') return set('background-color', '#f2f3f5');
+    if (id === 'park') { set('fill-color', '#cfe9cb'); return set('fill-outline-color', '#cfe9cb'); }
+    if (id === 'park_outline') return set('line-color', '#c3e1bf');
+    if (id === 'landuse_residential') return set('fill-color', '#f2f3f5');
+    if (id === 'landcover_wood') return set('fill-color', '#c7e5c2');
+    if (id === 'landcover_grass') return set('fill-color', '#d4edcf');
+    if (/^landuse_(pitch|track|cemetery)$/.test(id)) return set('fill-color', '#d9eed4');
+    if (/^landuse_(hospital|school)$/.test(id)) return set('fill-color', '#e6ebf3');
+    if (id === 'landcover_sand') return set('fill-color', '#f3ecd2');
+    if (id === 'water') return set('fill-color', '#a9d4f5');
+    if (/^waterway_/.test(id)) return set('line-color', '#a9d4f5');
+    if (id === 'aeroway_fill') return set('fill-color', '#e6e8ec');
+    if (/^aeroway_/.test(id)) return set('line-color', '#f6f7f9');
+    if (id === 'building') { set('fill-color', '#e3e6eb'); return set('fill-outline-color', '#d6dae1'); }
+    if (/^boundary_/.test(id)) return set('line-color', '#b9bec7');
+    if (l['source-layer'] !== 'transportation' || l.type !== 'line') return;
+    var edge = /_casing$/.test(id);
+    if (/rail/.test(id)) return set('line-color', '#b4bac4');
+    if (/motorway/.test(id)) return set('line-color', edge ? '#e3b257' : '#f9d37c');
+    if (/trunk_primary|_link/.test(id)) return set('line-color', edge ? '#e9cf7c' : '#fbe9a9');
+    return set('line-color', edge ? '#d9dde3' : '#ffffff');
+  }
   function applyStyle() {
     var url = styleUrl();
     fetch(url).then(function (r) { return r.json(); }).then(function (st) {
-      st.layers.forEach(function (l) {
-        var tf = l.type === 'symbol' && l.layout && l.layout['text-field'];
-        if (tf && JSON.stringify(tf).indexOf('name') >= 0) l.layout['text-field'] = ['coalesce', ['get', 'name:ko'], ['get', 'name']];
-      });
+      st.layers = st.layers.filter(function (l) { return l.type !== 'symbol' && l.type !== 'fill-extrusion' && l.type !== 'raster'; });
+      st.layers.forEach(recolor);
+      Object.assign(st.sources, landmarkSources());
+      st.layers = st.layers.concat(landmarkLayers());
       map.setStyle(st);
     }).catch(function () { map.setStyle(url); });
   }
   applyStyle();
+  window.cafeApplyStyle = applyStyle;   // 시험할 때 스타일을 다시 입히려고 밖에 내놓는다.
 
   var canvas = document.createElement('canvas');
   canvas.id = 'dots';
   map.getCanvasContainer().appendChild(canvas);
   var ctx = canvas.getContext('2d');
-
-  var COL = [], PANEL = '#fff', FG = '#000', HALO = '#fff';
+  var COL = [], TXT = [], C = {}, FONT = getComputedStyle(document.body).fontFamily;
+  function lum(hex) { var n = parseInt(hex.slice(1), 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; }
   function readColors() {
     var cs = getComputedStyle(document.documentElement);
-    COL = GROUPS.map(function (g) { return cs.getPropertyValue(g.css).trim(); });
-    PANEL = cs.getPropertyValue('--panel').trim();
-    FG = cs.getPropertyValue('--fg').trim();
-    HALO = cs.getPropertyValue('--halo').trim();
+    function v(n) { return cs.getPropertyValue(n).trim(); }
+    COL = GROUPS.map(function (g) { return v(g.css); });
+    TXT = COL.map(function (c) { return lum(c) > 0.6 ? '#221503' : '#ffffff'; });
+    C = { surface: v('--surface'), ink: v('--ink'), ink3: v('--ink-3'), inv: v('--inv'), onInv: v('--on-inv'), ok: v('--ok'), hi: v('--hi') };
   }
   readColors();
-  dark.addEventListener('change', function () { readColors(); applyStyle(); draw(); });
 
-  // ---------- 필터 계산 ----------
-  var totalPass = 0;
-  function refilter() {
-    var n = 0;
-    for (var i = 0; i < N; i++) {
-      var b = D.brand[i];
-      var ok = b < 0 ? S.indie : S.brandOn[b];
-      if (ok && S.hideDabang && dabang[i]) ok = false;
-      if (ok && S.big && D.area[i] < S.bigMin) ok = false;
-      if (ok && S.laptop) ok = mark[i] === 1 || (mark[i] !== -1 && score[i] >= LAP_OK);
-      pass[i] = ok ? 1 : 0;
-      if (ok) n++;
-    }
-    totalPass = n;
-    $('total').innerHTML = '조건에 맞는 카페 <b>' + n.toLocaleString('ko-KR') + '</b>곳 (전국)';
+  // ================= 그리기 =================
+  // 이 단계부터 카페 점이 나온다. 화면에 동 서너 개가 들어오는 정도다.
+  var POINT_ZOOM = 14;
+  var viewIdx = new Int32Array(N), vc = 0, indiv = false;
+  var hits = [], sel = -1, hoverI = -1, hoverPill = -1, queued = false, myLoc = null;
+  // 지역 경계 모양. regions.js에 "경기 수원시 영통구" 같은 이름으로 들어 있고, 처음 쓸 때 화면 좌표계로 풀어 둔다.
+  var SHAPES = window.REGION_SHAPES || {}, shapeCache = {};
+  function shapeOf(r) {
+    if (shapeCache[r] !== undefined) return shapeCache[r];
+    var v = SHAPES[regPath(r)], out = null;
+    if (v) out = {
+      lx: (v.p[0] / 1e5 + 180) / 360, ly: mercY(v.p[1] / 1e5),
+      rings: v.r.map(function (fl) {
+        var a = new Float64Array(fl.length), x = 0, y = 0;
+        for (var k = 0; k < fl.length; k += 2) { x += fl[k]; y += fl[k + 1]; a[k] = (x / 1e5 + 180) / 360; a[k + 1] = mercY(y / 1e5); }
+        return a;
+      })
+    };
+    return (shapeCache[r] = out);
   }
-
-  // ---------- 그리기 ----------
-  var CELL = 84, items = [], sel = -1, queued = false;
-  function short(n) { return n >= 10000 ? (n / 10000).toFixed(1) + '만' : n >= 1000 ? (n / 1000).toFixed(1) + '천' : String(n); }
+  // 마우스를 올린 지역의 범위를 그린다. 경계 자료가 있으면 실제 경계선, 없으면 그 지역 카페 자리를 이어 칠한다.
+  function drawExtent(r, z, scale, ox, oy, x0, x1, y0, y1) {
+    var sh = shapeOf(r), i, k, px, py;
+    if (sh) {
+      ctx.beginPath();
+      for (k = 0; k < sh.rings.length; k++) {
+        var a = sh.rings[k];
+        ctx.moveTo(a[0] * scale - ox, a[1] * scale - oy);
+        for (i = 2; i < a.length; i += 2) ctx.lineTo(a[i] * scale - ox, a[i + 1] * scale - oy);
+        ctx.closePath();
+      }
+      // 범위는 파란색으로 칠한다. 옅게 채우고 경계선은 진하게.
+      ctx.globalAlpha = .13; ctx.fillStyle = C.hi; ctx.fill('evenodd');
+      ctx.globalAlpha = 1; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.strokeStyle = C.hi; ctx.stroke();
+      ctx.globalAlpha = 1;
+      return;
+    }
+    var R = Math.max(6, Math.min(18, 6 + (z - 6) * 1.5)), m = R / scale;
+    ctx.beginPath();
+    for (i = 0; i < N; i++) {
+      if (!hoverMask[D.dongOf[i]] || mx[i] < x0 - m || mx[i] > x1 + m || my[i] < y0 - m || my[i] > y1 + m) continue;
+      px = mx[i] * scale - ox; py = my[i] * scale - oy;
+      ctx.moveTo(px + R, py); ctx.arc(px, py, R, 0, 6.2832);
+    }
+    ctx.save(); if ('filter' in ctx) ctx.filter = 'blur(5px)'; ctx.globalAlpha = .22; ctx.fillStyle = C.hi; ctx.fill(); ctx.restore();
+  }
+  // 겹치는 이름표를 서로 밀어내서 고르게 편다. 제자리에서 너무 멀어지지 않게 조금씩 당겨 준다.
+  function spread(t, W, top, bottom) {
+    var GAP = 8, n = t.length, it, a, b;
+    for (it = 0; it < 140; it++) {
+      var moved = false;
+      for (a = 0; a < n; a++) for (b = a + 1; b < n; b++) {
+        var A = t[a], B = t[b], dx = B.x - A.x, dy = B.y - A.y;
+        var ovx = (A.w + B.w) / 2 + GAP - Math.abs(dx), ovy = (A.h + B.h) / 2 + GAP - Math.abs(dy);
+        if (ovx <= 0 || ovy <= 0) continue;
+        moved = true;
+        // 덜 겹친 쪽으로 반씩 민다. 완전히 포개졌으면 번호 순서로 방향을 정한다.
+        if (ovx < ovy) { var sx = (dx > 0 || (dx === 0 && a % 2) ? 1 : -1) * ovx / 2; A.x -= sx; B.x += sx; }
+        else { var sy = (dy > 0 || (dy === 0 && a % 2) ? 1 : -1) * ovy / 2; A.y -= sy; B.y += sy; }
+      }
+      for (a = 0; a < n; a++) {
+        var T = t[a];
+        if (it < 110) { T.x += (T.ax - T.x) * .035; T.y += (T.ay - T.y) * .035; }
+        T.x = Math.max(T.w / 2 + 8, Math.min(W - T.w / 2 - 8, T.x)); T.y = Math.max(top, Math.min(bottom, T.y));
+      }
+      if (!moved && it >= 110) break;
+    }
+  }
+  function regBounds(r) { var o = r * 4; return [mercToLngLat(rBox[o], rBox[o + 3]), mercToLngLat(rBox[o + 2], rBox[o + 1])]; }
+  // 이름표 자리는 지도 위에 고정한다. 확대하거나 축소해도, 지도를 옮겨도 같은 곳에 붙어 있다.
+  // 그 지역이 화면에 딱 맞게 들어오는 배율에서 겹치지 않게 한 번만 펴고, 그 자리를 지도 좌표로 기억해 둔다.
+  var layoutCache = {};
+  function tagLayout(parent) {
+    var box = map.getContainer(), W = box.clientWidth, H = box.clientHeight, key = parent + '|' + W + '|' + H;
+    if (layoutCache[key]) return layoutCache[key];
+    var out = {}, cam = map.cameraForBounds(parent < 0 ? KOREA : regBounds(parent), { padding: fitPad(), maxZoom: 15.5 });
+    if (!cam) return out;
+    var c = maplibregl.LngLat.convert(cam.center), scale = 512 * Math.pow(2, cam.zoom);
+    var ox = (c.lng + 180) / 360 * scale - W / 2, oy = mercY(c.lat) * scale - H / 2, tags = [];
+    regChildren(parent).forEach(function (k) {
+      if (!rAll[k]) return;
+      // 처음 자리는 그 지역 경계 안의 가운데. 경계 자료가 없으면 카페가 있는 범위의 가운데.
+      var sh = shapeOf(k), o = k * 4, gx = sh ? sh.lx : (rBox[o] + rBox[o + 2]) / 2, gy = sh ? sh.ly : (rBox[o + 1] + rBox[o + 3]) / 2;
+      ctx.font = '600 12.5px ' + FONT; var w = ctx.measureText(rName[k]).width;
+      ctx.font = '750 12.5px ' + FONT; w += ctx.measureText(fmt(rAll[k])).width + 26;
+      tags.push({ r: k, ax: gx * scale - ox, ay: gy * scale - oy, x: gx * scale - ox, y: gy * scale - oy, w: w, h: 28 });
+    });
+    spread(tags, W, mobile.matches ? 150 : 96, H - 92);
+    tags.forEach(function (t) { out[t.r] = { x: (t.x + ox) / scale, y: (t.y + oy) / scale, ax: (t.ax + ox) / scale, ay: (t.ay + oy) / scale }; });
+    return (layoutCache[key] = out);
+  }
+  // 마우스를 올린 지역에 속한 동을 표시해 둔다. 경계 자료가 없는 지역의 범위를 칠할 때 쓴다.
+  var hoverMask = new Uint8Array(D.dong.length);
+  function setHoverReg(r) {
+    hoverPill = r;
+    if (r < 0) return;
+    for (var k = 0; k < hoverMask.length; k++) { hoverMask[k] = 0; for (var q = dongReg[k]; q >= 0; q = rParent[q]) if (q === r) { hoverMask[k] = 1; break; } }
+  }
   function requestDraw() { if (!queued) { queued = true; requestAnimationFrame(function () { queued = false; draw(); }); } }
+  function rr(x, y, w, h, r) {
+    ctx.beginPath();
+    if (ctx.roundRect) { ctx.roundRect(x, y, w, h, r); return; }
+    ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+  // 카페 점의 크기는 모두 같다. 실제 아이콘이 있든, 첫 글자뿐이든, 개인카페든 같은 동그라미로 그린다.
+  // 가까이서는 확대할수록 커지다가 반지름 11에서 멈춘다. 가장 가까운 이웃이 14m 떨어져 있으니
+  // 아이콘 지름이 화면에서 14m보다 커지지 않게 해서 서로 겹치지 않게 한다(iconR은 그릴 때마다 다시 잰다).
+  var iconR = 11;
+  function dotR(i, z) { return z < 13 ? 4 : z < 15 ? 6 : iconR; }
+  function drawDot(i, px, py, r) {
+    var g = grp[i], im = g !== 2 && r >= 8 ? brandImg[D.brand[i]] : null;
+    if (im && im.ok) {
+      // 실제 아이콘: 흰 바탕에 아이콘을 넣고 테두리를 종류 색으로 두른다.
+      ctx.beginPath(); ctx.arc(px, py, r, 0, 6.2832); ctx.fillStyle = '#ffffff'; ctx.fill();
+      ctx.save(); ctx.beginPath(); ctx.arc(px, py, r - 1.5, 0, 6.2832); ctx.clip();
+      ctx.imageSmoothingQuality = 'high';
+      var q = im.full ? r - 1 : r * .68;
+      ctx.drawImage(im, px - q, py - q, q * 2, q * 2); ctx.restore();
+      ctx.beginPath(); ctx.arc(px, py, r, 0, 6.2832); ctx.lineWidth = 2; ctx.strokeStyle = COL[g]; ctx.stroke();
+    } else {
+      ctx.beginPath(); ctx.arc(px, py, r, 0, 6.2832); ctx.fillStyle = COL[g]; ctx.fill();
+      ctx.lineWidth = 1.6; ctx.strokeStyle = C.surface; ctx.stroke();
+      if (r >= 8) {
+        // 로고가 없는 브랜드와 개인카페는 커피잔을 그린다. 색으로 종류를 구분한다.
+        ctx.fillStyle = TXT[g]; ctx.strokeStyle = TXT[g];
+        ctx.beginPath(); ctx.moveTo(px - .46 * r, py - .3 * r); ctx.lineTo(px + .26 * r, py - .3 * r); ctx.lineTo(px + .26 * r, py + .04 * r);
+        ctx.quadraticCurveTo(px + .26 * r, py + .42 * r, px - .1 * r, py + .42 * r); ctx.quadraticCurveTo(px - .46 * r, py + .42 * r, px - .46 * r, py + .04 * r); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.arc(px + .3 * r, py - .02 * r, .19 * r, -1.5708, 1.5708); ctx.lineWidth = .12 * r; ctx.stroke();
+      }
+    }
+    // 대형카페는 지도에 따로 표시하지 않는다. 필터로만 걸러 본다.
+    // 콘센트 좌석이 있다고 기록한 곳은 초록 점을 붙인다.
+    if (outlet[i] === 1) { ctx.beginPath(); ctx.arc(px + r * .72, py - r * .72, 3.6, 0, 6.2832); ctx.fillStyle = C.ok; ctx.fill(); ctx.lineWidth = 1.4; ctx.strokeStyle = C.surface; ctx.stroke(); }
+  }
+  function drawLabel(text, x, y, strong, gap) {
+    ctx.font = (strong ? '700 13px ' : '600 12px ') + FONT; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    if (strong) {
+      var w = ctx.measureText(text).width + 16;
+      // 화면 오른쪽을 넘으면 점 왼쪽에 붙인다.
+      if (x + w > canvas.clientWidth - 8) x = Math.max(8, x - gap * 2 - w);
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.25)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 2;
+      rr(x, y - 13, w, 26, 8); ctx.fillStyle = C.inv; ctx.fill(); ctx.restore();
+      ctx.fillStyle = C.onInv; ctx.fillText(text, x + 8, y + .5);
+    } else {
+      ctx.lineWidth = 3.5; ctx.lineJoin = 'round'; ctx.strokeStyle = C.surface; ctx.strokeText(text, x, y + .5);
+      ctx.fillStyle = C.ink; ctx.fillText(text, x, y + .5);
+    }
+  }
+  function clip(t, n) { return t.length > n ? t.slice(0, n - 1) + '…' : t; }
 
   function draw() {
     var box = map.getContainer(), dpr = window.devicePixelRatio || 1, W = box.clientWidth, H = box.clientHeight;
@@ -366,284 +937,681 @@ footer a { color: inherit; }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
     var z = map.getZoom(), scale = 512 * Math.pow(2, z), ct = map.getCenter();
-    var sn = Math.sin(ct.lat * Math.PI / 180);
-    var ox = (ct.lng + 180) / 360 * scale - W / 2, oy = (0.5 - Math.log((1 + sn) / (1 - sn)) / (4 * Math.PI)) * scale - H / 2;
-    // 묶음 칸은 정수 줌 기준으로 잡는다. 확대하는 동안 묶음이 흔들리지 않고, 화면 가장자리에서 잘리지도 않는다.
-    var cm = CELL / (512 * Math.pow(2, Math.round(z)));
-    var x0 = Math.floor(ox / scale / cm) * cm, x1 = Math.ceil((ox + W) / scale / cm) * cm;
-    var y0 = Math.floor(oy / scale / cm) * cm, y1 = Math.ceil((oy + H) / scale / cm) * cm;
-    var single = z >= 14.5, cells = new Map(), dots = [], inView = 0, i, px, py;
-    for (i = 0; i < N; i++) {
-      if (!pass[i] || mx[i] < x0 || mx[i] >= x1 || my[i] < y0 || my[i] >= y1) continue;
-      px = mx[i] * scale - ox; py = my[i] * scale - oy;
-      if (px >= 0 && px < W && py >= 0 && py < H) inView++;
-      if (single) { dots.push(i); continue; }
-      var key = Math.floor(mx[i] / cm) * 4194304 + Math.floor(my[i] / cm);
-      var c = cells.get(key);
-      if (!c) { c = { n: 0, sx: 0, sy: 0, g: [0, 0, 0, 0], first: i }; cells.set(key, c); }
-      c.n++; c.sx += px; c.sy += py; c.g[grp[i]]++;
-    }
-    items = [];
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    cells.forEach(function (c) {
-      if (c.n === 1) { dots.push(c.first); return; }
-      var x = c.sx / c.n, y = c.sy / c.n, r = 13 + 4.5 * Math.log10(c.n), a0 = -Math.PI / 2;
-      ctx.beginPath(); ctx.arc(x, y, r + 1.5, 0, 2 * Math.PI); ctx.fillStyle = PANEL; ctx.fill();
-      // 바깥 고리는 그 묶음 안의 종류 비율이다.
-      for (var g = 0; g < 4; g++) {
-        if (!c.g[g]) continue;
-        var a1 = a0 + 2 * Math.PI * c.g[g] / c.n;
-        ctx.beginPath(); ctx.arc(x, y, r - 2.5, a0, a1); ctx.lineWidth = 5; ctx.strokeStyle = COL[g]; ctx.stroke();
-        a0 = a1;
+    var ox = (ct.lng + 180) / 360 * scale - W / 2, oy = mercY(ct.lat) * scale - H / 2;
+    // 1m가 화면에서 몇 픽셀인지로 아이콘 반지름을 정한다. 테두리 두께 1픽셀은 빼 둔다.
+    iconR = Math.max(6, Math.min(11, GAP * .98 / 2 * scale / (40075016 * Math.cos(ct.lat * Math.PI / 180)) - 1));
+    var pad = 14 / scale, x0 = ox / scale - pad, x1 = (ox + W) / scale + pad, y0 = oy / scale - pad, y1 = (oy + H) / scale + pad;
+    var i, k, j, px, py;
+    vc = 0;
+    for (i = 0; i < N; i++) if (pass[i] && mx[i] >= x0 && mx[i] < x1 && my[i] >= y0 && my[i] < y1) viewIdx[vc++] = i;
+    // 카페 점은 동까지 골랐거나, 동네가 보일 만큼 확대했을 때만 찍는다.
+    // 조건을 좁혀서 화면 안에 150곳 이하로 남았을 때는 멀리서도 하나씩 보여 준다.
+    indiv = (S.reg >= 0 && rLeaf[S.reg] === 1) || (S.showAll && canShowAll()) || z >= POINT_ZOOM || vc <= 150;
+    hits = [];
+
+    if (!indiv) {
+      // 멀리서 볼 때: 지역 이름표에 개수만 적는다.
+      if (hoverPill >= 0) drawExtent(hoverPill, z, scale, ox, oy, x0, x1, y0, y1);
+      // 이름표는 고른 지역의 바로 아래 단계만 보여 준다. 전국이면 시도, 경기를 골랐으면 그 안의 시, 수원시를 골랐으면 그 안의 구.
+      var kids = regChildren(S.reg), tags = [], lay = tagLayout(S.reg);
+      for (var kc = 0; kc < kids.length; kc++) {
+        k = kids[kc];
+        var ps = lay[k];
+        if (!rCnt[k] || !ps) continue;
+        // 기억해 둔 지도 좌표를 지금 화면 좌표로 바꾸기만 한다. 그때그때 자리를 다시 잡지 않는다.
+        px = ps.x * scale - ox; py = ps.y * scale - oy;
+        if (px < -90 || px > W + 90 || py < -30 || py > H + 30) continue;
+        var name = rName[k], num = fmt(rCnt[k]);
+        ctx.font = '600 12.5px ' + FONT; var w1 = ctx.measureText(name).width;
+        ctx.font = '750 12.5px ' + FONT; var w2 = ctx.measureText(num).width;
+        tags.push({ r: k, ax: ps.ax * scale - ox, ay: ps.ay * scale - oy, x: px, y: py, w: w1 + w2 + 26, h: 28, w1: w1, name: name, num: num });
       }
-      ctx.fillStyle = FG; ctx.font = '650 ' + (c.n >= 1000 ? 10.5 : 11.5) + 'px ' + getComputedStyle(document.body).fontFamily;
-      ctx.fillText(short(c.n), x, y + .5);
-      items.push({ x: x, y: y, r: r + 2, c: c });
-    });
-    var labels = [];
-    for (var k = 0; k < dots.length; k++) {
-      i = dots[k];
-      px = mx[i] * scale - ox; py = my[i] * scale - oy;
-      var big = D.area[i] >= S.bigMin, r = (single ? 7 : 6) + (big ? 3 : 0);
-      ctx.beginPath(); ctx.arc(px, py, r, 0, 2 * Math.PI);
-      ctx.fillStyle = COL[grp[i]]; ctx.fill();
-      ctx.lineWidth = 2; ctx.strokeStyle = PANEL; ctx.stroke();
-      if (big) { ctx.beginPath(); ctx.arc(px, py, r + 3, 0, 2 * Math.PI); ctx.lineWidth = 1.5; ctx.strokeStyle = COL[grp[i]]; ctx.stroke(); }
-      if (mark[i] === 1) { ctx.beginPath(); ctx.arc(px, py, 2.6, 0, 2 * Math.PI); ctx.fillStyle = PANEL; ctx.fill(); }
-      items.push({ x: px, y: py, r: r + 4, i: i });
-      if (z >= 15.5 && labels.length < 260) labels.push([i, px, py, r]);
-    }
-    if (labels.length) {
-      ctx.textAlign = 'left'; ctx.font = '600 12px ' + getComputedStyle(document.body).fontFamily;
-      var boxes = [];
-      labels.forEach(function (l) {
-        var t = D.name[l[0]]; if (t.length > 16) t = t.slice(0, 15) + '…';
-        var w = ctx.measureText(t).width, bx = l[1] + l[3] + 5, by = l[2] - 8;
-        for (var j = 0; j < boxes.length; j++) { var q = boxes[j]; if (bx < q[0] + q[2] && bx + w > q[0] && by < q[1] + 16 && by + 16 > q[1]) return; }
-        boxes.push([bx, by, w]);
-        ctx.lineWidth = 3.5; ctx.strokeStyle = HALO; ctx.lineJoin = 'round'; ctx.strokeText(t, bx, l[2] + .5);
-        ctx.fillStyle = FG; ctx.fillText(t, bx, l[2] + .5);
-      });
+      // 이름표에는 선이나 점을 붙이지 않는다. 많이 축소해서 서로 겹치면 카페가 많은 쪽만 남기고 나머지는 숨긴다.
+      tags.sort(function (p, q) { return rCnt[q.r] - rCnt[p.r]; });
+      var shown = [];
+      for (k = 0; k < tags.length; k++) {
+        var cand = tags[k], clash = false;
+        for (j = 0; j < shown.length; j++) { var sh2 = shown[j]; if (Math.abs(cand.x - sh2.x) < (cand.w + sh2.w) / 2 && Math.abs(cand.y - sh2.y) < (cand.h + sh2.h) / 2) { clash = true; break; } }
+        if (!clash) shown.push(cand);
+      }
+      tags = shown;
+      ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+      for (k = 0; k < tags.length; k++) {
+        var tg = tags[k];
+        var bx = tg.x - tg.w / 2, by = tg.y - tg.h / 2, hot = hoverPill === tg.r;
+        ctx.save(); ctx.shadowColor = 'rgba(15,20,30,.22)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 2;
+        rr(bx, by, tg.w, tg.h, 14); ctx.fillStyle = hot ? C.inv : C.surface; ctx.fill(); ctx.restore();
+        ctx.font = '600 12.5px ' + FONT; ctx.fillStyle = hot ? C.onInv : C.ink3; ctx.fillText(tg.name, bx + 10, tg.y + .5);
+        ctx.font = '750 12.5px ' + FONT; ctx.fillStyle = hot ? C.onInv : C.ink; ctx.fillText(tg.num, bx + 16 + tg.w1, tg.y + .5);
+        hits.push({ x0: bx, y0: by, x1: bx + tg.w, y1: by + tg.h, reg: tg.r });
+      }
+    } else {
+      // 가까이서 볼 때: 카페 하나하나. 개인카페를 먼저 그리고 프랜차이즈를 위에 올린다.
+      var labels = [], pass2;
+      for (pass2 = 0; pass2 < 2; pass2++) for (k = 0; k < vc; k++) {
+        i = viewIdx[k];
+        if ((grp[i] !== 2) !== (pass2 === 1) || i === sel) continue;
+        px = mx[i] * scale - ox; py = my[i] * scale - oy;
+        var r = dotR(i, z);
+        drawDot(i, px, py, r);
+        hits.push({ x: px, y: py, r: Math.max(r + 3, 9), i: i });
+        if (z >= 15.6 && labels.length < 400) labels.push([i, px, py, r]);
+      }
+      if (labels.length) {
+        // 이름은 화면에 보이는 모든 카페에 다 쓴다. 누구 것을 먼저 쓰는 순서는 없다.
+        // 이름이 다른 이름이나 다른 카페의 아이콘을 가리지 않게 빈 자리를 찾는다.
+        // 점 바로 옆 네 곳, 대각선 네 곳, 그다음 조금씩 더 떨어진 자리 열여섯 곳 순서로 본다. 다 막혀 있으면 오른쪽에 그냥 쓴다.
+        var boxes = [];
+        for (k = 0; k < labels.length; k++) { var dq = labels[k]; boxes.push([dq[1] - dq[3], dq[2] - dq[3], dq[3] * 2, dq[3] * 2]); }
+        ctx.font = '600 12px ' + FONT;
+        for (k = 0; k < labels.length; k++) {
+          var lb = labels[k], text = clip(D.name[lb[0]], 16), tw = ctx.measureText(text).width, X = lb[1], Y = lb[2], spots = [], pick = null;
+          for (var far = 0; far < 3; far++) {
+            var g2 = lb[3] + 5 + far * 18, v = lb[3] + 10 + far * 16;
+            spots.push([X + g2, Y], [X - g2 - tw, Y], [X - tw / 2, Y + v], [X - tw / 2, Y - v], [X + g2 * .7, Y + v], [X + g2 * .7, Y - v], [X - g2 * .7 - tw, Y + v], [X - g2 * .7 - tw, Y - v]);
+          }
+          for (var sp = 0; sp < spots.length && !pick; sp++) {
+            var lx = spots[sp][0], ly = spots[sp][1] - 8, free = true;
+            for (j = 0; j < boxes.length; j++) { var bq = boxes[j]; if (lx < bq[0] + bq[2] + 2 && lx + tw + 2 > bq[0] && ly < bq[1] + bq[3] + 1 && ly + 16 + 1 > bq[1]) { free = false; break; } }
+            if (free) pick = spots[sp];
+          }
+          if (!pick) pick = spots[0];
+          boxes.push([pick[0], pick[1] - 8, tw, 16]);
+          drawLabel(text, pick[0], pick[1], false, 0);
+        }
+      }
+      if (hoverI >= 0 && hoverI !== sel) {
+        px = mx[hoverI] * scale - ox; py = my[hoverI] * scale - oy;
+        var hr = dotR(hoverI, z) + 2;
+        drawDot(hoverI, px, py, hr);
+        drawLabel(clip(D.name[hoverI], 22), px + hr + 6, py, true, hr + 6);
+      }
     }
     if (sel >= 0) {
       px = mx[sel] * scale - ox; py = my[sel] * scale - oy;
-      ctx.beginPath(); ctx.arc(px, py, 15, 0, 2 * Math.PI); ctx.lineWidth = 3; ctx.strokeStyle = FG; ctx.stroke();
+
+      if (px > -50 && px < W + 50 && py > -50 && py < H + 50) {
+        ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 3;
+        ctx.beginPath(); ctx.arc(px, py, 17, 0, 6.2832); ctx.fillStyle = C.surface; ctx.fill(); ctx.restore();
+        drawDot(sel, px, py, 13);
+        drawLabel(clip(D.name[sel], 22), px + 22, py, true, 22);
+        hits.push({ x: px, y: py, r: 17, i: sel });
+      }
     }
-    $('status').textContent = inView ? '이 화면에 ' + inView.toLocaleString('ko-KR') + '곳' : '이 화면에는 조건에 맞는 카페가 없어요';
+    renderCount();
   }
 
   function hit(p) {
-    for (var k = items.length - 1; k >= 0; k--) {
-      var it = items[k], dx = p.x - it.x, dy = p.y - it.y;
-      if (dx * dx + dy * dy <= it.r * it.r) return it;
+    for (var k = hits.length - 1; k >= 0; k--) {
+      var h = hits[k];
+      if (h.r !== undefined) { var dx = p.x - h.x, dy = p.y - h.y; if (dx * dx + dy * dy <= h.r * h.r) return h; }
+      else if (p.x >= h.x0 && p.x <= h.x1 && p.y >= h.y0 && p.y <= h.y1) return h;
     }
     return null;
   }
-  var popup = null;
-  function closePopup() { if (popup) { var p = popup; popup = null; p.remove(); } sel = -1; requestDraw(); }
+  function fitPad() { return mobile.matches ? { top: 130, bottom: 90, left: 28, right: 28 } : { top: 96, bottom: 70, left: 60, right: 60 }; }
+  function zoomToRegion(r) {
+    if (rBox[r * 4 + 2] < 0) return;
+    map.fitBounds(regBounds(r), { padding: fitPad(), maxZoom: 15.5, duration: 600 });
+  }
+
+  var listTimer = 0;
   map.on('move', requestDraw);
-  map.on('moveend', function () { draw(); persist(); });
+  map.on('moveend', function () { draw(); persist(); if (P.kind === 'list') { clearTimeout(listTimer); listTimer = setTimeout(renderPanel, 90); } });
   map.on('resize', requestDraw);
-  map.on('mousemove', function (e) { map.getCanvas().style.cursor = hit(e.point) ? 'pointer' : ''; });
+  map.on('load', draw);
+  // 출처 표시는 처음부터 접어 둔다. 오른쪽 아래 (i)를 누르면 펼쳐진다.
+  (function foldAttrib() {
+    var a = document.querySelector('.maplibregl-ctrl-attrib');
+    if (a) { a.classList.remove('maplibregl-compact-show'); a.removeAttribute('open'); }
+  })();
+  map.on('mousemove', function (e) {
+    var h = hit(e.point), ni = h && h.i !== undefined ? h.i : -1, np = h && h.reg !== undefined ? h.reg : -1;
+    map.getCanvas().style.cursor = h ? 'pointer' : '';
+    if (ni !== hoverI || np !== hoverPill) { hoverI = ni; setHoverReg(np); requestDraw(); }
+  });
+  map.on('mouseout', function () { if (hoverI >= 0 || hoverPill >= 0) { hoverI = -1; hoverPill = -1; requestDraw(); } });
   map.on('click', function (e) {
-    var it = hit(e.point);
-    if (!it) { closePopup(); return; }
-    if (it.c) map.easeTo({ center: map.unproject([it.x, it.y]), zoom: Math.min(map.getZoom() + 2, 15) });
-    else openCafe(it.i);
+    var h = hit(e.point);
+    if (!h) { closePanel(); return; }
+    if (h.reg !== undefined) { closePanel(); setRegion(h.reg, true); return; }
+    selectCafe(h.i, false, null);
   });
 
-  // ---------- 카페 카드 ----------
-  function el(tag, text, cls) { var e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
-  function lapText(i) {
-    if (mark[i] === 1) return '내가 좋다고 표시한 곳';
-    if (mark[i] === -1) return '내가 별로라고 표시한 곳';
-    var t = score[i] >= LAP_OK ? '작업하기 좋을 것 같아요' : score[i] >= 45 ? '보통일 것 같아요' : '자리가 좁거나 포장 위주일 것 같아요';
-    return t + ' (추정)';
+  // ================= 화면 조각 =================
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function icon(name) { var s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('class', 'i'); var u = document.createElementNS('http://www.w3.org/2000/svg', 'use'); u.setAttribute('href', '#i-' + name); s.appendChild(u); return s; }
+  function btn(cls, text, fn) { var b = el('button', cls, text); b.type = 'button'; if (fn) b.addEventListener('click', fn); return b; }
+  function dotEl(g) { var d = el('span', 'dot'); d.style.background = 'var(' + GROUPS[g].css + ')'; return d; }
+  // 브랜드 아이콘 하나. 실제 아이콘이 있으면 그것을, 없으면 커피잔을 넣는다. (묶음 줄만 글자를 쓴다.)
+  function brandPin(j, g, letter) {
+    var p = el('span', 'pin'), u = j >= 0 ? iconUrl(j) : '';
+    p.style.setProperty('--c', 'var(' + GROUPS[g].css + ')'); p.style.setProperty('--t', TXT[g]);
+    if (!u) { if (j < 0) p.textContent = letter; else p.appendChild(icon('cup')); return p; }
+    var im = el('img'); im.alt = ''; im.loading = 'lazy'; im.src = u;
+    im.addEventListener('error', function () { p.classList.remove('logo', 'full'); p.textContent = ''; p.appendChild(icon('cup')); });
+    p.classList.add('logo'); if (/mzstatic/.test(u)) p.classList.add('full'); p.appendChild(im);
+    return p;
   }
-  function openCafe(i) {
-    var lat = D.lat[i] / 1e5, lng = D.lng[i] / 1e5, b = D.brand[i], name = D.name[i];
-    var card = el('div', null, 'card');
-    card.appendChild(el('h3', name));
-    var kind = el('div', null, 'kind'), dot = el('span', null, 'dot');
-    dot.style.background = 'var(' + GROUPS[grp[i]].css + ')';
-    kind.appendChild(dot);
-    kind.appendChild(el('span', b < 0 ? '개인카페' : D.brands[b][0] + ', ' + GROUPS[grp[i]].label));
-    card.appendChild(kind);
-    var dl = el('dl');
-    function rowOf(k, v) { dl.appendChild(el('dt', k)); var dd = el('dd', v); dl.appendChild(dd); return dd; }
-    var fl = D.floor[i];
-    rowOf('주소', D.regions[D.region[i]] + ' ' + D.road[i] + (fl > 0 ? ' (' + fl + '층)' : fl < 0 ? ' (지하)' : ''));
-    var a = D.area[i];
-    rowOf('면적', a > 0 ? '약 ' + a.toLocaleString('ko-KR') + '㎡ (' + Math.round(a / 3.3058) + '평)' : '정보 없음');
-    var lapDd = rowOf('노트북', lapText(i));
-    card.appendChild(dl);
-    var marks_ = el('div', null, 'marks');
-    var ok = el('button', '작업하기 좋아요'), no = el('button', '작업하긴 별로예요');
-    ok.type = no.type = 'button';
-    function sync() {
-      ok.setAttribute('aria-pressed', mark[i] === 1); no.setAttribute('aria-pressed', mark[i] === -1);
-      lapDd.textContent = lapText(i);
+  function pinEl(i) {
+    var g = grp[i];
+    if (g !== 2) return brandPin(D.brand[i], g, brandInitial[D.brand[i]]);
+    // 개인카페도 같은 크기의 동그라미에 커피잔을 넣는다.
+    var p = el('span', 'pin');
+    p.style.setProperty('--c', 'var(' + GROUPS[g].css + ')'); p.style.setProperty('--t', TXT[g]);
+    p.appendChild(icon('cup'));
+    return p;
+  }
+  var toastTimer = 0;
+  function toast(t) { var x = $('toast'); x.textContent = t; x.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { x.hidden = true; }, 3800); }
+
+  // ----- 카드 하나를 돌려 쓴다 -----
+  var panel = $('panel'), P = { kind: null, prev: null, anchor: null, cafe: -1 };
+  function openPanel(kind, anchor) {
+    P.kind = kind; P.anchor = anchor || null;
+    panel.dataset.kind = kind; panel.hidden = false;
+    document.body.classList.add('sheet-open');
+    renderPanel(); placePanel();
+  }
+  function closePanel() {
+    if (!P.kind) return;
+    var was = P.kind;
+    P.kind = null; P.prev = null; panel.hidden = true;
+    // 카드 안에 띄워 둔 카카오맵, 네이버지도 화면은 카드를 닫을 때 같이 내린다.
+    var fr = panel.querySelector('iframe'); if (fr) fr.remove();
+    document.body.classList.remove('sheet-open');
+    if (was === 'detail') { sel = -1; requestDraw(); }
+    renderChips();
+  }
+  function placePanel() {
+    if (mobile.matches) return;
+    var bar = $('bar').getBoundingClientRect(), menu = P.kind === 'region' || P.kind === 'brand' || P.kind === 'laptop';
+    var w = P.kind === 'laptop' ? 330 : 360, left = 14, top = 14 + 44 + 10;
+    panel.style.width = w + 'px';
+    if (menu && P.anchor) {
+      var a = $('chips').querySelector('[data-act="' + P.anchor + '"]');
+      if (a) { var r = a.getBoundingClientRect(); left = Math.max(14, Math.min(r.left, window.innerWidth - w - 14)); top = r.bottom + 8; }
+    } else top = Math.max(top, bar.top + 44 + 10);
+    panel.style.left = left + 'px'; panel.style.top = top + 'px';
+    panel.style.maxHeight = 'calc(100% - ' + (top + 20) + 'px)';
+  }
+  window.addEventListener('resize', function () { if (P.kind) placePanel(); });
+  function head(title, small, back) {
+    var h = el('div', 'ph');
+    if (back) { var bk = btn('ib back', null, back); bk.setAttribute('aria-label', '뒤로'); bk.appendChild(icon('back')); h.appendChild(bk); }
+    var t = el('h2', null, title); if (small) t.appendChild(el('small', null, small)); h.appendChild(t);
+    return h;
+  }
+  function closeBtn() { var x = btn('ib', null, closePanel); x.setAttribute('aria-label', '닫기'); x.appendChild(icon('x')); return x; }
+  function renderPanel() {
+    panel.textContent = '';
+    if (P.kind === 'region') renderRegion();
+    else if (P.kind === 'brand') renderBrand();
+    else if (P.kind === 'laptop') renderLaptop();
+    else if (P.kind === 'list') renderList();
+    else if (P.kind === 'search') renderSearch();
+    else if (P.kind === 'detail') renderDetail(P.cafe);
+  }
+
+  // ----- 필터 칩 -----
+  function anyFilter() { return nKeys(S.cats) || nKeys(S.brands) || S.big || S.outlet; }
+  function chip(label, on, act, opt) {
+    opt = opt || {};
+    var c = el('button', 'chip' + (opt.cls ? ' ' + opt.cls : '')); c.type = 'button'; c.dataset.act = act;
+    c.setAttribute('aria-pressed', on ? 'true' : 'false');
+    if (opt.dot !== undefined) c.appendChild(dotEl(opt.dot));
+    if (opt.icon) c.appendChild(icon(opt.icon));
+    c.appendChild(el('span', null, label));
+    if (opt.aria) c.setAttribute('aria-label', opt.aria);
+    if (opt.sub) { var x = el('span', 'sub'); x.dataset.act = opt.sub[0]; x.setAttribute('role', 'button'); x.setAttribute('aria-label', opt.sub[2]); x.appendChild(icon(opt.sub[1])); c.appendChild(x); }
+    else if (opt.caret) c.appendChild(icon('down'));
+    return c;
+  }
+  function brandLabel() {
+    var ks = Object.keys(S.brands), names = ks.map(function (j) { return D.brands[j][0]; });
+    if (S.cats[0]) names.unshift('프랜차이즈');
+    return names.length ? names[0] + (names.length > 1 ? ' 외 ' + (names.length - 1) : '') : '';
+  }
+  function regionChip() {
+    if (S.reg < 0) return chip('지역', false, 'region', { icon: 'pin', caret: true });
+    var c = el('span', 'chip crumb'), chain = regChain(S.reg);
+    c.setAttribute('aria-pressed', 'true');
+    c.appendChild(icon('pin'));
+    function seg(text, act, cur) { var b = el('button', cur ? 'cur' : null, text); b.type = 'button'; b.dataset.act = act; if (cur) b.appendChild(icon('down')); c.appendChild(b); }
+    seg('전국', 'reg-go--1', false);
+    chain.forEach(function (r, n) {
+      var last = n === chain.length - 1;
+      c.appendChild(icon('right'));
+      seg(rName[r], last ? 'region' : 'reg-go-' + r, last);
+    });
+    return c;
+  }
+  // 지금 고른 지역의 바로 아래가 동인가. 그럴 때만 전체 보기를 쓸 수 있다.
+  function canShowAll() { return S.reg >= 0 && !rLeaf[S.reg] && rKids[S.reg].length > 0 && rLeaf[rKids[S.reg][0]] === 1; }
+  // 고정해 둔 브랜드 번호들, 그리고 지금 그 브랜드들만 보고 있는지
+  function pinnedList() { var out = []; for (var j = 0; j < D.brands.length; j++) if (S.pins[D.brands[j][0]]) out.push(j); return out; }
+  function onlyPinned() { var pl = pinnedList(); return pl.length > 0 && !nKeys(S.cats) && nKeys(S.brands) === pl.length && pl.every(function (j) { return S.brands[j] === true; }); }
+  function togglePinnedOnly() {
+    if (onlyPinned()) S.brands = {};
+    else { S.brands = {}; S.cats = {}; pinnedList().forEach(function (j) { S.brands[j] = true; }); }
+  }
+  function renderChips() {
+    var box = $('chips'), bl = brandLabel();
+    box.textContent = '';
+    box.appendChild(regionChip());
+    box.appendChild(chip('저가커피', S.cats[1] === true, 'cat-1', { dot: 1 }));
+    if (pinnedList().length) box.appendChild(chip('내 브랜드', onlyPinned(), 'mine', { icon: 'tack' }));
+    box.appendChild(chip(bl || '브랜드', !!bl, 'brand', { dot: 0, caret: true, sub: bl ? ['brand-clear', 'x', '브랜드 해제'] : null }));
+    // 노트북 작업 칩 하나에 대형카페와 콘센트 좌석 조건이 들어 있다. 켜진 조건 수를 옆에 적는다.
+    var nLap = (S.big ? 1 : 0) + (S.outlet ? 1 : 0);
+    box.appendChild(chip('노트북 작업' + (nLap ? ' ' + nLap : ''), nLap > 0, 'laptop', { icon: 'laptop', caret: true }));
+    if (anyFilter()) box.appendChild(chip('초기화', false, 'reset', { cls: 'ghost' }));
+    // 지역을 골라 들어간 동안에만 오른쪽 아래에 뒤로, 처음부터 단추를 보여 준다.
+    $('nav').hidden = S.reg < 0;
+    // 구(또는 구가 없는 시, 군)를 골랐을 때만 "전체 보기" 단추를 보여 준다. 누르면 동을 고르지 않고도 그 구의 카페가 전부 점으로 나온다.
+    var all = $('navAll'), can = canShowAll();
+    all.hidden = !can;
+    if (can) { all.textContent = S.showAll ? '동별로 보기' : rName[S.reg] + ' 전체 보기'; all.setAttribute('aria-pressed', String(S.showAll)); }
+  }
+  function toggleMenu(kind, anchor) { if (P.kind === kind) closePanel(); else openPanel(kind, anchor); }
+  $('chips').addEventListener('click', function (e) {
+    var t = e.target.closest('[data-act]');
+    if (!t) return;
+    var act = t.dataset.act;
+    if (act === 'region') { if (P.kind !== 'region') regBrowse = S.reg >= 0 && rLeaf[S.reg] ? rParent[S.reg] : S.reg; toggleMenu('region', 'region'); return; }
+    if (act === 'brand') { brandQ = ''; toggleMenu('brand', 'brand'); return; }
+    if (act === 'laptop') { toggleMenu('laptop', 'laptop'); return; }
+    if (act.indexOf('reg-go-') === 0) {
+      // 앞 단계로 되돌아간다.
+      closePanel(); goRegion(+act.slice(7));
+      return;
     }
-    function setMark(v) {
-      mark[i] = mark[i] === v ? 0 : v;
-      if (mark[i]) marks[keyOf(i)] = mark[i]; else delete marks[keyOf(i)];
-      save(STORE + '.marks', marks);
-      sync();
-      if (S.laptop) refilter();
+    if (act === 'brand-clear') { S.brands = {}; delete S.cats[0]; }
+    else if (act === 'mine') togglePinnedOnly();
+    else if (act === 'reset') { S.cats = {}; S.brands = {}; S.big = false; S.outlet = false; S.chairs = {}; }
+    else if (act.indexOf('cat-') === 0) { var g = +act.slice(4); if (S.cats[g]) delete S.cats[g]; else S.cats[g] = true; }
+    if (P.kind === 'region' || P.kind === 'brand' || P.kind === 'laptop') closePanel();
+    changed();
+  });
+  function changed() { refilter(); draw(); renderChips(); if (P.kind && P.kind !== 'detail') renderPanel(); persist(); }
+
+  // ----- 아래 개수 단추 -----
+  function renderCount() {
+    var c = $('count'), txt = vc ? '이 화면 ' + fmt(vc) + '곳' : '이 화면에는 없어요';
+    if (c.dataset.t === txt) return;
+    c.dataset.t = txt; c.textContent = ''; c.hidden = false;
+    c.appendChild(icon('list')); c.appendChild(el('span', null, txt));
+  }
+  $('count').addEventListener('click', function () { if (P.kind === 'list') closePanel(); else { P.prev = null; openPanel('list'); } });
+
+  // ----- 목록 -----
+  function distText(i) {
+    if (!myLoc) return '';
+    var m = Math.hypot(mx[i] - myLoc.x, my[i] - myLoc.y) * 40075016 * Math.cos(D.lat[i] / 1e5 * Math.PI / 180);
+    return m < 950 ? Math.round(m / 10) * 10 + 'm' : (m / 1000).toFixed(1) + 'km';
+  }
+  function cafeRow(i, withRegion, from) {
+    var r = btn('row'), b = D.brand[i], body = el('span', 'body');
+    r.appendChild(pinEl(i));
+    body.appendChild(el('span', 'name', D.name[i]));
+    var bits = [];
+    if (D.area[i] > 0) bits.push(pyeong(D.area[i]) + '평');
+    bits.push(withRegion ? regPath(dongReg[D.dongOf[i]]) : D.dong[D.dongOf[i]][0]);
+    var dt = distText(i); if (dt) bits.push(dt);
+    body.appendChild(el('span', 'meta', bits.join(' · ')));
+    r.appendChild(body);
+    if (outlet[i] === 1) { var t = el('span', 'tag'); t.appendChild(icon('laptop')); t.title = '콘센트 좌석이 있다고 기록한 곳'; r.appendChild(t); }
+    r.addEventListener('click', function () { selectCafe(i, true, from); });
+    r.addEventListener('mouseenter', function () { hoverI = i; requestDraw(); });
+    r.addEventListener('mouseleave', function () { if (hoverI === i) { hoverI = -1; requestDraw(); } });
+    return r;
+  }
+  function renderList() {
+    var h = head(S.reg >= 0 ? rName[S.reg] : '이 화면', fmt(vc) + '곳'), sc = el('div', 'scroll'), k;
+    if (vc) {
+      var sort = el('div', 'sort');
+      [['near', '가까운 순'], ['size', '넓은 순']].forEach(function (o) {
+        var bt = btn(null, o[1], function () { S.sort = o[0]; renderPanel(); persist(); });
+        bt.setAttribute('aria-pressed', String(S.sort === o[0])); sort.appendChild(bt);
+      });
+      h.appendChild(sort);
+    }
+    h.appendChild(closeBtn());
+    panel.appendChild(h); panel.appendChild(sc);
+    if (!vc) {
+      var e = el('div', 'empty');
+      e.appendChild(el('b', null, '이 화면에는 조건에 맞는 카페가 없어요'));
+      e.appendChild(el('span', null, totalPass ? '지도를 옮기거나 축소해 보세요. 조건에 맞는 카페는 모두 ' + fmt(totalPass) + '곳이에요.' : '조건을 줄여 보세요.'));
+      if (anyFilter()) e.appendChild(btn('btn sm', '필터 초기화', function () { S.cats = {}; S.brands = {}; S.big = false; S.outlet = false; S.chairs = {}; changed(); }));
+      sc.appendChild(e); return;
+    }
+    var ct = map.getCenter(), cx = myLoc ? myLoc.x : (ct.lng + 180) / 360, cy = myLoc ? myLoc.y : mercY(ct.lat), arr = [];
+    for (k = 0; k < vc; k++) arr.push(viewIdx[k]);
+    if (S.sort === 'size') arr.sort(function (p, q) { return D.area[q] - D.area[p]; });
+    else arr.sort(function (p, q) { return (mx[p] - cx) * (mx[p] - cx) + (my[p] - cy) * (my[p] - cy) - (mx[q] - cx) * (mx[q] - cx) - (my[q] - cy) * (my[q] - cy); });
+    arr.slice(0, 60).forEach(function (i) { sc.appendChild(cafeRow(i, false, 'list')); });
+    if (arr.length > 60) sc.appendChild(el('p', 'note', (S.sort === 'size' ? '넓은' : (myLoc ? '내 위치에서 가까운' : '지도 가운데에서 가까운')) + ' 60곳이에요. 지도를 확대하면 더 좁혀져요.'));
+  }
+
+  // ----- 검색 -----
+  var flat = null, qTimer = 0;
+  function renderSearch() {
+    var words = $('q').value.toLowerCase().split(/\s+/).filter(Boolean), k, l, w, ok;
+    var h = head('검색 결과'), sc = el('div', 'scroll'); h.appendChild(closeBtn());
+    panel.appendChild(h); panel.appendChild(sc);
+    var joined = words.join(''), regs = [];
+    for (k = 0; k < NR; k++) {
+      var nm = regPath(k).toLowerCase(); ok = true;
+      for (w = 0; w < words.length; w++) if (nm.indexOf(words[w]) < 0) { ok = false; break; }
+      if (ok) regs.push(k);
+    }
+    // 큰 지역을 먼저, 같은 크기면 카페가 많은 곳을 먼저 보여 준다.
+    regs.sort(function (p, q) { return regChain(p).length - regChain(q).length || rCnt[q] - rCnt[p]; });
+    if (regs.length) {
+      sc.appendChild(el('div', 'sec', '지역'));
+      regs.slice(0, 5).forEach(function (r) {
+        var row = btn('row'), body = el('span', 'body'), pin = el('span', 'pin'); pin.style.setProperty('--c', 'var(--surface-2)'); pin.style.setProperty('--t', 'var(--ink-2)'); pin.appendChild(icon('pin'));
+        row.appendChild(pin); body.appendChild(el('span', 'name', regPath(r))); body.appendChild(el('span', 'meta', '이 지역만 보기')); row.appendChild(body);
+        row.addEventListener('click', function () { $('q').value = ''; $('qClear').hidden = true; closePanel(); setRegion(r, true); });
+        sc.appendChild(row);
+      });
+    }
+    var found = [];
+    if (joined.length >= 2) {
+      if (!flat) { flat = new Array(N); for (k = 0; k < N; k++) flat[k] = (D.name[k] + ' ' + regPath(dongReg[D.dongOf[k]]) + ' ' + D.road[k]).toLowerCase(); }
+      var ct = map.getCenter(), cx = (ct.lng + 180) / 360, cy = mercY(ct.lat);
+      for (k = 0; k < N; k++) {
+        ok = true;
+        for (w = 0; w < words.length; w++) if (flat[k].indexOf(words[w]) < 0) { ok = false; break; }
+        if (ok) found.push([(mx[k] - cx) * (mx[k] - cx) + (my[k] - cy) * (my[k] - cy), k]);
+      }
+      found.sort(function (p, q) { return p[0] - q[0]; });
+    }
+    if (found.length) {
+      sc.appendChild(el('div', 'sec', '카페 ' + fmt(found.length) + '곳'));
+      found.slice(0, 40).forEach(function (f) { sc.appendChild(cafeRow(f[1], true, 'search')); });
+      if (found.length > 40) sc.appendChild(el('p', 'note', '지도 가운데에서 가까운 40곳이에요. 동네 이름을 함께 입력하면 더 좁혀져요.'));
+    }
+    if (!regs.length && !found.length) {
+      var e = el('div', 'empty');
+      e.appendChild(el('b', null, joined.length < 2 ? '두 글자 이상 입력해 주세요' : '찾는 곳이 없어요'));
+      if (joined.length >= 2) e.appendChild(el('span', null, '띄어쓰기를 바꾸거나 더 짧게 입력해 보세요.'));
+      sc.appendChild(e);
+    }
+  }
+  $('q').addEventListener('input', function () {
+    var v = this.value.trim();
+    $('qClear').hidden = !this.value;
+    clearTimeout(qTimer);
+    qTimer = setTimeout(function () { if (v) { if (P.kind === 'search') renderPanel(); else openPanel('search'); } else if (P.kind === 'search') closePanel(); }, 140);
+  });
+  $('q').addEventListener('focus', function () { if (this.value.trim() && P.kind !== 'search') openPanel('search'); });
+  $('qClear').addEventListener('click', function () { $('q').value = ''; this.hidden = true; if (P.kind === 'search') closePanel(); $('q').focus(); });
+
+  // ----- 지역 고르기 -----
+  var regBrowse = -1;
+  function setRegion(r, fly) {
+    S.reg = r; hoverPill = -1; S.showAll = false;
+    changed();
+    if (fly && r >= 0) zoomToRegion(r);
+  }
+  function goRegion(r) { if (r < 0) { setRegion(-1, false); map.fitBounds(KOREA, { padding: fitPad(), duration: 600 }); } else setRegion(r, true); }
+  function renderRegion() {
+    var h = head('지역'); h.appendChild(closeBtn()); panel.appendChild(h);
+    var crumbs = el('div', 'crumbs'), chain = regChain(regBrowse);
+    crumbs.appendChild(btn(chain.length ? '' : 'on', '전국', function () { regBrowse = -1; goRegion(-1); }));
+    chain.forEach(function (r, n) {
+      crumbs.appendChild(icon('right'));
+      crumbs.appendChild(btn(n === chain.length - 1 ? 'on' : '', rName[r], function () { regBrowse = r; goRegion(r); }));
+    });
+    panel.appendChild(crumbs);
+    var sc = el('div', 'scroll'), grid = el('div', 'grid');
+    if (regBrowse >= 0) {
+      var all = btn('cell all' + (S.reg === regBrowse ? ' on' : ''), null, function () { var r = regBrowse; closePanel(); goRegion(r); });
+      all.appendChild(el('span', null, rName[regBrowse] + ' 전체')); all.appendChild(el('small', null, fmt(rCnt[regBrowse])));
+      grid.appendChild(all);
+    }
+    regChildren(regBrowse).forEach(function (k) {
+      var c = btn('cell' + (S.reg === k ? ' on' : ''), null, function () {
+        if (rLeaf[k]) { closePanel(); goRegion(k); }
+        else { regBrowse = k; goRegion(k); }
+      });
+      c.appendChild(el('span', null, rName[k])); c.appendChild(el('small', null, fmt(rCnt[k])));
+      if (!rCnt[k]) c.disabled = true;
+      grid.appendChild(c);
+    });
+    sc.appendChild(grid); panel.appendChild(sc);
+  }
+
+  // ----- 브랜드 고르기 -----
+  var brandQ = '';
+  function renderBrand() {
+    var h = head('브랜드'); h.appendChild(closeBtn()); panel.appendChild(h);
+    var s = el('label', 'search inset'); s.appendChild(icon('search'));
+    var inp = el('input'); inp.type = 'search'; inp.placeholder = '브랜드 이름'; inp.value = brandQ; inp.id = 'brandQ'; inp.autocomplete = 'off';
+    s.appendChild(inp); panel.appendChild(s);
+    var bar = el('div', 'pinbar'); panel.appendChild(bar);
+    var sc = el('div', 'scroll'); panel.appendChild(sc);
+    function apply() { refilter(); draw(); renderChips(); persist(); }
+    function groupTotal(g) { var n = 0; for (var j = 0; j < D.brands.length; j++) if (brandGroup[j] === g) n += brandCount[j]; return n; }
+    // 한 줄: 왼쪽을 누르면 그 브랜드만 보기를 켜고 끄고, 오른쪽 압정을 누르면 맨 위에 고정한다.
+    function row(label, g, letter, j, on, count, fn) {
+      var wrap = el('div', 'brow');
+      var pk = btn('pick', null, function () { fn(); on = !on; pk.setAttribute('aria-pressed', String(on)); fillBar(); });
+      pk.setAttribute('aria-pressed', String(on));
+      pk.appendChild(brandPin(j, g, letter));
+      pk.appendChild(el('span', 'name', label));
+      pk.appendChild(el('small', null, fmt(count)));
+      var bx = el('span', 'box'); bx.appendChild(icon('check')); pk.appendChild(bx);
+      wrap.appendChild(pk);
+      if (j >= 0) {
+        var pinned = !!S.pins[label];
+        var pb = btn('pinbtn', null, function () { if (S.pins[label]) delete S.pins[label]; else S.pins[label] = true; persist(); renderChips(); fill(); });
+        pb.setAttribute('aria-pressed', String(pinned));
+        pb.setAttribute('aria-label', label + (pinned ? ' 상위 고정 풀기' : ' 맨 위에 고정'));
+        pb.title = pinned ? '상위 고정 풀기' : '맨 위에 고정';
+        pb.appendChild(icon('tack'));
+        wrap.appendChild(pb);
+      }
+      return wrap;
+    }
+    function brandRow(j) { return row(D.brands[j][0], brandGroup[j], '', j, S.brands[j] === true, brandCount[j], function () { if (S.brands[j]) delete S.brands[j]; else S.brands[j] = true; apply(); }); }
+    function fillBar() {
+      bar.textContent = '';
+      var pl = pinnedList();
+      bar.hidden = !pl.length;
+      if (!pl.length) return;
+      var on = onlyPinned();
+      var b = btn('btn sm', on ? '고정한 브랜드만 보는 중' : '고정한 브랜드 ' + pl.length + '곳만 보기', function () { togglePinnedOnly(); apply(); fill(); });
+      b.setAttribute('aria-pressed', String(on));
+      bar.appendChild(b);
+    }
+    function fill() {
+      sc.textContent = '';
+      fillBar();
+      var q = brandQ.replace(/\s/g, '').toLowerCase(), any = false, pl = pinnedList();
+      function byCount(a, b) { return brandCount[b] - brandCount[a]; }
+      if (!q && pl.length) {
+        sc.appendChild(el('div', 'sec', '고정한 브랜드'));
+        pl.sort(byCount).forEach(function (j) { sc.appendChild(brandRow(j)); });
+      }
+      if (!q) sc.appendChild(row('프랜차이즈 전체 (저가 제외)', 0, '전', -1, S.cats[0] === true, groupTotal(0), function () { if (S.cats[0]) delete S.cats[0]; else S.cats[0] = true; apply(); }));
+      [0, 1].forEach(function (g) {
+        var list = [];
+        for (var j = 0; j < D.brands.length; j++) {
+          if (brandGroup[j] !== g) continue;
+          if (q ? D.brands[j][0].toLowerCase().indexOf(q) < 0 : S.pins[D.brands[j][0]]) continue;   // 고정한 브랜드는 위에 이미 있다.
+          list.push(j);
+        }
+        if (!list.length) return;
+        any = true;
+        sc.appendChild(el('div', 'sec', GROUPS[g].label));
+        list.sort(byCount).forEach(function (j) { sc.appendChild(brandRow(j)); });
+      });
+      if (!any && q) sc.appendChild(el('p', 'note', '그런 이름의 브랜드가 목록에 없어요. 맨 위 검색창에서 카페 이름으로 찾아보세요.'));
+      if (!q && !pl.length) sc.appendChild(el('p', 'note', '자주 보는 브랜드는 오른쪽 압정을 눌러 맨 위에 고정해 두세요.'));
+    }
+    inp.addEventListener('input', function () { brandQ = inp.value; fill(); });
+    fill();
+  }
+
+  // ----- 노트북 작업: 대형카페, 콘센트 좌석 -----
+  function toggleRow(label, on, fn) {
+    var l = el('label', 'switch'), cb = el('input'); cb.type = 'checkbox'; cb.checked = on;
+    cb.addEventListener('change', function () { fn(cb.checked); });
+    l.appendChild(el('span', null, label)); l.appendChild(cb);
+    return l;
+  }
+  function renderLaptop() {
+    var h = head('노트북 작업'); h.appendChild(closeBtn()); panel.appendChild(h);
+    var sc = el('div', 'scroll');
+    function apply() { refilter(); draw(); renderChips(); persist(); }
+    // 1. 대형카페
+    var a = el('div', 'set'), out = el('output'), rg = el('input');
+    a.appendChild(toggleRow('대형카페만', S.big, function (v) { S.big = v; apply(); }));
+    rg.type = 'range'; rg.min = 30; rg.max = 300; rg.step = 10; rg.value = S.bigPy; rg.id = 'bigPy'; rg.setAttribute('aria-label', '대형카페 기준 평수');
+    function lab() { out.textContent = S.bigPy + '평 이상'; out.appendChild(el('small', null, Math.round(S.bigPy * PYEONG) + '㎡')); }
+    rg.addEventListener('input', function () { S.bigPy = +rg.value; lab(); apply(); });
+    lab(); a.appendChild(out); a.appendChild(rg);
+    a.appendChild(el('p', null, '넓이를 모르는 카페(약 18%)는 빠져요.'));
+    sc.appendChild(a);
+    // 2. 콘센트 좌석
+    var b = el('div', 'set'), n = seatCount();
+    b.appendChild(toggleRow('콘센트 좌석 있는 곳만', S.outlet, function (v) { S.outlet = v; apply(); }));
+    b.appendChild(el('h3', null, '그 자리의 의자'));
+    var row = el('div', 'opts');
+    CHAIRS.forEach(function (c) {
+      var bt = btn('opt', c[1], function () { if (S.chairs[c[0]]) delete S.chairs[c[0]]; else S.chairs[c[0]] = true; bt.setAttribute('aria-pressed', String(!!S.chairs[c[0]])); apply(); });
+      bt.setAttribute('aria-pressed', String(!!S.chairs[c[0]]));
+      row.appendChild(bt);
+    });
+    b.appendChild(row);
+    b.appendChild(el('p', null, '의자를 고르지 않으면 종류와 상관없이 나와요. 콘센트 좌석은 자료가 없어서, 카페를 눌러 직접 기록한 곳만 나와요. 지금까지 기록한 곳은 ' + n + '곳이에요.'));
+    sc.appendChild(b);
+    panel.appendChild(sc);
+  }
+  // ----- 카페 정보 -----
+  function fullAddr(i) { var d = D.dongOf[i], g = dongSgg[d]; var sido = D.sido[sggSido[g]], sg = D.sgg[g][0]; return (sg === sido ? sido : sido + ' ' + sg) + ' ' + D.road[i]; }
+  function selectCafe(i, pan, from) {
+    sel = i; P.cafe = i; P.prev = from;
+    // 지역을 골라 둔 채로 다른 동의 카페를 찾아가면, 지역을 그 카페의 동으로 바꿔서 주변 카페도 같이 보이게 한다.
+    if (S.reg >= 0 && !regMask[D.dongOf[i]]) { S.reg = dongReg[D.dongOf[i]]; S.showAll = false; hoverPill = -1; refilter(); renderChips(); persist(); }
+    var z = map.getZoom(), pt = map.project([D.lng[i] / 1e5, D.lat[i] / 1e5]), box = map.getContainer(), W = box.clientWidth, H = box.clientHeight;
+    // 카드에 가려지지 않는 자리로 옮긴다. PC는 카드가 왼쪽, 휴대폰은 아래.
+    var off = mobile.matches ? [0, -H * .2] : [180, 0];
+    var hiddenByCard = mobile.matches ? pt.y > H * .42 : (pt.x < 400 && pt.y < H - 40);
+    var outside = pt.x < 40 || pt.x > W - 40 || pt.y < (mobile.matches ? 130 : 90) || pt.y > H - 40;
+    if (pan || outside || hiddenByCard || z < 13) map.easeTo({ center: [D.lng[i] / 1e5, D.lat[i] / 1e5], zoom: Math.max(z, pan ? 15.5 : 13.5), offset: off, duration: 500 });
+    openPanel('detail'); requestDraw();
+  }
+  var embedPick = load('cafemap.embed') || '';   // 카드 안에 띄울 지도: 'k' 카카오맵, 'n' 네이버지도, '' 안 띄움
+  function renderDetail(i) {
+    var b = D.brand[i], g = grp[i], a = D.area[i], fl = D.floor[i], lat = D.lat[i] / 1e5, lng = D.lng[i] / 1e5;
+    var back = P.prev ? function () { var k = P.prev; sel = -1; P.prev = null; openPanel(k); requestDraw(); } : null;
+    var h = head('', null, back); h.appendChild(closeBtn()); panel.appendChild(h);
+    var sc = el('div', 'scroll'), d = el('div', 'detail'), top = el('div');
+    top.appendChild(el('h1', null, D.name[i]));
+    var kind = el('div', 'kind'); kind.appendChild(dotEl(g)); kind.appendChild(el('span', null, b < 0 ? '개인카페' : GROUPS[g].label + ' · ' + D.brands[b][0])); top.appendChild(kind);
+    d.appendChild(top);
+    var dl = el('dl', 'facts'), addr = fullAddr(i);
+    function fact(k) { dl.appendChild(el('dt', null, k)); var dd = el('dd'); dl.appendChild(dd); return dd; }
+    var f1 = fact('주소'); f1.appendChild(el('span', null, addr + (fl > 0 ? ' ' + fl + '층' : fl < 0 ? ' 지하' : '')));
+    f1.appendChild(btn('link', '복사', function () {
+      var done = function () { toast('주소를 복사했어요'); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(addr).then(done, function () { toast(addr); }); else toast(addr);
+    }));
+    var f2 = fact('넓이');
+    if (a > 0) { f2.appendChild(el('b', null, pyeong(a) + '평')); f2.appendChild(el('small', null, fmt(a) + '㎡' + (a >= S.bigPy * PYEONG ? ' · 대형' : ''))); } else f2.appendChild(el('small', null, '자료 없음'));
+    d.appendChild(dl);
+    // 콘센트 좌석 기록. 있음을 고르면 그 자리 의자 종류를 고를 수 있다.
+    var rec = el('div', 'rec'), r1 = el('div', 'opts'), r2 = el('div', 'opts');
+    var yes = btn('opt', '콘센트 좌석 있음'), no = btn('opt', '없음'), chairBtns = [];
+    r1.appendChild(yes); r1.appendChild(no);
+    CHAIRS.forEach(function (c) {
+      var bt = btn('opt', c[1], function () { chair[i] ^= c[2]; store(); });
+      chairBtns.push([bt, c[2]]); r2.appendChild(bt);
+    });
+    var cap = el('div', 'k', '그 자리의 의자 (여러 개 고를 수 있어요)');
+    rec.appendChild(el('div', 'k', '노트북 작업')); rec.appendChild(r1); rec.appendChild(cap); rec.appendChild(r2);
+    function sync() {
+      yes.setAttribute('aria-pressed', String(outlet[i] === 1)); no.setAttribute('aria-pressed', String(outlet[i] === -1));
+      cap.hidden = r2.hidden = outlet[i] !== 1;
+      chairBtns.forEach(function (x) { x[0].setAttribute('aria-pressed', String((chair[i] & x[1]) !== 0)); });
+    }
+    function store() {
+      var k = keyOf(i);
+      if (!outlet[i]) { delete seats[k]; chair[i] = 0; }
+      else seats[k] = { o: outlet[i], c: outlet[i] === 1 ? CHAIRS.filter(function (c) { return chair[i] & c[2]; }).map(function (c) { return c[0]; }).join('') : '' };
+      if (outlet[i] !== 1) chair[i] = 0;
+      save('cafemap.seat', seats); sync();
+      if (S.outlet) refilter();
       requestDraw();
     }
-    ok.addEventListener('click', function () { setMark(1); });
-    no.addEventListener('click', function () { setMark(-1); });
-    marks_.appendChild(ok); marks_.appendChild(no);
-    card.appendChild(marks_);
-    sync();
-    var links = el('div', null, 'links');
-    var k = el('a', '카카오맵에서 보기'), n = el('a', '네이버지도에서 찾기');
-    k.href = 'https://map.kakao.com/link/map/' + encodeURIComponent(name.replace(/,/g, ' ')) + ',' + lat + ',' + lng;
-    n.href = 'https://map.naver.com/p/search/' + encodeURIComponent(D.regions[D.region[i]].split(' ').slice(1).join(' ') + ' ' + name);
-    k.target = n.target = '_blank'; k.rel = n.rel = 'noopener';
-    links.appendChild(k); links.appendChild(n);
-    card.appendChild(links);
-    closePopup();
-    sel = i;
-    popup = new maplibregl.Popup({ offset: 14, maxWidth: 'none', closeOnClick: false })
-      .setLngLat([lng, lat]).setDOMContent(card).addTo(map);
-    popup.on('close', function () { if (popup) { popup = null; sel = -1; requestDraw(); } });
-    requestDraw();
-  }
-
-  // ---------- 필터 화면 ----------
-  var groupBoxes = [];
-  function groupBrands(g) { var out = []; for (var j = 0; j < D.brands.length; j++) if (brandGroup[j] === g) out.push(j); return out.sort(function (a, b) { return brandCount[b] - brandCount[a]; }); }
-  function changed() { refilter(); syncUI(); draw(); persist(); }
-
-  GROUPS.forEach(function (g, gi) {
-    var box = el('div', null, 'group'), head = el('div', null, 'group-head');
-    var label = el('label'), cb = el('input'); cb.type = 'checkbox'; cb.id = 'g-' + g.key;
-    var dot = el('span', null, 'dot'); dot.style.background = 'var(' + g.css + ')';
-    label.appendChild(cb); label.appendChild(dot); label.appendChild(el('span', g.label));
-    var list = gi < 3 ? groupBrands(gi) : null;
-    var total = gi < 3 ? list.reduce(function (s, j) { return s + brandCount[j]; }, 0) : indieCount;
-    label.appendChild(el('span', total.toLocaleString('ko-KR'), 'count'));
-    head.appendChild(label);
-    box.appendChild(head);
-    var checks = [];
-    if (list) {
-      var more = el('button', '브랜드별', 'more'); more.type = 'button'; more.setAttribute('aria-expanded', 'false');
-      head.appendChild(more);
-      var body = el('div', null, 'brands'); body.hidden = true;
-      var tools = el('div', null, 'tools'), all = el('button', '모두 켜기'), none = el('button', '모두 끄기');
-      all.type = none.type = 'button';
-      all.addEventListener('click', function () { list.forEach(function (j) { S.brandOn[j] = true; }); changed(); });
-      none.addEventListener('click', function () { list.forEach(function (j) { S.brandOn[j] = false; }); changed(); });
-      tools.appendChild(all); tools.appendChild(none); body.appendChild(tools);
-      var ul = el('ul');
-      list.forEach(function (j) {
-        var li = el('li'), lb = el('label'), c = el('input'); c.type = 'checkbox'; c.id = 'b-' + j;
-        c.addEventListener('change', function () { S.brandOn[j] = c.checked; changed(); });
-        lb.appendChild(c); lb.appendChild(el('span', D.brands[j][0], 'n')); lb.appendChild(el('span', brandCount[j].toLocaleString('ko-KR'), 'count'));
-        li.appendChild(lb); ul.appendChild(li); checks.push([j, c]);
-      });
-      body.appendChild(ul); box.appendChild(body);
-      more.addEventListener('click', function () { body.hidden = !body.hidden; more.setAttribute('aria-expanded', String(!body.hidden)); more.textContent = body.hidden ? '브랜드별' : '접기'; });
-      cb.addEventListener('change', function () { list.forEach(function (j) { S.brandOn[j] = cb.checked; }); changed(); });
-    } else {
-      cb.addEventListener('change', function () { S.indie = cb.checked; changed(); });
-    }
-    groupBoxes.push({ cb: cb, list: list, checks: checks });
-    $('groups').appendChild(box);
-  });
-
-  var PRESETS = [
-    ['전체 보기', function (g) { return true; }],
-    ['저가커피만', function (g) { return g === 1; }],
-    ['프랜차이즈만', function (g) { return g !== 3; }],
-    ['개인카페만', function (g) { return g === 3; }]
-  ];
-  PRESETS.forEach(function (p) {
-    var bt = el('button', p[0], 'preset'); bt.type = 'button';
-    bt.addEventListener('click', function () {
-      for (var j = 0; j < D.brands.length; j++) S.brandOn[j] = p[1](brandGroup[j]);
-      S.indie = p[1](3);
-      changed();
-    });
-    $('presets').appendChild(bt);
-  });
-
-  function seg(id, get, set) {
-    var bts = $(id).querySelectorAll('button');
-    bts.forEach(function (bt) { bt.addEventListener('click', function () { set(bt.dataset.v === '1'); changed(); }); });
-    return function () { bts.forEach(function (bt) { bt.setAttribute('aria-pressed', String((bt.dataset.v === '1') === get())); }); };
-  }
-  var syncBig = seg('segBig', function () { return S.big; }, function (v) { S.big = v; });
-  var syncLap = seg('segLap', function () { return S.laptop; }, function (v) { S.laptop = v; });
-  $('bigMin').addEventListener('input', function () { S.bigMin = +this.value; changed(); });
-  $('hideDabang').addEventListener('change', function () { S.hideDabang = this.checked; changed(); });
-
-  function syncUI() {
-    groupBoxes.forEach(function (gb) {
-      if (!gb.list) { gb.cb.checked = S.indie; return; }
-      var on = gb.list.filter(function (j) { return S.brandOn[j]; }).length;
-      gb.cb.checked = on > 0; gb.cb.indeterminate = on > 0 && on < gb.list.length;
-      gb.checks.forEach(function (c) { c[1].checked = S.brandOn[c[0]]; });
-    });
-    syncBig(); syncLap();
-    $('bigMin').value = S.bigMin;
-    $('bigOut').textContent = S.bigMin + '㎡ (약 ' + Math.round(S.bigMin / 3.3058) + '평) 이상';
-    $('hideDabang').checked = S.hideDabang;
-  }
-
-  // ---------- 이름 검색 ----------
-  var flat = null, timer = 0;
-  $('q').addEventListener('input', function () {
-    clearTimeout(timer);
-    var input = this;
-    timer = setTimeout(function () {
-      var words = input.value.toLowerCase().split(/\s+/).filter(Boolean), box = $('results');
+    yes.addEventListener('click', function () { outlet[i] = outlet[i] === 1 ? 0 : 1; store(); });
+    no.addEventListener('click', function () { outlet[i] = outlet[i] === -1 ? 0 : -1; store(); });
+    sync(); d.appendChild(rec);
+    // 카카오맵, 네이버지도 단추. 누르면 그 가게 화면을 카드 안에 바로 띄우고, 한 번 더 누르면 접는다.
+    // 마지막에 고른 쪽을 기억해 두었다가 다음 카페를 열 때도 같은 쪽을 바로 띄운다.
+    // 카카오는 장소 번호(D.kid)가 있어야 가게 화면을 띄울 수 있다. 번호가 없는 카페는 예전처럼 새 창으로 연다.
+    var kakaoOut = 'https://map.kakao.com/link/map/' + encodeURIComponent(D.name[i].replace(/,/g, ' ')) + ',' + lat + ',' + lng;
+    var query = encodeURIComponent(D.sgg[dongSgg[D.dongOf[i]]][0] + ' ' + D.name[i]);
+    var pid = D.kid ? D.kid[i] : 0;
+    var SRC = {
+      k: pid ? { title: '카카오맵', frame: 'https://place.map.kakao.com/' + pid, out: 'https://place.map.kakao.com/' + pid } : null,
+      n: { title: '네이버지도', frame: 'https://m.place.naver.com/place/list?query=' + query + '&x=' + lng + '&y=' + lat, out: 'https://map.naver.com/p/search/' + query }
+    };
+    var links = el('div', 'two'), box = el('div', 'embed'), tabs = {};
+    function show(which) {
       box.textContent = '';
-      if (!words.length || words.join('').length < 2) { box.hidden = true; return; }
-      if (!flat) { flat = new Array(N); for (var i = 0; i < N; i++) flat[i] = (D.name[i] + ' ' + D.regions[D.region[i]] + ' ' + D.road[i]).toLowerCase(); }
-      var c = map.getCenter(), s = Math.sin(c.lat * Math.PI / 180), cx = (c.lng + 180) / 360, cy = 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI);
-      var found = [];
-      for (var i = 0; i < N; i++) {
-        var ok = true;
-        for (var w = 0; w < words.length; w++) if (flat[i].indexOf(words[w]) < 0) { ok = false; break; }
-        if (ok) found.push([(mx[i] - cx) * (mx[i] - cx) + (my[i] - cy) * (my[i] - cy), i]);
-      }
-      found.sort(function (a, b) { return a[0] - b[0]; });
-      box.hidden = false;
-      if (!found.length) { box.appendChild(el('p', '찾는 이름이 없어요. 띄어쓰기를 바꾸거나 짧게 입력해 보세요.')); return; }
-      found.slice(0, 30).forEach(function (f) {
-        var i = f[1], bt = el('button'); bt.type = 'button';
-        bt.appendChild(el('span', D.name[i])); bt.appendChild(el('small', D.regions[D.region[i]] + ' ' + D.road[i]));
-        bt.addEventListener('click', function () {
-          $('panel').classList.remove('open');
-          map.jumpTo({ center: [D.lng[i] / 1e5, D.lat[i] / 1e5], zoom: Math.max(map.getZoom(), 16) });
-          openCafe(i);
+      var src = SRC[which];
+      for (var t in tabs) tabs[t].setAttribute('aria-pressed', String(t === which && !!src));
+      if (!src) { box.hidden = true; panel.removeAttribute('data-embed'); return; }
+      var fr = document.createElement('iframe');
+      fr.title = D.name[i] + ' ' + src.title; fr.src = src.frame; fr.referrerPolicy = 'no-referrer';
+      // 안에 띄운 화면이 이 지도 창 자체를 다른 곳으로 보내지 못하게 한다. 새 창 열기는 허용한다.
+      fr.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms');
+      var out = el('a', null, src.title + ' 새 창에서 열기'); out.href = src.out; out.target = '_blank'; out.rel = 'noopener';
+      box.appendChild(fr); box.appendChild(out); box.hidden = false; panel.setAttribute('data-embed', '');
+    }
+    [['k', '카카오맵'], ['n', '네이버지도']].forEach(function (x) {
+      var bt;
+      if (!SRC[x[0]]) { bt = el('a', 'btn', x[1]); bt.href = kakaoOut; bt.target = '_blank'; bt.rel = 'noopener'; bt.appendChild(icon('out')); }
+      else {
+        bt = btn('btn', x[1], function () {
+          embedPick = bt.getAttribute('aria-pressed') === 'true' ? '' : x[0];
+          save('cafemap.embed', embedPick); show(embedPick);
+          if (embedPick) box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         });
-        box.appendChild(bt);
-      });
-      if (found.length > 30) box.appendChild(el('p', '지도 가운데에서 가까운 30곳만 보여 줘요. 모두 ' + found.length.toLocaleString('ko-KR') + '곳이에요.'));
-    }, 160);
-  });
+        tabs[x[0]] = bt;
+      }
+      links.appendChild(bt);
+    });
+    d.appendChild(links); d.appendChild(box);
+    show(embedPick);
+    sc.appendChild(d); panel.appendChild(sc);
+  }
 
-  // ---------- 내 위치, 서랍 ----------
-  var me = null, toastTimer = 0;
-  function toast(t) { var x = $('toast'); x.textContent = t; x.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { x.hidden = true; }, 4500); }
+  // ----- 지도 단추 -----
+  var me = null;
   $('locate').addEventListener('click', function () {
     if (!navigator.geolocation) { toast('이 브라우저에서는 위치를 가져올 수 없어요.'); return; }
     navigator.geolocation.getCurrentPosition(function (p) {
       var ll = [p.coords.longitude, p.coords.latitude];
-      if (!me) { var d = document.createElement('div'); d.className = 'me'; me = new maplibregl.Marker({ element: d }).setLngLat(ll).addTo(map); }
-      else me.setLngLat(ll);
-      map.easeTo({ center: ll, zoom: Math.max(map.getZoom(), 14) });
+      if (!me) { var d = el('div', 'me'); me = new maplibregl.Marker({ element: d }).setLngLat(ll).addTo(map); } else me.setLngLat(ll);
+      myLoc = { x: (ll[0] + 180) / 360, y: mercY(ll[1]) };
+      map.easeTo({ center: ll, zoom: Math.max(map.getZoom(), 15), duration: 600 });
     }, function () { toast('위치를 가져오지 못했어요. 브라우저에서 위치 권한을 허용해 주세요.'); }, { enableHighAccuracy: true, timeout: 10000 });
   });
-  $('openFilters').addEventListener('click', function () { $('panel').classList.add('open'); });
-  $('closeFilters').addEventListener('click', function () { $('panel').classList.remove('open'); });
+  $('navAll').addEventListener('click', function () { S.showAll = !S.showAll; closePanel(); draw(); renderChips(); });
+  $('navBack').addEventListener('click', function () { if (S.reg >= 0) { closePanel(); goRegion(rParent[S.reg]); } });
+  $('navHome').addEventListener('click', function () { closePanel(); goRegion(-1); });
+  $('zin').addEventListener('click', function () { map.zoomIn(); });
+  $('zout').addEventListener('click', function () { map.zoomOut(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePanel(); });
+  mobile.addEventListener('change', function () { if (P.kind) placePanel(); draw(); });
 
-  refilter(); syncUI(); draw();
-  map.on('load', draw);
+  refilter(); draw(); renderChips();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { FONT = getComputedStyle(document.body).fontFamily; layoutCache = {}; draw(); });
 })();
 </script>
 </body>
