@@ -281,6 +281,13 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 @media (max-width: 760px) { #panel.rise { animation: sheetUp .32s cubic-bezier(.2, .8, .2, 1); } }
 @media (prefers-reduced-motion: reduce) { #panel.rise { animation: none; } }
 .dbody { position: relative; flex: 1; min-height: 0; border-top: 1px solid var(--line); }
+/* 투표할 때 뜨는 로그인 창 */
+#login { position: absolute; inset: 0; z-index: 60; background: rgba(15, 20, 30, .45); display: grid; place-items: center; padding: 20px; }
+.lbox { width: min(340px, 100%); background: var(--surface); border-radius: 18px; box-shadow: var(--sh-2); padding: 22px 20px 14px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.lbox h2 { margin: 0; font-size: 17px; font-weight: 750; }
+.lbox p { margin: 0; font-size: 13px; color: var(--ink-3); }
+.lbox .gbtn { min-height: 44px; display: grid; place-items: center; margin-top: 6px; }
+.lbox .lmsg { min-height: 18px; color: var(--ink-2); }
 /* 다른 사람들이 없어졌다고 알린 카페: 카드 윗줄 아래에 한 줄로 알린다. */
 .gonebar { flex: none; padding: 7px 14px; font-size: 12.5px; font-weight: 650; color: var(--ink); background: color-mix(in srgb, #f59f00 16%, var(--surface)); border-top: 1px solid var(--line); }
 .dbody iframe { display: block; width: 100%; height: 100%; border: 0; background: var(--surface-2); }
@@ -790,22 +797,43 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 
   // ----- 기록을 모두가 같이 보기 위한 서버(Firebase Realtime Database) -----
   // share.js에 주소와 키가 적혀 있을 때만 켜진다. 비어 있으면 기록은 이 기기에만 남는다.
-  // 읽기는 누구나 할 수 있고, 쓰기는 이름 없는 계정으로 자기 기록만 할 수 있다. 계정은 처음 기록할 때 저절로 만들어진다.
-  var SHARE = window.CAFE_SHARE || {}, shareOn = !!(SHARE.key && SHARE.db);
+  // 읽기는 누구나 할 수 있고, 쓰기는 자기 기록만 할 수 있다.
+  // share.js에 구글 클라이언트 ID(google)가 있으면 "투표할 때만 로그인"이다: 투표를 누를 때 구글 로그인을 받고, 한 사람이 한 표만 갖는다.
+  //   이때 투표는 서버의 v2 아래에 따로 모으고(규칙이 로그인한 계정만 쓰게 한다), 내 투표는 이 기기가 아니라 서버의 내 계정 것을 따른다(폰과 컴퓨터가 같아진다).
+  // 없으면 예전처럼 처음 기록할 때 이름 없는 계정이 저절로 만들어진다(브라우저마다 다른 사람으로 세어진다).
+  var SHARE = window.CAFE_SHARE || {}, shareOn = !!(SHARE.key && SHARE.db), loginOn = shareOn && !!SHARE.google, ROOT = loginOn ? '/v2' : '';
   var who = load('cafemap.auth'), idToken = '', idUntil = 0, srvMine = {};
+  function signedIn() { return !!(who && who.r && who.p); }
+  // 내 기록(mine, goneMine)을 카페 배열에 다시 입힌다. 로그인, 로그아웃, 서버에서 내 투표를 받아 왔을 때 쓴다.
+  function applyMine() {
+    var ix = cidIndex(), k, j, touched = [];
+    for (j = 0; j < N; j++) if (myO[j] || myGone[j]) { if (myO[j]) touched.push(j); myO[j] = 0; myC[j] = 0; myGone[j] = 0; }
+    for (k in mine) { j = ix[k]; if (j !== undefined) { myO[j] = mine[k].o || 0; myC[j] = chairBits(mine[k].c); touched.push(j); } }
+    for (k in goneMine) { j = ix[k]; if (j !== undefined) myGone[j] = 1; }
+    touched.forEach(tally);
+  }
+  // 로그인 방식으로 처음 바뀔 때 한 번: 이름 없는 계정으로 이 기기에 적어 둔 투표는 버린다(누구 것인지 확인할 수 없는 표라서).
+  if (loginOn && !load('cafemap.v2')) {
+    mine = {}; goneMine = {}; who = null;
+    save('cafemap.seat2', mine); save('cafemap.gone', goneMine); save('cafemap.auth', null); save('cafemap.v2', 1);
+    applyMine();
+  }
   function postJson(url, body, form) {
     return fetch(url, { method: 'POST', headers: { 'Content-Type': form ? 'application/x-www-form-urlencoded' : 'application/json' }, body: form ? body : JSON.stringify(body) })
       .then(function (r) { if (!r.ok) { var e = new Error('auth'); e.status = r.status; throw e; } return r.json(); });
   }
   function token() {
+    if (loginOn && !signedIn()) return Promise.reject(new Error('login'));
     if (idToken && Date.now() < idUntil) return Promise.resolve(idToken);
     function fresh() {
+      // 로그인 방식에서는 계정을 저절로 만들지 않는다. 다시 로그인해야 한다.
+      if (loginOn) { who = null; save('cafemap.auth', null); return Promise.reject(new Error('login')); }
       return postJson((SHARE.authUrl || 'https://identitytoolkit.googleapis.com/v1/accounts:signUp') + '?key=' + SHARE.key, { returnSecureToken: true })
         .then(function (d) { who = { u: d.localId, r: d.refreshToken }; save('cafemap.auth', who); idToken = d.idToken; idUntil = Date.now() + (+d.expiresIn - 60) * 1000; return idToken; });
     }
     if (!who || !who.r) return fresh();
     return postJson((SHARE.tokenUrl || 'https://securetoken.googleapis.com/v1/token') + '?key=' + SHARE.key, 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(who.r), true)
-      .then(function (d) { who = { u: d.user_id, r: d.refresh_token }; save('cafemap.auth', who); idToken = d.id_token; idUntil = Date.now() + (+d.expires_in - 60) * 1000; return idToken; },
+      .then(function (d) { var p = who && who.p; who = { u: d.user_id, r: d.refresh_token }; if (p) who.p = p; save('cafemap.auth', who); idToken = d.id_token; idUntil = Date.now() + (+d.expires_in - 60) * 1000; return idToken; },
         // 계정이 없어졌을 때(400)만 새로 만든다. 인터넷이 잠깐 끊긴 것이면 다음에 다시 한다.
         function (e) { if (e && e.status === 400) return fresh(); throw e; });
   }
@@ -814,7 +842,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     if (!shareOn) return;
     var k = cidOf(i), rec = mine[k];
     token().then(function (t) {
-      var url = SHARE.db + '/seats/' + k + '/' + who.u + '.json?auth=' + encodeURIComponent(t);
+      var url = SHARE.db + ROOT + '/seats/' + k + '/' + who.u + '.json?auth=' + encodeURIComponent(t);
       return fetch(url, rec ? { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ o: rec.o, c: rec.c, t: { '.sv': 'timestamp' } }) } : { method: 'DELETE' });
     }).then(function (r) {
       if (!r.ok) throw new Error('db');
@@ -823,8 +851,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   }
   // 모두의 기록을 받아 와서 카페별로 센다.
   function pull() {
-    if (!shareOn) return;
-    fetch(SHARE.db + '/seats.json').then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); }).then(function (all) {
+    if (!shareOn) return Promise.resolve();
+    return fetch(SHARE.db + ROOT + '/seats.json').then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); }).then(function (all) {
       var ix = cidIndex(), k, u, j, touched = [];
       for (j in votes) touched.push(+j);
       votes = {}; srvMine = {};
@@ -842,9 +870,16 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
         if (j !== undefined) touched.push(j);
       }
       touched.forEach(tally);
-      // 이 기기의 내 기록과 서버에 있는 내 기록이 다르면 이 기기 것으로 맞춘다(올리다 실패한 것이 여기서 다시 올라간다).
-      for (k in mine) if (!srvMine[k] || srvMine[k].o !== mine[k].o || (srvMine[k].c || '') !== (mine[k].c || '')) { j = ix[k]; if (j !== undefined) push(j, true); }
-      for (k in srvMine) if (!mine[k]) { j = ix[k]; if (j !== undefined) push(j, true); }
+      if (loginOn) {
+        // 로그인 방식: 서버에 있는 내 계정의 투표가 기준이다. 이 기기의 내 기록을 그것으로 바꾼다(로그인하지 않았으면 비운다).
+        mine = {};
+        if (signedIn()) for (k in srvMine) mine[k] = { o: srvMine[k].o, c: srvMine[k].c || '' };
+        save('cafemap.seat2', mine); applyMine();
+      } else {
+        // 이 기기의 내 기록과 서버에 있는 내 기록이 다르면 이 기기 것으로 맞춘다(올리다 실패한 것이 여기서 다시 올라간다).
+        for (k in mine) if (!srvMine[k] || srvMine[k].o !== mine[k].o || (srvMine[k].c || '') !== (mine[k].c || '')) { j = ix[k]; if (j !== undefined) push(j, true); }
+        for (k in srvMine) if (!mine[k]) { j = ix[k]; if (j !== undefined) push(j, true); }
+      }
       if (S.outlet) refilter();
       requestDraw();
       if (P.kind === 'filter') renderPanel();
@@ -856,13 +891,13 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     if (!shareOn) return;
     var k = cidOf(i), on = myGone[i] === 1;
     token().then(function (t) {
-      var url = SHARE.db + '/gone/' + k + '/' + who.u + '.json?auth=' + encodeURIComponent(t);
+      var url = SHARE.db + ROOT + '/gone/' + k + '/' + who.u + '.json?auth=' + encodeURIComponent(t);
       return fetch(url, on ? { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ t: { '.sv': 'timestamp' } }) } : { method: 'DELETE' });
     }).then(function (r) { if (!r.ok) throw new Error('db'); }).catch(function () { /* 다음에 열 때 다시 올린다 */ });
   }
   function pullGone() {
-    if (!shareOn) return;
-    fetch(SHARE.db + '/gone.json').then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); }).then(function (all) {
+    if (!shareOn) return Promise.resolve();
+    return fetch(SHARE.db + ROOT + '/gone.json').then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); }).then(function (all) {
       var ix = cidIndex(), mineOnServer = {}, k, u, j;
       goneVotes = {};
       for (k in all || {}) {
@@ -872,13 +907,83 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
           if (j !== undefined) goneVotes[j] = (goneVotes[j] || 0) + 1;
         }
       }
-      // 이 기기의 내 표시와 서버가 다르면 이 기기 것으로 맞춘다.
-      for (k in goneMine) if (!mineOnServer[k]) { j = ix[k]; if (j !== undefined) pushGone(j); }
-      for (k in mineOnServer) if (!goneMine[k]) { j = ix[k]; if (j !== undefined) pushGone(j); }
+      if (loginOn) {
+        // 로그인 방식: 서버의 내 계정 것이 기준이다.
+        goneMine = signedIn() ? mineOnServer : {};
+        save('cafemap.gone', goneMine); applyMine();
+      } else {
+        // 이 기기의 내 표시와 서버가 다르면 이 기기 것으로 맞춘다.
+        for (k in goneMine) if (!mineOnServer[k]) { j = ix[k]; if (j !== undefined) pushGone(j); }
+        for (k in mineOnServer) if (!goneMine[k]) { j = ix[k]; if (j !== undefined) pushGone(j); }
+      }
       refilter(); requestDraw();
     }).catch(function () { /* 서버에 닿지 못하면 내 표시만으로 보여 준다 */ });
   }
   pullGone();
+  // ----- 투표할 때만 로그인 -----
+  // 투표 단추를 누르면 여기를 거친다. 로그인이 필요 없거나 이미 했으면 바로 하고, 아니면 로그인 창을 띄운 뒤 로그인이 끝나면 이어서 한다.
+  var loginEl = null, loginThen = null, gLoading = null;
+  function needLogin(fn) { if (!loginOn || signedIn()) fn(); else openLogin(fn); }
+  function openLogin(fn) {
+    loginThen = fn;
+    if (!loginEl) {
+      loginEl = el('div'); loginEl.id = 'login';
+      var box = el('div', 'lbox'), g = el('div', 'gbtn'), msg = el('p', 'lmsg');
+      g.id = 'gbtn'; msg.id = 'lmsg';
+      box.appendChild(el('h2', null, '로그인하고 투표하기'));
+      box.appendChild(el('p', null, '한 사람이 한 번만 투표할 수 있게 확인해요.'));
+      box.appendChild(g); box.appendChild(msg);
+      box.appendChild(btn('link', '닫기', closeLogin));
+      loginEl.appendChild(box);
+      loginEl.addEventListener('click', function (e) { if (e.target === loginEl) closeLogin(); });
+      $('app').appendChild(loginEl);
+    }
+    loginEl.hidden = false;
+    // 카카오톡 같은 앱 안의 화면에서는 구글이 로그인을 막는다. 미리 알려 준다.
+    $('lmsg').textContent = /KAKAOTALK|NAVER\(inapp|Instagram|FBAN|FBAV|Line\//i.test(navigator.userAgent) ? '이 앱 안에서는 구글 로그인이 막혀 있어요. 사파리나 크롬에서 열어 주세요.' : '';
+    loadGoogle(function () {
+      google.accounts.id.initialize({ client_id: SHARE.google, callback: onGoogle });
+      $('gbtn').textContent = '';
+      google.accounts.id.renderButton($('gbtn'), { type: 'standard', theme: 'outline', size: 'large', text: 'continue_with', shape: 'pill', locale: 'ko', width: 260 });
+    });
+  }
+  function closeLogin() { if (loginEl) loginEl.hidden = true; loginThen = null; }
+  // 구글 로그인 단추를 그리는 구글의 스크립트는 로그인 창을 처음 열 때만 받는다.
+  function loadGoogle(done) {
+    if (window.google && google.accounts && google.accounts.id) { done(); return; }
+    if (!gLoading) {
+      gLoading = [];
+      var sc = document.createElement('script');
+      sc.src = 'https://accounts.google.com/gsi/client'; sc.async = true;
+      sc.onload = function () { var q = gLoading; gLoading = null; q.forEach(function (f) { f(); }); };
+      sc.onerror = function () { gLoading = null; $('lmsg').textContent = '구글 로그인을 불러오지 못했어요. 인터넷을 확인해 주세요.'; };
+      document.head.appendChild(sc);
+    }
+    gLoading.push(done);
+  }
+  // 구글이 준 로그인 표(ID 토큰)를 Firebase에 넘겨 이 지도의 계정으로 바꾼다.
+  function onGoogle(resp) {
+    if (!resp || !resp.credential) return;
+    $('lmsg').textContent = '로그인하는 중이에요';
+    postJson('https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key=' + SHARE.key, {
+      postBody: 'id_token=' + encodeURIComponent(resp.credential) + '&providerId=google.com',
+      requestUri: location.origin && location.origin !== 'null' ? location.origin : 'http://localhost',
+      returnIdpCredential: true, returnSecureToken: true
+    }).then(function (d) {
+      who = { u: d.localId, r: d.refreshToken, p: 'google.com' }; save('cafemap.auth', who);
+      idToken = d.idToken; idUntil = Date.now() + (+d.expiresIn - 60) * 1000;
+      var then = loginThen; closeLogin();
+      // 서버에 있던 내 투표를 먼저 받아 온 다음, 누르려던 투표를 이어서 한다.
+      Promise.all([pull(), pullGone()]).then(function () { toast('로그인했어요'); if (then) then(); });
+    }, function () { $('lmsg').textContent = '로그인하지 못했어요. 다시 해 주세요.'; });
+  }
+  function logout() {
+    who = null; save('cafemap.auth', null); idToken = ''; idUntil = 0;
+    mine = {}; goneMine = {}; save('cafemap.seat2', mine); save('cafemap.gone', goneMine);
+    applyMine(); pull(); pullGone(); refilter(); requestDraw();
+    if (P.kind === 'detail') renderPanel();
+    toast('로그아웃했어요');
+  }
   function nKeys(o) { return Object.keys(o).length; }
   function persist() {
     var c = map.getCenter();
@@ -2390,7 +2495,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     // 콘센트 좌석 기록. 투표처럼 단추마다 그렇게 기록한 사람 수를 적는다(아무도 안 했으면 0).
     // 눌린 단추가 내 기록이다. 자리 종류를 누르면 콘센트 좌석이 있다는 뜻이므로 "있어요"도 같이 켠다.
     var rec = el('div', 'rec'), r1 = el('div', 'opts'), r2 = el('div', 'opts');
-    function voteBtn(text, fn) { var bt = btn('opt', text, fn), n = el('span', 'n', '0'); bt.appendChild(n); return [bt, n, text]; }
+    function voteBtn(text, fn) { var bt = btn('opt', text, function () { needLogin(fn); }), n = el('span', 'n', '0'); bt.appendChild(n); return [bt, n, text]; }
     function setBtn(x, on, count) {
       x[0].setAttribute('aria-pressed', String(on)); x[1].textContent = count;
       x[0].setAttribute('aria-label', x[2] + ', ' + count + '명이 기록' + (on ? ', 내 기록' : ''));
@@ -2417,11 +2522,16 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     bGone[0].title = '가 보니 이 카페가 없을 때 누른다. 내 지도에서 빠지고, 다른 사람에게는 신고 수로 보인다';
     r3.appendChild(bWant); r3.appendChild(bGone[0]);
     rec.appendChild(el('div', 'k', '내 기록')); rec.appendChild(r3);
+    // 로그인해 있을 때만 보이는 로그아웃.
+    var loK = el('div', 'k', ''), lo = btn('link', '로그아웃', logout);
+    lo.style.justifySelf = 'start'; lo.style.fontSize = '12.5px';
+    rec.appendChild(loK); rec.appendChild(lo);
     function sync() {
       var v = votes[i] || [0, 0, 0, 0, 0];
       var ny = v[0] + (myO[i] === 1 ? 1 : 0), nn = v[1] + (myO[i] === -1 ? 1 : 0);
       total.textContent = ny + nn ? '총 ' + (ny + nn) + '명 투표' : '아직 투표 없음';
       bWant.setAttribute('aria-pressed', String(want[i] === 1));
+      lo.hidden = loK.hidden = !(loginOn && signedIn());
       setBtn(bGone, myGone[i] === 1, (goneVotes[i] || 0) + (myGone[i] === 1 ? 1 : 0));
       k2.hidden = r2.hidden = ny === 0;
       setBtn(yes, myO[i] === 1, v[0] + (myO[i] === 1 ? 1 : 0));

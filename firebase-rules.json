@@ -27,6 +27,34 @@
           "$other": { ".validate": false }
         }
       }
+    },
+    "v2": {
+      "gone": {
+        ".read": true,
+        "$cafe": {
+          ".validate": "$cafe.matches(/^[0-9a-z]+$/) && $cafe.length <= 12",
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'",
+            ".validate": "newData.hasChildren(['t'])",
+            "t": { ".validate": "newData.val() === now" },
+            "$other": { ".validate": false }
+          }
+        }
+      },
+      "seats": {
+        ".read": true,
+        "$cafe": {
+          ".validate": "$cafe.matches(/^[0-9a-z]+$/) && $cafe.length <= 12",
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'",
+            ".validate": "newData.hasChildren(['o', 'c', 't'])",
+            "o": { ".validate": "newData.val() === 1 || newData.val() === -1" },
+            "c": { ".validate": "newData.isString() && newData.val().length <= 3 && newData.val().matches(/^[nws]*$/)" },
+            "t": { ".validate": "newData.val() === now" },
+            "$other": { ".validate": false }
+          }
+        }
+      }
     }
   }
 }
