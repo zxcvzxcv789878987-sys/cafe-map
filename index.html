@@ -867,7 +867,9 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       mark('lm-civic', 15, ['any', ['==', SUB, 'townhall'], ['==', SUB, 'post_office'], ['match', CLS, ['police', 'fire_station'], true, false], ['all', ['==', CLS, 'library'], ['<=', RANK, 10]]], 'civic', '#5f6875'),
       mark('lm-park', 14.8, ['all', ['==', CLS, 'park'], ['==', SUB, 'park'], ['<=', RANK, 8]], 'park', '#2f8f57'),
       mark('lm-museum', 14.5, ['==', SUB, 'museum'], 'museum', '#7a6450'),
-      mark('lm-hospital', 14, ['all', ['==', CLS, 'hospital'], ['==', SUB, 'hospital'], ['<=', RANK, 2]], 'hospital', '#d9484d'),
+      // 병원은 큰 병원만. 자료에 병원으로 적혀 있어도 이름이 의원, 치과, 한의원, 클리닉, 동물병원인 곳은 점포 한 칸짜리라서 뺀다.
+      mark('lm-hospital', 14, ['all', ['==', CLS, 'hospital'], ['==', SUB, 'hospital'], ['<=', RANK, 2],
+        ['!', ['any', ['in', '의원', ['coalesce', KO, '']], ['in', '치과', ['coalesce', KO, '']], ['in', '클리닉', ['coalesce', KO, '']], ['in', '동물', ['coalesce', KO, '']]]]], 'hospital', '#d9484d'),
       mark('lm-terminal', 13.5, ['==', SUB, 'bus_station'], 'terminal', '#4a5d80'),
       mark('lm-univ', 13.5, ['all', ['==', CLS, 'college'], ['==', SUB, 'university'], ['<=', RANK, 3]], 'univ', '#3f6fd1'),
       text('lm-dong', 'place', 12.4, ['match', CLS, ['quarter', 'suburb'], true, false], { 'text-size': 13, 'text-letter-spacing': .04, 'text-padding': 10 }, { 'text-color': '#8a919d' }),
