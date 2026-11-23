@@ -307,7 +307,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .prow .pin { flex: none; }
 .prow span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* 처음 열 때 자료를 받는 동안 보이는 표시 */
-#loading { position: absolute; inset: 0; z-index: 60; background: #f2f3f5; overflow: hidden; }
+#loading { position: absolute; inset: 0; z-index: 60; background: #f4f3f0; overflow: hidden; }
 #loading[hidden] { display: none; }
 .sk { position: absolute; border-radius: 14px; background: #fff; box-shadow: var(--sh-1); overflow: hidden; }
 .sk::after, .sk-map::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 20%, rgba(0, 0, 0, .05) 50%, transparent 80%); background-size: 200% 100%; animation: shimmer 1.3s linear infinite; }
@@ -1379,32 +1379,37 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
         paint: Object.assign({ 'text-color': '#2f3a4a' }, HALO, { 'text-halo-width': 1.8 }) }
     ];
   }
-  // 지도 색을 네이버 지도와 비슷한 색감으로 바꾼다. 땅은 밝은 회색, 길은 흰색, 큰길은 연한 노랑, 공원은 연한 초록, 물은 하늘색.
+  // 지도 색. 네이버 지도와 카카오맵 화면에서 색을 직접 재 보고 둘의 공통점을 따랐다.
+  //   네이버: 땅 #f0f0f0~#f6f6f6, 공원 #d8eacc, 학교와 공공시설 #deeaf0, 길은 흰색
+  //   카카오(PC): 땅 #f0eade~#f4f4f0, 공원 #c0d8ae, 물 #a2d2ea, 큰길 #fcf6c6, 고속도로 #fcd296
+  // 보기 편한 까닭은 둘 다 같다. 땅이 아주 밝고 거의 무채색이며, 건물은 땅과 밝기 차이가 작고,
+  // 공원과 물은 옅어서 뒤로 물러나고, 길은 흰색이고 큰길만 연노랑이다. 진한 색은 가게 표시에만 쓴다.
+  // 그래서 땅은 네이버처럼 밝게 하되 카카오처럼 살짝 따뜻하게, 공원과 물은 네이버처럼 옅게, 큰길 색은 카카오를 따랐다.
   // 지도 자체는 그대로 OpenFreeMap이고 색만 입힌 것이다.
   function recolor(l) {
     var id = l.id, p = l.paint = l.paint || {};
     function set(k, v) { p[k] = v; }
-    if (id === 'background') return set('background-color', '#f2f3f5');
-    if (id === 'park') { set('fill-color', '#cfe9cb'); return set('fill-outline-color', '#cfe9cb'); }
-    if (id === 'park_outline') return set('line-color', '#c3e1bf');
-    if (id === 'landuse_residential') return set('fill-color', '#f2f3f5');
-    if (id === 'landcover_wood') return set('fill-color', '#c7e5c2');
-    if (id === 'landcover_grass') return set('fill-color', '#d4edcf');
-    if (/^landuse_(pitch|track|cemetery)$/.test(id)) return set('fill-color', '#d9eed4');
-    if (/^landuse_(hospital|school)$/.test(id)) return set('fill-color', '#e6ebf3');
-    if (id === 'landcover_sand') return set('fill-color', '#f3ecd2');
-    if (id === 'water') return set('fill-color', '#a9d4f5');
-    if (/^waterway_/.test(id)) return set('line-color', '#a9d4f5');
-    if (id === 'aeroway_fill') return set('fill-color', '#e6e8ec');
-    if (/^aeroway_/.test(id)) return set('line-color', '#f6f7f9');
-    if (id === 'building') { set('fill-color', '#e3e6eb'); return set('fill-outline-color', '#d6dae1'); }
-    if (/^boundary_/.test(id)) return set('line-color', '#b9bec7');
+    if (id === 'background') return set('background-color', '#f4f3f0');
+    if (id === 'park') { set('fill-color', '#d6e8c9'); return set('fill-outline-color', '#d6e8c9'); }
+    if (id === 'park_outline') return set('line-color', '#c9dfbb');
+    if (id === 'landuse_residential') return set('fill-color', '#f4f3f0');
+    if (id === 'landcover_wood') return set('fill-color', '#cde3c0');
+    if (id === 'landcover_grass') return set('fill-color', '#dcebd0');
+    if (/^landuse_(pitch|track|cemetery)$/.test(id)) return set('fill-color', '#d6e8c9');
+    if (/^landuse_(hospital|school)$/.test(id)) return set('fill-color', '#e2ebf1');
+    if (id === 'landcover_sand') return set('fill-color', '#f3ecd6');
+    if (id === 'water') return set('fill-color', '#b3d9ee');
+    if (/^waterway_/.test(id)) return set('line-color', '#b3d9ee');
+    if (id === 'aeroway_fill') return set('fill-color', '#eceae6');
+    if (/^aeroway_/.test(id)) return set('line-color', '#f9f8f5');
+    if (id === 'building') { set('fill-color', '#ebeae6'); return set('fill-outline-color', '#e2e0db'); }
+    if (/^boundary_/.test(id)) return set('line-color', '#c9c6be');
     if (l['source-layer'] !== 'transportation' || l.type !== 'line') return;
     var edge = /_casing$/.test(id);
-    if (/rail/.test(id)) return set('line-color', '#b4bac4');
-    if (/motorway/.test(id)) return set('line-color', edge ? '#e3b257' : '#f9d37c');
-    if (/trunk_primary|_link/.test(id)) return set('line-color', edge ? '#e9cf7c' : '#fbe9a9');
-    return set('line-color', edge ? '#d9dde3' : '#ffffff');
+    if (/rail/.test(id)) return set('line-color', '#c5c3bd');
+    if (/motorway/.test(id)) return set('line-color', edge ? '#eaba78' : '#fbd9a0');
+    if (/trunk_primary|_link/.test(id)) return set('line-color', edge ? '#e9dc9a' : '#fcf2c2');
+    return set('line-color', edge ? '#e3e1db' : '#ffffff');
   }
   function applyStyle() {
     var url = styleUrl();
