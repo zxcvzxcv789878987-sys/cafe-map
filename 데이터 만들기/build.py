@@ -78,6 +78,8 @@ open_names, closed_names = collections.defaultdict(list), collections.defaultdic
 # 주소별 영업 중인 인허가 전부(넓이가 없는 줄도). 문 연 달(인허가일자)을 붙이고, 카페 목록에 아직 없는 최근 개업 카페를 찾는 데 쓴다.
 # [이름(다듬은 것), 브랜드, 인허가 연월(YYYYMM), 업태, 넓이, 원래 이름, 도로명주소, 일반음식점 자료인가]
 lic_all = collections.defaultdict(list)
+# 주소별 폐업한 인허가의 [이름, 브랜드, 인허가 연월]. 같은 자리에서 같은 이름으로 허가를 새로 받은 가게(주인이나 법인이 바뀐 경우)를 알아보는 데 쓴다.
+closed_all = collections.defaultdict(list)
 
 
 def ym_of(d):
@@ -105,6 +107,7 @@ for path in license_files:
             n = norm(row[i_name])
             if '폐업' in row[i_state]:
                 closed_names[k].append(n)
+                closed_all[k].append((n, brand_of(n), ym_of(row[i_date]) if i_date is not None else 0))
             if '영업' not in row[i_state]:
                 continue
             open_names[k].append(n)
@@ -194,8 +197,20 @@ for r in rows:
         if bs >= 0.6:
             ym = lic_all[k][bj][2]
             used.add((k, bj))
+            # 오래된 가게가 새 카페로 나오지 않게 한다. 주인이나 법인이 바뀌면 허가를 새로 받아서 인허가일자가 최근으로 찍힌다.
+            # (1) 같은 주소에 같은 이름(브랜드 매장은 같은 브랜드)의 폐업한 인허가가 있으면 그 가게가 이어진 것이다. 가장 이른 날짜를 문 연 달로 쓴다.
+            for cn, cb, cy in closed_all.get(k, ()):
+                if cy and cy < ym and ((b >= 0 and cb == b) or (b < 0 and similar(n, cn) >= 0.6)):
+                    ym = cy
+                    stat['허가를 새로 받은 가게(옛 날짜로 고침)'] += 1
+            # (2) 상가정보에 등록된 달(상가업소번호에 들어 있다)이 인허가보다 석 달 넘게 이르면, 허가받기 전부터 있던 가게다.
+            #     언제 열었는지는 알 수 없으므로 문 연 달을 비워 둔다(틀린 날짜를 적지 않는다).
+            reg = ym_of(r['상가업소번호'][6:14]) if r.get('상가업소번호') else 0
+            if ym and reg and (ym // 100 * 12 + ym % 100) - (reg // 100 * 12 + reg % 100) > 3:
+                ym = 0
+                stat['허가보다 먼저 등록된 가게(문 연 달 비움)'] += 1
     if k:
-        at_addr[k].append(ym > 0)
+        at_addr[k].append(bs >= 0.6 if k in lic_all else False)
     since.append(ym)
     disp = raw if not branch or branch in raw else raw + ' ' + branch
     sido, sgg, dong = r['시도명'].strip(), r['시군구명'].strip() or r['시도명'].strip(), r['행정동명'].strip() or '기타'
@@ -237,6 +252,9 @@ if os.path.exists(bpath):
                 continue
             nm = c[5]
             if NOT_NEW.search(nm):
+                continue
+            if any((c[1] >= 0 and cb == c[1]) or (c[1] < 0 and similar(c[0], cn) >= 0.6) for cn, cb, cy in closed_all.get(k, ())):
+                added['같은 자리에서 허가를 새로 받은 가게라 넣지 않음'] += 1
                 continue
             ok = (not c[7] and (c[3] in NEW_TYPES or c[1] >= 0)) or (NEW_WORD.search(nm) and (c[3] == '까페' if c[7] else c[3] in ('기타 휴게음식점', '떡카페', '아이스크림', '제과점영업')))
             if ok:
