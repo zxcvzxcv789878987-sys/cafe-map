@@ -12,7 +12,16 @@ self.addEventListener('fetch', e => {
   if (BIG.test(u.pathname)) {
     // 큰 자료(카페, 경계, 지하철): 넣어 둔 것이 있으면 그것을 바로 주고, 뒤에서 새것을 받아 다음에 열 때 쓴다.
     e.respondWith(caches.open(V).then(c => c.match(e.request).then(hit => {
-      const net = fetch(e.request).then(r => { if (r.ok) c.put(e.request, r.clone()); return r; });
+      // 새로 받은 것이 넣어 둔 것과 다르면(서버의 파일 표시가 바뀌었으면) 열려 있는 화면에 알린다. 화면은 스스로 새로고침해서 새 자료를 쓴다.
+      const net = fetch(e.request).then(r => {
+        if (r.ok) {
+          const changed = hit && hit.headers.get('etag') && r.headers.get('etag') && hit.headers.get('etag') !== r.headers.get('etag');
+          c.put(e.request, r.clone()).then(() => {
+            if (changed) self.clients.matchAll().then(cs => cs.forEach(cl => cl.postMessage({ type: 'fresh-data' })));
+          });
+        }
+        return r;
+      });
       if (hit) { e.waitUntil(net.catch(() => {})); return hit; }
       return net;
     })));

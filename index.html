@@ -212,6 +212,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .opts { display: flex; flex-wrap: wrap; gap: 6px; }
 .opt { height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line-2); font-size: 13px; font-weight: 600; }
 .opt:hover { border-color: var(--ink-3); }
+.opt svg.i { width: 15px; height: 15px; vertical-align: -3px; margin-right: 5px; }
+.opt[aria-pressed=true] svg.i { fill: currentColor; }
 .opt[aria-pressed=true] { background: var(--inv); border-color: var(--inv); color: var(--on-inv); }
 /* 단추 안에 적는 사람 수(그렇게 기록한 사람이 몇 명인지) */
 .opt .n { margin-left: 6px; font-weight: 700; font-variant-numeric: tabular-nums; opacity: .5; }
@@ -355,6 +357,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
   <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7.500-4.600-7.500-10.200A4.300 4.300 0 0 1 12 7.300a4.300 4.300 0 0 1 7.500 2.500C19.500 15.400 12 20 12 20z"/></symbol>
   <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3M8 7l4-4 4 4M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"/></symbol>
   <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.010M4 12h.010M4 18h.010"/></symbol>
   <symbol id="i-out" viewBox="0 0 24 24"><path d="M14 5h5v5M19 5l-8 8M10 6H6a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-4"/></symbol>
@@ -677,7 +680,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     outlet: !!saved.outlet,   // 콘센트 좌석이 있다고 기록한 곳만 보기
     chairs: {},               // 그 자리 의자 종류로 더 좁히기. n 일반 의자, w 벽면 고정 의자, s 스탠드형 의자
     sort: saved.sort === 'size' ? 'size' : 'near',
-    seen: saved.seen === 'only' || saved.seen === 'not' || saved.seen === 'want' ? saved.seen : 'all',   // 내 기록으로 거르기: all 전부, want 가고 싶은 곳만, only 가 본 곳만, not 가 본 곳 빼고
+    seen: saved.seen === 'want' ? 'want' : 'all',   // 찜한 곳만 보기: all 전부, want 찜한 곳만
     fresh: saved.fresh === 3 || saved.fresh === 6 || saved.fresh === 12 ? saved.fresh : 0,   // 새로 연 카페: 0 전부, 3, 6, 12는 그 달 수 안에 문 연 곳만
     showAll: false,      // 구 전체 보기를 켰는가. 지역을 바꾸면 꺼진다.
     pins: {},            // 내 브랜드로 담아 둔 브랜드 이름
@@ -758,23 +761,20 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     if (myO[i]) mine[k] = { o: myO[i], c: myO[i] === 1 ? chairStr(myC[i]) : '' }; else delete mine[k];
     save('cafemap.seat2', mine);
   }
-  // 가 본 곳: 이 기기에만 적어 둔다(다른 사람과 나누지 않는다). { 카페 이름표: 1 }
-  var visited = load('cafemap.visited') || {}, seen = new Uint8Array(N);
-  // 가고 싶은 곳: 가 본 곳처럼 이 기기에만 적어 둔다.
+  // 찜한 곳: 이 기기에만 적어 둔다(다른 사람과 나누지 않는다). { 카페 이름표: 1 }
+  // 예전에는 "가 봤어요"와 "가고 싶어요"가 따로 있었는데, 단추가 많고 같은 기능이라는 말을 듣고 찜 하나로 합쳤다.
   var wanted = load('cafemap.want') || {}, want = new Uint8Array(N);
   // 없어진 카페: 가 보니 없더라는 표시. 내 것은 이 기기에 적고 서버에도 올린다.
   // 내가 표시한 곳은 내 지도에서 바로 빠진다. 남들이 표시한 곳은 지도에서 빼지 않고 카드에 "없어졌다는 신고 N명"으로만 알린다.
   // (로그인이 없어서 한 사람이 브라우저를 바꿔 가며 여러 번 표시할 수 있다. 남의 표시로 지도에서 빼면 멀쩡한 카페를 지울 수 있다.)
   var goneMine = load('cafemap.gone') || {}, myGone = new Uint8Array(N), goneVotes = {};
   (function () {
-    if (!nKeysEarly(visited) && !nKeysEarly(goneMine) && !nKeysEarly(wanted)) return;
+    if (!nKeysEarly(goneMine) && !nKeysEarly(wanted)) return;
     var ix = cidIndex(), k, j;
-    for (k in visited) { j = ix[k]; if (j !== undefined) seen[j] = 1; }
     for (k in wanted) { j = ix[k]; if (j !== undefined) want[j] = 1; }
     for (k in goneMine) { j = ix[k]; if (j !== undefined) myGone[j] = 1; }
   })();
   function nKeysEarly(o) { for (var k in o) return 1; return 0; }
-  function setSeen(i, on) { var k = cidOf(i); seen[i] = on ? 1 : 0; if (on) visited[k] = 1; else delete visited[k]; save('cafemap.visited', visited); }
   function setWant(i, on) { var k = cidOf(i); want[i] = on ? 1 : 0; if (on) wanted[k] = 1; else delete wanted[k]; save('cafemap.want', wanted); }
   function setGone(i, on) {
     var k = cidOf(i);
@@ -905,7 +905,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       var ok = !dabang[i] && (!anySel || S.cats[grp[i]] === true || (b >= 0 && S.brands[b] === true));
       if (ok && S.big && D.area[i] < minArea) ok = false;
       if (ok && S.outlet) ok = outlet[i] === 1 && (!wantChair || (chair[i] & wantChair) !== 0);
-      if (ok && S.seen !== 'all') ok = S.seen === 'want' ? want[i] === 1 : (seen[i] === 1) === (S.seen === 'only');
+      if (ok && S.seen === 'want') ok = want[i] === 1;
       if (ok && S.fresh) { var ma = monthsAgo(i); ok = ma >= 0 && ma < S.fresh; }
       // 없어진 카페: 내가 없다고 한 곳만 내 지도에서 뺀다. 남들이 없다고 한 곳은 빼지 않고 카드에서 알린다.
       if (ok && myGone[i] === 1) ok = false;
@@ -1412,7 +1412,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     }
     ctx.drawImage(sp, px - half, py - half, half * 2, half * 2);
     if (outlet[i] === 1) outletBadge(px, py, r);
-    if (seen[i] === 1) seenBadge(px, py, r); else if (want[i] === 1) wantBadge(px, py, r);
+    if (want[i] === 1) wantBadge(px, py, r);
   }
   // 이름 조각(흰 테두리를 두른 글씨). 글씨 너비도 같이 기억한다.
   function labelSprite(i, n) {
@@ -1448,19 +1448,13 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   var labSpot = new Int8Array(N).fill(-1), labGen = new Int32Array(N), layoutGen = 1, lastLayout = 0;   // 카페마다 지난번에 이름을 놓은 자리와 그때의 차례 번호
   var LABEL_ALL = 15.6, LABEL_SOME = 14;   // 이 배율부터 이름을 전부 / 자리가 되는 만큼만 보여 준다.
   function outletBadge(px, py, r) { ctx.beginPath(); ctx.arc(px + r * .72, py - r * .72, 3.6, 0, 6.2832); ctx.fillStyle = C.ok; ctx.fill(); ctx.lineWidth = 1.4; ctx.strokeStyle = C.surface; ctx.stroke(); }
-  // 가 본 곳은 점 오른쪽 아래에 작은 체크를 붙인다.
-  function seenBadge(px, py, r) {
-    var x = px + r * .72, y = py + r * .72;
-    ctx.beginPath(); ctx.arc(x, y, 4.2, 0, 6.2832); ctx.fillStyle = C.inv; ctx.fill(); ctx.lineWidth = 1.2; ctx.strokeStyle = C.surface; ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x - 2, y + .1); ctx.lineTo(x - .5, y + 1.6); ctx.lineTo(x + 2.1, y - 1.5); ctx.lineWidth = 1.3; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = C.onInv; ctx.stroke();
-  }
-  // 가고 싶은 곳은 같은 자리에 분홍 바탕의 작은 하트를 붙인다(가 본 곳이면 체크가 먼저다).
+  // 찜한 곳은 점 오른쪽 아래에 분홍 바탕의 작은 하트를 붙인다.
   function wantBadge(px, py, r) {
     var x = px + r * .72, y = py + r * .72;
     ctx.beginPath(); ctx.arc(x, y, 4.4, 0, 6.2832); ctx.fillStyle = '#e64980'; ctx.fill(); ctx.lineWidth = 1.2; ctx.strokeStyle = C.surface; ctx.stroke();
     ctx.beginPath(); ctx.moveTo(x, y + 2.3); ctx.bezierCurveTo(x - 3.6, y - .4, x - 1.5, y - 2.9, x, y - 1); ctx.bezierCurveTo(x + 1.5, y - 2.9, x + 3.6, y - .4, x, y + 2.3); ctx.fillStyle = '#fff'; ctx.fill();
   }
-  function drawDot(i, px, py, r) { paintDot(i, px, py, r); if (outlet[i] === 1) outletBadge(px, py, r); if (seen[i] === 1) seenBadge(px, py, r); else if (want[i] === 1) wantBadge(px, py, r); }
+  function drawDot(i, px, py, r) { paintDot(i, px, py, r); if (outlet[i] === 1) outletBadge(px, py, r); if (want[i] === 1) wantBadge(px, py, r); }
   function paintDot(i, px, py, r) {
     var g = grp[i], im = g !== 2 && r >= 8 ? brandImg[D.brand[i]] : null;
     if (im && im.ok) {
@@ -1807,7 +1801,35 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   map.once('load', openFromHash);
   window.addEventListener('hashchange', openFromHash);
   // 폰 홈 화면에 앱처럼 추가해서 쓸 수 있게, 그리고 두 번째부터 빨리 뜨게 한다(인터넷 주소로 열었을 때만).
-  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});
+  // 새 버전이 올라와 있으면 스스로 새로고침한다(홈 화면 앱에는 새로고침 단추가 없다).
+  // 카드를 보고 있을 때는 끊지 않고, 카드를 닫을 때 한다.
+  var reloading = false, wantReload = false;
+  function softReload() {
+    if (reloading) return;
+    if (P.kind) { wantReload = true; return; }
+    // 혹시라도 새로고침이 되풀이되지 않게, 한 번 한 뒤 1분 안에는 다시 하지 않는다.
+    try { if (Date.now() - (+sessionStorage.getItem('cafemap.reload') || 0) < 60000) return; sessionStorage.setItem('cafemap.reload', String(Date.now())); } catch (e) {}
+    reloading = true; location.reload();
+  }
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    var hadWorker = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+    // 1) 폰에 자료를 넣어 두는 프로그램(sw.js)이 새것으로 바뀌었을 때. 처음 설치될 때는 하지 않는다.
+    navigator.serviceWorker.addEventListener('controllerchange', function () { if (hadWorker) softReload(); });
+    // 2) 넣어 둔 카페 자료보다 새 자료를 뒤에서 받았을 때(sw.js가 알려 준다).
+    navigator.serviceWorker.addEventListener('message', function (e) { if (e.data && e.data.type === 'fresh-data') softReload(); });
+    // 3) 화면 파일(index.html)이 바뀌었을 때. 다른 앱에 갔다가 돌아올 때마다 서버의 파일 표시(ETag)를 처음 것과 견준다.
+    var pageTag = null;
+    var checkPage = function () {
+      fetch(location.pathname, { method: 'HEAD', cache: 'no-store' }).then(function (r) {
+        var t = r.ok && r.headers.get('etag');
+        if (!t) return;
+        if (pageTag === null) pageTag = t; else if (t !== pageTag) softReload();
+      }).catch(function () {});
+    };
+    checkPage();
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) checkPage(); });
+  }
   // 출처 표시는 처음부터 접어 둔다. 오른쪽 아래 (i)를 누르면 펼쳐진다.
   (function foldAttrib() {
     var a = document.querySelector('.maplibregl-ctrl-attrib');
@@ -1911,6 +1933,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     var was = P.kind;
     P.kind = null; P.prev = null; panel.hidden = true;
     sel = -1;
+    if (wantReload) { softReload(); return; }
     // 카드 안에 띄워 둔 카카오맵, 네이버지도 화면은 카드를 닫을 때 같이 내린다.
     var fr = panel.querySelector('iframe'); if (fr) fr.remove();
     document.body.classList.remove('sheet-open');
@@ -1980,7 +2003,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     if (bl) parts.push(bl);
     if (S.big) parts.push(S.bigPy + '평 이상');
     if (S.outlet) parts.push('콘센트');
-    if (S.seen !== 'all') parts.push(S.seen === 'want' ? '가고 싶은 곳' : S.seen === 'only' ? '가 본 곳' : '안 가 본 곳');
+    if (S.seen === 'want') parts.push('찜한 곳');
     if (S.fresh) parts.push('새로 연 카페');
     return parts.join(' · ');
   }
@@ -2218,18 +2241,12 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 
     // 1. 노트북 작업: 대형카페, 콘센트 좌석. 켠 조건의 세부 설정만 그 아래에 펼친다.
     var lap = el('div', 'fsec'); sc.appendChild(lap);
-    // 내 기록: 전부 / 가고 싶은 곳 / 가 본 곳 / 가 본 곳 빼고
-    var seenBox = el('div', 'fsec'), seenTabs = el('div', 'sort');
-    seenBox.appendChild(el('div', 'ftitle', '내 기록')); seenBox.appendChild(seenTabs); sc.appendChild(seenBox);
-    seenTabs.style.display = 'grid'; seenTabs.style.gridTemplateColumns = '.7fr 1.2fr 1fr 1.25fr'; seenTabs.style.padding = '3px'; seenTabs.style.borderRadius = '11px';
+    // 찜: 찜한 곳만 보기
+    var seenBox = el('div', 'fsec'); sc.appendChild(seenBox);
     function fillSeen() {
-      seenTabs.textContent = '';
-      [['all', '전부'], ['want', '가고 싶은 곳'], ['only', '가 본 곳'], ['not', '가 본 곳 빼고']].forEach(function (o) {
-        var bt = btn(null, o[1], function () { S.seen = o[0]; apply(); fillSeen(); });
-        bt.style.height = '32px'; bt.style.fontSize = '12.5px'; bt.style.borderRadius = '8px'; bt.style.padding = '0 2px'; bt.style.whiteSpace = 'nowrap';
-        bt.setAttribute('aria-pressed', String(S.seen === o[0]));
-        seenTabs.appendChild(bt);
-      });
+      seenBox.textContent = '';
+      seenBox.appendChild(el('div', 'ftitle', '찜'));
+      seenBox.appendChild(toggleRow('찜한 곳만', S.seen === 'want', function (v) { S.seen = v ? 'want' : 'all'; apply(); fillSeen(); }));
     }
     fillSeen();
     // 새로 연 카페: 전부 / 3개월 / 6개월 / 1년 안에 문 연 곳만. 문 연 달은 인허가 날짜로 안다(자료에 그 칸이 있을 때만 보여 준다).
@@ -2394,19 +2411,18 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     var k1 = el('div', 'k', '콘센트 좌석'), total = el('small'), k2 = el('div', 'k', '콘센트 있는 자리');
     k1.appendChild(total);
     rec.appendChild(k1); rec.appendChild(r1); rec.appendChild(k2); rec.appendChild(r2);
-    // 셋째 줄: 내 기록(가고 싶어요, 가 봤어요)과 없어진 카페 표시. 가 봤다고 하면 가고 싶은 곳에서는 뺀다.
+    // 셋째 줄: 찜과 없어진 카페 표시.
     var r3 = el('div', 'opts');
-    var bWant = btn('opt', '가고 싶어요', function () { setWant(i, !want[i]); sync(); if (S.seen !== 'all') refilter(); requestDraw(); });
-    var bSeen = btn('opt', '가 봤어요', function () { setSeen(i, !seen[i]); if (seen[i]) setWant(i, false); sync(); if (S.seen !== 'all') refilter(); requestDraw(); });
+    var bWant = btn('opt', null, function () { setWant(i, !want[i]); sync(); if (S.seen !== 'all') refilter(); requestDraw(); });
+    bWant.appendChild(icon('heart')); bWant.appendChild(document.createTextNode('찜'));
     var bGone = voteBtn('없어졌어요', function () { setGone(i, !myGone[i]); sync(); refilter(); requestDraw(); });
     bGone[0].title = '가 보니 이 카페가 없을 때 누른다. 내 지도에서 빠지고, 다른 사람에게는 신고 수로 보인다';
-    r3.appendChild(bWant); r3.appendChild(bSeen); r3.appendChild(bGone[0]);
+    r3.appendChild(bWant); r3.appendChild(bGone[0]);
     rec.appendChild(el('div', 'k', '내 기록')); rec.appendChild(r3);
     function sync() {
       var v = votes[i] || [0, 0, 0, 0, 0];
       var ny = v[0] + (myO[i] === 1 ? 1 : 0), nn = v[1] + (myO[i] === -1 ? 1 : 0);
       total.textContent = ny + nn ? '총 ' + (ny + nn) + '명 투표' : '아직 투표 없음';
-      bSeen.setAttribute('aria-pressed', String(seen[i] === 1));
       bWant.setAttribute('aria-pressed', String(want[i] === 1));
       setBtn(bGone, myGone[i] === 1, (goneVotes[i] || 0) + (myGone[i] === 1 ? 1 : 0));
       k2.hidden = r2.hidden = ny === 0;
