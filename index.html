@@ -63,6 +63,10 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 #bar { position: absolute; z-index: 20; top: 14px; left: 14px; right: 14px; display: flex; align-items: flex-start; gap: 10px; pointer-events: none; }
 #bar > * { pointer-events: auto; }
 .search { display: flex; align-items: center; gap: 8px; width: 300px; flex: none; height: 44px; padding: 0 6px 0 14px; background: var(--surface); border-radius: 14px; box-shadow: var(--sh-1); color: var(--ink-3); }
+.srow { display: flex; gap: 8px; flex: none; }
+#menuBtn { width: 44px; height: 44px; flex: none; display: grid; place-items: center; background: var(--surface); border-radius: 14px; box-shadow: var(--sh-1); color: var(--ink); }
+#menuBtn:hover { background: var(--surface-2); }
+#menuBtn svg.i { width: 20px; height: 20px; }
 .search:focus-within { color: var(--ink); box-shadow: var(--sh-1), 0 0 0 2px var(--ink); }
 .search input { flex: 1; min-width: 0; border: 0; background: none; outline: none; color: var(--ink); font-size: 15px; }
 .search input::placeholder { color: var(--ink-3); }
@@ -181,6 +185,16 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .facts dd { margin: 0; min-width: 0; overflow-wrap: anywhere; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .facts dd b { font-weight: 700; font-variant-numeric: tabular-nums; }
 .facts dd small { color: var(--ink-3); font-size: 12.5px; }
+/* 카드 맨 아래에 붙어 있는 단추 줄(필터의 적용하기) */
+.pfoot { flex: none; padding: 10px 14px calc(12px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); background: var(--surface); }
+.pfoot .btn { width: 100%; height: 46px; border-radius: 12px; font-size: 15px; font-weight: 700; }
+.pfoot .btn small { font-weight: 600; opacity: .7; margin-left: 2px; }
+/* 메뉴 카드 */
+.macc { display: flex; align-items: center; gap: 10px; }
+.macc .who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.macc .who b { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.macc .who small { font-size: 12.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mlist { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--ink-2); }
 .link { font-size: 12.5px; font-weight: 650; color: var(--ink-3); padding: 1px 6px; border-radius: 6px; }
 .link:hover { background: var(--surface-2); color: var(--ink); }
 .meter { display: inline-flex; gap: 3px; }
@@ -332,7 +346,9 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 
 @media (max-width: 760px) {
   #bar { top: calc(10px + env(safe-area-inset-top, 0px)); left: 0; right: 0; flex-direction: column; gap: 0; }
-  .search { width: auto; align-self: stretch; margin: 0 12px; height: 46px; }
+  .srow { align-self: stretch; margin: 0 12px; }
+  .search { width: auto; flex: 1; min-width: 0; height: 46px; }
+  #menuBtn { width: 46px; height: 46px; }
   #chips { flex-wrap: nowrap; overflow-x: auto; align-self: stretch; gap: 6px; padding: 8px 12px 10px; scrollbar-width: none; }
   /* 칩 네 개(지역, 필터, 찜, 새로 연 카페)가 폰 한 줄에 들어오게 조금 좁힌다. */
   #chips .chip { padding: 0 11px; gap: 5px; }
@@ -381,6 +397,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
   <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></symbol>
   <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7.500-4.600-7.500-10.200A4.300 4.300 0 0 1 12 7.300a4.300 4.300 0 0 1 7.500 2.500C19.500 15.400 12 20 12 20z"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4.500 7h15M4.500 12h15M4.500 17h15"/></symbol>
   <symbol id="i-flag" viewBox="0 0 24 24"><path d="M6 21V4.500M6 5h11l-2.300 3.750L17 12.500H6"/></symbol>
   <symbol id="i-route" viewBox="0 0 24 24"><path d="M12 3 21 12l-9 9-9-9z"/><path d="M9 14.500v-2.500a1 1 0 0 1 1-1h4.500M12.800 9l1.900 2-1.900 2"/></symbol>
   <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3M8 7l4-4 4 4M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"/></symbol>
@@ -391,11 +408,14 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 <div id="app">
   <div id="map"></div>
   <div id="bar">
-    <label class="search">
-      <svg class="i"><use href="#i-search"/></svg>
-      <input id="q" type="search" placeholder="카페 이름이나 동네 검색" autocomplete="off" enterkeyhint="search">
-      <button id="qClear" type="button" aria-label="검색어 지우기" hidden><svg class="i"><use href="#i-x"/></svg></button>
-    </label>
+    <div class="srow">
+      <button id="menuBtn" type="button" aria-label="메뉴"><svg class="i"><use href="#i-menu"/></svg></button>
+      <label class="search">
+        <svg class="i"><use href="#i-search"/></svg>
+        <input id="q" type="search" placeholder="카페 이름이나 동네 검색" autocomplete="off" enterkeyhint="search">
+        <button id="qClear" type="button" aria-label="검색어 지우기" hidden><svg class="i"><use href="#i-x"/></svg></button>
+      </label>
+    </div>
     <div id="chips" role="toolbar" aria-label="필터"></div>
   </div>
   <section id="panel" hidden></section>
@@ -800,7 +820,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     for (k in goneMine) { j = ix[k]; if (j !== undefined) myGone[j] = 1; }
   })();
   function nKeysEarly(o) { for (var k in o) return 1; return 0; }
-  function setWant(i, on) { var k = cidOf(i); want[i] = on ? 1 : 0; if (on) wanted[k] = 1; else delete wanted[k]; save('cafemap.want', wanted); }
+  function setWant(i, on) { var k = cidOf(i); want[i] = on ? 1 : 0; if (on) wanted[k] = 1; else delete wanted[k]; save('cafemap.want', wanted); pushWantKey(k, on); }
   function setGone(i, on) {
     var k = cidOf(i);
     myGone[i] = on ? 1 : 0;
@@ -848,7 +868,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     }
     if (!who || !who.r) return fresh();
     return postJson((SHARE.tokenUrl || 'https://securetoken.googleapis.com/v1/token') + '?key=' + SHARE.key, 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(who.r), true)
-      .then(function (d) { var p = who && who.p; who = { u: d.user_id, r: d.refresh_token }; if (p) who.p = p; save('cafemap.auth', who); idToken = d.id_token; idUntil = Date.now() + (+d.expires_in - 60) * 1000; return idToken; },
+      .then(function (d) { var old = who || {}; who = { u: d.user_id, r: d.refresh_token }; ['p', 'e', 'n'].forEach(function (f) { if (old[f]) who[f] = old[f]; }); save('cafemap.auth', who); idToken = d.id_token; idUntil = Date.now() + (+d.expires_in - 60) * 1000; return idToken; },
         // 계정이 없어졌을 때(400)만 새로 만든다. 인터넷이 잠깐 끊긴 것이면 다음에 다시 한다.
         function (e) { if (e && e.status === 400) return fresh(); throw e; });
   }
@@ -935,6 +955,33 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     }).catch(function () { /* 서버에 닿지 못하면 내 표시만으로 보여 준다 */ });
   }
   pullGone();
+  // 찜도 로그인한 계정에 저장한다(v2/want/<내 계정>/<카페>: true). 나만 읽고 쓸 수 있다. 폰과 컴퓨터에서 같은 찜이 보인다.
+  function pushWantKey(k, on) {
+    if (!loginOn) return;
+    token().then(function (t) {
+      return fetch(SHARE.db + '/v2/want/' + who.u + '/' + k + '.json?auth=' + encodeURIComponent(t), on ? { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: 'true' } : { method: 'DELETE' });
+    }).catch(function () { /* 다음에 다시 맞춘다 */ });
+  }
+  function pullWant() {
+    if (!loginOn || !signedIn()) return Promise.resolve();
+    return token().then(function (t) { return fetch(SHARE.db + '/v2/want/' + who.u + '.json?auth=' + encodeURIComponent(t)); })
+      .then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); })
+      .then(function (srv) {
+        srv = srv || {};
+        var ix = cidIndex(), k, j;
+        // 이 계정으로 이 기기를 처음 맞출 때: 로그인하기 전에 이 기기에 찜해 둔 곳을 계정에 올려 합친다. 그다음부터는 계정의 것이 기준이다.
+        if (load('cafemap.wantSynced') !== who.u) {
+          for (k in wanted) if (!srv[k]) { srv[k] = true; pushWantKey(k, true); }
+          save('cafemap.wantSynced', who.u);
+        }
+        wanted = {}; want.fill(0);
+        for (k in srv) { wanted[k] = 1; j = ix[k]; if (j !== undefined) want[j] = 1; }
+        save('cafemap.want', wanted);
+        if (S.seen === 'want') refilter();
+        requestDraw();
+      }).catch(function () { /* 서버에 닿지 못하면 이 기기에 적어 둔 찜으로 보여 준다 */ });
+  }
+  pullWant();
   // ----- 투표할 때만 로그인 -----
   // 투표 단추를 누르면 여기를 거친다. 로그인이 필요 없거나 이미 했으면 바로 하고, 아니면 로그인 창을 띄운 뒤 로그인이 끝나면 이어서 한다.
   var loginEl = null, loginThen = null, gLoading = null;
@@ -985,18 +1032,22 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       requestUri: location.origin && location.origin !== 'null' ? location.origin : 'http://localhost',
       returnIdpCredential: true, returnSecureToken: true
     }).then(function (d) {
-      who = { u: d.localId, r: d.refreshToken, p: 'google.com' }; save('cafemap.auth', who);
+      // e, n: 메뉴에 "누구로 로그인했는지" 보여 주려고 이 기기에만 적어 두는 메일과 이름.
+      who = { u: d.localId, r: d.refreshToken, p: 'google.com', e: d.email || '', n: d.displayName || '' }; save('cafemap.auth', who);
       idToken = d.idToken; idUntil = Date.now() + (+d.expiresIn - 60) * 1000;
       var then = loginThen; closeLogin();
       // 서버에 있던 내 투표를 먼저 받아 온 다음, 누르려던 투표를 이어서 한다.
-      Promise.all([pull(), pullGone()]).then(function () { toast('로그인했어요'); if (then) then(); });
+      Promise.all([pull(), pullGone(), pullWant()]).then(function () { toast('로그인했어요'); if (P.kind === 'menu') renderPanel(); if (then) then(); });
     }, function () { $('lmsg').textContent = '로그인하지 못했어요. 다시 해 주세요.'; });
   }
   function logout() {
     who = null; save('cafemap.auth', null); idToken = ''; idUntil = 0;
     mine = {}; goneMine = {}; save('cafemap.seat2', mine); save('cafemap.gone', goneMine);
-    applyMine(); pull(); pullGone(); refilter(); requestDraw();
-    if (P.kind === 'detail') renderPanel();
+    // 찜도 계정에 있는 것이므로 이 기기에서는 비운다.
+    wanted = {}; want.fill(0); save('cafemap.want', wanted); save('cafemap.wantSynced', null);
+    if (S.seen === 'want') S.seen = 'all';
+    applyMine(); pull(); pullGone(); refilter(); requestDraw(); renderChips();
+    if (P.kind === 'detail' || P.kind === 'menu' || P.kind === 'list') renderPanel();
     toast('로그아웃했어요');
   }
   function nKeys(o) { return Object.keys(o).length; }
@@ -2030,7 +2081,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     if (kind !== 'detail' && sel >= 0) { sel = -1; requestDraw(); }
     panel.dataset.kind = kind; panel.hidden = false;
     // 카페 카드는 아래에서 위로 올라오며 나타난다(이미 카페 카드가 떠 있을 때 다른 카페를 누르면 내용만 바뀐다).
-    var fresh = kind === 'detail' && was !== 'detail', keep = kind === 'detail' && was === 'detail' ? snap : 'half';
+    var fresh = kind === 'detail' ? was !== 'detail' : !was, keep = kind === 'detail' && was === 'detail' ? snap : 'half';
     panel.style.transform = panel.style.transition = '';
     panel.classList.remove('rise');
     document.body.classList.add('sheet-open');
@@ -2090,7 +2141,38 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     else if (P.kind === 'list') renderList();
     else if (P.kind === 'search') renderSearch();
     else if (P.kind === 'detail') renderDetail(P.cafe);
+    else if (P.kind === 'menu') renderMenu();
   }
+  // 메뉴: 누구로 로그인했는지와 지도 자료의 출처.
+  function renderMenu() {
+    var h = head('메뉴'); h.appendChild(closeBtn()); panel.appendChild(h);
+    var sc = el('div', 'scroll'); panel.appendChild(sc);
+    if (loginOn) {
+      var acc = el('div', 'fsec'), row = el('div', 'macc'), whoEl = el('div', 'who');
+      acc.appendChild(el('div', 'ftitle', '계정'));
+      if (signedIn()) {
+        whoEl.appendChild(el('b', null, who.n || '구글 계정'));
+        whoEl.appendChild(el('small', null, who.e || '로그인되어 있어요'));
+        row.appendChild(whoEl); row.appendChild(btn('btn sm', '로그아웃', logout));
+        // 예전에 로그인해서 메일과 이름을 적어 두지 않은 경우, 한 번 물어 와서 채운다.
+        if (!who.e) token().then(function (t) { return postJson('https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=' + SHARE.key, { idToken: t }); }).then(function (d) {
+          var u = d.users && d.users[0];
+          if (u && u.email && who) { who.e = u.email; who.n = u.displayName || ''; save('cafemap.auth', who); if (P.kind === 'menu') renderPanel(); }
+        }).catch(function () {});
+      } else {
+        whoEl.appendChild(el('b', null, '로그인하지 않았어요'));
+        whoEl.appendChild(el('small', null, '투표와 찜은 로그인해야 할 수 있어요'));
+        row.appendChild(whoEl); row.appendChild(btn('btn sm pri', '로그인', function () { openLogin(null); }));
+      }
+      acc.appendChild(row); sc.appendChild(acc);
+    }
+    var info = el('div', 'fsec'), ul = el('ul', 'mlist');
+    info.style.borderBottom = '0';
+    info.appendChild(el('div', 'ftitle', '지도 자료'));
+    ['카페 ' + fmt(N) + '곳', '카페 목록: 소상공인시장진흥공단 상가정보', '넓이와 개업: 행정안전부 인허가 자료', '지역 경계: 통계청 SGIS', '배경 지도: OpenFreeMap, OpenStreetMap'].forEach(function (t) { ul.appendChild(el('li', null, t)); });
+    info.appendChild(ul); sc.appendChild(info);
+  }
+  $('menuBtn').addEventListener('click', function () { if (P.kind === 'menu') closePanel(); else { P.prev = null; openPanel('menu'); } });
 
   // ----- 필터 칩 -----
   function anyFilter() { return nKeys(S.brands) || S.big || S.outlet; }
@@ -2180,7 +2262,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     if (act === 'want') {
       // 찜을 켜면 찜한 곳이 다 보이게 지도를 맞추고 목록을 연다. 끄면 목록을 닫는다.
       if (S.seen === 'want') { S.seen = 'all'; if (P.kind === 'list') closePanel(); changed(); }
-      else { S.seen = 'want'; if (P.kind) closePanel(); showWanted(); }
+      else needLogin(function () { S.seen = 'want'; if (P.kind) closePanel(); showWanted(); });
       return;
     }
     if (act === 'fresh') S.fresh = S.fresh ? 0 : 12;
@@ -2378,8 +2460,14 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     var h = head('필터'), clear = btn('link', '모두 풀기', function () { resetFilter(); apply(); fillLap(); fillSeen(); fillNew(); fillTabs(); fill(); });
     h.appendChild(clear); h.appendChild(closeBtn()); panel.appendChild(h);
     var sc = el('div', 'scroll'); panel.appendChild(sc);
-    function apply() { refilter(); draw(); renderChips(); persist(); clear.hidden = !anyFilter(); }
-    clear.hidden = !anyFilter();
+    // 맨 아래 "적용하기": 조건은 누르는 대로 지도에 바로 반영되지만, 폰에서는 카드가 지도를 가려서 바뀐 것이 안 보인다.
+    // 그래서 몇 곳이 남았는지 단추에 적고, 누르면 카드를 내려 지도를 보여 준다.
+    var foot = el('div', 'pfoot'), okBtn = btn('btn pri', null, closePanel), okN = el('small');
+    okBtn.appendChild(document.createTextNode('적용하기 ')); okBtn.appendChild(okN);
+    foot.appendChild(okBtn); panel.appendChild(foot);
+    function showN() { okN.textContent = fmt(totalPass) + '곳'; }
+    function apply() { refilter(); draw(); renderChips(); persist(); clear.hidden = !anyFilter(); showN(); }
+    clear.hidden = !anyFilter(); showN();
 
     // 1. 노트북 작업: 대형카페, 콘센트 좌석. 켠 조건의 세부 설정만 그 아래에 펼친다.
     var lap = el('div', 'fsec'); sc.appendChild(lap);
@@ -2537,7 +2625,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     rec.appendChild(k1); rec.appendChild(r1); rec.appendChild(k2); rec.appendChild(r2);
     // 셋째 줄: 찜과 없어진 카페 표시.
     var r3 = el('div', 'opts');
-    var bWant = btn('opt', null, function () { setWant(i, !want[i]); sync(); if (S.seen !== 'all') refilter(); requestDraw(); });
+    var bWant = btn('opt', null, function () { needLogin(function () { setWant(i, !want[i]); sync(); if (S.seen !== 'all') refilter(); requestDraw(); }); });
     bWant.appendChild(icon('heart')); bWant.appendChild(document.createTextNode('찜'));
     // 폐업 신고: 가 보니 이 카페가 없을 때 누른다. 내 지도에서는 바로 빠지고, 다른 사람에게는 신고 수로 보인다.
     var bGone = voteBtn('폐업 신고', function () { setGone(i, !myGone[i]); sync(); refilter(); requestDraw(); });
@@ -2546,16 +2634,11 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     r3.className = 'acts';
     r3.appendChild(bWant); r3.appendChild(bGone[0]);
     rec.appendChild(r3);
-    // 로그인해 있을 때만 보이는 로그아웃.
-    var loK = el('div', 'k', ''), lo = btn('link', '로그아웃', logout);
-    lo.style.justifySelf = 'start'; lo.style.fontSize = '12.5px';
-    rec.appendChild(loK); rec.appendChild(lo);
     function sync() {
       var v = votes[i] || [0, 0, 0, 0, 0];
       var ny = v[0] + (myO[i] === 1 ? 1 : 0), nn = v[1] + (myO[i] === -1 ? 1 : 0);
       total.textContent = ny + nn ? '총 ' + (ny + nn) + '명 투표' : '아직 투표 없음';
       bWant.setAttribute('aria-pressed', String(want[i] === 1));
-      lo.hidden = loK.hidden = !(loginOn && signedIn());
       setBtn(bGone, myGone[i] === 1, (goneVotes[i] || 0) + (myGone[i] === 1 ? 1 : 0));
       bGone[1].hidden = bGone[1].textContent === '0';   // 신고가 없으면 숫자를 적지 않는다.
       k2.hidden = r2.hidden = ny === 0;

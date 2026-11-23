@@ -29,6 +29,15 @@
       }
     },
     "v2": {
+      "want": {
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'",
+          "$cafe": {
+            ".validate": "$cafe.matches(/^[0-9a-z]+$/) && $cafe.length <= 12 && newData.val() === true"
+          }
+        }
+      },
       "gone": {
         ".read": true,
         "$cafe": {
