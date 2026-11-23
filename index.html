@@ -194,6 +194,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .facts dd { margin: 0; min-width: 0; overflow-wrap: anywhere; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .facts dd b { font-weight: 700; font-variant-numeric: tabular-nums; }
 .facts dd small { color: var(--ink-3); font-size: 12.5px; }
+/* 넓이와 같은 줄에 적는 "개업" 이름표 */
+.facts dd .k2 { color: var(--ink-3); font-size: 13px; margin-left: 8px; }
 .facts dd small.newmark { display: inline-flex; align-items: center; gap: 3px; color: #2b9a41; font-weight: 650; }
 .facts dd small.newmark svg.i { width: 13px; height: 13px; fill: currentColor; }
 /* 카드 맨 아래에 붙어 있는 단추 줄(필터의 적용하기) */
@@ -269,23 +271,23 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .opt .n:empty { display: none; }
 .opt[aria-pressed=true] .n { opacity: .8; }
 /* 카드의 투표 칸: 콘센트 좌석 덩어리와 편의 덩어리. 덩어리마다 제목 오른쪽에 몇 명이 투표했는지 적는다. */
-.rec { display: flex; flex-direction: column; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+.rec { display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
 .rec .vh { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .rec .vh b { font-size: 14px; font-weight: 700; }
 .rec .vh small { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
-.rec .sep { height: 1px; background: var(--line); margin: 4px 0; }
+.rec .sep { height: 1px; background: var(--line); margin: 2px 0; }
 /* 콘센트가 있다고 한 사람이 있을 때만 펼쳐지는 딸린 물음(어느 자리에 있는지). 아래로 스르륵 열리고 닫힌다. */
-.rec .more { display: grid; grid-template-rows: 0fr; margin-top: -10px; transition: grid-template-rows .24s ease, margin-top .24s ease; }
+.rec .more { display: grid; grid-template-rows: 0fr; margin-top: -8px; transition: grid-template-rows .24s ease, margin-top .24s ease; }
 .rec .more.on { grid-template-rows: 1fr; margin-top: 0; }
 .rec .more > div { overflow: hidden; min-height: 0; }
-.rec .more .in { display: flex; flex-direction: column; gap: 7px; margin-left: 2px; padding-left: 10px; border-left: 2px solid var(--pri); }
+.rec .more .in { display: flex; flex-direction: column; gap: 6px; margin-left: 2px; padding-left: 10px; border-left: 2px solid var(--pri); }
 .rec .more .q { font-size: 12px; color: var(--ink-3); }
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 /* 카페 카드 안에 띄우는 카카오맵, 네이버지도 화면 */
 /* 카페 카드: 얇은 머리줄(이름, 단추) 아래를 카카오맵의 그 가게 화면이 전부 차지한다.
-   주소, 넓이, 투표는 머리줄의 "정보·투표" 단추를 누르면 지도 위로 내려온다. */
+   주소, 넓이, 투표는 머리줄의 "카페정보 투표" 단추를 누르면 지도 위로 내려온다. */
 #panel[data-kind=detail][data-embed] { height: 100%; }
-/* 머리줄: 맨 위 가운데의 손잡이 막대, 그 아래 왼쪽에 카페 아이콘과 종류, 오른쪽에 "정보·투표" 단추.
+/* 머리줄: 맨 위 가운데의 손잡이 막대, 그 아래 왼쪽에 카페 아이콘과 종류, 오른쪽에 "카페정보 투표" 단추.
    머리줄을 잡고 아래로 쓸어내리면 카드가 내려가며 닫힌다. */
 .dh { position: relative; display: flex; align-items: center; gap: 8px; padding: 16px 12px 10px 14px; flex: none; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
 .dh::before { content: ""; position: absolute; left: 50%; top: 6px; width: 38px; height: 4px; margin-left: -19px; border-radius: 2px; background: var(--line-2); }
@@ -320,7 +322,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .sk-map i { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: #d3d7de; border: 2px solid #fff; }
 @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 @media (max-width: 760px) { .sk-bar { width: calc(100% - 28px); } }
-/* 정보·투표 단추: 처음 한 번만 살짝 커졌다 돌아오며 눈에 띄게 한다. */
+/* 카페정보 투표 단추: 처음 한 번만 살짝 커졌다 돌아오며 눈에 띄게 한다. */
 @keyframes nudge { 0%, 100% { transform: scale(1); } 40% { transform: scale(1.08); } }
 .sum.nudge { animation: nudge .6s ease 0.5s 2; }
 @media (prefers-reduced-motion: reduce) { .sum.nudge, .sk::after, .sk-map::after { animation: none; } }
@@ -345,7 +347,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 /* 판은 머리줄 아래에서 아래로 스르륵 내려오고, 닫을 때는 위로 스르륵 올라간다. 닫힌 동안에는 눌리지 않게 숨긴다. */
 .dscrim { position: absolute; inset: 0; z-index: 1; background: rgba(15, 20, 30, .28); opacity: 0; visibility: hidden; transition: opacity .26s ease, visibility 0s .26s; }
 .dscrim.on { opacity: 1; visibility: visible; transition: opacity .26s ease; }
-.dpop { position: absolute; left: 0; right: 0; top: 0; z-index: 2; max-height: 100%; overflow-y: auto; background: var(--surface); padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px; border-radius: 0 0 18px 18px; box-shadow: 0 12px 28px rgba(15, 20, 30, .22); transform: translateY(-102%); visibility: hidden; transition: transform .28s cubic-bezier(.4, 0, .6, 1), visibility 0s .28s; }
+.dpop { position: absolute; left: 0; right: 0; top: 0; z-index: 2; max-height: 100%; overflow-y: auto; background: var(--surface); padding: 12px 16px 12px; display: flex; flex-direction: column; gap: 10px; border-radius: 0 0 18px 18px; box-shadow: 0 12px 28px rgba(15, 20, 30, .22); transform: translateY(-102%); visibility: hidden; transition: transform .28s cubic-bezier(.4, 0, .6, 1), visibility 0s .28s; }
 .dpop.on { transform: none; visibility: visible; transition: transform .3s cubic-bezier(.2, .8, .2, 1); }
 @media (prefers-reduced-motion: reduce) { .dscrim, .dscrim.on, .dpop, .dpop.on, .rec .more, .sum .i { transition: none; } }
 @media (min-width: 761px) { #panel[data-kind=detail][data-embed] { width: 440px !important; } }
@@ -2246,6 +2248,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   function openPanel(kind, anchor) {
     var was = P.kind;
     P.kind = kind; P.anchor = anchor || null;
+    lift = 0;
     clearTimeout(closeTimer);
     // 카페 카드가 아닌 다른 카드(필터, 지역, 목록)를 열면 보던 카페의 선택을 푼다.
     // 풀지 않으면 그 카페가 필터나 지역과 상관없이 지도에 계속 남는다.
@@ -2266,8 +2269,9 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     } else if (fresh) { void panel.offsetWidth; panel.classList.add('rise'); }
   }
   // 카드의 높이 단계: half 화면의 절반쯤만 보임, full 전체. 카드 자체는 늘 전체 높이이고, 아래로 밀어 놓아서 반만 보이게 한다.
-  var snap = 'half';
-  function snapOffset(which) { return which === 'full' ? 0 : Math.max(0, panel.offsetHeight - Math.round(window.innerHeight * .46)); }
+  // lift: 반만 올라온 카드를 그보다 조금 더 올려 둔 높이. 카페정보 판이 화면 아래로 잘릴 때 모자라는 만큼만 올린다.
+  var snap = 'half', lift = 0;
+  function snapOffset(which) { return which === 'full' ? 0 : Math.max(0, panel.offsetHeight - Math.round(window.innerHeight * .46) - lift); }
   function setSnap(which, animate) {
     snap = which;
     panel.style.transition = animate ? 'transform .3s cubic-bezier(.2, .8, .2, 1)' : 'none';
@@ -2814,7 +2818,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     openPanel('detail'); requestDraw();
   }
   // 카페 카드. 머리줄(이름, 단추) 아래를 카카오맵의 그 가게 화면으로 꽉 채운다.
-  // 주소, 넓이, 투표는 머리줄의 "정보·투표" 단추를 누르면 지도 위로 내려온다.
+  // 주소, 넓이, 투표는 머리줄의 "카페정보 투표" 단추를 누르면 지도 위로 내려온다.
   // 카카오 장소 번호가 없는 카페는 띄울 화면이 없어서, 그 내용을 카드에 바로 보여 준다.
   function renderDetail(i) {
     var b = D.brand[i], g = grp[i], a = D.area[i], fl = D.floor[i], lat = D.lat[i] / 1e5, lng = D.lng[i] / 1e5;
@@ -2846,9 +2850,9 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     f1.appendChild(go);
     var f2 = fact('넓이');
     if (a > 0) { f2.appendChild(el('b', null, pyeong(a) + '평')); f2.appendChild(el('small', null, fmt(a) + '㎡' + (a >= S.bigPy * PYEONG ? ' · 대형' : ''))); } else f2.appendChild(el('small', null, '자료 없음'));
-    // 문 연 달. 인허가 자료에서 같은 가게를 찾은 카페만 안다. 모르면 줄을 넣지 않는다.
+    // 문 연 달. 넓이와 같은 줄에 적는다. 인허가 자료에서 같은 가게를 찾은 카페만 안다. 모르면 적지 않는다.
     var ym = D.since ? D.since[i] : 0;
-    if (ym) { var f3 = fact('개업'), ago = monthsAgo(i); f3.appendChild(el('b', null, Math.floor(ym / 100) + '년 ' + (ym % 100) + '월')); if (ago < 3) f3.appendChild(el('small', null, '허가받은 달이에요. 아직 문 열기 전일 수 있어요')); else if (ago < 12) { var nw = el('small', 'newmark'); nw.appendChild(icon('spark')); nw.appendChild(document.createTextNode('새로 열었어요')); f3.appendChild(nw); } }
+    if (ym) { var f3 = f2, ago = monthsAgo(i); f3.appendChild(el('span', 'k2', '개업')); f3.appendChild(el('b', null, Math.floor(ym / 100) + '년 ' + (ym % 100) + '월')); if (ago < 3) f3.appendChild(el('small', null, '허가받은 달이에요. 아직 문 열기 전일 수 있어요')); else if (ago < 12) { var nw = el('small', 'newmark'); nw.appendChild(icon('spark')); nw.appendChild(document.createTextNode('새로 열었어요')); f3.appendChild(nw); } }
     // 투표 칸. 콘센트 좌석 덩어리와 편의 덩어리로 나누고, 덩어리마다 제목 오른쪽에 몇 명이 투표했는지 적는다.
     // 단추 안의 숫자는 그렇게 기록한 사람 수다(아무도 없으면 적지 않는다). 눌린 단추가 내 기록이다.
     var rec = el('div', 'rec'), r1 = el('div', 'opts one'), r2 = el('div', 'opts one three');
@@ -2913,23 +2917,34 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       if (myO[i] !== 1) myC[i] = 0;
       saveMine(i); tally(i); sync(); push(i);
       if (S.outlet) refilter();
-      requestDraw();
+      requestDraw(); refit();
     }
     sync();
+    var refit = function () {};
     var body = null;
     if (pid) {
       // 지도 위에 덮이는 판. 단추를 다시 누르거나 판 바깥의 어두운 곳을 누르면 닫힌다.
       var scrim = el('div', 'dscrim'), pop = el('div', 'dpop'), popOn = false;
       // 머리줄 오른쪽 단추: 누르면 주소, 넓이, 투표가 든 판이 아래로 내려오고, 다시 누르면 위로 올라가며 닫힌다.
-      var info = btn('sum', '정보·투표', function () { openPop(!popOn); });
+      var info = btn('sum', '카페정보 투표', function () { openPop(!popOn); });
       info.appendChild(icon('down'));
-      // 폰에서 카드가 반만 올라와 있으면 판이 다 보이지 않으므로, 판을 열 때 카드도 끝까지 올린다.
+      // 폰에서 카드가 반만 올라와 있을 때: 판이 화면 아래로 잘리면 모자라는 만큼만 카드를 올리고, 판을 닫으면 제자리로 내린다.
+      // 판이 다 보이면 카드는 움직이지 않는다.
+      var fitPop = function () {
+        if (!mobile.matches || snap !== 'half') { lift = 0; return; }
+        var room = Math.round(window.innerHeight * .46) - body.offsetTop;
+        var need = popOn ? Math.max(0, pop.scrollHeight + 8 - room) : 0;
+        if (need === lift) return;
+        lift = need; setSnap('half', true);
+      };
       var openPop = function (on) {
         popOn = on;
         pop.classList.toggle('on', on); scrim.classList.toggle('on', on); pop.inert = !on;
         info.setAttribute('aria-pressed', String(on));
-        if (on && mobile.matches && snap !== 'full') setSnap('full', true);
+        fitPop();
       };
+      // 투표해서 판의 길이가 바뀌면(자리 물음이 펼쳐지거나 접히면) 다 펼쳐진 뒤에 다시 맞춘다.
+      refit = function () { if (popOn) setTimeout(function () { if (popOn && pop.isConnected) fitPop(); }, 270); };
       info.setAttribute('aria-haspopup', 'dialog');
       scrim.addEventListener('click', function () { openPop(false); });
       pop.appendChild(dl); pop.appendChild(rec);
@@ -2938,7 +2953,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       // 안에 띄운 화면이 이 지도 창 자체를 다른 곳으로 보내지 못하게 한다. 새 창 열기는 허용한다.
       fr.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms');
       body = el('div', 'dbody'); body.appendChild(fr); body.appendChild(scrim); body.appendChild(pop);
-      openPop(false);
+      pop.inert = true; info.setAttribute('aria-pressed', 'false');
       h.appendChild(info);
       if (!nudged) { nudged = true; info.classList.add('nudge'); }
       panel.setAttribute('data-embed', '');
@@ -2971,7 +2986,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   // 머리줄을 잡고 끌면 카드가 손가락을 따라 움직인다.
   // 폰에서 카카오맵 화면이 든 카드는 두 단계다: 반만 보이는 상태에서 올리면 전체, 전체에서 내리면 반, 반에서 더 내리면 닫힘.
   // 머리줄을 톡 누르면 반과 전체를 오간다. 그 밖의 카드는 내리면 닫히기만 한다.
-  var nudged = false;      // 정보·투표 단추를 이번에 연 뒤로 한 번 강조했는가
+  var nudged = false;      // 카페정보 투표 단추를 이번에 연 뒤로 한 번 강조했는가
   function sheetDrag(h) {
     var on = false, y0 = 0, dy = 0, t0 = 0, base = 0, two = false;
     h.addEventListener('pointerdown', function (e) {
