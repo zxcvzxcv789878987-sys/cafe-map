@@ -247,13 +247,25 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .prow .pin { flex: none; }
 .prow span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* 처음 열 때 자료를 받는 동안 보이는 표시 */
-#loading { position: absolute; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: var(--surface-2); color: var(--ink-2); font-size: 14px; font-weight: 600; }
-#loading i { width: 30px; height: 30px; border-radius: 50%; border: 3px solid var(--line-2); border-top-color: var(--ink); animation: spin .8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
+#loading { position: absolute; inset: 0; z-index: 60; background: #f2f3f5; overflow: hidden; }
+#loading[hidden] { display: none; }
+.sk { position: absolute; border-radius: 14px; background: #fff; box-shadow: var(--sh-1); overflow: hidden; }
+.sk::after, .sk-map::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 20%, rgba(0, 0, 0, .05) 50%, transparent 80%); background-size: 200% 100%; animation: shimmer 1.3s linear infinite; }
+.sk-bar { left: 14px; top: 14px; width: min(300px, calc(100% - 28px)); height: 44px; }
+.sk-row { position: absolute; left: 14px; top: 68px; display: flex; gap: 8px; }
+.sk-row .sk { position: relative; width: 84px; height: 38px; border-radius: 999px; }
+.sk-count { left: 50%; bottom: 22px; width: 150px; height: 44px; margin-left: -75px; border-radius: 999px; background: #d9dce2; box-shadow: none; }
+.sk-map { position: absolute; inset: 0; background:
+  linear-gradient(115deg, transparent 47%, #fff 47%, #fff 49%, transparent 49%),
+  linear-gradient(20deg, transparent 58%, #fff 58%, #fff 59.5%, transparent 59.5%),
+  linear-gradient(170deg, transparent 30%, #fbefc0 30%, #fbefc0 32%, transparent 32%); }
+.sk-map i { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: #d3d7de; border: 2px solid #fff; }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (max-width: 760px) { .sk-bar { width: calc(100% - 28px); } }
 /* 콘센트와 넓이 단추: 처음 한 번만 살짝 커졌다 돌아오며 눈에 띄게 한다. */
 @keyframes nudge { 0%, 100% { transform: scale(1); } 40% { transform: scale(1.08); } }
 .sum.nudge { animation: nudge .6s ease 0.5s 2; }
-@media (prefers-reduced-motion: reduce) { .sum.nudge, #loading i { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .sum.nudge, .sk::after, .sk-map::after { animation: none; } }
 .none { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); color: var(--ink-3); font-size: 13px; }
 /* 카드는 아래에서 위로 올라오며 나타난다. */
 @keyframes sheetUp { from { transform: translateY(100%); } to { transform: none; } }
@@ -326,6 +338,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
   <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3M8 7l4-4 4 4M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"/></symbol>
   <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.010M4 12h.010M4 18h.010"/></symbol>
   <symbol id="i-out" viewBox="0 0 24 24"><path d="M14 5h5v5M19 5l-8 8M10 6H6a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-4"/></symbol>
 </svg>
@@ -355,7 +368,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     </div>
   </div>
   <div id="toast" hidden></div>
-  <div id="loading"><i></i><span>카페 11만 곳을 불러오는 중</span></div>
+  <div id="loading" aria-label="지도를 불러오는 중"><div class="sk sk-bar"></div><div class="sk-row"><div class="sk sk-chip"></div><div class="sk sk-chip"></div></div><div class="sk-map"><i style="left:22%;top:30%"></i><i style="left:48%;top:22%"></i><i style="left:66%;top:41%"></i><i style="left:35%;top:55%"></i><i style="left:58%;top:63%"></i><i style="left:76%;top:28%"></i><i style="left:15%;top:68%"></i></div><div class="sk sk-count"></div></div>
 </div>
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
@@ -2173,19 +2186,12 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     var k1 = el('div', 'k', '콘센트 좌석'), total = el('small'), k2 = el('div', 'k', '콘센트 있는 자리');
     k1.appendChild(total);
     rec.appendChild(k1); rec.appendChild(r1); rec.appendChild(k2); rec.appendChild(r2);
-    // 셋째 줄: 내 기록(가 봤어요)과 없어진 카페 표시, 그리고 이 카페로 바로 오는 링크.
+    // 셋째 줄: 내 기록(가 봤어요)과 없어진 카페 표시.
     var r3 = el('div', 'opts');
     var bSeen = btn('opt', '가 봤어요', function () { setSeen(i, !seen[i]); sync(); if (S.seen !== 'all') refilter(); requestDraw(); });
     var bGone = voteBtn('없어졌어요', function () { setGone(i, !myGone[i]); sync(); refilter(); requestDraw(); });
     bGone[0].title = '가 보니 이 카페가 없을 때 누른다. 여러 사람이 누르면 지도에서 빠진다';
-    var bLink = btn('opt', '링크 복사', function () {
-      var base = location.protocol === 'file:' ? 'https://zxcvzxcv789878987-sys.github.io/cafe-map/' : location.origin + location.pathname;
-      var url = base + '#c=' + cidOf(i);
-      if (navigator.share && mobile.matches) navigator.share({ title: D.name[i], url: url }).catch(function () {});
-      else if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { toast('이 카페로 바로 오는 링크를 복사했어요'); }, function () { toast(url); });
-      else toast(url);
-    });
-    r3.appendChild(bSeen); r3.appendChild(bGone[0]); r3.appendChild(bLink);
+    r3.appendChild(bSeen); r3.appendChild(bGone[0]);
     rec.appendChild(el('div', 'k', '내 기록')); rec.appendChild(r3);
     function sync() {
       var v = votes[i] || [0, 0, 0, 0, 0];
@@ -2245,6 +2251,16 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       d.appendChild(dl); d.appendChild(rec);
       body.appendChild(d);
     }
+    // 이 카페로 바로 오는 링크를 보내는 단추. 폰에서는 공유 창을 띄우고, 컴퓨터에서는 주소를 복사한다.
+    var sh = btn('ib', null, function () {
+      var base = location.protocol === 'file:' ? 'https://zxcvzxcv789878987-sys.github.io/cafe-map/' : location.origin + location.pathname;
+      var url = base + '#c=' + cidOf(i);
+      if (navigator.share && mobile.matches) navigator.share({ title: D.name[i], url: url }).catch(function () {});
+      else if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { toast('이 카페로 바로 오는 링크를 복사했어요'); }, function () { toast(url); });
+      else toast(url);
+    });
+    sh.setAttribute('aria-label', '이 카페 링크 공유'); sh.title = '링크 공유'; sh.appendChild(icon('share'));
+    h.appendChild(sh);
     if (back) { var bk = btn('ib back', null, back); bk.setAttribute('aria-label', '뒤로'); bk.appendChild(icon('back')); h.appendChild(bk); }
     panel.appendChild(h); panel.appendChild(body);
   }
