@@ -3,8 +3,10 @@ import zipfile, sys, io, csv, collections
 
 zpath, outdir = sys.argv[1], sys.argv[2]
 z = zipfile.ZipFile(zpath)
+# 건물관리번호는 정부가 건물마다 붙인 번호다. 행정안전부의 건물 도형, 출입구 좌표와 주소 글자를 견주지 않고 이 번호로 맞춘다.
+# 동정보, 호정보는 한 주소에 건물이 여러 동인 단지에서 어느 동인지 가릴 때 쓴다.
 keep = ['상가업소번호', '상호명', '지점명', '상권업종소분류명', '시도명', '시군구명', '행정동명',
-        '도로명주소', '층정보', '경도', '위도']
+        '도로명주소', '층정보', '경도', '위도', '건물관리번호', '건물명', '동정보', '호정보', '법정동명', '지번주소']
 cnt = collections.Counter()
 cat = collections.Counter()
 total = 0
