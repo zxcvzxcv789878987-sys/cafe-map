@@ -2,6 +2,6 @@
 // 둘 다 비어 있으면 기록은 각자의 기기에만 남는다.
 // 이 키는 비밀번호가 아니다. 웹 화면에 넣어 쓰라고 만든 공개용 값이고, 누가 무엇을 쓸 수 있는지는 서버의 규칙(firebase-rules.json)이 정한다.
 window.CAFE_SHARE = {
-  key: '',
-  db: ''
+  key: 'AIzaSyDhIfiAF6logObWpjQq_deLOxdu-VK_mTM',
+  db: 'https://cafe-map-486ae-default-rtdb.firebaseio.com'
 };
