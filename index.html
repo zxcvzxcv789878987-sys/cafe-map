@@ -178,6 +178,17 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .meter i.on { background: var(--ok); }
 .mine { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 10px; border-top: 1px solid var(--line); }
 .mine span { font-size: 12.5px; color: var(--ink-3); margin-right: auto; }
+/* 필터 카드: 위에 노트북 작업 조건, 아래에 브랜드. 브랜드의 탭과 검색은 목록을 내려도 위에 붙어 있다. */
+.fsec { padding: 2px 16px 12px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid var(--line); }
+.fsec .sub { display: flex; flex-direction: column; gap: 8px; padding-bottom: 2px; }
+.fsec .sub p { margin: 0; font-size: 12.5px; color: var(--ink-3); }
+.fsec output { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.fsec output small { font-size: 12.5px; font-weight: 500; color: var(--ink-3); margin-left: 6px; }
+.ftitle { font-size: 12px; font-weight: 650; color: var(--ink-3); letter-spacing: .03em; padding-top: 10px; }
+.bhead { position: sticky; top: 0; z-index: 1; background: var(--surface); padding: 0 14px 8px; display: flex; flex-direction: column; gap: 8px; }
+.bhead .ftitle { padding-left: 2px; }
+.bhead .sort { display: grid; grid-template-columns: repeat(3, 1fr); border-radius: 11px; padding: 3px; }
+.bhead .sort button { height: 32px; font-size: 13px; border-radius: 8px; padding: 0 6px; }
 .set { padding: 4px 16px 14px; display: flex; flex-direction: column; gap: 9px; }
 .set + .set { border-top: 1px solid var(--line); padding-top: 14px; }
 .set h3 { margin: 4px 0 0; font-size: 12.5px; font-weight: 650; color: var(--ink-3); }
@@ -238,7 +249,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   #chips { flex-wrap: nowrap; overflow-x: auto; align-self: stretch; padding: 8px 12px 10px; scrollbar-width: none; }
   #chips::-webkit-scrollbar { display: none; }
   #panel { left: 0 !important; right: 0; top: auto !important; bottom: 0; width: auto !important; max-height: 62% !important; border-radius: 20px 20px 0 0; }
-  #panel[data-kind=region], #panel[data-kind=brand], #panel[data-kind=search], #panel[data-kind=list] { max-height: 74% !important; }
+  #panel[data-kind=region], #panel[data-kind=filter], #panel[data-kind=search], #panel[data-kind=list] { max-height: 74% !important; }
   #panel[data-kind=detail][data-embed] { max-height: 92% !important; }
   #count { bottom: calc(22px + env(safe-area-inset-bottom, 0px)); }
   #ctrl { right: 12px; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); }
@@ -267,6 +278,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   <symbol id="i-tack" viewBox="0 0 24 24"><path d="M9 3.500h6l-.800 5.300 3.300 3.400V14h-4.700v6l-.800 1.500-.800-1.500v-6H6.500v-1.800l3.300-3.400z"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></symbol>
   <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.010M4 12h.010M4 18h.010"/></symbol>
   <symbol id="i-out" viewBox="0 0 24 24"><path d="M14 5h5v5M19 5l-8 8M10 6H6a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-4"/></symbol>
 </svg>
@@ -544,13 +556,13 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     chairs: {},               // 그 자리 의자 종류로 더 좁히기. n 일반 의자, w 벽면 고정 의자, s 스탠드형 의자
     sort: saved.sort === 'size' ? 'size' : 'near',
     showAll: false,      // 구 전체 보기를 켰는가. 지역을 바꾸면 꺼진다.
-    pins: {}             // 브랜드 목록 맨 위에 고정해 둔 브랜드 이름
+    pins: {},            // 내 브랜드로 담아 둔 브랜드 이름
+    tab: saved.tab === 'low' || saved.tab === 'mine' ? saved.tab : 'all'   // 브랜드 목록에 보여 줄 묶음: all 전체, low 저가커피, mine 내 브랜드
   };
   // 개인카페만 보기는 없앴다. 저가커피 칩도 없애고 브랜드 고르기 안으로 옮겼다.
   // 예전에 저가커피 칩을 켜 둔 채 저장된 상태는 저가커피 브랜드를 전부 고른 것으로 읽는다.
   (saved.cats || []).forEach(function (g) {
-    if (g === 0) S.cats[0] = true;
-    else if (g === 1) brandGroup.forEach(function (bg, j) { if (bg === 1) S.brands[j] = true; });
+    if (g === 1) { S.tab = 'low'; brandGroup.forEach(function (bg, j) { if (bg === 1) S.brands[j] = true; }); }
   });
   (saved.brands || []).forEach(function (n) { for (var j = 0; j < D.brands.length; j++) if (D.brands[j][0] === n) S.brands[j] = true; });
   (saved.chairs || []).forEach(function (c) { S.chairs[c] = true; });
@@ -683,7 +695,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       for (k in srvMine) if (!mine[k]) { j = ix[k]; if (j !== undefined) push(j, true); }
       if (S.outlet) refilter();
       requestDraw();
-      if (P.kind === 'laptop') renderPanel();
+      if (P.kind === 'filter') renderPanel();
     }).catch(function () { /* 서버에 닿지 못하면 이 기기의 기록만으로 보여 준다 */ });
   }
   pull();
@@ -693,7 +705,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     save(STORE, {
       cats: Object.keys(S.cats).map(Number), brands: Object.keys(S.brands).map(function (j) { return D.brands[j][0]; }),
       reg: S.reg >= 0 ? regPath(S.reg) : null,
-      big: S.big, bigPy: S.bigPy, outlet: S.outlet, chairs: Object.keys(S.chairs), sort: S.sort, pins: Object.keys(S.pins),
+      big: S.big, bigPy: S.bigPy, outlet: S.outlet, chairs: Object.keys(S.chairs), sort: S.sort, pins: Object.keys(S.pins), tab: S.tab,
       view: [c.lat, c.lng, +map.getZoom().toFixed(2)]
     });
   }
@@ -1245,8 +1257,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   }
   function placePanel() {
     if (mobile.matches) return;
-    var bar = $('bar').getBoundingClientRect(), menu = P.kind === 'region' || P.kind === 'brand' || P.kind === 'laptop';
-    var w = P.kind === 'laptop' ? 330 : 360, left = 14, top = 14 + 44 + 10;
+    var bar = $('bar').getBoundingClientRect(), menu = P.kind === 'region' || P.kind === 'filter';
+    var w = 360, left = 14, top = 14 + 44 + 10;
     panel.style.width = w + 'px';
     if (menu && P.anchor) {
       var a = $('chips').querySelector('[data-act="' + P.anchor + '"]');
@@ -1266,15 +1278,14 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   function renderPanel() {
     panel.textContent = '';
     if (P.kind === 'region') renderRegion();
-    else if (P.kind === 'brand') renderBrand();
-    else if (P.kind === 'laptop') renderLaptop();
+    else if (P.kind === 'filter') renderFilter();
     else if (P.kind === 'list') renderList();
     else if (P.kind === 'search') renderSearch();
     else if (P.kind === 'detail') renderDetail(P.cafe);
   }
 
   // ----- 필터 칩 -----
-  function anyFilter() { return nKeys(S.cats) || nKeys(S.brands) || S.big || S.outlet; }
+  function anyFilter() { return nKeys(S.brands) || S.big || S.outlet; }
   function chip(label, on, act, opt) {
     opt = opt || {};
     var c = el('button', 'chip' + (opt.cls ? ' ' + opt.cls : '')); c.type = 'button'; c.dataset.act = act;
@@ -1287,24 +1298,29 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     else if (opt.caret) c.appendChild(icon('down'));
     return c;
   }
-  // 저가커피 브랜드만 골라 보고 있는지. 'all' 전부, 'part' 몇 곳을 뺀 상태, '' 아님
   function lowList() { var out = []; for (var j = 0; j < D.brands.length; j++) if (brandGroup[j] === 1) out.push(j); return out; }
-  function lowState() {
-    var ks = Object.keys(S.brands);
-    if (!ks.length || nKeys(S.cats) || !ks.every(function (j) { return brandGroup[j] === 1; })) return '';
-    return ks.length === lowList().length ? 'all' : ks.length > 1 ? 'part' : '';
-  }
-  function toggleLowOnly() {
-    var on = lowState();
-    S.brands = {};
-    if (!on) { S.cats = {}; lowList().forEach(function (j) { S.brands[j] = true; }); }
+  // 브랜드 목록에서 지금 보여 주는 묶음에 든 브랜드들
+  function tabList() { return S.tab === 'low' ? lowList() : S.tab === 'mine' ? pinnedList() : D.brands.map(function (b, j) { return j; }); }
+  // 묶음을 바꾼다. 저가커피와 내 브랜드는 그 묶음의 브랜드를 전부 고른 채로 시작하고(그다음 하나씩 뺄 수 있다), 전체는 아무것도 고르지 않은 채로 시작한다.
+  function setTab(t) {
+    S.tab = t; S.brands = {};
+    if (t !== 'all') tabList().forEach(function (j) { S.brands[j] = true; });
   }
   function brandLabel() {
-    var ks = Object.keys(S.brands), names = ks.map(function (j) { return D.brands[j][0]; }), low = lowState();
-    if (low) return low === 'all' ? '저가커피' : '저가커피 ' + ks.length + '개 브랜드';
-    if (S.cats[0]) names.unshift('프랜차이즈');
-    return names.length ? names[0] + (names.length > 1 ? ' 외 ' + (names.length - 1) : '') : '';
+    var ks = Object.keys(S.brands), n = ks.length;
+    if (!n) return '';
+    if (S.tab !== 'all') { var name = S.tab === 'low' ? '저가커피' : '내 브랜드'; return n === tabList().length ? name : name + ' ' + n + '개'; }
+    return D.brands[ks[0]][0] + (n > 1 ? ' 외 ' + (n - 1) : '');
   }
+  // 필터 칩에 적는 글. 켜 둔 조건을 짧게 이어 적고, 아무것도 없으면 "필터".
+  function filterLabel() {
+    var parts = [], bl = brandLabel();
+    if (bl) parts.push(bl);
+    if (S.big) parts.push(S.bigPy + '평 이상');
+    if (S.outlet) parts.push('콘센트');
+    return parts.join(' · ');
+  }
+  function resetFilter() { S.cats = {}; S.brands = {}; S.tab = 'all'; S.big = false; S.outlet = false; S.chairs = {}; }
   function regionChip() {
     if (S.reg < 0) return chip('지역', false, 'region', { icon: 'pin', caret: true });
     var c = el('span', 'chip crumb'), chain = regChain(S.reg);
@@ -1321,23 +1337,14 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   }
   // 지금 고른 지역의 바로 아래가 동인가. 그럴 때만 전체 보기를 쓸 수 있다.
   function canShowAll() { return S.reg >= 0 && !rLeaf[S.reg] && rKids[S.reg].length > 0 && rLeaf[rKids[S.reg][0]] === 1; }
-  // 고정해 둔 브랜드 번호들, 그리고 지금 그 브랜드들만 보고 있는지
+  // 내 브랜드로 담아 둔 브랜드 번호들
   function pinnedList() { var out = []; for (var j = 0; j < D.brands.length; j++) if (S.pins[D.brands[j][0]]) out.push(j); return out; }
-  function onlyPinned() { var pl = pinnedList(); return pl.length > 0 && !nKeys(S.cats) && nKeys(S.brands) === pl.length && pl.every(function (j) { return S.brands[j] === true; }); }
-  function togglePinnedOnly() {
-    if (onlyPinned()) S.brands = {};
-    else { S.brands = {}; S.cats = {}; pinnedList().forEach(function (j) { S.brands[j] = true; }); }
-  }
   function renderChips() {
-    var box = $('chips'), bl = brandLabel();
+    var box = $('chips'), fl = filterLabel();
     box.textContent = '';
     box.appendChild(regionChip());
-    if (pinnedList().length) box.appendChild(chip('내 브랜드', onlyPinned(), 'mine', { icon: 'tack' }));
-    box.appendChild(chip(bl || '브랜드', !!bl, 'brand', { dot: lowState() ? 1 : 0, caret: true, sub: bl ? ['brand-clear', 'x', '브랜드 해제'] : null }));
-    // 노트북 작업 칩 하나에 대형카페와 콘센트 좌석 조건이 들어 있다. 켜진 조건 수를 옆에 적는다.
-    var nLap = (S.big ? 1 : 0) + (S.outlet ? 1 : 0);
-    box.appendChild(chip('노트북 작업' + (nLap ? ' ' + nLap : ''), nLap > 0, 'laptop', { icon: 'laptop', caret: true }));
-    if (anyFilter()) box.appendChild(chip('초기화', false, 'reset', { cls: 'ghost' }));
+    // 걸러 보기와 설정은 필터 칩 하나에 다 들어 있다. 켜 둔 조건이 있으면 칩에 적고, 옆의 x로 한 번에 푼다.
+    box.appendChild(chip(fl || '필터', !!fl, 'filter', { icon: 'filter', caret: true, sub: fl ? ['reset', 'x', '필터 모두 풀기'] : null }));
     // 지역을 골라 들어간 동안에만 오른쪽 아래에 뒤로, 처음부터 단추를 보여 준다.
     $('nav').hidden = S.reg < 0;
     // 구(또는 구가 없는 시, 군)를 골랐을 때만 "전체 보기" 단추를 보여 준다. 누르면 동을 고르지 않고도 그 구의 카페가 전부 점으로 나온다.
@@ -1351,18 +1358,14 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     if (!t) return;
     var act = t.dataset.act;
     if (act === 'region') { if (P.kind !== 'region') regBrowse = S.reg >= 0 && rLeaf[S.reg] ? rParent[S.reg] : S.reg; toggleMenu('region', 'region'); return; }
-    if (act === 'brand') { brandQ = ''; toggleMenu('brand', 'brand'); return; }
-    if (act === 'laptop') { toggleMenu('laptop', 'laptop'); return; }
+    if (act === 'filter') { brandQ = ''; toggleMenu('filter', 'filter'); return; }
     if (act.indexOf('reg-go-') === 0) {
       // 앞 단계로 되돌아간다.
       closePanel(); goRegion(+act.slice(7));
       return;
     }
-    if (act === 'brand-clear') { S.brands = {}; delete S.cats[0]; }
-    else if (act === 'mine') togglePinnedOnly();
-    else if (act === 'reset') { S.cats = {}; S.brands = {}; S.big = false; S.outlet = false; S.chairs = {}; }
-    else if (act.indexOf('cat-') === 0) { var g = +act.slice(4); if (S.cats[g]) delete S.cats[g]; else S.cats[g] = true; }
-    if (P.kind === 'region' || P.kind === 'brand' || P.kind === 'laptop') closePanel();
+    if (act === 'reset') resetFilter();
+    if (P.kind === 'region' || P.kind === 'filter') closePanel();
     changed();
   });
   function changed() { refilter(); draw(); renderChips(); if (P.kind && P.kind !== 'detail') renderPanel(); persist(); }
@@ -1414,7 +1417,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       var e = el('div', 'empty');
       e.appendChild(el('b', null, '이 화면에는 조건에 맞는 카페가 없어요'));
       e.appendChild(el('span', null, totalPass ? '지도를 옮기거나 축소해 보세요. 조건에 맞는 카페는 모두 ' + fmt(totalPass) + '곳이에요.' : '조건을 줄여 보세요.'));
-      if (anyFilter()) e.appendChild(btn('btn sm', '필터 초기화', function () { S.cats = {}; S.brands = {}; S.big = false; S.outlet = false; S.chairs = {}; changed(); }));
+      if (anyFilter()) e.appendChild(btn('btn sm', '필터 초기화', function () { resetFilter(); changed(); }));
       sc.appendChild(e); return;
     }
     var ct = map.getCenter(), cx = myLoc ? myLoc.x : (ct.lng + 180) / 360, cy = myLoc ? myLoc.y : mercY(ct.lat), arr = [];
@@ -1515,123 +1518,103 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     sc.appendChild(grid); panel.appendChild(sc);
   }
 
-  // ----- 브랜드 고르기 -----
+  // ----- 필터: 걸러 보기와 설정을 카드 하나에 모았다. 위에 노트북 작업 조건, 아래에 브랜드 -----
   var brandQ = '';
-  function renderBrand() {
-    var h = head('브랜드'); h.appendChild(closeBtn()); panel.appendChild(h);
-    var s = el('label', 'search inset'); s.appendChild(icon('search'));
-    var inp = el('input'); inp.type = 'search'; inp.placeholder = '브랜드 이름'; inp.value = brandQ; inp.id = 'brandQ'; inp.autocomplete = 'off';
-    s.appendChild(inp); panel.appendChild(s);
-    var bar = el('div', 'pinbar'); panel.appendChild(bar);
-    var sc = el('div', 'scroll'); panel.appendChild(sc);
-    function apply() { refilter(); draw(); renderChips(); persist(); }
-    function groupTotal(g) { var n = 0; for (var j = 0; j < D.brands.length; j++) if (brandGroup[j] === g) n += brandCount[j]; return n; }
-    // 한 줄: 왼쪽을 누르면 그 브랜드만 보기를 켜고 끄고, 오른쪽 압정을 누르면 맨 위에 고정한다.
-    function row(label, g, letter, j, on, count, fn) {
-      var wrap = el('div', 'brow');
-      var pk = btn('pick', null, function () { fn(); on = !on; pk.setAttribute('aria-pressed', String(on)); fillBar(); });
-      pk.setAttribute('aria-pressed', String(on));
-      pk.appendChild(brandPin(j, g, letter));
-      pk.appendChild(el('span', 'name', label));
-      pk.appendChild(el('small', null, fmt(count)));
-      var bx = el('span', 'box'); bx.appendChild(icon('check')); pk.appendChild(bx);
-      wrap.appendChild(pk);
-      if (j >= 0) {
-        var pinned = !!S.pins[label];
-        var pb = btn('pinbtn', null, function () { if (S.pins[label]) delete S.pins[label]; else S.pins[label] = true; persist(); renderChips(); fill(); });
-        pb.setAttribute('aria-pressed', String(pinned));
-        pb.setAttribute('aria-label', label + (pinned ? ' 상위 고정 풀기' : ' 맨 위에 고정'));
-        pb.title = pinned ? '상위 고정 풀기' : '맨 위에 고정';
-        pb.appendChild(icon('tack'));
-        wrap.appendChild(pb);
-      }
-      return wrap;
-    }
-    function brandRow(j) { return row(D.brands[j][0], brandGroup[j], '', j, S.brands[j] === true, brandCount[j], function () { if (S.brands[j]) delete S.brands[j]; else S.brands[j] = true; apply(); }); }
-    var lowSec = null;      // 목록 안의 저가커피 묶음 제목. 저가커피만 보기를 켜면 여기로 내려 보낸다.
-    function fillBar() {
-      bar.textContent = '';
-      // 저가커피만 보기: 저가커피 브랜드를 한꺼번에 고른다. 그다음 목록에서 빼고 싶은 브랜드를 하나씩 끌 수 있다.
-      var low = lowState(), nLow = lowList().length;
-      var lb = btn('btn sm', low === 'all' ? '저가커피만 보는 중 (' + nLow + '개 브랜드)' : low === 'part' ? '저가커피 ' + nKeys(S.brands) + '개 브랜드만 보는 중' : '저가커피만 보기', function () {
-        toggleLowOnly(); apply(); fill();
-        if (lowState() && lowSec) sc.scrollTop = lowSec.offsetTop - sc.offsetTop;
-      });
-      lb.setAttribute('aria-pressed', String(!!low));
-      lb.insertBefore(dotEl(1), lb.firstChild);
-      bar.appendChild(lb);
-      var pl = pinnedList();
-      if (!pl.length) return;
-      var on = onlyPinned();
-      var b = btn('btn sm', on ? '고정한 브랜드만 보는 중' : '고정한 브랜드 ' + pl.length + '곳만 보기', function () { togglePinnedOnly(); apply(); fill(); });
-      b.setAttribute('aria-pressed', String(on));
-      bar.appendChild(b);
-    }
-    function fill() {
-      sc.textContent = ''; lowSec = null;
-      fillBar();
-      var q = brandQ.replace(/\s/g, '').toLowerCase(), any = false, pl = pinnedList();
-      function byCount(a, b) { return brandCount[b] - brandCount[a]; }
-      if (!q && pl.length) {
-        sc.appendChild(el('div', 'sec', '고정한 브랜드'));
-        pl.sort(byCount).forEach(function (j) { sc.appendChild(brandRow(j)); });
-      }
-      if (!q) sc.appendChild(row('프랜차이즈 전체 (저가 제외)', 0, '전', -1, S.cats[0] === true, groupTotal(0), function () { if (S.cats[0]) delete S.cats[0]; else S.cats[0] = true; apply(); }));
-      [0, 1].forEach(function (g) {
-        var list = [];
-        for (var j = 0; j < D.brands.length; j++) {
-          if (brandGroup[j] !== g) continue;
-          if (q ? D.brands[j][0].toLowerCase().indexOf(q) < 0 : S.pins[D.brands[j][0]]) continue;   // 고정한 브랜드는 위에 이미 있다.
-          list.push(j);
-        }
-        if (!list.length) return;
-        any = true;
-        var sec = el('div', 'sec', GROUPS[g].label);
-        if (g === 1) lowSec = sec;
-        sc.appendChild(sec);
-        list.sort(byCount).forEach(function (j) { sc.appendChild(brandRow(j)); });
-      });
-      if (!any && q) sc.appendChild(el('p', 'note', '그런 이름의 브랜드가 목록에 없어요. 맨 위 검색창에서 카페 이름으로 찾아보세요.'));
-      if (!q && !pl.length) sc.appendChild(el('p', 'note', '자주 보는 브랜드는 오른쪽 압정을 눌러 맨 위에 고정해 두세요.'));
-    }
-    inp.addEventListener('input', function () { brandQ = inp.value; fill(); });
-    fill();
-  }
-
-  // ----- 노트북 작업: 대형카페, 콘센트 좌석 -----
   function toggleRow(label, on, fn) {
     var l = el('label', 'switch'), cb = el('input'); cb.type = 'checkbox'; cb.checked = on;
     cb.addEventListener('change', function () { fn(cb.checked); });
     l.appendChild(el('span', null, label)); l.appendChild(cb);
     return l;
   }
-  function renderLaptop() {
-    var h = head('노트북 작업'); h.appendChild(closeBtn()); panel.appendChild(h);
-    var sc = el('div', 'scroll');
-    function apply() { refilter(); draw(); renderChips(); persist(); }
-    // 1. 대형카페
-    var a = el('div', 'set'), out = el('output'), rg = el('input');
-    a.appendChild(toggleRow('대형카페만', S.big, function (v) { S.big = v; apply(); }));
-    rg.type = 'range'; rg.min = 30; rg.max = 300; rg.step = 10; rg.value = S.bigPy; rg.id = 'bigPy'; rg.setAttribute('aria-label', '대형카페 기준 평수');
-    function lab() { out.textContent = S.bigPy + '평 이상'; out.appendChild(el('small', null, Math.round(S.bigPy * PYEONG) + '㎡')); }
-    rg.addEventListener('input', function () { S.bigPy = +rg.value; lab(); apply(); });
-    lab(); a.appendChild(out); a.appendChild(rg);
-    a.appendChild(el('p', null, '넓이를 모르는 카페(약 18%)는 빠져요.'));
-    sc.appendChild(a);
-    // 2. 콘센트 좌석
-    var b = el('div', 'set'), n = seatCount();
-    b.appendChild(toggleRow('콘센트 좌석 있는 곳만', S.outlet, function (v) { S.outlet = v; apply(); }));
-    b.appendChild(el('h3', null, '자리 종류'));
-    var row = el('div', 'opts');
-    CHAIRS.forEach(function (c) {
-      var bt = btn('opt', c[1], function () { if (S.chairs[c[0]]) delete S.chairs[c[0]]; else S.chairs[c[0]] = true; bt.setAttribute('aria-pressed', String(!!S.chairs[c[0]])); apply(); });
-      bt.setAttribute('aria-pressed', String(!!S.chairs[c[0]]));
-      row.appendChild(bt);
-    });
-    b.appendChild(row);
-    b.appendChild(el('p', null, '자리 종류를 고르지 않으면 종류와 상관없이 나와요. 콘센트 좌석은 자료가 없어서, 누군가 카페를 눌러 기록해 둔 곳만 나와요. ' + '지금까지 콘센트 좌석이 있다고 기록된 곳은 ' + fmt(n) + '곳이에요.'));
-    sc.appendChild(b);
-    panel.appendChild(sc);
+  function renderFilter() {
+    var h = head('필터'), clear = btn('link', '모두 풀기', function () { resetFilter(); apply(); fillLap(); fillTabs(); fill(); });
+    h.appendChild(clear); h.appendChild(closeBtn()); panel.appendChild(h);
+    var sc = el('div', 'scroll'); panel.appendChild(sc);
+    function apply() { refilter(); draw(); renderChips(); persist(); clear.hidden = !anyFilter(); }
+    clear.hidden = !anyFilter();
+
+    // 1. 노트북 작업: 대형카페, 콘센트 좌석. 켠 조건의 세부 설정만 그 아래에 펼친다.
+    var lap = el('div', 'fsec'); sc.appendChild(lap);
+    function fillLap() {
+      lap.textContent = '';
+      lap.appendChild(el('div', 'ftitle', '노트북 작업'));
+      lap.appendChild(toggleRow('대형카페만', S.big, function (v) { S.big = v; apply(); fillLap(); }));
+      if (S.big) {
+        var a = el('div', 'sub'), out = el('output'), rg = el('input');
+        rg.type = 'range'; rg.min = 30; rg.max = 300; rg.step = 10; rg.value = S.bigPy; rg.id = 'bigPy'; rg.setAttribute('aria-label', '대형카페 기준 평수');
+        var lab = function () { out.textContent = S.bigPy + '평 이상'; out.appendChild(el('small', null, Math.round(S.bigPy * PYEONG) + '㎡ · 넓이를 모르는 카페는 빠져요')); };
+        rg.addEventListener('input', function () { S.bigPy = +rg.value; lab(); apply(); });
+        lab(); a.appendChild(out); a.appendChild(rg); lap.appendChild(a);
+      }
+      lap.appendChild(toggleRow('콘센트 좌석 있는 곳만', S.outlet, function (v) { S.outlet = v; apply(); fillLap(); }));
+      if (S.outlet) {
+        var b = el('div', 'sub'), row = el('div', 'opts');
+        CHAIRS.forEach(function (c) {
+          var bt = btn('opt', c[1], function () { if (S.chairs[c[0]]) delete S.chairs[c[0]]; else S.chairs[c[0]] = true; bt.setAttribute('aria-pressed', String(!!S.chairs[c[0]])); apply(); });
+          bt.setAttribute('aria-pressed', String(!!S.chairs[c[0]]));
+          row.appendChild(bt);
+        });
+        b.appendChild(row);
+        b.appendChild(el('p', null, '지금까지 기록된 곳 ' + fmt(seatCount()) + '곳'));
+        lap.appendChild(b);
+      }
+    }
+
+    // 2. 브랜드: 묶음(전체, 저가커피, 내 브랜드)을 고르면 그 묶음의 브랜드만 목록에 나온다.
+    var bh = el('div', 'bhead'), tabs = el('div', 'sort');
+    bh.appendChild(el('div', 'ftitle', '브랜드')); bh.appendChild(tabs);
+    var s = el('label', 'search inset'); s.appendChild(icon('search'));
+    var inp = el('input'); inp.type = 'search'; inp.placeholder = '브랜드 이름'; inp.value = brandQ; inp.id = 'brandQ'; inp.autocomplete = 'off';
+    s.appendChild(inp); bh.appendChild(s); sc.appendChild(bh);
+    var list = el('div'); sc.appendChild(list);
+    function fillTabs() {
+      tabs.textContent = '';
+      [['all', '전체'], ['low', '저가커피'], ['mine', '내 브랜드']].forEach(function (t) {
+        var bt = btn(null, t[1], function () { if (S.tab === t[0]) return; setTab(t[0]); brandQ = inp.value = ''; apply(); fillTabs(); fill(); });
+        bt.setAttribute('aria-pressed', String(S.tab === t[0]));
+        tabs.appendChild(bt);
+      });
+    }
+    // 한 줄: 왼쪽을 누르면 그 브랜드를 고르거나 빼고, 오른쪽 압정을 누르면 내 브랜드에 담거나 뺀다.
+    function brandRow(j) {
+      var label = D.brands[j][0], wrap = el('div', 'brow');
+      var pk = btn('pick', null, function () { if (S.brands[j]) delete S.brands[j]; else S.brands[j] = true; pk.setAttribute('aria-pressed', String(S.brands[j] === true)); apply(); });
+      pk.setAttribute('aria-pressed', String(S.brands[j] === true));
+      pk.appendChild(brandPin(j, brandGroup[j], ''));
+      pk.appendChild(el('span', 'name', label));
+      pk.appendChild(el('small', null, fmt(brandCount[j])));
+      var bx = el('span', 'box'); bx.appendChild(icon('check')); pk.appendChild(bx);
+      wrap.appendChild(pk);
+      var pinned = !!S.pins[label];
+      var pb = btn('pinbtn', null, function () {
+        if (S.pins[label]) { delete S.pins[label]; if (S.tab === 'mine') delete S.brands[j]; } else S.pins[label] = true;
+        apply(); fill();
+      });
+      pb.setAttribute('aria-pressed', String(pinned));
+      pb.setAttribute('aria-label', label + (pinned ? ' 내 브랜드에서 빼기' : ' 내 브랜드에 담기'));
+      pb.title = pinned ? '내 브랜드에서 빼기' : '내 브랜드에 담기';
+      pb.appendChild(icon('tack'));
+      wrap.appendChild(pb);
+      return wrap;
+    }
+    function fill() {
+      list.textContent = '';
+      var q = brandQ.replace(/\s/g, '').toLowerCase();
+      var rows = tabList().filter(function (j) { return !q || D.brands[j][0].toLowerCase().indexOf(q) >= 0; });
+      rows.sort(function (a, b) { return brandCount[b] - brandCount[a]; });
+      if (S.tab === 'all' && !q) {
+        // 전체에서는 프랜차이즈와 저가커피를 나눠서 보여 준다.
+        [0, 1].forEach(function (g) {
+          var part = rows.filter(function (j) { return brandGroup[j] === g; });
+          if (!part.length) return;
+          list.appendChild(el('div', 'sec', GROUPS[g].label));
+          part.forEach(function (j) { list.appendChild(brandRow(j)); });
+        });
+      } else rows.forEach(function (j) { list.appendChild(brandRow(j)); });
+      if (!rows.length) list.appendChild(el('p', 'note', q ? '그런 이름의 브랜드가 없어요.' : '브랜드 옆의 압정을 누르면 여기에 담겨요.'));
+    }
+    inp.addEventListener('input', function () { brandQ = inp.value; fill(); });
+    fillLap(); fillTabs(); fill();
   }
   // ----- 카페 정보 -----
   function fullAddr(i) { var d = D.dongOf[i], g = dongSgg[d]; var sido = D.sido[sggSido[g]], sg = D.sgg[g][0]; return (sg === sido ? sido : sido + ' ' + sg) + ' ' + D.road[i]; }
