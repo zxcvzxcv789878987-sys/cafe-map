@@ -277,7 +277,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .rec .vh small { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .rec .sep { height: 1px; background: var(--line); margin: 2px 0; }
 /* 콘센트가 있다고 한 사람이 있을 때만 펼쳐지는 딸린 물음(어느 자리에 있는지). 아래로 스르륵 열리고 닫힌다. */
-.rec .more { display: grid; grid-template-rows: 0fr; margin-top: -8px; transition: grid-template-rows .24s ease, margin-top .24s ease; }
+.rec .more { display: grid; grid-template-rows: 0fr; margin-top: -8px; transition: grid-template-rows .34s cubic-bezier(.4, 0, .2, 1), margin-top .34s cubic-bezier(.4, 0, .2, 1); }
 .rec .more.on { grid-template-rows: 1fr; margin-top: 0; }
 .rec .more > div { overflow: hidden; min-height: 0; }
 .rec .more .in { display: flex; flex-direction: column; gap: 6px; margin-left: 2px; padding-left: 10px; border-left: 2px solid var(--pri); }
@@ -298,7 +298,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .sum { flex: none; display: inline-flex; align-items: center; gap: 5px; height: 36px; padding: 0 10px 0 13px; border-radius: 999px; border: 1px solid transparent; background: var(--surface-2); font-size: 13px; font-weight: 700; cursor: pointer; }
 .sum:hover { border-color: var(--ink-3); }
 .sum[aria-pressed=true] { background: var(--pri); border-color: var(--pri); color: var(--on-pri); }
-.sum .i { width: 14px; height: 14px; opacity: .6; transition: transform .24s ease; }
+.sum .i { width: 14px; height: 14px; opacity: .6; transition: transform .46s cubic-bezier(.4, 0, .2, 1); }
 .sum[aria-pressed=true] .i { transform: rotate(180deg); }
 /* 같은 건물 묶음을 눌렀을 때 점 위에 뜨는 목록 */
 #pile { position: absolute; z-index: 24; transform: translate(-50%, -100%); min-width: 160px; max-width: 270px; max-height: 232px; overflow-y: auto; padding: 6px; background: var(--surface); border-radius: 14px; box-shadow: var(--sh-2); }
@@ -344,11 +344,12 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 /* 다른 사람들이 없어졌다고 알린 카페: 카드 윗줄 아래에 한 줄로 알린다. */
 .gonebar { flex: none; padding: 7px 14px; font-size: 12.5px; font-weight: 650; color: var(--ink); background: color-mix(in srgb, #f59f00 16%, var(--surface)); border-top: 1px solid var(--line); }
 .dbody iframe { display: block; width: 100%; height: 100%; border: 0; background: var(--surface-2); }
-/* 판은 머리줄 아래에서 아래로 스르륵 내려오고, 닫을 때는 위로 스르륵 올라간다. 닫힌 동안에는 눌리지 않게 숨긴다. */
-.dscrim { position: absolute; inset: 0; z-index: 1; background: rgba(15, 20, 30, .28); opacity: 0; visibility: hidden; transition: opacity .26s ease, visibility 0s .26s; }
-.dscrim.on { opacity: 1; visibility: visible; transition: opacity .26s ease; }
-.dpop { position: absolute; left: 0; right: 0; top: 0; z-index: 2; max-height: 100%; overflow-y: auto; background: var(--surface); padding: 12px 16px 12px; display: flex; flex-direction: column; gap: 10px; border-radius: 0 0 18px 18px; box-shadow: 0 12px 28px rgba(15, 20, 30, .22); transform: translateY(-102%); visibility: hidden; transition: transform .28s cubic-bezier(.4, 0, .6, 1), visibility 0s .28s; }
-.dpop.on { transform: none; visibility: visible; transition: transform .3s cubic-bezier(.2, .8, .2, 1); }
+/* 판은 머리줄 아래에서 아래로 스르륵 내려오고, 닫을 때는 위로 스르륵 올라간다. 닫힌 동안에는 눌리지 않게 숨긴다.
+   폰에서는 카드도 같이 오르내리므로(setSnap의 'slow') 둘의 시간과 빠르기 곡선을 똑같이 맞춘다: 천천히 출발해서 천천히 멈춘다. */
+.dscrim { position: absolute; inset: 0; z-index: 1; background: rgba(15, 20, 30, .28); opacity: 0; visibility: hidden; transition: opacity .46s ease, visibility 0s .46s; }
+.dscrim.on { opacity: 1; visibility: visible; transition: opacity .46s ease; }
+.dpop { position: absolute; left: 0; right: 0; top: 0; z-index: 2; max-height: 100%; overflow-y: auto; background: var(--surface); padding: 12px 16px 12px; display: flex; flex-direction: column; gap: 10px; border-radius: 0 0 18px 18px; box-shadow: 0 12px 28px rgba(15, 20, 30, .22); transform: translateY(-102%); visibility: hidden; will-change: transform; transition: transform .46s cubic-bezier(.4, 0, .2, 1), visibility 0s .46s; }
+.dpop.on { transform: none; visibility: visible; transition: transform .46s cubic-bezier(.4, 0, .2, 1); }
 @media (prefers-reduced-motion: reduce) { .dscrim, .dscrim.on, .dpop, .dpop.on, .rec .more, .sum .i { transition: none; } }
 @media (min-width: 761px) { #panel[data-kind=detail][data-embed] { width: 440px !important; } }
 
@@ -2274,7 +2275,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   function snapOffset(which) { return which === 'full' ? 0 : Math.max(0, panel.offsetHeight - Math.round(window.innerHeight * .46) - lift); }
   function setSnap(which, animate) {
     snap = which;
-    panel.style.transition = animate ? 'transform .3s cubic-bezier(.2, .8, .2, 1)' : 'none';
+    // animate가 'slow'이면 카페정보 판이 여닫히는 움직임과 같은 시간, 같은 곡선으로 움직인다.
+    panel.style.transition = animate === 'slow' ? 'transform .46s cubic-bezier(.4, 0, .2, 1)' : animate ? 'transform .3s cubic-bezier(.2, .8, .2, 1)' : 'none';
     panel.style.transform = 'translateY(' + snapOffset(which) + 'px)';
     panel.setAttribute('data-snap', which);
   }
@@ -2936,7 +2938,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
         var room = Math.round(window.innerHeight * .46) - body.offsetTop;
         var need = popOn ? Math.max(Math.round(window.innerHeight * .2), pop.scrollHeight + 8 - room) : 0;
         if (need === lift) return;
-        lift = need; setSnap('half', true);
+        lift = need; setSnap('half', 'slow');
       };
       var openPop = function (on) {
         popOn = on;
@@ -2945,7 +2947,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
         fitPop();
       };
       // 투표해서 판의 길이가 바뀌면(자리 물음이 펼쳐지거나 접히면) 다 펼쳐진 뒤에 다시 맞춘다.
-      refit = function () { if (popOn) setTimeout(function () { if (popOn && pop.isConnected) fitPop(); }, 270); };
+      refit = function () { if (popOn) setTimeout(function () { if (popOn && pop.isConnected) fitPop(); }, 360); };
       info.setAttribute('aria-haspopup', 'dialog');
       scrim.addEventListener('click', function () { openPop(false); });
       pop.appendChild(dl); pop.appendChild(rec);
