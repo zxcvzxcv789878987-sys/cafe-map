@@ -82,6 +82,9 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 .chip .dot { width: 9px; height: 9px; border-radius: 50%; }
 .chip svg.i { width: 16px; height: 16px; }
 .chip[data-act=want][aria-pressed=true] svg.i { fill: currentColor; }
+/* 새로 오픈은 켜면 찜의 분홍과 같은 느낌의 연둣빛 초록. */
+.chip[data-act=fresh][aria-pressed=true] { background: #37b24d; color: #fff; }
+.chip[data-act=fresh][aria-pressed=true] svg.i { fill: currentColor; }
 /* 찜은 켜면 분홍빛 빨강(지도의 하트 표시와 같은 색). */
 .chip[data-act=want][aria-pressed=true], .opt.heart[aria-pressed=true] { background: #e64980; border-color: #e64980; color: #fff; }
 .chip .sub { display: grid; place-items: center; width: 22px; height: 22px; margin-right: -7px; border-radius: 50%; opacity: .75; }
