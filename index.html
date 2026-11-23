@@ -549,6 +549,54 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   function inCity(r) { return r >= 0 && (rParent[r] >= 0 || CITY_SIDO[rName[r]] === 1); }
   rootKids.sort(function (p, q) { var a = SIDO_ORDER.indexOf(rName[p]), c = SIDO_ORDER.indexOf(rName[q]); return (a < 0 ? 99 : a) - (c < 0 ? 99 : c); });
   rKids.forEach(function (k) { k.sort(function (p, q) { return rName[p].localeCompare(rName[q], 'ko'); }); });
+  // 카페가 속한 동을 지도에 그리는 경계에 맞춘다.
+  // 자료에 적힌 동은 주소 기준이고, 지도에 찍는 자리는 매장 좌표이며, 경계선은 단순하게 다듬은 것이라서
+  // 경계 근처의 카페는 "그 동 카페인데 경계선 밖에 찍히는" 일이 생긴다. 그러면 동을 골랐을 때 범위 밖에 점이 보인다.
+  // 그래서 찍히는 자리가 자기 동의 경계 밖이면, 그 자리를 품고 있는 동으로 옮겨 적는다(품는 동을 못 찾으면 그대로 둔다).
+  var dongMoved = 0;
+  (function () {
+    SHAPES = window.REGION_SHAPES || {}; shapeCache = {};
+    var dongOfReg = {};
+    D.dong.forEach(function (d, k) { dongOfReg[dongReg[k]] = k; });
+    function inside(r, x, y) {
+      var sh = shapeOf(r);
+      if (!sh) return null;
+      if (x < sh.bb[0] || x > sh.bb[2] || y < sh.bb[1] || y > sh.bb[3]) return false;
+      var ok = false;
+      for (var k = 0; k < sh.rings.length; k++) {
+        var a = sh.rings[k];
+        for (var p = 0, q = a.length - 2; p < a.length; q = p, p += 2)
+          if ((a[p + 1] > y) !== (a[q + 1] > y) && x < (a[q] - a[p]) * (y - a[p + 1]) / (a[q + 1] - a[p + 1]) + a[p]) ok = !ok;
+      }
+      return ok;
+    }
+    // node 아래에서 그 점을 품는 동을 찾는다. skip은 이미 확인한 가지.
+    function findDong(node, x, y, skip) {
+      var kids = node < 0 ? rootKids : rKids[node];
+      for (var k = 0; k < kids.length; k++) {
+        var c = kids[k];
+        if (c === skip) continue;
+        var res = inside(c, x, y);
+        if (res === false) continue;
+        if (rLeaf[c]) { if (res === true) return c; continue; }
+        var f = findDong(c, x, y, -1);
+        if (f >= 0) return f;
+      }
+      return -1;
+    }
+    for (var i = 0; i < N; i++) {
+      var r = dongReg[D.dongOf[i]], x = mx[i], y = my[i];
+      if (inside(r, x, y) !== false) continue;
+      // 같은 구의 다른 동, 같은 시의 다른 구, 그 위 순서로 넓혀 가며 찾는다.
+      var found = -1, from = r, up = rParent[r];
+      for (;;) {
+        found = findDong(up, x, y, from);
+        if (found >= 0 || up < 0) break;
+        from = up; up = rParent[up];
+      }
+      if (found >= 0 && dongOfReg[found] !== undefined) { D.dongOf[i] = dongOfReg[found]; dongMoved++; }
+    }
+  })();
   (function boxes() {
     var k, r;
     for (k = 0; k < NR; k++) { rBox[k * 4] = 2; rBox[k * 4 + 1] = 2; rBox[k * 4 + 2] = -1; rBox[k * 4 + 3] = -1; }
@@ -772,7 +820,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   }, mapAt));
   window.cafeMap = map;
   window.cafeDraw = function () { draw(); };   // 시험용: 그리는 데 걸리는 시간을 잴 때 쓴다.
-  window.cafeTest = { layout: function (r) { var L = tagLayout(r), W = map.getContainer().clientWidth, o = {}; regChildren(r).forEach(function (k) { if (L[k]) { var sh = shapeOf(k); o[rName[k]] = [Math.round((L[k].x - L[k].ax) * 512 * Math.pow(2, map.getZoom())), Math.round((L[k].y - L[k].ay) * 512 * Math.pow(2, map.getZoom())), sh ? Math.round(Math.sqrt((sh.bb[2] - sh.bb[0]) * (sh.bb[3] - sh.bb[1])) * 512 * Math.pow(2, map.getZoom())) : -1]; } }); return o; }, name: function (r) { return rName[r]; }, follow: function () { followView(); return S.reg < 0 ? '전국' : regPath(S.reg); }, reg: function () { return S.reg < 0 ? '전국' : regPath(S.reg); } };
+  window.cafeTest = { layout: function (r) { var L = tagLayout(r), W = map.getContainer().clientWidth, o = {}; regChildren(r).forEach(function (k) { if (L[k]) { var sh = shapeOf(k); o[rName[k]] = [Math.round((L[k].x - L[k].ax) * 512 * Math.pow(2, map.getZoom())), Math.round((L[k].y - L[k].ay) * 512 * Math.pow(2, map.getZoom())), sh ? Math.round(Math.sqrt((sh.bb[2] - sh.bb[0]) * (sh.bb[3] - sh.bb[1])) * 512 * Math.pow(2, map.getZoom())) : -1]; } }); return o; }, name: function (r) { return rName[r]; }, follow: function () { followView(); return S.reg < 0 ? '전국' : regPath(S.reg); }, reg: function () { return S.reg < 0 ? '전국' : regPath(S.reg); }, moved: dongMoved };
   map.on('error', function (e) { console.error('지도 오류', e && e.error && e.error.message); });
   // 지도가 아이콘을 찾을 때 그 자리에서 그려서 넘겨 준다.
   map.on('styleimagemissing', function (e) {
@@ -941,7 +989,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   var viewIdx = new Int32Array(N), vc = 0, indiv = false;
   var hits = [], sel = -1, hoverI = -1, hoverPill = -1, queued = false, myLoc = null;
   // 지역 경계 모양. regions.js에 "경기 수원시 영통구" 같은 이름으로 들어 있고, 처음 쓸 때 화면 좌표계로 풀어 둔다.
-  var SHAPES = window.REGION_SHAPES || {}, shapeCache = {};
+  var SHAPES = SHAPES || window.REGION_SHAPES || {}, shapeCache = shapeCache || {};   // 위에서 동을 경계에 맞출 때 먼저 채워 둔 것을 그대로 쓴다.
   function shapeOf(r) {
     if (shapeCache[r] !== undefined) return shapeCache[r];
     var v = SHAPES[regPath(r)], out = null;
