@@ -209,17 +209,35 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 /* 카페 카드: 얇은 머리줄(이름, 단추) 아래를 카카오맵의 그 가게 화면이 전부 차지한다.
    주소, 넓이, 콘센트 좌석 기록은 머리줄의 단추를 누르면 지도 위에 덮여 나온다. */
 #panel[data-kind=detail][data-embed] { height: 100%; }
-.dh { display: flex; align-items: center; gap: 4px; padding: 10px 8px 10px 16px; flex: none; }
-.dh .dt { flex: 1; min-width: 0; }
-.dh h1 { margin: 0; font-size: 17px; font-weight: 800; letter-spacing: -.02em; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dh .kind { margin-top: 1px; font-size: 12.5px; }
-.dh .opt { flex: none; margin-right: 2px; }
+/* 머리줄: 맨 위 가운데의 손잡이 막대, 그 아래 왼쪽에 카페 아이콘과 종류, 오른쪽에 콘센트와 넓이를 적은 단추.
+   머리줄을 잡고 아래로 쓸어내리면 카드가 내려가며 닫힌다. */
+.dh { position: relative; display: flex; align-items: center; gap: 8px; padding: 16px 12px 10px 14px; flex: none; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+.dh::before { content: ""; position: absolute; left: 50%; top: 6px; width: 38px; height: 4px; margin-left: -19px; border-radius: 2px; background: var(--line-2); }
+.dh .pin { flex: none; }
+.dh .kd { flex: 1; min-width: 0; font-size: 14px; font-weight: 750; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dh .ib { flex: none; }
+/* 콘센트와 넓이를 한눈에 보여 주는 단추. 누르면 기록하는 판이 열린다. */
+.sum { flex: none; display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 10px 0 12px; border-radius: 999px; border: 1px solid var(--line-2); font-size: 13px; font-weight: 650; cursor: pointer; }
+.sum:hover { border-color: var(--ink-3); }
+.sum[aria-pressed=true] { background: var(--inv); border-color: var(--inv); color: var(--on-inv); }
+.sum .st { display: inline-flex; align-items: center; gap: 5px; }
+.sum .st i { width: 8px; height: 8px; border-radius: 50%; background: var(--line-2); }
+.sum .st.yes i { background: var(--ok); }
+.sum .st.no i { background: var(--ink-3); }
+.sum .sz { color: var(--ink-3); font-variant-numeric: tabular-nums; padding-left: 7px; border-left: 1px solid var(--line-2); }
+.sum[aria-pressed=true] .sz { color: inherit; opacity: .75; border-color: rgba(255, 255, 255, .3); }
+.sum .i { width: 14px; height: 14px; opacity: .6; }
+.none { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); color: var(--ink-3); font-size: 13px; }
+/* 카드는 아래에서 위로 올라오며 나타난다. */
+@keyframes sheetUp { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes cardUp { from { transform: translateY(32px); opacity: 0; } to { transform: none; opacity: 1; } }
+#panel.rise { animation: cardUp .26s cubic-bezier(.2, .8, .2, 1); }
+@media (max-width: 760px) { #panel.rise { animation: sheetUp .32s cubic-bezier(.2, .8, .2, 1); } }
+@media (prefers-reduced-motion: reduce) { #panel.rise { animation: none; } }
 .dbody { position: relative; flex: 1; min-height: 0; border-top: 1px solid var(--line); }
 .dbody iframe { display: block; width: 100%; height: 100%; border: 0; background: var(--surface-2); }
 .dscrim { position: absolute; inset: 0; z-index: 1; background: rgba(15, 20, 30, .28); }
 .dpop { position: absolute; left: 0; right: 0; top: 0; z-index: 2; max-height: 100%; overflow-y: auto; background: var(--surface); padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px; border-radius: 0 0 18px 18px; box-shadow: 0 12px 28px rgba(15, 20, 30, .22); }
-.dpop .more { align-self: flex-end; font-size: 12.5px; font-weight: 600; color: var(--ink-3); text-decoration: none; }
-.dpop .more:hover { color: var(--ink); }
 @media (min-width: 761px) { #panel[data-kind=detail][data-embed] { width: 440px !important; } }
 
 /* 아래쪽: 개수 단추, 지도 단추 */
@@ -750,6 +768,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     localIdeographFontFamily: '"Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
   }, mapAt));
   window.cafeMap = map;
+  window.cafeDraw = function () { draw(); };   // 시험용: 그리는 데 걸리는 시간을 잴 때 쓴다.
   map.on('error', function (e) { console.error('지도 오류', e && e.error && e.error.message); });
   // 지도가 아이콘을 찾을 때 그 자리에서 그려서 넘겨 준다.
   map.on('styleimagemissing', function (e) {
@@ -1019,7 +1038,62 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   // 아이콘 지름이 화면에서 14m보다 커지지 않게 해서 서로 겹치지 않게 한다(iconR은 그릴 때마다 다시 잰다).
   var iconR = 11;
   function dotR(i, z) { return z < 13 ? 4 : z < 15 ? 6 : iconR; }
-  function drawDot(i, px, py, r) {
+  // ----- 빠르게 그리기 -----
+  // 지도를 움직이는 동안 매 프레임마다 점 수백 개와 이름 수백 개를 처음부터 다시 그리면 화면이 끊긴다.
+  // 그래서 아이콘과 이름은 한 번만 작은 그림 조각으로 그려 두고, 그다음부터는 그 조각을 찍기만 한다.
+  var DPR = window.devicePixelRatio || 1, dotSprites = {}, nDotSprites = 0, labSprites = {}, nLabSprites = 0;
+  function dropSprites() { dotSprites = {}; nDotSprites = 0; labSprites = {}; nLabSprites = 0; }
+  // 글꼴이 늦게 도착하면 먼저 그려 둔 이름 조각은 다른 글꼴로 그려져 있으므로 버리고 다시 그린다.
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { dropSprites(); requestDraw(); });
+  // 아이콘 조각. 같은 브랜드, 같은 크기면 같은 조각을 쓴다(크기는 0.5픽셀 단위로 묶는다).
+  function stampDot(i, px, py, r) {
+    var g = grp[i], rb = Math.round(r * 2) / 2, im = g !== 2 && rb >= 8 ? brandImg[D.brand[i]] : null;
+    var key = (im && im.ok ? 'b' + D.brand[i] : 'g') + '|' + g + '|' + rb, sp = dotSprites[key], half = rb + 2;
+    if (!sp) {
+      if (nDotSprites > 3000) { dotSprites = {}; nDotSprites = 0; }
+      sp = dotSprites[key] = document.createElement('canvas'); nDotSprites++;
+      sp.width = sp.height = Math.ceil(half * 2 * DPR);
+      var keep = ctx; ctx = sp.getContext('2d'); ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      paintDot(i, half, half, rb);
+      ctx = keep;
+    }
+    ctx.drawImage(sp, px - half, py - half, half * 2, half * 2);
+    if (outlet[i] === 1) outletBadge(px, py, r);
+  }
+  // 이름 조각(흰 테두리를 두른 글씨). 글씨 너비도 같이 기억한다.
+  function labelSprite(i) {
+    var sp = labSprites[i];
+    if (sp) return sp;
+    if (nLabSprites > 2500) { labSprites = {}; nLabSprites = 0; }
+    var text = clip(D.name[i], 16), cv = document.createElement('canvas'), c2 = cv.getContext('2d');
+    c2.font = '600 12px ' + FONT;
+    var tw = c2.measureText(text).width;
+    cv.width = Math.ceil((tw + 8) * DPR); cv.height = Math.ceil(20 * DPR);
+    c2.setTransform(DPR, 0, 0, DPR, 0, 0);
+    c2.font = '600 12px ' + FONT; c2.textAlign = 'left'; c2.textBaseline = 'middle';
+    c2.lineWidth = 3.5; c2.lineJoin = 'round'; c2.strokeStyle = C.surface; c2.strokeText(text, 4, 10.5);
+    c2.fillStyle = C.ink; c2.fillText(text, 4, 10.5);
+    nLabSprites++;
+    return (labSprites[i] = { cv: cv, tw: tw });
+  }
+  // 이름을 놓을 자리 후보. 점 바로 옆 네 곳, 대각선 네 곳, 그다음 조금씩 더 떨어진 자리 열여섯 곳(모두 24곳).
+  function labelSpot(n, X, Y, r, tw) {
+    var far = n >> 3, g2 = r + 5 + far * 18, v = r + 10 + far * 16;
+    switch (n & 7) {
+      case 0: return [X + g2, Y];
+      case 1: return [X - g2 - tw, Y];
+      case 2: return [X - tw / 2, Y + v];
+      case 3: return [X - tw / 2, Y - v];
+      case 4: return [X + g2 * .7, Y + v];
+      case 5: return [X + g2 * .7, Y - v];
+      case 6: return [X - g2 * .7 - tw, Y + v];
+      default: return [X - g2 * .7 - tw, Y - v];
+    }
+  }
+  var labSpot = new Int8Array(N).fill(-1), lastLayout = 0;   // 카페마다 지난번에 이름을 놓은 자리
+  function outletBadge(px, py, r) { ctx.beginPath(); ctx.arc(px + r * .72, py - r * .72, 3.6, 0, 6.2832); ctx.fillStyle = C.ok; ctx.fill(); ctx.lineWidth = 1.4; ctx.strokeStyle = C.surface; ctx.stroke(); }
+  function drawDot(i, px, py, r) { paintDot(i, px, py, r); if (outlet[i] === 1) outletBadge(px, py, r); }
+  function paintDot(i, px, py, r) {
     var g = grp[i], im = g !== 2 && r >= 8 ? brandImg[D.brand[i]] : null;
     if (im && im.ok) {
       // 실제 아이콘: 흰 바탕에 아이콘을 넣고 테두리를 종류 색으로 두른다.
@@ -1040,9 +1114,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
         ctx.beginPath(); ctx.arc(px + .3 * r, py - .02 * r, .19 * r, -1.5708, 1.5708); ctx.lineWidth = .12 * r; ctx.stroke();
       }
     }
-    // 대형카페는 지도에 따로 표시하지 않는다. 필터로만 걸러 본다.
-    // 콘센트 좌석이 있다고 기록한 곳은 초록 점을 붙인다.
-    if (outlet[i] === 1) { ctx.beginPath(); ctx.arc(px + r * .72, py - r * .72, 3.6, 0, 6.2832); ctx.fillStyle = C.ok; ctx.fill(); ctx.lineWidth = 1.4; ctx.strokeStyle = C.surface; ctx.stroke(); }
+    // 대형카페는 지도에 따로 표시하지 않는다. 필터로만 걸러 본다. 콘센트 좌석이 있다고 기록된 곳의 초록 점은 outletBadge가 붙인다.
   }
   function drawLabel(text, x, y, strong, gap) {
     ctx.font = (strong ? '700 13px ' : '600 12px ') + FONT; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
@@ -1062,6 +1134,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 
   function draw() {
     var box = map.getContainer(), dpr = window.devicePixelRatio || 1, W = box.clientWidth, H = box.clientHeight;
+    if (dpr !== DPR) { DPR = dpr; dropSprites(); }
     if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) {
       canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
       canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
@@ -1125,7 +1198,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
         if ((grp[i] !== 2) !== (pass2 === 1) || i === sel) continue;
         px = mx[i] * scale - ox; py = my[i] * scale - oy;
         var r = dotR(i, z);
-        drawDot(i, px, py, r);
+        stampDot(i, px, py, r);
         hits.push({ x: px, y: py, r: Math.max(r + 3, 9), i: i });
         if (z >= 15.6 && labels.length < 400) labels.push([i, px, py, r]);
       }
@@ -1133,23 +1206,25 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
         // 이름은 화면에 보이는 모든 카페에 다 쓴다. 누구 것을 먼저 쓰는 순서는 없다.
         // 이름이 다른 이름이나 다른 카페의 아이콘을 가리지 않게 빈 자리를 찾는다.
         // 점 바로 옆 네 곳, 대각선 네 곳, 그다음 조금씩 더 떨어진 자리 열여섯 곳 순서로 본다. 다 막혀 있으면 오른쪽에 그냥 쓴다.
-        var boxes = [];
-        for (k = 0; k < labels.length; k++) { var dq = labels[k]; boxes.push([dq[1] - dq[3], dq[2] - dq[3], dq[3] * 2, dq[3] * 2]); }
-        ctx.font = '600 12px ' + FONT;
+        // 자리 찾기는 지도가 멈춰 있을 때, 그리고 움직이는 동안에는 0.2초에 한 번만 한다.
+        // 그 사이 프레임에서는 지난번에 놓은 자리를 그대로 쓴다(이름이 점을 따라 같이 움직인다).
+        var now = performance.now(), full = !map.isMoving() || now - lastLayout > 200, boxes = [];
+        if (full) {
+          lastLayout = now;
+          for (k = 0; k < labels.length; k++) { var dq = labels[k]; boxes.push([dq[1] - dq[3], dq[2] - dq[3], dq[3] * 2, dq[3] * 2]); }
+        }
         for (k = 0; k < labels.length; k++) {
-          var lb = labels[k], text = clip(D.name[lb[0]], 16), tw = ctx.measureText(text).width, X = lb[1], Y = lb[2], spots = [], pick = null;
-          for (var far = 0; far < 3; far++) {
-            var g2 = lb[3] + 5 + far * 18, v = lb[3] + 10 + far * 16;
-            spots.push([X + g2, Y], [X - g2 - tw, Y], [X - tw / 2, Y + v], [X - tw / 2, Y - v], [X + g2 * .7, Y + v], [X + g2 * .7, Y - v], [X - g2 * .7 - tw, Y + v], [X - g2 * .7 - tw, Y - v]);
-          }
-          for (var sp = 0; sp < spots.length && !pick; sp++) {
-            var lx = spots[sp][0], ly = spots[sp][1] - 8, free = true;
-            for (j = 0; j < boxes.length; j++) { var bq = boxes[j]; if (lx < bq[0] + bq[2] + 2 && lx + tw + 2 > bq[0] && ly < bq[1] + bq[3] + 1 && ly + 16 + 1 > bq[1]) { free = false; break; } }
-            if (free) pick = spots[sp];
-          }
-          if (!pick) pick = spots[0];
-          boxes.push([pick[0], pick[1] - 8, tw, 16]);
-          drawLabel(text, pick[0], pick[1], false, 0);
+          var lb = labels[k], ls = labelSprite(lb[0]), tw = ls.tw, pick = null;
+          if (full) {
+            for (var sp = 0; sp < 24 && !pick; sp++) {
+              var cand2 = labelSpot(sp, lb[1], lb[2], lb[3], tw), lx = cand2[0], ly = cand2[1] - 8, free = true;
+              for (j = 0; j < boxes.length; j++) { var bq = boxes[j]; if (lx < bq[0] + bq[2] + 2 && lx + tw + 2 > bq[0] && ly < bq[1] + bq[3] + 1 && ly + 16 + 1 > bq[1]) { free = false; break; } }
+              if (free) { pick = cand2; labSpot[lb[0]] = sp; }
+            }
+            if (!pick) { pick = labelSpot(0, lb[1], lb[2], lb[3], tw); labSpot[lb[0]] = 0; }
+            boxes.push([pick[0], pick[1] - 8, tw, 16]);
+          } else pick = labelSpot(labSpot[lb[0]] < 0 ? 0 : labSpot[lb[0]], lb[1], lb[2], lb[3], tw);
+          ctx.drawImage(ls.cv, pick[0] - 4, pick[1] - 10, tw + 8, 20);
         }
       }
       if (hoverI >= 0 && hoverI !== sel) {
@@ -1188,7 +1263,9 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   }
 
   var listTimer = 0;
-  map.on('move', requestDraw);
+  // 지도가 움직이면 다음 프레임으로 미루지 않고 그 자리에서 바로 그린다.
+  // 미루면 카페 점이 지도보다 한 박자 늦게 따라와서 지도 위에 떠 있는 것처럼 보인다.
+  map.on('move', draw);
   map.on('moveend', function () { draw(); persist(); if (P.kind === 'list') { clearTimeout(listTimer); listTimer = setTimeout(renderPanel, 90); } });
   map.on('resize', requestDraw);
   map.on('load', draw);
@@ -1240,8 +1317,13 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   // ----- 카드 하나를 돌려 쓴다 -----
   var panel = $('panel'), P = { kind: null, prev: null, anchor: null, cafe: -1 };
   function openPanel(kind, anchor) {
+    var was = P.kind;
     P.kind = kind; P.anchor = anchor || null;
     panel.dataset.kind = kind; panel.hidden = false;
+    // 카페 카드는 아래에서 위로 올라오며 나타난다(이미 카페 카드가 떠 있을 때 다른 카페를 누르면 내용만 바뀐다).
+    panel.style.transform = panel.style.transition = '';
+    panel.classList.remove('rise');
+    if (kind === 'detail' && was !== 'detail') { void panel.offsetWidth; panel.classList.add('rise'); }
     document.body.classList.add('sheet-open');
     renderPanel(); placePanel();
   }
@@ -1637,10 +1719,11 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     var b = D.brand[i], g = grp[i], a = D.area[i], fl = D.floor[i], lat = D.lat[i] / 1e5, lng = D.lng[i] / 1e5;
     var back = P.prev ? function () { var k = P.prev; sel = -1; P.prev = null; openPanel(k); requestDraw(); } : null;
     var pid = D.kid ? D.kid[i] : 0;
-    var h = el('div', 'dh'), top = el('div', 'dt');
-    top.appendChild(el('h1', null, D.name[i]));
-    var kind = el('div', 'kind'); kind.appendChild(dotEl(g)); kind.appendChild(el('span', null, b < 0 ? '개인카페' : GROUPS[g].label + ' · ' + D.brands[b][0])); top.appendChild(kind);
-    h.appendChild(top);
+    // 머리줄에는 카페 이름을 적지 않는다(바로 아래 카카오맵 화면에 이름이 나온다). 지도의 점과 같은 아이콘, 그리고 종류만 둔다.
+    var h = el('div', 'dh'), kd = el('span', 'kd', GROUPS[g].label);
+    kd.style.color = 'var(' + GROUPS[g].css + ')';
+    h.appendChild(pinEl(i)); h.appendChild(kd);
+    sheetDrag(h);
     var dl = el('dl', 'facts'), addr = fullAddr(i);
     function fact(k) { dl.appendChild(el('dt', null, k)); var dd = el('dd'); dl.appendChild(dd); return dd; }
     var f1 = fact('주소'); f1.appendChild(el('span', null, addr + (fl > 0 ? ' ' + fl + '층' : fl < 0 ? ' 지하' : '')));
@@ -1674,20 +1757,28 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       if (myO[i] !== 1) myC[i] = 0;
       saveMine(i); tally(i); sync(); push(i);
       if (S.outlet) refilter();
-      requestDraw();
+      requestDraw(); sum();
     }
     sync();
-    var kakaoOut = pid ? 'https://place.map.kakao.com/' + pid : 'https://map.kakao.com/link/map/' + encodeURIComponent(D.name[i].replace(/,/g, ' ')) + ',' + lat + ',' + lng;
-    function outLink(cls, text) { var o = el('a', cls, text); o.href = kakaoOut; o.target = '_blank'; o.rel = 'noopener'; return o; }
+    var sum = function () {};
     var body = null;
     if (pid) {
       // 지도 위에 덮이는 판. 단추를 다시 누르거나 판 바깥의 어두운 곳을 누르면 닫힌다.
       var scrim = el('div', 'dscrim'), pop = el('div', 'dpop');
-      var info = btn('opt', '콘센트·넓이', function () { openPop(pop.hidden); });
+      // 머리줄 오른쪽 단추: 콘센트 좌석이 있는지와 넓이를 바로 보여 주고, 누르면 판이 열린다.
+      var info = btn('sum', null, function () { openPop(pop.hidden); }), st = el('span', 'st'), stText = el('span');
+      st.appendChild(el('i')); st.appendChild(stText); info.appendChild(st);
+      if (a > 0) info.appendChild(el('span', 'sz', pyeong(a) + '평'));
+      info.appendChild(icon('down'));
+      sum = function () {
+        st.className = 'st' + (outlet[i] === 1 ? ' yes' : outlet[i] === -1 ? ' no' : '');
+        stText.textContent = outlet[i] === 1 ? '콘센트 있어요' : outlet[i] === -1 ? '콘센트 없어요' : '콘센트';
+      };
+      sum();
       var openPop = function (on) { pop.hidden = scrim.hidden = !on; info.setAttribute('aria-pressed', String(on)); };
       info.setAttribute('aria-haspopup', 'dialog');
       scrim.addEventListener('click', function () { openPop(false); });
-      pop.appendChild(dl); pop.appendChild(rec); pop.appendChild(outLink('more', '카카오맵 새 창에서 열기'));
+      pop.appendChild(dl); pop.appendChild(rec);
       var fr = document.createElement('iframe');
       fr.title = D.name[i] + ' 카카오맵'; fr.src = 'https://place.map.kakao.com/' + pid; fr.referrerPolicy = 'no-referrer';
       // 안에 띄운 화면이 이 지도 창 자체를 다른 곳으로 보내지 못하게 한다. 새 창 열기는 허용한다.
@@ -1697,16 +1788,42 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       h.appendChild(info);
       panel.setAttribute('data-embed', '');
     } else {
+      // 카카오맵에 없는 카페: 띄울 화면이 없으므로 이름과 내용을 카드에 바로 적고, 없다는 것만 알린다.
       panel.removeAttribute('data-embed');
       body = el('div', 'scroll');
       var d = el('div', 'detail');
+      d.appendChild(el('h1', null, D.name[i]));
+      d.appendChild(el('p', 'none', '카카오맵에 없는 카페예요.'));
       d.appendChild(dl); d.appendChild(rec);
-      var find = outLink('btn', '카카오맵에서 찾기'); find.appendChild(icon('out')); d.appendChild(find);
       body.appendChild(d);
     }
     if (back) { var bk = btn('ib back', null, back); bk.setAttribute('aria-label', '뒤로'); bk.appendChild(icon('back')); h.appendChild(bk); }
-    h.appendChild(closeBtn());
     panel.appendChild(h); panel.appendChild(body);
+  }
+  // 머리줄을 잡고 아래로 쓸어내리면 카드가 따라 내려가다가, 충분히 내렸거나 빠르게 내렸으면 닫힌다.
+  function sheetDrag(h) {
+    var on = false, y0 = 0, dy = 0, t0 = 0;
+    h.addEventListener('pointerdown', function (e) {
+      if (e.target.closest('button, a')) return;
+      on = true; y0 = e.clientY; dy = 0; t0 = e.timeStamp;
+      try { h.setPointerCapture(e.pointerId); } catch (err) { /* 잡지 못해도 계속한다 */ }
+      panel.classList.remove('rise'); panel.style.transition = 'none';
+    });
+    h.addEventListener('pointermove', function (e) { if (!on) return; dy = Math.max(0, e.clientY - y0); panel.style.transform = 'translateY(' + dy + 'px)'; });
+    function end(e) {
+      if (!on) return;
+      on = false;
+      var fast = dy / Math.max(1, e.timeStamp - t0) > .6;
+      panel.style.transition = 'transform .2s ease-out';
+      if (dy > 110 || (fast && dy > 30)) {
+        panel.style.transform = 'translateY(110%)';
+        setTimeout(function () { closePanel(); panel.style.transition = panel.style.transform = ''; }, 190);
+      } else {
+        panel.style.transform = '';
+        setTimeout(function () { panel.style.transition = ''; }, 210);
+      }
+    }
+    h.addEventListener('pointerup', end); h.addEventListener('pointercancel', end);
   }
 
   // ----- 지도 단추 -----
