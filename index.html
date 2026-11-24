@@ -423,23 +423,20 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 @media (prefers-reduced-motion: reduce) { #toast.xp, #lvup, #lvup * { animation: none !important; } }
 /* 카드의 방문 인증 줄 */
 .xvisit { display: flex; flex-direction: column; gap: 6px; }
-/* 방문 인증 단추: 도장 아이콘, 이름과 보너스, 오른쪽에 받을 XP */
-.xgo { display: flex; align-items: center; gap: 11px; width: 100%; min-height: 54px; padding: 9px 14px 9px 10px; border-radius: 16px; text-align: left; color: #fff; background: linear-gradient(140deg, #0ca678, #20c997 55%, #63e6be); box-shadow: 0 6px 14px rgba(12, 166, 120, .28); }
-.xgo:disabled { opacity: .75; }
-.xgo .xgi { flex: none; width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; background: rgba(255, 255, 255, .22); }
+/* 방문 인증 단추: 앱의 다른 단추처럼 차분하게. 흰 바탕에 보라 테두리, 왼쪽 도장 아이콘, 오른쪽 받을 XP. */
+.xgo { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 50px; padding: 9px 14px; border-radius: 14px; text-align: left; background: var(--surface); border: 1.5px solid var(--pri); color: var(--pri); }
+.xgo:hover { background: color-mix(in srgb, var(--pri) 6%, var(--surface)); }
+.xgo:disabled { opacity: .6; }
+.xgo .xgi { flex: none; display: grid; place-items: center; }
 .xgo .xgi svg.i { width: 20px; height: 20px; }
-.xgo .xgt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.xgo .xgt b { font-size: 15px; font-weight: 800; }
-.xgo .xgb { align-self: flex-start; padding: 2px 8px; border-radius: 999px; background: #ffe066; color: #7a5500; font-size: 11.5px; font-weight: 800; }
+.xgo .xgt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.xgo .xgt b { font-size: 15px; font-weight: 750; color: var(--ink); }
+.xgo .xgb { font-size: 12px; color: var(--ink-3); }
 .xgo .xgb[hidden] { display: none; }
-.xgo .xgx { flex: none; padding: 5px 10px; border-radius: 999px; background: #fff; color: #087f5b; font-size: 13.5px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.xgo .xgx { flex: none; font-size: 14px; font-weight: 750; color: var(--pri); font-variant-numeric: tabular-nums; }
 .xgo .xgx:empty { display: none; }
 /* 투표 단추 줄의 세로 구분선(일반 의자와 없어요 사이) */
 .rec .opts.four .vsep { flex: none; width: 1px; align-self: stretch; margin: 6px 2px; background: var(--line-2); }
-/* 투표 전 받을 XP 칩 */
-.xchips { display: flex; flex-wrap: wrap; gap: 6px; }
-.xchip { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 750; background: color-mix(in srgb, #f76707 12%, var(--surface)); color: #d9480f; }
-.xchip.gold { background: #fff3bf; color: #7a5500; }
 .xgo[hidden] { display: none; }
 .xdone, .xhint { font-size: 12.5px; color: var(--ink-3); }
 .xdone:empty { display: none; }
@@ -3508,30 +3505,21 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       var vIco = el('span', 'xgi'), vTxt = el('span', 'xgt'), vName = el('b'), vXp = el('span', 'xgx'), vBonus = el('span', 'xgb');
       vIco.appendChild(icon('stamp')); vTxt.appendChild(vName); vTxt.appendChild(vBonus);
       vbtn.appendChild(vIco); vbtn.appendChild(vTxt); vbtn.appendChild(vXp);
-      var chip = function (text, cls) { return el('span', 'xchip' + (cls ? ' ' + cls : ''), text); };
       xs = function () {
         var vis = XP.vis[xk], mine = [myO[i], myC[i]], v = votes[i] || [0, 0, 0, 0, 0], today = xpToday(), can = !!vis && signedIn();
         vbtn.hidden = !!vis && vis[1] === today;
         if (!vbtn.disabled) {
-          vName.textContent = vis ? '재방문 인증' : '첫 방문 인증';
+          vName.textContent = vis ? '재방문 인증' : '방문 인증';
           vXp.textContent = '+' + (vis ? 200 : 500) + ' XP';
           var lifeFirst = !vis && signedIn() && !XP.fv;
-          vBonus.textContent = lifeFirst ? '생애 첫 인증 보너스 +1,000 XP' : ''; vBonus.hidden = !lifeFirst;
+          vBonus.textContent = lifeFirst ? '처음 인증하면 +1,000 XP를 더 받아요' : ''; vBonus.hidden = !lifeFirst;
         }
         vdone.textContent = !vis ? '' : vis[1] === today ? '방문 인증 완료 (방문 ' + vis[0] + '번)' : '방문 ' + vis[0] + '번. 오늘은 아직 인증 안 했어요';
         xb.forEach(function (cb) { var on = mine[0] === 1 && (mine[1] & cb[1][2]) !== 0; setBtn(cb[0], on, v[cb[1][3]] + (on ? 1 : 0)); cb[0][0].disabled = !can; });
         setBtn(xno, mine[0] === -1, v[1] + (mine[0] === -1 ? 1 : 0)); xno[0].disabled = !can;
         total.textContent = people(v[0] + v[1] + (mine[0] ? 1 : 0));
-        // 투표 전 안내: 잠겨 있으면 까닭 한 줄, 투표할 수 있으면 받을 XP를 색 칩으로. 투표한 뒤에는 아무것도 없다.
-        xhint.textContent = ''; xhint.className = 'xhint';
-        if (!can) xhint.textContent = '방문 인증을 하면 투표할 수 있어요';
-        else if (!mine[0]) {
-          var firstV = !isAdmin() && !(realVotes[i] || 0);
-          xhint.className = 'xhint xchips';
-          xhint.appendChild(chip('투표하면 +' + fmt((firstV ? 2000 : 1000) + 300) + ' XP', 'main'));
-          if (firstV) xhint.appendChild(chip('첫 콘센트 투표 2배', 'gold'));
-          if (!XP.fo) xhint.appendChild(chip('생애 첫 투표 +1,000 XP', 'gold'));
-        }
+        // 투표 전 안내: 잠겨 있을 때 까닭 한 줄만. 받는 XP는 미리 적지 않고, 투표하는 순간 풍선과 축하 장면으로 보인다.
+        xhint.textContent = !can ? '방문 인증을 하면 투표할 수 있어요' : '';
       };
     }
     function sync() {
