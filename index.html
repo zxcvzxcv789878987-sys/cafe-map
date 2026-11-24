@@ -421,10 +421,25 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .xms span { display: flex; flex-direction: column; align-items: center; padding: 9px 2px 8px; border-radius: 14px; background: var(--surface-2); color: var(--ink-3); font-size: 11px; font-variant-numeric: tabular-nums; }
 .xms span svg.i { width: 15px; height: 15px; margin-bottom: 4px; opacity: .45; }
 .xms span b { font-size: 13.5px; font-weight: 750; color: var(--ink-2); line-height: 1.25; }
-.xms span.got { background: linear-gradient(155deg, #8b7bf2, var(--pri)); color: rgba(255, 255, 255, .88); box-shadow: 0 4px 10px rgba(106, 90, 224, .3); }
+.xms span.got { background: linear-gradient(155deg, var(--pri2, #8b7bf2), var(--pri)); color: rgba(255, 255, 255, .9); box-shadow: 0 4px 10px color-mix(in srgb, var(--pri) 30%, transparent); }
 .xms span.got b { color: #fff; }
 .xms span.got svg.i { opacity: 1; stroke-width: 3; }
-.xms span.next { background: var(--surface); color: var(--pri); box-shadow: 0 0 0 2px var(--pri), 0 0 0 6px rgba(106, 90, 224, .14); }
+.xms span.next { background: var(--surface); color: var(--pri); box-shadow: 0 0 0 2px var(--pri), 0 0 0 6px color-mix(in srgb, var(--pri) 14%, transparent); }
+/* 팝업마다 색을 다르게: 보상 체계는 보라, 방문 인증 보너스는 청록, 투표 보너스는 주황. 안쪽의 칸, 막대, 단추가 모두 이 색을 따른다. */
+.xbox.visit { --pri: #0ca678; --pri2: #38d9a9; }
+.xbox.vote { --pri: #f76707; --pri2: #ffa94d; }
+.xbox { --pri2: #8b7bf2; }
+.xbox { position: relative; overflow: hidden; }
+.xbox::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 6px; background: linear-gradient(90deg, var(--pri2), var(--pri)); }
+.xbox .xhead { display: flex; align-items: center; gap: 10px; }
+.xbadge { flex: none; width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; color: #fff; background: linear-gradient(155deg, var(--pri2), var(--pri)); }
+.xbadge svg.i { width: 20px; height: 20px; }
+/* 메뉴의 세 줄 앞에 붙는 같은 색 아이콘 */
+button.xlink .xbadge { flex: none; width: 28px; height: 28px; border-radius: 9px; margin-right: 10px; }
+button.xlink .xbadge svg.i { width: 16px; height: 16px; opacity: 1; }
+button.xlink .xbadge.visit { --pri: #0ca678; --pri2: #38d9a9; }
+button.xlink .xbadge.vote { --pri: #f76707; --pri2: #ffa94d; }
+button.xlink .xbadge.rw { --pri: #6a5ae0; --pri2: #8b7bf2; }
 .xms span.next b { color: var(--ink); }
 .xms span.next svg.i { opacity: 1; }
 /* 표 위: 지금 몇 곳인지, 다음 보너스가 얼마인지, 거기까지 얼마나 왔는지(칸 하나가 카페 한 곳). */
@@ -508,6 +523,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   <symbol id="i-laptop" viewBox="0 0 24 24"><path d="M5 15.500V7a1.500 1.500 0 0 1 1.500-1.500h11A1.500 1.500 0 0 1 19 7v8.500"/><path d="M2.500 15.500h19l-1.200 2.600a1 1 0 0 1-.900.600H4.600a1 1 0 0 1-.900-.600z"/></symbol>
   <symbol id="i-size" viewBox="0 0 24 24"><path d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.500 4.500 4.500L19 7.500"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 3.500v4M15 3.500v4M6.500 7.500h11v3.500a5.500 5.500 0 0 1-11 0zM12 16.500v4"/></symbol>
   <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5.500" y="10.500" width="13" height="9.500" rx="2"/><path d="M8.500 10.500V8a3.500 3.500 0 0 1 7 0v2.500"/></symbol>
   <symbol id="i-gift" viewBox="0 0 24 24"><path d="M5 10.500h14v9H5zM3.500 7.500h17v3h-17zM12 7.500v12M12 7.500C10.500 4.300 7 4 7 6c0 1.500 2.500 1.500 5 1.500zM12 7.500c1.500-3.200 5-3.500 5-1.500 0 1.500-2.500 1.500-5 1.500z"/></symbol>
   <symbol id="i-locate" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7.500"/><path d="M12 2v2.500M12 19.500V22M2 12h2.500M19.500 12H22"/></symbol>
@@ -2477,7 +2493,8 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       // 창 안의 달성 보너스 두 줄(방문 인증 보너스, 투표 보너스)을 누르면 같은 창이 그 표로 바뀌고, 뒤로를 누르면 돌아온다.
       var openRewards = function (view) {
         var old = $('xinfo'); if (old) old.remove();
-        var o = el('div'), box = el('div', 'xbox');
+        var o = el('div'), box = el('div', 'xbox' + (view ? ' ' + view : ''));
+        var title = function (text, ic) { var hd = el('div', 'xhead'), bd = el('span', 'xbadge'); bd.appendChild(icon(ic)); hd.appendChild(bd); hd.appendChild(el('h2', null, text)); box.appendChild(hd); };
         o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '보상 체계');
         o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
         var row = function (label, sub, xp, got) {
@@ -2514,12 +2531,12 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
           });
         };
         if (view === 'visit' || view === 'vote') {
-          box.appendChild(el('h2', null, view === 'visit' ? '방문 인증 보너스' : '투표 보너스'));
+          title(view === 'visit' ? '방문 인증 보너스' : '투표 보너스', view === 'visit' ? 'pin' : 'plug');
           box.appendChild(el('p', null, view === 'visit' ? '방문 인증한 카페 수가 아래에 닿을 때마다 받아요.' : '콘센트 투표를 한 카페 수가 아래에 닿을 때마다 받아요.'));
           if (view === 'visit') ladder(xnv, xnv, '방문 인증한 카페'); else ladder(XP.mv || 0, xno2, '투표한 카페');
           box.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
         } else {
-          box.appendChild(el('h2', null, '보상 체계'));
+          title('보상 체계', 'spark');
           box.appendChild(el('p', null, '1,000 XP를 모을 때마다 레벨이 1 올라요.'));
           box.appendChild(el('div', 'xgrp', '기본'));
           row('첫 방문 인증', '', 500, false);
@@ -2537,8 +2554,9 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
         o.appendChild(box); document.body.appendChild(o);
       };
       // 메뉴에는 보상 체계 아래에 달성 보너스 두 줄을 바로 둔다. 누르면 각각의 표가 뜬다.
-      [['보상 체계', null], ['방문 인증 보너스', 'visit'], ['투표 보너스', 'vote']].forEach(function (x) {
+      [['보상 체계', null, 'spark', 'rw'], ['방문 인증 보너스', 'visit', 'pin', 'visit'], ['투표 보너스', 'vote', 'plug', 'vote']].forEach(function (x) {
         var rw = btn('xrow xlink', null, function () { openRewards(x[1]); });
+        var bd = el('span', 'xbadge ' + x[3]); bd.appendChild(icon(x[2])); rw.appendChild(bd);
         rw.appendChild(el('span', null, x[0])); rw.appendChild(icon('right'));
         xsec.insertBefore(rw, xsec.lastChild);
       });
