@@ -1576,7 +1576,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     xpGive(items);
   }
   // 로그인하면 계정에 저장된 XP를 받아 온다. 서버의 것이 기준이다.
-  function pullXp() {
+  var xpFirst = false;   // 방금 처음 로그인한 새 계정인가(로그인 확인 창 문구에 쓴다)
+  function pullXp(fromLogin) {
     if (!loginOn || !signedIn()) { XP = xpFresh(); return Promise.resolve(); }
     var local = load(xpKey());
     XP = xpNorm(local);
@@ -1588,10 +1589,11 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
           if (!XP.nick) { XP.nick = randomNick(); xpSave(); } else rankPush();
         }
         // 처음 로그인한 계정: 로그인 XP를 지금 시각으로 기록에 남기고 서버에 올린다.
-        else { XP = xpFresh(); XP.nick = randomNick(); XP.log = [{ t: Date.now(), a: 1000, r: '로그인' }]; xpSave(); }
+        else { XP = xpFresh(); XP.nick = randomNick(); XP.log = [{ t: Date.now(), a: 1000, r: '로그인' }]; xpSave(); xpFirst = true; }
         for (var vk in XP.vis) devClaim(vk);
         if (P.kind === 'menu' || P.kind === 'detail') renderPanel();
-        if (XP_ON && !XP.nickOk) setTimeout(openNickFirst, 400);
+        // 앱을 열 때(로그인 단추가 아닐 때) 닉네임을 아직 안 정했으면 정하기 창. 로그인 단추로 들어오면 로그인 확인 창 뒤에 띄운다.
+        if (!fromLogin && XP_ON && !XP.nickOk) setTimeout(openNickFirst, 400);
       }).catch(function () { /* 서버에 닿지 못하면 이 기기에 적어 둔 것으로 보여 준다 */ });
   }
   function xpBonus(n) { var b = { 3: 1000, 5: 2000, 10: 3000, 15: 4000, 20: 5000, 30: 7000, 40: 8000 }; return b[n] || (n >= 50 && n % 100 === 0 ? 20000 : n >= 50 && n % 10 === 0 ? 10000 : 0); }
@@ -1684,13 +1686,13 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     void x.offsetWidth; x.hidden = false; toastTimer = setTimeout(function () { x.hidden = true; }, 2000);
   }
   // 그림이 든 확인 창: 그림, 제목, 아래 글, 확인 단추. big이면 아래 글을 크게(닉네임).
-  function doneBox(pic, title, sub, big) {
+  function doneBox(pic, title, sub, big, next) {
     var old = $('xinfo'); if (old) old.remove();
     var o = el('div'), box = el('div', 'xbox nick done'), ti = el('div', 'dti');
     o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', title);
     ti.appendChild(fxArt(pic)); box.appendChild(ti); box.appendChild(el('h2', null, title));
     if (sub) box.appendChild(el(big ? 'div' : 'p', big ? 'nkcur' : 'xexp', sub));
-    var ok = btn('btn pri', '확인', function () { o.remove(); }); box.appendChild(ok);
+    var ok = btn('btn pri', '확인', function () { o.remove(); if (next) next(); }); box.appendChild(ok);
     o.appendChild(box); document.body.appendChild(o); setTimeout(function () { if (o.isConnected) ok.focus(); }, 50);
   }
   var REDUCE = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -2100,7 +2102,15 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       idToken = d.idToken; idUntil = Date.now() + (+d.expiresIn - 60) * 1000;
       var then = loginThen; closeLogin();
       // 서버에 있던 내 투표를 먼저 받아 온 다음, 누르려던 투표를 이어서 한다.
-      Promise.all([pull(), pullGone(), pullWant(), pullXp()]).then(function () { toast('로그인했어요'); if (P.kind === 'menu') renderPanel(); if (then) then(); });
+      Promise.all([pull(), pullGone(), pullWant(), pullXp(true)]).then(function () {
+        if (P.kind === 'menu') renderPanel();
+        if (!XP_ON) { toast('로그인했어요'); if (then) then(); return; }
+        var first = xpFirst; xpFirst = false;
+        doneBox('login', first ? '로그인했어요' : '다시 오셨네요', first ? '로그인 보너스 +1,000 XP를 받았어요.' : (XP.nick ? XP.nick + '님, 반가워요.' : ''), false, function () {
+          if (then) then();
+          if (!XP.nickOk) setTimeout(openNickFirst, 200);
+        });
+      });
     }, function () { $('lmsg').textContent = '로그인하지 못했어요. 다시 해 주세요.'; });
   }
   // 계정 삭제: 서버에 있는 내 투표, 폐업 신고, 찜을 모두 지운 다음 계정을 없앤다. 되돌릴 수 없어서 한 번 더 묻는다.
@@ -4056,6 +4066,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         ['그림 시험 페이지', function () { location.href = 'test/fx.html'; }]
       ]],
       ['닉네임', [
+        ['첫 로그인 (로그인 창 뒤 닉네임)', function () { XP.nickOk = 0; doneBox('login', '로그인했어요', '로그인 보너스 +1,000 XP를 받았어요.', false, function () { openNickFirst(); }); }],
+        ['다시 로그인', function () { doneBox('login', '다시 오셨네요', (XP.nick || '시험 쿼카') + '님, 반가워요.', false); }],
         ['첫 로그인 닉네임 정하기', function () { XP.nickOk = 0; openNickFirst(); }],
         ['닉네임 바꾸기', function () { XP.nickOk = 1; XP.nickT = 0; openNick(); }],
         ['6개월 잠김', function () { XP.nickOk = 1; XP.nickT = Date.now(); openNick(); }]
