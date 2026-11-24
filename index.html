@@ -124,6 +124,9 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 .row .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .row .name { font-weight: 650; font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row .meta { font-size: 12.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.row .meta > span + span { margin-left: 9px; }
+.fsec output .onote { display: block; margin-top: 2px; font-size: 12px; font-weight: 500; color: var(--ink-3); }
+.facts dd small.bigmark { color: #6a5ae0; font-weight: 650; }
 .row .tag { flex: none; color: var(--ok); display: grid; }
 .row .tag svg.i { width: 16px; height: 16px; }
 .sec { padding: 12px 16px 4px; font-size: 12px; font-weight: 650; color: var(--ink-3); letter-spacing: .03em; }
@@ -3703,7 +3706,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     if (bl) parts.push(bl);
     if (S.big) parts.push(S.bigPy + '평 이상');
     if (S.outlet) parts.push('콘센트');
-    return parts.join(' · ');
+    return parts.join(', ');
   }
   function resetFilter() { S.cats = {}; S.brands = {}; S.tab = 'all'; S.big = false; S.outlet = false; S.chairs = {}; }
   // 필터 카드의 조건에 더해 찜, 새로 연 카페 칩까지 모두 푼다.
@@ -3798,7 +3801,8 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     if (D.area[i] > 0) bits.push(pyeong(D.area[i]) + '평');
     bits.push(withRegion ? regPath(dongReg[D.dongOf[i]]) : D.dong[D.dongOf[i]][0]);
     var dt = distText(i); if (dt) bits.push(dt);
-    body.appendChild(el('span', 'meta', bits.join(' · ')));
+    // 개업, 넓이, 동, 거리는 점으로 잇지 않고 칸마다 띄어 놓는다.
+    var meta = el('span', 'meta'); bits.forEach(function (x) { meta.appendChild(el('span', null, x)); }); body.appendChild(meta);
     r.appendChild(body);
     if (outlet[i] === 1) { var t = el('span', 'tag'); t.appendChild(icon('laptop')); t.title = '콘센트 좌석이 있다고 기록된 곳'; r.appendChild(t); }
     r.addEventListener('click', function () { selectCafe(i, true, from); });
@@ -3809,7 +3813,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   var askNear = false;     // 위치를 모르는 채로 가까운 순을 눌렀는가
   function renderList() {
     var wantOnly = S.seen === 'want';
-    var h = head(wantOnly ? '찜한 곳' : S.reg >= 0 ? rName[S.reg] : '이 화면', fmt(vc) + '곳' + (S.fresh ? ' · 오픈 1년 이하' : '')), sc = el('div', 'scroll'), k;
+    var h = head(wantOnly ? '찜한 곳' : S.reg >= 0 ? rName[S.reg] : '이 화면', (S.fresh ? '새로 연 카페 ' : '') + fmt(vc) + '곳'), sc = el('div', 'scroll'), k;
     if (vc) {
       var sort = el('div', 'sort');
       // 가까운 순은 내 위치를 알아야 쓸 수 있다. 위치를 모르면 넓은 순으로 보여 주고, 가까운 순을 누르면 위치를 허용해 달라고 알린다.
@@ -3980,7 +3984,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       if (S.big) {
         var a = el('div', 'sub'), out = el('output'), rg = el('input');
         rg.type = 'range'; rg.min = 30; rg.max = 300; rg.step = 10; rg.value = S.bigPy; rg.id = 'bigPy'; rg.setAttribute('aria-label', '대형카페 기준 평수');
-        var lab = function () { out.textContent = S.bigPy + '평 이상'; out.appendChild(el('small', null, Math.round(S.bigPy * PYEONG) + '㎡ · 넓이를 모르는 카페는 빠져요')); };
+        var lab = function () { out.textContent = S.bigPy + '평 이상'; out.appendChild(el('small', null, Math.round(S.bigPy * PYEONG) + '㎡')); out.appendChild(el('span', 'onote', '넓이를 모르는 카페는 빠져요')); };
         rg.addEventListener('input', function () { S.bigPy = +rg.value; lab(); apply(); });
         lab(); a.appendChild(out); a.appendChild(rg); lap.appendChild(a);
       }
@@ -4108,7 +4112,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     go.appendChild(icon('route')); go.appendChild(document.createTextNode('길찾기'));
     f1.appendChild(go);
     var f2 = fact('넓이');
-    if (a > 0) { f2.appendChild(el('b', null, pyeong(a) + '평')); f2.appendChild(el('small', null, fmt(a) + '㎡' + (a >= S.bigPy * PYEONG ? ' · 대형' : ''))); } else f2.appendChild(el('small', null, '자료 없음'));
+    if (a > 0) { f2.appendChild(el('b', null, pyeong(a) + '평')); f2.appendChild(el('small', null, fmt(a) + '㎡')); if (a >= S.bigPy * PYEONG) f2.appendChild(el('small', 'bigmark', '대형')); } else f2.appendChild(el('small', null, '자료 없음'));
     // 문 연 달. 넓이 아랫줄에 적는다. 인허가 자료에서 같은 가게를 찾은 카페만 안다. 모르면 적지 않는다.
     var ym = D.since ? D.since[i] : 0;
     if (ym) { var f3 = fact('개업'), ago = monthsAgo(i); f3.appendChild(el('b', null, Math.floor(ym / 100) + '년 ' + (ym % 100) + '월')); if (ago < 3) { var om = btn('omark', null, function () { toast('인허가를 받은 달이에요. 아직 문을 열기 전일 수 있어요'); }); om.appendChild(icon('clock')); om.appendChild(document.createTextNode('준비 중일 수 있어요')); f3.appendChild(om); } else if (ago < 12) { var nw = el('small', 'newmark'); nw.appendChild(icon('spark')); nw.appendChild(document.createTextNode('새로 열었어요')); f3.appendChild(nw); } }
