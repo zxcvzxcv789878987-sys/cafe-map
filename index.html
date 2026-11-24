@@ -3448,18 +3448,12 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
           title(view === 'dong' ? '새 동네 보너스' : '콘센트 보너스', 'pic:' + BONUS_PIC[view]);
           box.appendChild(el('p', null, view === 'dong' ? '처음 기록한 동(성수1가1동, 서교동처럼)의 수예요. 3곳, 5곳, 10곳처럼 아래 수가 될 때마다 보너스를 받아요.' : '콘센트를 기록한 카페 수예요. 3곳, 5곳, 10곳처럼 아래 수가 될 때마다 보너스를 받아요.'));
           if (view === 'dong') ladder(XP.md || 0, xpCount(XP.dong), '기록한 동네'); else ladder(XP.mv || 0, xno2, '기록한 카페');
-          // 기록 보너스 창: "N곳 중" 새로 연 카페와 오랜만의 기록 수, 그리고 기록한 카페 목록(초록, 파랑 표시)
+          // 콘센트 보너스 창: 기록한 카페 목록(새로 연 카페는 초록, 오랜만의 기록은 파랑 표시)
           if (view === 'vote' && xno2) {
             var tagOf = {};
             (XP.log || []).forEach(function (e) { var r = xpName(e.r); if (e.a > 0 && e.c && (r === '새로 연 카페' || r === '오랜만의 기록')) (tagOf[e.c] || (tagOf[e.c] = {}))[r] = 1; });
-            var sub = el('div', 'xsub');
-            sub.appendChild(el('div', 'of', xno2 + '곳 중'));
-            [['새로 연 카페', xpLogCount('새로 연 카페')], ['오랜만의 기록', xpLogCount('오랜만의 기록')]].forEach(function (x) {
-              var r4 = el('div', 'r'), nb = el('b', null, String(x[1])); nb.appendChild(el('small', null, '곳'));
-              r4.appendChild(el('span', null, x[0])); r4.appendChild(nb); sub.appendChild(r4);
-            });
+            // 기록한 카페 목록만: 카페 이름과, 새로 연 카페, 오랜만의 기록이었던 곳의 표시(사용자: "N곳 중" 묶음은 빼기)
             box.appendChild(el('div', 'xgrp', '기록한 카페'));
-            box.appendChild(sub);
             // 목록: 기록한 차례의 최근 것부터(XP 기록에 남은 것), 기록에 없는 옛것은 뒤에
             var names = [], seenN = {}, ix4 = cidIndex();
             (XP.log || []).slice().reverse().forEach(function (e) { var r = xpName(e.r); if (e.a > 0 && e.c && (r === '콘센트 기록' || r === '첫 콘센트 기록') && !seenN[e.c]) { seenN[e.c] = 1; names.push(e.c); } });
