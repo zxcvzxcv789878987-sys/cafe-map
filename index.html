@@ -470,28 +470,14 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .xnote { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-3); }
 /* 메뉴의 레벨 칸(누르면 XP 기록) */
 button.xlvbtn { width: 100%; display: flex; flex-direction: row; align-items: center; gap: 10px; text-align: left; padding: 4px 0; }
-/* 메뉴의 레벨 밑 칸: 보너스가 있는 둘은 큰 칸(막대와 "4/5"), 없는 둘은 아래 작은 줄. 흰 카드를 가는 선으로 나눈다 */
-.xgoal { display: grid; grid-template-columns: 1fr 1fr; margin: 6px 0 0; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); overflow: hidden; }
-.xgoal button { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; padding: 13px 14px 13px; text-align: left; background: none; border-radius: 0; color: inherit; }
-.xgoal button + button::before { content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 1px; background: var(--line); }
-.xgoal button:active { background: var(--surface-2); }
-.xgoal .vote { --c: #f76707; }
-.xgoal .dong { --c: #0ca678; }
-.xgoal .lb { font-size: 12px; font-weight: 650; color: var(--ink-2); }
-.xgoal b { font-size: 22px; font-weight: 800; line-height: 1.15; font-variant-numeric: tabular-nums; }
-.xgoal b small { margin-left: 1px; font-size: 12.5px; font-weight: 650; color: var(--ink-2); }
-.xgoal .pr { align-self: stretch; display: flex; align-items: center; gap: 8px; }
-.xgoal .pb { flex: 1; height: 6px; border-radius: 99px; background: color-mix(in srgb, var(--c) 18%, var(--surface)); overflow: hidden; }
-.xgoal .pb i { display: block; height: 100%; border-radius: 99px; background: var(--c); }
-.xgoal .of { flex: none; font-size: 12px; font-weight: 700; color: var(--ink-2); font-variant-numeric: tabular-nums; }
-.xmore { display: grid; grid-template-columns: 1fr 1fr; margin: 8px 0 8px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow: hidden; }
-.xmore button { position: relative; display: flex; justify-content: space-between; align-items: baseline; gap: 6px; padding: 11px 14px; background: none; border-radius: 0; color: inherit; }
-.xmore button + button::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 1px; background: var(--line); }
-.xmore button:active { background: var(--surface-2); }
-.xmore span { font-size: 12.5px; color: var(--ink-2); white-space: nowrap; }
-.xmore b { font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
-.xmore b small { margin-left: 1px; font-size: 11.5px; font-weight: 650; color: var(--ink-2); }
-/* 랭킹에서 누른 사람 창의 네 칸: 흰 카드 하나를 가는 선으로 나눈다 */
+/* 메뉴의 레벨 밑 네 칸: 흰 카드 하나를 가는 선으로 나눈다. 보너스가 있는 두 칸에만 막대와 "4/5" */
+.xstat .pr { display: flex; align-items: center; gap: 5px; width: calc(100% - 16px); margin-top: 3px; }
+.xstat .pb { flex: 1; height: 4px; border-radius: 99px; background: color-mix(in srgb, var(--c) 18%, var(--surface)); overflow: hidden; }
+.xstat .pb i { display: block; height: 100%; border-radius: 99px; background: var(--c); }
+.xstat span.of { flex: none; font-size: 10.5px; font-weight: 700; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.xstat .g.vote { --c: #f76707; }
+.xstat .g.dong { --c: #0ca678; }
+/* 네 칸 상자(메뉴의 레벨 밑, 랭킹에서 누른 사람 창): 흰 카드 하나를 가는 선으로 나눈다 */
 .xstat { display: grid; grid-template-columns: repeat(4, 1fr); margin: 6px 0 8px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); overflow: hidden; }
 .xstat button { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 13px 2px 12px; background: none; border-radius: 0; }
 .xstat button + button::before { content: ""; position: absolute; left: 0; top: 16px; bottom: 16px; width: 1px; background: var(--line); }
@@ -3013,30 +2999,27 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       xsec.appendChild(xl);
       if (signedIn()) {
         var cnt = function (label) { return (XP.log || []).filter(function (e) { return xpSame(e.r, label) && e.a > 0; }).length; };
-        // 보너스가 있는 둘: 큰 칸에 지금 수, 다음 보너스까지의 막대, 오른쪽 끝에 "4/5". 누르면 그 보너스 표가 뜬다.
-        var goals = el('div', 'xgoal');
-        [['기록한 카페', xpCount(XP.vote), 'vote'], ['새 동네', xpCount(XP.dong), 'dong']].forEach(function (x) {
-          var next = x[1] + 1; while (!xpBonus(next)) next++;
-          var b = btn(x[2], null, function () { openRewards(x[2]); });
-          b.appendChild(el('span', 'lb', x[0]));
-          var num = el('b', null, String(x[1])); num.appendChild(el('small', null, '곳')); b.appendChild(num);
-          var pr = el('span', 'pr'), pb = el('span', 'pb'), fill = el('i');
-          fill.style.width = Math.round(x[1] / next * 100) + '%'; pb.appendChild(fill);
-          pr.appendChild(pb); pr.appendChild(el('span', 'of', x[1] + '/' + next)); b.appendChild(pr);
-          goals.appendChild(b);
-        });
-        xsec.appendChild(goals);
-        // 보너스가 없는 둘: 아래 작은 줄. 누르면 받은 곳 목록(돌아갈 보상 체계 창이 없으니 닫기만).
-        var more = el('div', 'xmore');
-        [['새로 연 카페', cnt('새로 연 카페')], ['오랜만의 기록', cnt('오랜만의 기록')]].forEach(function (x) {
-          var b = btn(null, null, function () {
-            openRewards('list:' + x[0]);
+        // 네 칸을 흰 상자 하나에. 보너스가 있는 기록한 카페와 새 동네에는 다음 보너스까지의 막대와 오른쪽 끝 "4/5"를 붙이고,
+        // 누르면 그 보너스 표가 뜬다. 보너스가 없는 둘은 숫자만, 누르면 받은 곳 목록(돌아갈 보상 체계 창이 없으니 닫기만).
+        var stats = el('div', 'xstat');
+        [['기록한 카페', xpCount(XP.vote), 'vote'], ['새 동네', xpCount(XP.dong), 'dong'], ['새로 연 카페', cnt('새로 연 카페'), 'list:새로 연 카페'], ['오랜만의 기록', cnt('오랜만의 기록'), 'list:오랜만의 기록']].forEach(function (x) {
+          var goal = x[2] === 'vote' || x[2] === 'dong';
+          var b = btn(goal ? 'g ' + x[2] : null, null, function () {
+            openRewards(x[2]);
+            if (goal) return;
             var t = document.querySelector('#xinfo .two'); if (t && t.children.length === 2) { var keep = t.lastChild; t.parentNode.replaceChild(keep, t); }
           });
           var num = el('b', null, String(x[1])); num.appendChild(el('small', null, '곳'));
-          b.appendChild(el('span', null, x[0])); b.appendChild(num); more.appendChild(b);
+          b.appendChild(num); b.appendChild(el('span', null, x[0]));
+          if (goal) {
+            var next = x[1] + 1; while (!xpBonus(next)) next++;
+            var pr = el('span', 'pr'), pb = el('span', 'pb'), fill = el('i');
+            fill.style.width = Math.round(x[1] / next * 100) + '%'; pb.appendChild(fill);
+            pr.appendChild(pb); pr.appendChild(el('span', 'of', x[1] + '/' + next)); b.appendChild(pr);
+          }
+          stats.appendChild(b);
         });
-        xsec.appendChild(more);
+        xsec.appendChild(stats);
       }
       if (XP_DEV) xsec.appendChild(toggleRow('거리 확인 (내 컴퓨터 시험용)', load('cafemap.nofar') !== 1, function (v) { save('cafemap.nofar', v ? 0 : 1); }));
       xsec.appendChild(el('span', 'xend'));
@@ -3140,8 +3123,8 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
         }
         o.appendChild(box); document.body.appendChild(o);
       };
-      // 메뉴에는 보상 체계 줄을 둔다. 기록 보너스, 동네 보너스 표는 위의 큰 칸을 누르면 뜬다.
-      [['보상 체계', null, 'trophy', 'rw']].forEach(function (x) {
+      // 메뉴에는 보상 체계 아래에 달성 보너스 두 줄을 바로 둔다. 누르면 각각의 표가 뜬다.
+      [['보상 체계', null, 'trophy', 'rw'], ['기록 보너스', 'vote', 'plug', 'vote'], ['동네 보너스', 'dong', 'map', 'visit']].forEach(function (x) {
         var rw = btn('xrow xlink', null, function () { openRewards(x[1]); });
         var bd = el('span', 'xbadge ' + x[3]); bd.appendChild(icon(x[2])); rw.appendChild(bd);
         rw.appendChild(el('span', null, x[0])); rw.appendChild(icon('right'));
