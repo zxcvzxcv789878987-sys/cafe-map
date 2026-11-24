@@ -402,6 +402,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 #celeb { position: fixed; inset: 0; z-index: 88; display: grid; place-items: center; background: rgba(15, 20, 30, .2); animation: lvFade .2s ease; --c1: #0ca678; --c2: #63e6be; }
 #celeb.vote { --c1: #f76707; --c2: #ffa94d; }
 #celeb.goal { --c1: #e8a200; --c2: #ffd43b; }
+#celeb.fresh { --c1: #2b8a3e; --c2: #69db7c; }
+#celeb.old { --c1: #1c7ed6; --c2: #74c0fc; }
 #celeb.out { opacity: 0; transition: opacity .2s ease; }
 #celeb .cc { position: relative; width: min(256px, 74vw); padding: 26px 20px 22px; border-radius: 22px; background: var(--surface); box-shadow: 0 12px 32px rgba(0, 0, 0, .16); display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; animation: ccPop .35s cubic-bezier(.2, .9, .3, 1.25); }
 #celeb .md { position: relative; width: 60px; height: 60px; border-radius: 18px; display: grid; place-items: center; color: var(--c1); background: color-mix(in srgb, var(--c1) 13%, var(--surface)); animation: mdPop .45s .05s cubic-bezier(.2, .9, .3, 1.5) both; }
@@ -479,6 +481,13 @@ button.xlvbtn { width: 100%; display: flex; flex-direction: row; align-items: ce
 .xstat.x4b .cols button + button::before { top: 9px; bottom: 13px; }
 .xstat.x4b .cols b { font-size: 17px; }
 .xstat.x4b .cols span { font-size: 11px; }
+.xstat.x4b .cols .pr { display: flex; align-items: center; gap: 4px; width: calc(100% - 18px); margin-top: 3px; }
+.xstat.x4b .cols .pb { flex: 1; height: 3px; border-radius: 99px; background: color-mix(in srgb, var(--c) 18%, var(--surface)); overflow: hidden; }
+.xstat.x4b .cols .pb i { display: block; height: 100%; border-radius: 99px; background: var(--c); }
+.xstat.x4b .cols span.of { flex: none; font-size: 10px; font-weight: 700; color: var(--ink-2); }
+.xstat.x4b .cols .dong { --c: #0ca678; }
+.xstat.x4b .cols .newb { --c: #2b8a3e; }
+.xstat.x4b .cols .oldb { --c: #1c7ed6; }
 /* 기록 보너스 창: "N곳 중" 묶음(왼쪽 세로줄)과 목록 표시(초록 새로 연 카페, 파랑 오랜만의 기록) */
 .xsub { display: flex; flex-direction: column; gap: 2px; margin: 4px 0 2px 2px; padding: 2px 0 2px 12px; border-left: 2px solid var(--line); }
 .xsub .of { font-size: 12px; font-weight: 700; color: var(--ink-3); }
@@ -546,6 +555,8 @@ button.xlink.xrow > span small { display: inline-block; margin-left: 7px; paddin
 /* 팝업마다 색을 다르게: 보상 체계는 보라, 방문 인증 보너스는 청록, 투표 보너스는 주황. 안쪽의 칸, 막대, 단추가 모두 이 색을 따른다. */
 .xbox.visit, .xbox.dong { --pri: #0ca678; --pri2: #38d9a9; }
 .xbox.vote { --pri: #f76707; --pri2: #ffa94d; }
+.xbox.newb { --pri: #2b8a3e; --pri2: #69db7c; }
+.xbox.oldb { --pri: #1c7ed6; --pri2: #74c0fc; }
 .xbox { --pri2: #8b7bf2; }
 .xbox { position: relative; overflow: hidden; }
 /* 팝업은 색 띠 없이 흰 바탕. 아래 큰 단추는 팝업 색과 상관없이 앱 기본 보라. */
@@ -558,6 +569,8 @@ button.xlink .xbadge { flex: none; width: 30px; height: 30px; border-radius: 9px
 button.xlink .xbadge svg.i { width: 16px; height: 16px; opacity: 1; }
 button.xlink .xbadge.visit { --pri: #0ca678; --pri2: #38d9a9; }
 button.xlink .xbadge.vote { --pri: #f76707; --pri2: #ffa94d; }
+button.xlink .xbadge.newb { --pri: #2b8a3e; --pri2: #69db7c; }
+button.xlink .xbadge.oldb { --pri: #1c7ed6; --pri2: #74c0fc; }
 button.xlink .xbadge.rw { --pri: #6a5ae0; --pri2: #8b7bf2; }
 button.xlink .xbadge.bug { --pri: #e03131; --pri2: #ff8787; }
 button.xlink .xbadge.rank, .xbox.rank { --pri: #d6336c; --pri2: #f783ac; }
@@ -1440,7 +1453,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     for (var k = 0; k < 20; k++) { var nn = pk(NICK_MOODS) + ' ' + pk(NICK_ANIMALS); if (Array.from(nn).length <= 12) return nn; }
     return '즐거운 쿼카';
   }
-  function xpFresh() { return { xp: 1000, vis: {}, vote: {}, dong: {}, fv: 0, fo: 0, mv: 0, md: 0 }; }
+  function xpFresh() { return { xp: 1000, vis: {}, vote: {}, dong: {}, fv: 0, fo: 0, mv: 0, md: 0, mo: 0, mr: 0 }; }
   function xpKey() { return who && who.u ? 'cafemap.xp.' + who.u : ''; }
   function xpNorm(x) { x = x || xpFresh(); x.vis = x.vis || {}; x.vote = x.vote || {}; x.dong = x.dong || {}; if (typeof x.xp !== 'number') x.xp = 1000; return x; }
   var XP = xpNorm(who && who.u ? load('cafemap.xp.' + who.u) : null);
@@ -1454,7 +1467,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   }
   function xpPush() {
     if (!loginOn || !signedIn()) return;
-    var body = { xp: XP.xp, vis: XP.vis, vote: XP.vote, dong: XP.dong, fv: XP.fv || 0, fo: XP.fo || 0, mv: XP.mv || 0, md: XP.md || 0, log: XP.log || [], t: { '.sv': 'timestamp' } };
+    var body = { xp: XP.xp, vis: XP.vis, vote: XP.vote, dong: XP.dong, fv: XP.fv || 0, fo: XP.fo || 0, mv: XP.mv || 0, md: XP.md || 0, mo: XP.mo || 0, mr: XP.mr || 0, log: XP.log || [], t: { '.sv': 'timestamp' } };
     if (XP.nick) body.nick = XP.nick;
     if (XP.nickT) body.nickT = XP.nickT;
     if (XP.nickOk) body.nickOk = 1;
@@ -1490,6 +1503,8 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     }
     if (XP.fo) add(1000, '생애 첫 기록');
     for (n = 1; n <= (XP.mv || 0); n++) if (xpBonus(n)) add(xpBonus(n), '기록한 카페 ' + n + '곳 달성');
+    for (n = 1; n <= (XP.mo || 0); n++) if (xpBonus(n)) add(xpBonus(n), '새로 연 카페 ' + n + '곳 달성');
+    for (n = 1; n <= (XP.mr || 0); n++) if (xpBonus(n)) add(xpBonus(n), '오랜만의 기록 ' + n + '곳 달성');
     sum = out.reduce(function (s2, e) { return s2 + e.a; }, 0);
     if (sum !== XP.xp) add(XP.xp - sum, '그 밖의 조정');
     return out;
@@ -1627,9 +1642,10 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     var old = $('celeb'); if (old) old.remove();
     var o = el('div'), conf = el('div', 'cf'), card = el('div', 'cc'), medal = el('div', 'md lt'), done = false;
     var goal = /달성$/.test(it[1]), dong = /^동네/.test(it[1]);
-    var kind = goal ? (dong ? 'visit' : 'goal') : 'vote', pic = goal ? (dong ? 'towns' : 'stampfull') : 'stamp';
+    var fresh = /^새로 연 카페/.test(it[1]), old = /^오랜만의 기록/.test(it[1]);
+    var kind = fresh ? 'fresh' : old ? 'old' : goal ? (dong ? 'visit' : 'goal') : 'vote', pic = fresh ? 'shop' : old ? 'cal' : goal ? (dong ? 'towns' : 'stampfull') : 'stamp';
     o.id = 'celeb'; o.className = kind; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', it[1]);
-    medal.appendChild(fxArt(pic)); card.appendChild(medal);
+    var art = fxArt(pic); art.classList.add('keep'); medal.appendChild(art); card.appendChild(medal);
     card.appendChild(el('div', 'ct', goal ? '보너스 달성' : '처음이에요'));
     card.appendChild(el('div', 'cn', it[1]));
     card.appendChild(el('div', 'cx', '+' + fmt(it[0]) + ' XP'));
@@ -1754,6 +1770,16 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   function staleCafe(i) { var t = lastVote(i); return t > 0 && Date.now() - t > HALF_YEAR; }
   // o: 1 자리 단추(bit가 그 자리), -1 없어요. 처음 답을 고를 때 XP를 받고, 답을 다 지우면 그 카페에서 받은 XP를 돌려놓는다.
   // 새 동네 보너스는 동네마다 한 번이라 취소해도 돌려놓지 않는다.
+  // 새로 연 카페, 오랜만의 기록 보너스: 이번에 받는 것까지 센 수가 표의 칸에 닿으면 보너스를 더한다(놓친 칸도 같이).
+  function xpMoreBonus(items) {
+    [['새로 연 카페', 'mo'], ['오랜만의 기록', 'mr']].forEach(function (x) {
+      var got = items.filter(function (it) { return it[1] === x[0]; }).length, n, k, b;
+      if (!got) return;
+      n = xpLogCount(x[0]) + got;
+      for (k = (XP[x[1]] || 0) + 1; k <= n; k++) { b = xpBonus(k); if (b) items.push([b, x[0] + ' ' + k + '곳 달성']); }
+      if (n > (XP[x[1]] || 0)) XP[x[1]] = n;
+    });
+  }
   // again: 오랜만에 다시 기록(내 옛 기록을 새 답으로 바꾼다). 옛 기록에서 받은 XP는 그대로 두고 이번 것을 더한다.
   function xpVote(i, o, bit, again) {
     var k = cidOf(i), legacy = !XP.vote[k] && !!myO[i], cur = XP.vote[k] || (myO[i] ? [myO[i], myC[i], 0] : [0, 0, 0]), had = cur[0] !== 0 && !legacy, amt, n, b;
@@ -1761,6 +1787,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       var nm0 = D.name[i], add = [[1000, '콘센트 기록', nm0], [300, '콘센트 좌석 기록', nm0], [500, '오랜만의 기록', nm0]];
       cur = o === -1 ? [-1, 0, cur[2] || 0] : [1, bit, cur[2] || 0];
       cur[2] += 1800; XP.vote[k] = cur;
+      xpMoreBonus(add);
       xpGive(add);
       return;
     }
@@ -1782,6 +1809,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       if (!XP.fo) { XP.fo = 1; items.push([1000, '생애 첫 기록']); }
       n = xpCount(XP.vote); b = n > (XP.mv || 0) ? xpBonus(n) : 0;
       if (b) { XP.mv = n; items.push([b, '기록한 카페 ' + n + '곳 달성']); }
+      xpMoreBonus(items);
       xpGive(items);
     } else if (!cur[0] && had) {
       amt = cur[2] || 0; delete XP.vote[k];
@@ -3264,13 +3292,13 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
         stats.appendChild(vb);
         var grp = el('div', 'grp'), cols = el('div', 'cols');
         grp.appendChild(el('div', 'hd', nv0 + '곳 중'));
-        [['새 동네', xpCount(XP.dong), 'dong'], ['새로 연 카페', cnt('새로 연 카페'), 'list:새로 연 카페'], ['오랜만의 기록', cnt('오랜만의 기록'), 'list:오랜만의 기록']].forEach(function (x) {
-          var b = btn(null, null, function () {
-            openRewards(x[2]);
-            if (x[2] === 'dong') return;
-            var t = document.querySelector('#xinfo .two'); if (t && t.children.length === 2) { var keep = t.lastChild; t.parentNode.replaceChild(keep, t); }
-          });
-          b.appendChild(el('b', null, String(x[1]))); b.appendChild(el('span', null, x[0])); cols.appendChild(b);
+        [['새 동네', xpCount(XP.dong), 'dong'], ['새로 연 카페', cnt('새로 연 카페'), 'newb'], ['오랜만의 기록', cnt('오랜만의 기록'), 'oldb']].forEach(function (x) {
+          var b = btn(x[2], null, function () { openRewards(x[2]); }), nx = x[1] + 1;
+          while (!xpBonus(nx)) nx++;
+          b.appendChild(el('b', null, String(x[1]))); b.appendChild(el('span', null, x[0]));
+          var pr = el('span', 'pr'), pb = el('span', 'pb'), fi = el('i');
+          fi.style.width = Math.round(x[1] / nx * 100) + '%'; pb.appendChild(fi); pr.appendChild(pb); pr.appendChild(el('span', 'of', x[1] + '/' + nx)); b.appendChild(pr);
+          cols.appendChild(b);
         });
         grp.appendChild(cols); stats.appendChild(grp);
         xsec.appendChild(stats);
@@ -3347,6 +3375,24 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
           two2.appendChild(btn('btn', '뒤로', function () { openRewards(); }));
           two2.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
           box.appendChild(two2);
+        } else if (view === 'newb' || view === 'oldb') {
+          var lb = view === 'newb' ? '새로 연 카페' : '오랜만의 기록';
+          title(lb + ' 보너스', view === 'newb' ? 'spark' : 'clock');
+          box.appendChild(el('p', null, view === 'newb' ? '새로 연 카페에 기록한 수가 아래에 닿을 때마다 받아요.' : '오랜만의 기록을 받은 수가 아래에 닿을 때마다 받아요.'));
+          ladder(XP[view === 'newb' ? 'mo' : 'mr'] || 0, xpLogCount(lb), lb);
+          var got6 = listOf(lb);
+          if (got6.length) {
+            box.appendChild(el('div', 'xgrp', lb));
+            var bl6 = el('div', 'xll');
+            got6.forEach(function (e) {
+              var r6 = el('div', 'xli'), rt6 = el('span', 'rt');
+              r6.appendChild(el('span', 'rs', e.c || ''));
+              if (e.t) { var d6 = new Date(e.t); rt6.appendChild(el('small', null, (d6.getMonth() + 1) + '월 ' + d6.getDate() + '일')); }
+              r6.appendChild(rt6); bl6.appendChild(r6);
+            });
+            box.appendChild(bl6);
+          }
+          box.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
         } else if (view === 'dong' || view === 'vote') {
           title(view === 'dong' ? '동네 보너스' : '기록 보너스', view === 'dong' ? 'map' : 'plug');
           box.appendChild(el('p', null, view === 'dong' ? '기록한 동네 수가 아래에 닿을 때마다 받아요.' : '콘센트를 기록한 카페 수가 아래에 닿을 때마다 받아요.'));
@@ -3408,7 +3454,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
         o.appendChild(box); document.body.appendChild(o);
       };
       // 메뉴에는 보상 체계 아래에 달성 보너스 두 줄을 바로 둔다. 누르면 각각의 표가 뜬다.
-      [['보상 체계', null, 'trophy', 'rw'], ['기록 보너스', 'vote', 'plug', 'vote'], ['동네 보너스', 'dong', 'map', 'visit']].forEach(function (x) {
+      [['보상 체계', null, 'trophy', 'rw'], ['기록 보너스', 'vote', 'plug', 'vote'], ['동네 보너스', 'dong', 'map', 'visit'], ['새로 연 카페 보너스', 'newb', 'spark', 'newb'], ['오랜만의 기록 보너스', 'oldb', 'clock', 'oldb']].forEach(function (x) {
         var rw = btn('xrow xlink', null, function () { openRewards(x[1]); });
         var bd = el('span', 'xbadge ' + x[3]); bd.appendChild(icon(x[2])); rw.appendChild(bd);
         rw.appendChild(el('span', null, x[0])); rw.appendChild(icon('right'));
@@ -3918,6 +3964,8 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
         ['생애 첫 기록 축하', function () { xpCelebrate([1000, '생애 첫 기록'], function () {}); }],
         ['기록 보너스 달성', function () { xpCelebrate([1000, '기록한 카페 3곳 달성'], function () {}); }],
         ['동네 보너스 달성', function () { xpCelebrate([1000, '동네 3곳 달성'], function () {}); }],
+        ['새로 연 카페 보너스 달성', function () { xpCelebrate([1000, '새로 연 카페 3곳 달성'], function () {}); }],
+        ['오랜만의 기록 보너스 달성', function () { xpCelebrate([1000, '오랜만의 기록 3곳 달성'], function () {}); }],
         ['레벨 업', function () { xpLevelUp(6, 9, [[2000, '첫 콘센트 기록'], [300, '콘센트 좌석 기록'], [500, '새로 연 카페'], [1000, '기록한 카페 5곳 달성']]); }],
         ['XP 알림 그림 넷', function () { xpGive([[500, '새 동네', '성수1가1동'], [500, '새로 연 카페', '시험 카페'], [1000, '콘센트 기록', '시험 카페'], [500, '오랜만의 기록', '시험 카페']]); }],
         ['찜 알림', function () { fxToast('latte', '찜했어요'); }],
