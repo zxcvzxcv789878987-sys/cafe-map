@@ -201,8 +201,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .facts dd .k2 { color: var(--ink-3); font-size: 13px; margin-left: 8px; }
 .facts dd small.newmark { display: inline-flex; align-items: center; gap: 3px; color: #2b9a41; font-weight: 650; }
 .facts dd small.newmark svg.i { width: 13px; height: 13px; fill: currentColor; }
-/* 준비 중일 수 있어요: 새로 열었어요와 같은 모양의 주황 글씨. 누르면 설명이 잠깐 뜬다. */
-.facts dd .omark { display: inline-flex; align-items: center; gap: 3px; padding: 0; background: none; color: #e8590c; font-size: 12.5px; font-weight: 650; }
+/* 준비 중일 수 있어요: 새로 열었어요와 같은 모양의 분홍 글씨. 누르면 설명이 잠깐 뜬다. */
+.facts dd .omark { display: inline-flex; align-items: center; gap: 3px; padding: 0; background: none; color: #d6336c; font-size: 12.5px; font-weight: 650; }
 .facts dd .omark svg.i { width: 13px; height: 13px; }
 /* 카드 맨 아래에 붙어 있는 단추 줄(필터의 적용하기) */
 .pfoot { flex: none; padding: 10px 14px calc(12px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); background: var(--surface); }
@@ -1275,6 +1275,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     reg: -1,             // 고른 지역 칸. -1이면 전국.
     big: !!saved.big, bigPy: saved.bigPy || 100,
     outlet: !!saved.outlet,   // 콘센트 좌석이 있다고 기록한 곳만 보기
+    stale: !!saved.stale,     // 마지막 기록이 6개월 지난 곳만 보기(다시 기록하면 오랜만의 기록)
     chairs: {},               // 그 자리 의자 종류로 더 좁히기. n 일반 의자, w 벽면 고정 의자, s 스탠드형 의자
     sort: saved.sort === 'size' ? 'size' : 'near',
     seen: saved.seen === 'want' ? 'want' : 'all',   // 찜한 곳만 보기: all 전부, want 찜한 곳만
@@ -1725,18 +1726,34 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   }
   // 이 카페에 다른 사람이 마지막으로 투표한 때(운영자 투표도 넣는다). 투표가 없으면 0.
   function lastOtherVote(i) { var t = 0; (voters[i] || []).forEach(function (x) { if (!x.me && x.t > t) t = x.t; }); return t; }
+  // 이 카페의 마지막 기록 때(나 포함)와 내 기록 때. 기록이 없으면 0.
+  var HALF_YEAR = 180 * 86400000;
+  function lastVote(i) { var t = 0; (voters[i] || []).forEach(function (x) { if (x.t > t) t = x.t; }); return t; }
+  function myVoteT(i) { var t = 0; (voters[i] || []).forEach(function (x) { if (x.me) t = x.t; }); return t; }
+  // 다시 기록할 수 있는가: 내 기록이 있고, 그것이 이 카페의 마지막 기록이며, 6개월이 지났다.
+  function canRevote(i) { var m = myVoteT(i); return !!myO[i] && m > 0 && m >= lastVote(i) && Date.now() - m > HALF_YEAR; }
+  // 기록이 6개월 넘은 카페(필터용): 기록이 있고 마지막 기록이 6개월 지났다.
+  function staleCafe(i) { var t = lastVote(i); return t > 0 && Date.now() - t > HALF_YEAR; }
   // o: 1 자리 단추(bit가 그 자리), -1 없어요. 처음 답을 고를 때 XP를 받고, 답을 다 지우면 그 카페에서 받은 XP를 돌려놓는다.
   // 새 동네 보너스는 동네마다 한 번이라 취소해도 돌려놓지 않는다.
-  function xpVote(i, o, bit) {
+  // again: 오랜만에 다시 기록(내 옛 기록을 새 답으로 바꾼다). 옛 기록에서 받은 XP는 그대로 두고 이번 것을 더한다.
+  function xpVote(i, o, bit, again) {
     var k = cidOf(i), legacy = !XP.vote[k] && !!myO[i], cur = XP.vote[k] || (myO[i] ? [myO[i], myC[i], 0] : [0, 0, 0]), had = cur[0] !== 0 && !legacy, amt, n, b;
+    if (again) {
+      var nm0 = D.name[i], add = [[1000, '콘센트 기록', nm0], [300, '콘센트 좌석 기록', nm0], [500, '오랜만의 기록', nm0]];
+      cur = o === -1 ? [-1, 0, cur[2] || 0] : [1, bit, cur[2] || 0];
+      cur[2] += 1800; XP.vote[k] = cur;
+      xpGive(add);
+      return;
+    }
     if (o === -1) { cur[0] = cur[0] === -1 ? 0 : -1; cur[1] = 0; }
     else { if (cur[0] !== 1) { cur[0] = 1; cur[1] = 0; } cur[1] ^= bit; if (!cur[1]) cur[0] = 0; }
     if (cur[0] && !had) {
-      var first = !isAdmin() && !(realVotes[i] || 0), items = [], nm = D.name[i], dk = dongKey(i), ago = monthsAgo(i), last = lastOtherVote(i);
+      var first = !isAdmin() && !(realVotes[i] || 0), items = [], nm = D.name[i], dk = dongKey(i), ago = monthsAgo(i), last = lastVote(i);
       items.push([first ? 2000 : 1000, first ? '첫 콘센트 기록' : '콘센트 기록', nm]);
       items.push([300, '콘센트 좌석 기록', nm]);
       if (ago >= 0 && ago < 12) items.push([500, '새로 연 카페', nm]);
-      if (last && Date.now() - last > 180 * 86400000) items.push([500, '오랜만의 기록', nm]);
+      if (last && Date.now() - last > HALF_YEAR) items.push([500, '오랜만의 기록', nm]);
       amt = items.reduce(function (a, it) { return a + it[0]; }, 0); cur[2] = amt;
       XP.vote[k] = cur;
       if (!XP.dong[dk]) {
@@ -1849,7 +1866,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
         for (k in mine) if (!srvMine[k] || srvMine[k].o !== mine[k].o || (srvMine[k].c || '') !== (mine[k].c || '')) { j = ix[k]; if (j !== undefined) push(j, true); }
         for (k in srvMine) if (!mine[k]) { j = ix[k]; if (j !== undefined) push(j, true); }
       }
-      if (S.outlet) refilter();
+      if (S.outlet || S.stale) refilter();
       requestDraw();
       if (P.kind === 'filter') renderPanel();
     }).catch(function () { /* 서버에 닿지 못하면 이 기기의 기록만으로 보여 준다 */ });
@@ -2022,7 +2039,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     save(STORE, {
       cats: Object.keys(S.cats).map(Number), brands: Object.keys(S.brands).map(function (j) { return D.brands[j][0]; }),
       reg: S.reg >= 0 ? regPath(S.reg) : null,
-      big: S.big, bigPy: S.bigPy, outlet: S.outlet, chairs: Object.keys(S.chairs), sort: S.sort, pins: Object.keys(S.pins), tab: S.tab, seen: S.seen, fresh: S.fresh, outline: S.outline, start: S.start, nav: S.nav,
+      big: S.big, bigPy: S.bigPy, outlet: S.outlet, stale: S.stale, chairs: Object.keys(S.chairs), sort: S.sort, pins: Object.keys(S.pins), tab: S.tab, seen: S.seen, fresh: S.fresh, outline: S.outline, start: S.start, nav: S.nav,
       view: [c.lat, c.lng, +map.getZoom().toFixed(2)]
     });
   }
@@ -2046,6 +2063,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       var ok = !dabang[i] && (!anySel || S.cats[grp[i]] === true || (b >= 0 && S.brands[b] === true));
       if (ok && S.big && D.area[i] < minArea) ok = false;
       if (ok && S.outlet) ok = outlet[i] === 1 && (!wantChair || (chair[i] & wantChair) !== 0);
+      if (ok && S.stale) ok = staleCafe(i);
       if (ok && S.seen === 'want') ok = want[i] === 1;
       if (ok && S.fresh) { var ma = monthsAgo(i); ok = ma >= 0 && ma < S.fresh; }
       // 없어진 카페: 내가 없다고 한 곳만 내 지도에서 뺀다. 남들이 없다고 한 곳은 빼지 않고 카드에서 알린다.
@@ -3902,7 +3920,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   $('menuBtn').addEventListener('click', function () { if (P.kind === 'menu') closePanel(); else { P.prev = null; openPanel('menu'); } });
 
   // ----- 필터 칩 -----
-  function anyFilter() { return nKeys(S.brands) || S.big || S.outlet; }
+  function anyFilter() { return nKeys(S.brands) || S.big || S.outlet || S.stale; }
   function chip(label, on, act, opt) {
     opt = opt || {};
     var c = el('button', 'chip' + (opt.cls ? ' ' + opt.cls : '')); c.type = 'button'; c.dataset.act = act;
@@ -3935,9 +3953,10 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     if (bl) parts.push(bl);
     if (S.big) parts.push(S.bigPy + '평 이상');
     if (S.outlet) parts.push('콘센트');
+    if (S.stale) parts.push('기록 6개월 넘음');
     return parts.join(', ');
   }
-  function resetFilter() { S.cats = {}; S.brands = {}; S.tab = 'all'; S.big = false; S.outlet = false; S.chairs = {}; }
+  function resetFilter() { S.cats = {}; S.brands = {}; S.tab = 'all'; S.big = false; S.outlet = false; S.stale = false; S.chairs = {}; }
   // 필터 카드의 조건에 더해 찜, 새로 연 카페 칩까지 모두 푼다.
   function resetAll() { resetFilter(); S.seen = 'all'; S.fresh = 0; }
   function regionChip() {
@@ -4229,6 +4248,9 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
         b.appendChild(el('p', null, '지금까지 기록된 곳 ' + fmt(seatCount()) + '곳'));
         lap.appendChild(b);
       }
+      // 기록: 마지막 기록이 6개월 지난 곳. 켜면 무엇인지 잠깐 알린다.
+      lap.appendChild(el('div', 'ftitle', '기록'));
+      lap.appendChild(toggleRow('기록이 6개월 넘은 곳', S.stale, function (v) { S.stale = v; apply(); fillLap(); if (v) toast('마지막 기록이 6개월 지난 카페예요. 기록하면 오랜만의 기록 XP를 받아요'); }));
     }
 
     // 2. 브랜드: 전체 목록에서 고른다. "저가커피만"을 켜면 저가커피 브랜드만 목록에 나오고 전부 고른 채로 시작한다(하나씩 뺄 수 있다).
@@ -4397,8 +4419,10 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       // 투표를 바꾼 뒤 그 결과를 진짜 투표 기록(myO, myC)에 옮기고 서버에 올린다.
       // 처음 투표할 때만 카페 30m 안인지 확인한다. 이미 투표한 카페는 어디서든 고칠 수 있다.
       // 같은 카페는 한 폰에서 한 계정만 투표할 수 있다.
-      var apply = function (o, bit) {
-        xpVote(i, o, bit);
+      var apply = function (o, bit, again) {
+        xpVote(i, o, bit, again);
+        // 다시 기록하면 내 기록 때를 지금으로 바꿔 둔다(서버에도 새 때로 올라간다).
+        if (again) (voters[i] || []).forEach(function (x) { if (x.me) { x.t = Date.now(); x.o = o; } });
         var m = XP.vote[xk] || [0, 0, 0];
         myO[i] = m[0]; myC[i] = m[0] === 1 ? m[1] : 0;
         store();
@@ -4406,6 +4430,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       var cast = function (o, bit) {
         if (locating) return;
         needLogin(function () {
+          if (canRevote(i)) { checkNear(i, function () { apply(o, bit, true); }, function (on) { locating = on; xr.classList.toggle('busy', on); if (on) toast('위치 확인 중'); }); return; }
           if (myO[i]) { apply(o, bit); return; }
           if (devOwner(xk) && devOwner(xk) !== who.u) { toast('이 폰에서는 이 카페에 다른 계정으로 이미 기록했어요'); return; }
           checkNear(i, function () { devClaim(xk); apply(o, bit); }, function (on) { locating = on; xr.classList.toggle('busy', on); if (on) toast('위치 확인 중'); });
@@ -4416,11 +4441,11 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       rec.insertBefore(xr, more); rec.insertBefore(xhint, more);
       rec.querySelector('.vh b').textContent = '콘센트 좌석 (중복 선택)';
       xs = function () {
-        var mine = [myO[i], myC[i]], v = votes[i] || [0, 0, 0, 0, 0];
+        var re = canRevote(i), mine = re ? [0, 0] : [myO[i], myC[i]], v = votes[i] || [0, 0, 0, 0, 0];
         xb.forEach(function (cb) { var on = mine[0] === 1 && (mine[1] & cb[1][2]) !== 0; setBtn(cb[0], on, v[cb[1][3]] + (on ? 1 : 0)); });
         setBtn(xno, mine[0] === -1, v[1] + (mine[0] === -1 ? 1 : 0));
-        total.textContent = people(v[0] + v[1] + (mine[0] ? 1 : 0));
-        xhint.textContent = '';
+        total.textContent = people(v[0] + v[1] + (myO[i] ? 1 : 0));
+        xhint.textContent = re ? '내 기록이 6개월 지났어요. 다시 기록하면 오랜만의 기록 XP를 받아요.' : '';
       };
     }
     function sync() {
