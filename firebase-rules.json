@@ -131,6 +131,29 @@
           }
         }
       },
+      "rank": {
+        ".read": true,
+        ".indexOn": ["x"],
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'",
+          ".validate": "newData.hasChildren(['n', 'x', 't']) && (!data.exists() || newData.child('n').val() === data.child('n').val() || (newData.child('nt').val() === now && (!data.child('nt').exists() || now - data.child('nt').val() >= 15552000000)))",
+          "n": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12"
+          },
+          "x": {
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          },
+          "t": {
+            ".validate": "newData.val() === now"
+          },
+          "nt": {
+            ".validate": "newData.isNumber() && (newData.val() === now || newData.val() === data.val())"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      },
       "xp": {
         "$uid": {
           ".read": "auth != null && auth.uid === $uid",
