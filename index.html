@@ -475,6 +475,11 @@ button.xlink { width: 100%; align-items: center; text-align: left; padding: 7px 
 button.xlink span { flex: 1; }
 button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
 #xinfo { position: fixed; inset: 0; z-index: 85; display: grid; place-items: center; padding: 18px; background: rgba(15, 20, 30, .5); }
+/* 키보드가 떠 있을 때: 창을 위에 붙이고, 글 쓰는 칸을 줄여서 보내기 단추까지 키보드 위에 보이게 한다. */
+#xinfo.kb { align-items: start; padding: 10px 14px; }
+#xinfo.kb .xbox { max-height: 100%; }
+#xinfo.kb .xbox > p { display: none; }
+#xinfo.kb textarea { min-height: 90px; height: 90px; }
 .xbox { width: min(360px, 100%); max-height: calc(100% - 20px); overflow-y: auto; background: var(--surface); border-radius: 18px; box-shadow: var(--sh-2); padding: 20px 18px 16px; display: flex; flex-direction: column; gap: 6px; }
 .xbox h2 { margin: 0; font-size: 18px; font-weight: 800; }
 .xbox p { margin: 0; font-size: 13px; color: var(--ink-3); }
@@ -2550,7 +2555,11 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     return h;
   }
   function closeBtn() { var x = btn('ib', null, closePanel); x.setAttribute('aria-label', '닫기'); x.appendChild(icon('x')); return x; }
+  // 같은 카드를 다시 그릴 때(설정을 바꿨을 때 등)는 보던 스크롤 자리를 그대로 둔다.
+  var lastRendered = '';
   function renderPanel() {
+    var oldSc = panel.querySelector('.scroll'), keepTop = lastRendered === P.kind && oldSc ? oldSc.scrollTop : 0;
+    lastRendered = P.kind;
     panel.textContent = '';
     if (P.kind === 'region') renderRegion();
     else if (P.kind === 'filter') renderFilter();
@@ -2558,6 +2567,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     else if (P.kind === 'search') renderSearch();
     else if (P.kind === 'detail') renderDetail(P.cafe);
     else if (P.kind === 'menu') renderMenu();
+    if (keepTop) { var sc2 = panel.querySelector('.scroll'); if (sc2) sc2.scrollTop = keepTop; }
   }
   // 메뉴: 누구로 로그인했는지와 지도 자료의 출처.
   function renderMenu() {
@@ -2724,6 +2734,17 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     ['idea', '기능 제안', 'bulb', '있었으면 하는 기능이나 바꾸면 좋을 점을 적어 주세요.', '예) 주차 되는 카페만 볼 수 있으면 좋겠어요'],
     ['etc', '기타 문의', 'help', '궁금한 점을 적어 주세요.', '예) 투표는 어떻게 집계되나요?']
   ];
+  // 아이폰에서 키보드가 뜨면 화면이 위로 밀린다. 팝업을 지금 보이는 칸(키보드 위)에 맞춰 다시 놓는다.
+  function fitVisible(o) {
+    var vv = window.visualViewport;
+    if (!vv) return;
+    function place() {
+      if (!o.isConnected) { vv.removeEventListener('resize', place); vv.removeEventListener('scroll', place); return; }
+      o.style.top = vv.offsetTop + 'px'; o.style.height = vv.height + 'px'; o.style.bottom = 'auto';
+      o.classList.toggle('kb', vv.height < window.innerHeight * .75);
+    }
+    vv.addEventListener('resize', place); vv.addEventListener('scroll', place); place();
+  }
   function openFeedback() {
     var old = $('xinfo'); if (old) old.remove();
     var o = el('div'), box = el('div', 'xbox'), hd = el('div', 'xhead'), bd = el('span', 'xbadge'), ta = document.createElement('textarea');
@@ -2761,7 +2782,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     two.appendChild(send);
     box.appendChild(two);
     pick(FB_KINDS[0]);
-    o.appendChild(box); document.body.appendChild(o);
+    o.appendChild(box); document.body.appendChild(o); fitVisible(o);
   }
   $('menuBtn').addEventListener('click', function () { if (P.kind === 'menu') closePanel(); else { P.prev = null; openPanel('menu'); } });
 
