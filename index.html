@@ -445,11 +445,11 @@ button.xlink .xbadge.visit { --pri: #0ca678; --pri2: #38d9a9; }
 button.xlink .xbadge.vote { --pri: #f76707; --pri2: #ffa94d; }
 button.xlink .xbadge.rw { --pri: #6a5ae0; --pri2: #8b7bf2; }
 button.xlink .xbadge.bug { --pri: #e03131; --pri2: #ff8787; }
-button.xlink .xbadge.ask { --pri: #1c7ed6; --pri2: #74c0fc; }
+button.xlink .xbadge.qna { --pri: #1c7ed6; --pri2: #74c0fc; }
 /* 문의 창: 종류마다 색이 다르다. 앱 오류 빨강, 기능 제안 노랑, 기타 문의 파랑. */
 .xbox.fb-bug, .fbk .fb-bug { --pri: #e03131; --pri2: #ff8787; }
 .xbox.fb-idea, .fbk .fb-idea { --pri: #f2a900; --pri2: #ffd43b; }
-.xbox.fb-ask, .fbk .fb-ask { --pri: #1c7ed6; --pri2: #74c0fc; }
+.xbox.fb-etc, .fbk .fb-etc { --pri: #1c7ed6; --pri2: #74c0fc; }
 .fbk { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin: 6px 0 4px; }
 .fbk button { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; height: 62px; padding: 0 4px; border-radius: 12px; background: var(--surface-2); color: var(--ink-2); font-size: 14px; font-weight: 650; }
 .fbk button svg.i { width: 17px; height: 17px; color: var(--pri); flex: none; }
@@ -2630,7 +2630,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     st.appendChild(stTabs); conf.appendChild(st);
     sc.appendChild(conf);
     // 문의하기: 누르면 글을 쓰는 창이 뜬다. 종류는 창 안에서 고른다.
-    var fb = el('div', 'fsec'), fr = btn('xrow xlink', null, function () { openFeedback(); }), fbd = el('span', 'xbadge ask');
+    var fb = el('div', 'fsec'), fr = btn('xrow xlink', null, function () { openFeedback(); }), fbd = el('span', 'xbadge qna');
     fbd.appendChild(icon('chat')); fr.appendChild(fbd); fr.appendChild(el('span', null, '문의하기')); fr.appendChild(icon('right'));
     fb.appendChild(fr); sc.appendChild(fb);
     var info = el('div', 'fsec'), ul = el('ul', 'mlist');
@@ -2662,7 +2662,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   var FB_KINDS = [
     ['bug', '앱 오류', 'bug', '어떤 화면에서 무엇을 눌렀을 때 어떻게 됐는지 적어 주세요.', '예) 카페를 누르면 카드가 안 열려요'],
     ['idea', '기능 제안', 'bulb', '있었으면 하는 기능이나 바꾸면 좋을 점을 적어 주세요.', '예) 주차 되는 카페만 볼 수 있으면 좋겠어요'],
-    ['ask', '기타 문의', 'help', '궁금한 점을 적어 주세요.', '예) 투표는 어떻게 집계되나요?']
+    ['etc', '기타 문의', 'help', '궁금한 점을 적어 주세요.', '예) 투표는 어떻게 집계되나요?']
   ];
   function openFeedback() {
     var old = $('xinfo'); if (old) old.remove();

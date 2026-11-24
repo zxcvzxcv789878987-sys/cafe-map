@@ -9,7 +9,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DB = 'https://cafe-map-486ae-default-rtdb.firebaseio.com'
 KEY_FILE = os.path.join(HERE, 'firebase_secret.txt')
 SEEN = os.path.join(HERE, '작업', 'feedback_seen.json')
-KIND = {'bug': '앱 오류', 'idea': '기능 제안', 'ask': '기타 문의'}
+KIND = {'bug': '앱 오류', 'idea': '기능 제안', 'etc': '기타 문의', 'ask': '기타 문의'}
 
 
 def main():

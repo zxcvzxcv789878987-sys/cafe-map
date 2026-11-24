@@ -115,7 +115,7 @@
           ".write": "!data.exists()",
           ".validate": "newData.hasChildren(['k', 'm', 't'])",
           "k": {
-            ".validate": "newData.isString() && newData.val().matches(/^(bug|idea|ask)$/)"
+            ".validate": "newData.isString() && newData.val().matches(/^(bug|idea|etc)$/)"
           },
           "m": {
             ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 1500"
