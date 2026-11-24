@@ -2033,7 +2033,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   function beenNear(i) {
     var k = cidOf(i), nm = D.name[i];
     if (XP.near && XP.near[k]) return true;
-    return (XP.log || []).some(function (e) { return e.c === nm && /콘센트 기록$/.test(e.r) && e.a > 0; });
+    // 예전에는 이름이 "콘센트 투표"였다. 기록을 지운 표시(기록 취소)도 그 전에 기록했다는 뜻이다.
+    return (XP.log || []).some(function (e) { return e.c === nm && (/콘센트 (기록|투표)$/.test(e.r) || e.r === '기록 취소'); });
   }
   function markNear(i) { XP.near = XP.near || {}; XP.near[cidOf(i)] = 1; }
   function seatCount() { var n = 0; for (var j = 0; j < N; j++) if (outlet[j] === 1) n++; return n; }
