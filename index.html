@@ -1035,6 +1035,20 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       return fetch(SHARE.db + '/v2/xp/' + who.u + '.json?auth=' + encodeURIComponent(t), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     }).then(function (r) { if (!r.ok) throw new Error('db'); }).catch(function () { /* 다음에 바뀔 때 다시 올린다 */ });
   }
+  // 예전 투표를 방문 인증 뒤에 고쳤는데 XP를 못 받은 기록(받은 XP가 0)이 있으면, 콘센트 투표 XP를 그때 준다.
+  function xpHeal() {
+    var items = [], k, n, b;
+    for (k in XP.vote) {
+      if (XP.vote[k][2] || !XP.vis[k] || !XP.vote[k][0]) continue;
+      XP.vote[k][2] = 1300; items.push([1000, '콘센트 투표']); items.push([300, '콘센트 좌석 투표']);
+    }
+    if (!items.length) return;
+    if (!XP.fo) { XP.fo = 1; items.push([1000, '생애 첫 투표']); }
+    n = xpCount(XP.vote);
+    for (k = (XP.mv || 0) + 1; k <= n; k++) { b = xpBonus(k); if (b) items.push([b, '투표한 카페 ' + k + '곳 달성']); }
+    if (n > (XP.mv || 0)) XP.mv = n;
+    xpGive(items);
+  }
   // 로그인하면 계정에 저장된 XP를 받아 온다. 서버의 것이 기준이다.
   function pullXp() {
     if (!loginOn || !signedIn()) { XP = xpFresh(); return Promise.resolve(); }
@@ -1043,7 +1057,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     return token().then(function (t) { return fetch(SHARE.db + '/v2/xp/' + who.u + '.json?auth=' + encodeURIComponent(t)); })
       .then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); })
       .then(function (srv) {
-        if (srv && typeof srv.xp === 'number') { delete srv.t; XP = xpNorm(srv); save(xpKey(), XP); }
+        if (srv && typeof srv.xp === 'number') { delete srv.t; XP = xpNorm(srv); save(xpKey(), XP); xpHeal(); }
         else if (local) xpPush();
         if (P.kind === 'menu' || P.kind === 'detail') renderPanel();
       }).catch(function () { /* 서버에 닿지 못하면 이 기기에 적어 둔 것으로 보여 준다 */ });
@@ -1146,7 +1160,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   }
   // o: 1 자리 단추(bit가 그 자리), -1 없어요. 처음 답을 고를 때 XP를 받고, 답을 다 지우면 그 XP를 돌려놓는다.
   function xpVote(i, o, bit) {
-    var k = cidOf(i), cur = XP.vote[k] || (myO[i] ? [myO[i], myC[i], 0] : [0, 0, 0]), had = cur[0] !== 0, v = votes[i] || [0, 0], amt, n, b;
+    var k = cidOf(i), legacy = !XP.vote[k] && !!myO[i], cur = XP.vote[k] || (myO[i] ? [myO[i], myC[i], 0] : [0, 0, 0]), had = cur[0] !== 0 && !legacy, v = votes[i] || [0, 0], amt, n, b;
     if (o === -1) { cur[0] = cur[0] === -1 ? 0 : -1; cur[1] = 0; }
     else { if (cur[0] !== 1) { cur[0] = 1; cur[1] = 0; } cur[1] ^= bit; if (!cur[1]) cur[0] = 0; }
     if (cur[0] && !had) {
