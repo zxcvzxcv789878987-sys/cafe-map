@@ -1714,7 +1714,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       .then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); })
       .then(function (srv) {
         if (srv && typeof srv.xp === 'number') {
-          delete srv.t; XP = xpNorm(srv); save(xpKey(), XP); xpHeal();
+          delete srv.t; XP = xpNorm(srv); save(xpKey(), XP); xpHeal(); xpFixMore();
           if (!XP.nick) { XP.nick = randomNick(); xpSave(); } else rankPush();
         }
         // 처음 로그인한 계정: 로그인 XP를 지금 시각으로 기록에 남기고 서버에 올린다.
@@ -1735,7 +1735,36 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     '오랜만의 기록': '6개월 넘게 아무도 기록하지 않은 카페에 콘센트를 기록하면 받아요.'
   };
   // XP 기록에서 그 이름으로 받은 곳 수
-  function xpLogCount(label) { return (XP.log || []).filter(function (e) { return xpSame(e.r, label) && e.a > 0; }).length; }
+  // 새로 연 카페, 오랜만의 기록의 곳 수: 지금 기록이 남아 있는 카페 중 그 XP를 받은 적이 있는 곳. 같은 카페는 한 번만 센다.
+  // (기록을 지웠다가 다시 해도 늘지 않는다.)
+  function xpNowNames() {
+    var ix = cidIndex(), o = {}, k;
+    for (k in XP.vote) if (XP.vote[k] && XP.vote[k][0] && ix[k] !== undefined) o[D.name[ix[k]]] = 1;
+    return o;
+  }
+  function xpLogNames(label, onlyNow) {
+    var now = onlyNow ? xpNowNames() : null, o = {};
+    (XP.log || []).forEach(function (e) { if (xpSame(e.r, label) && e.a > 0 && e.c && (!now || now[e.c])) o[e.c] = 1; });
+    return o;
+  }
+  function xpLogCount(label) { return xpCount(xpLogNames(label, true)); }
+  // 같은 카페를 여러 번 세어서 더 받은 달성 보너스를 없던 일로 돌린다. 한 번이라도 받은 적이 있는 서로 다른 카페 수까지만 인정한다.
+  // 잘못 받은 "N곳 달성" 줄은 XP 기록에서 지우고 그만큼 XP를 뺀다(레벨도 따라 내려간다).
+  function xpFixMore() {
+    var fixed = false;
+    if (!Array.isArray(XP.log)) XP.log = xpRebuild();
+    [['새로 연 카페', 'mo'], ['오랜만의 기록', 'mr']].forEach(function (x) {
+      var ever = xpCount(xpLogNames(x[0], false)), had = XP[x[1]] || 0, k;
+      if (had <= ever) return;
+      for (k = ever + 1; k <= had; k++) {
+        var lb = x[0] + ' ' + k + '곳 달성', back = 0;
+        XP.log = XP.log.filter(function (e) { if (xpSame(e.r, lb)) { back += e.a || 0; return false; } return true; });
+        XP.xp = Math.max(0, XP.xp - back);
+      }
+      XP[x[1]] = ever; fixed = true;
+    });
+    if (fixed) { xpSave(); rankPush(); }
+  }
   // 예전 이름(투표, 정보 새로 고침)으로 저장된 XP 기록을 지금 이름으로 바꿔 읽는다.
   var XP_OLD = { '콘센트 투표': '콘센트 기록', '첫 콘센트 투표': '첫 콘센트 기록', '콘센트 좌석 투표': '콘센트 좌석 기록', '생애 첫 투표': '생애 첫 기록', '오랜만의 투표': '오랜만의 기록', '정보 새로 고침': '오랜만의 기록', '투표 취소': '기록 취소' };
   function xpName(r) { r = r || ''; return XP_OLD[r] || r.replace(/^투표한 카페 (\d+)곳 달성$/, '기록한 카페 $1곳 달성'); }
@@ -1986,9 +2015,12 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   // 새로 연 카페, 오랜만의 기록 보너스: 이번에 받는 것까지 센 수가 표의 칸에 닿으면 보너스를 더한다(놓친 칸도 같이).
   function xpMoreBonus(items) {
     [['새로 연 카페', 'mo'], ['오랜만의 기록', 'mr']].forEach(function (x) {
-      var got = items.filter(function (it) { return it[1] === x[0]; }).length, n, k, b;
-      if (!got) return;
-      n = xpLogCount(x[0]) + got;
+      var names = {}, now = xpNowNames(), n = 0, k, b, c;
+      items.forEach(function (it) { if (it[1] === x[0] && it[2]) names[it[2]] = 1; });
+      if (!xpCount(names)) return;
+      var old = xpLogNames(x[0], false);
+      for (c in old) names[c] = 1;
+      for (c in names) if (now[c]) n++;
       for (k = (XP[x[1]] || 0) + 1; k <= n; k++) { b = xpBonus(k); if (b) items.push([b, x[0] + ' ' + k + '곳 달성']); }
       if (n > (XP[x[1]] || 0)) XP[x[1]] = n;
     });
