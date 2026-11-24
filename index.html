@@ -429,7 +429,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .xgo:disabled { opacity: .6; }
 .xgo.done { opacity: 1; border-color: var(--line-2); background: var(--surface-2); color: var(--ink-3); }
 .xgo.done .xgt b { color: var(--ink-3); }
-.rec .opts .opt.locked { opacity: .45; }
+.rec .opts.busy { opacity: .5; pointer-events: none; }
 .xgo .xgi { flex: none; display: grid; place-items: center; }
 .xgo .xgi svg.i { width: 20px; height: 20px; }
 .xgo .xgt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -453,7 +453,13 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .xlv .top span, .xlv p { font-size: 13px; color: var(--ink-3); font-variant-numeric: tabular-nums; margin: 0; }
 .xnote { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-3); }
 /* 메뉴의 레벨 칸(누르면 XP 기록) */
-button.xlvbtn { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; padding: 4px 0; }
+button.xlvbtn { width: 100%; display: flex; flex-direction: row; align-items: center; gap: 10px; text-align: left; padding: 4px 0; }
+/* 메뉴의 내 기록 네 칸 */
+.xstat { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 4px 0 6px; }
+.xstat button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 9px 2px; border-radius: 12px; background: var(--surface-2); }
+.xstat b { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.xstat span { font-size: 11.5px; color: var(--ink-2); white-space: nowrap; }
+button.xlvbtn .top { display: flex; justify-content: space-between; align-items: baseline; width: 100%; }
 button.xlvbtn .xlvtxt { flex: 1; display: flex; flex-direction: column; gap: 4px; }
 button.xlvbtn > svg.i { width: 16px; height: 16px; opacity: .45; flex: none; }
 /* XP 기록 창 */
@@ -468,6 +474,8 @@ button.xlvbtn > svg.i { width: 16px; height: 16px; opacity: .45; flex: none; }
 .rec .vh .vwho { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; text-decoration: underline; text-underline-offset: 2px; }
 .xli.admin .rs { color: var(--pri); }
 .xbox .xadm { margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--pri) 9%, var(--surface)); color: var(--ink-2); font-size: 12.5px; }
+.xbox .xnone { padding: 14px 2px; color: var(--ink-3); font-size: 13.5px; }
+button.xlink.xrow b { margin-right: 6px; }
 .xli .rt { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
 .xli b { font-size: 14px; font-weight: 750; color: var(--pri); font-variant-numeric: tabular-nums; }
 .xli.minus b { color: var(--ink-3); }
@@ -487,7 +495,7 @@ button.xlvbtn > svg.i { width: 16px; height: 16px; opacity: .45; flex: none; }
 .xms span.got svg.i { opacity: 1; stroke-width: 3; }
 .xms span.next { background: var(--surface); color: var(--pri); box-shadow: 0 0 0 2px var(--pri), 0 0 0 6px color-mix(in srgb, var(--pri) 14%, transparent); }
 /* 팝업마다 색을 다르게: 보상 체계는 보라, 방문 인증 보너스는 청록, 투표 보너스는 주황. 안쪽의 칸, 막대, 단추가 모두 이 색을 따른다. */
-.xbox.visit { --pri: #0ca678; --pri2: #38d9a9; }
+.xbox.visit, .xbox.dong { --pri: #0ca678; --pri2: #38d9a9; }
 .xbox.vote { --pri: #f76707; --pri2: #ffa94d; }
 .xbox { --pri2: #8b7bf2; }
 .xbox { position: relative; overflow: hidden; }
@@ -610,6 +618,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   <symbol id="i-stamp" viewBox="0 0 24 24"><path d="M9.500 4.500h5v4.500l2 3.500h-9l2-3.500zM5 12.500h14v3.500H5zM6.500 19.500h11"/></symbol>
   <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9.500 17h5M10 20h4M12 3.500a5.500 5.500 0 0 0-3.300 9.900c.6.500.8 1.100.8 1.800V17h5v-1.800c0-.700.200-1.300.8-1.800A5.500 5.500 0 0 0 12 3.500z"/></symbol>
   <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.500"/><path d="M9.700 9.500a2.400 2.400 0 0 1 4.600.900c0 1.600-2.300 1.900-2.300 3.400M12 16.800v.010"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M3.500 6.500 9 4.500l6 2 5.500-2v13L15 19.500l-6-2-5.500 2zM9 4.500v13M15 6.500v13"/></symbol>
   <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5.500" y="10.500" width="13" height="9.500" rx="2"/><path d="M8.500 10.500V8a3.500 3.500 0 0 1 7 0v2.500"/></symbol>
   <symbol id="i-gift" viewBox="0 0 24 24"><path d="M5 10.500h14v9H5zM3.500 7.500h17v3h-17zM12 7.500v12M12 7.500C10.500 4.300 7 4 7 6c0 1.500 2.500 1.500 5 1.500zM12 7.500c1.500-3.200 5-3.500 5-1.500 0 1.500-2.500 1.500-5 1.500z"/></symbol>
   <symbol id="i-locate" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7.500"/><path d="M12 2v2.500M12 19.500V22M2 12h2.500M19.500 12H22"/></symbol>
@@ -1073,9 +1082,9 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   // 내 컴퓨터에서 시험할 때만 거리 확인을 끌 수 있다(실제 주소에서는 늘 켜져 있다).
   var XP_DEV = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   // vis: { 카페: [방문 횟수, 마지막으로 인증한 날] }, vote: { 카페: [1 있음 / -1 없음, 자리 비트, 받은 XP] }, fv, fo: 생애 첫 인증, 첫 투표 보너스를 받았는가, mv: 투표 달성 보너스를 받은 가장 큰 개수
-  function xpFresh() { return { xp: 1000, vis: {}, vote: {}, fv: 0, fo: 0, mv: 0 }; }
+  function xpFresh() { return { xp: 1000, vis: {}, vote: {}, dong: {}, fv: 0, fo: 0, mv: 0, md: 0 }; }
   function xpKey() { return who && who.u ? 'cafemap.xp.' + who.u : ''; }
-  function xpNorm(x) { x = x || xpFresh(); x.vis = x.vis || {}; x.vote = x.vote || {}; if (typeof x.xp !== 'number') x.xp = 1000; return x; }
+  function xpNorm(x) { x = x || xpFresh(); x.vis = x.vis || {}; x.vote = x.vote || {}; x.dong = x.dong || {}; if (typeof x.xp !== 'number') x.xp = 1000; return x; }
   var XP = xpNorm(who && who.u ? load('cafemap.xp.' + who.u) : null);
   try { localStorage.removeItem('cafemap.xpdemo'); localStorage.removeItem('cafemap.xpdemo.on'); } catch (e) { /* 체험판 때 남은 것 */ }
   var xpTimer = 0;
@@ -1087,7 +1096,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   }
   function xpPush() {
     if (!loginOn || !signedIn()) return;
-    var body = { xp: XP.xp, vis: XP.vis, vote: XP.vote, fv: XP.fv || 0, fo: XP.fo || 0, mv: XP.mv || 0, log: XP.log || [], t: { '.sv': 'timestamp' } };
+    var body = { xp: XP.xp, vis: XP.vis, vote: XP.vote, dong: XP.dong, fv: XP.fv || 0, fo: XP.fo || 0, mv: XP.mv || 0, md: XP.md || 0, log: XP.log || [], t: { '.sv': 'timestamp' } };
     token().then(function (t) {
       return fetch(SHARE.db + '/v2/xp/' + who.u + '.json?auth=' + encodeURIComponent(t), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     }).then(function (r) { if (!r.ok) throw new Error('db'); }).catch(function () { /* 다음에 바뀔 때 다시 올린다 */ });
@@ -1097,17 +1106,12 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     var out = [], ix = cidIndex(), k, j, nm, v, n, sum;
     var add = function (a, r, c) { var e = { t: 0, a: a, r: r }; if (c) e.c = c; out.push(e); };
     add(1000, '로그인');
-    for (k in XP.vis) {
-      j = ix[k]; nm = j !== undefined ? D.name[j] : '';
-      add(500, '첫 방문 인증', nm);
-      for (n = 2; n <= XP.vis[k][0]; n++) add(200, '재방문 인증 (' + n + '번째 방문)', nm);
-    }
-    if (XP.fv) add(1000, '생애 첫 방문 인증');
-    for (n = 1; n <= xpCount(XP.vis); n++) if (xpBonus(n)) add(xpBonus(n), '가 본 카페 ' + n + '곳 달성');
+    for (k in XP.dong) add(500, '새 동네', k.split(' ').pop());
+    for (n = 1; n <= (XP.md || 0); n++) if (xpBonus(n)) add(xpBonus(n), '동네 ' + n + '곳 달성');
     for (k in XP.vote) {
       v = XP.vote[k]; if (!v[2]) continue;
       j = ix[k]; nm = j !== undefined ? D.name[j] : '';
-      add(v[2] - 300, v[2] - 300 === 2000 ? '첫 콘센트 투표' : '콘센트 투표', nm); add(300, '콘센트 좌석 투표', nm);
+      add(v[2] - 300, '콘센트 투표', nm); add(300, '콘센트 좌석 투표', nm);
     }
     if (XP.fo) add(1000, '생애 첫 투표');
     for (n = 1; n <= (XP.mv || 0); n++) if (xpBonus(n)) add(xpBonus(n), '투표한 카페 ' + n + '곳 달성');
@@ -1165,6 +1169,8 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     xpBusy = true;
     var it = xpQueue.shift();
     clearTimeout(toastTimer);
+    // XP 풍선 사이에 끼어든 보통 알림
+    if (it.plain) { x.textContent = it.plain; x.className = it.kind || ''; x.hidden = false; toastTimer = setTimeout(xpPump, 2200); return; }
     // 생애 첫 인증, 생애 첫 투표, 달성 보너스는 작은 풍선 대신 축하 장면을 띄운다.
     if (/^생애 첫|달성$/.test(it[1])) { x.hidden = true; xpCelebrate(it, xpPump); return; }
     x.hidden = true; x.textContent = ''; x.className = 'xp' + (it[0] < 0 ? ' minus' : '');
@@ -1177,9 +1183,9 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   function xpCelebrate(it, next) {
     var old = $('celeb'); if (old) old.remove();
     var o = el('div'), card = el('div', 'cc'), medal = el('div', 'md'), burst = el('div', 'bs'), done = false;
-    var visit = /방문|가 본/.test(it[1]), kind = /달성$/.test(it[1]) ? 'goal' : visit ? 'visit' : 'vote';
+    var visit = /동네/.test(it[1]), kind = /달성$/.test(it[1]) ? 'goal' : visit ? 'visit' : 'vote';
     o.id = 'celeb'; o.className = kind; o.setAttribute('role', 'status');
-    medal.appendChild(icon(kind === 'goal' ? 'trophy' : visit ? 'stamp' : 'plug'));
+    medal.appendChild(icon(kind === 'goal' ? 'trophy' : visit ? 'map' : 'plug'));
     for (var k = 0; k < 14; k++) {
       var p = el('i'), ang = k / 14 * Math.PI * 2, dist = 90 + (k % 3) * 22;
       p.style.setProperty('--x', Math.round(Math.cos(ang) * dist) + 'px'); p.style.setProperty('--y', Math.round(Math.sin(ang) * dist) + 'px');
@@ -1261,10 +1267,10 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       var d = distM(p.coords.latitude, p.coords.longitude, D.lat[i] / 1e5, D.lng[i] / 1e5);
       var limit = VISIT_M + Math.min(p.coords.accuracy || 0, VISIT_SLACK);
       if (d <= limit) ok();
-      else toast(d < 1000 ? '카페에서 ' + Math.round(d) + 'm 떨어져 있어요. 카페에 가서 눌러 주세요' : '카페 근처에서만 방문 인증을 할 수 있어요');
+      else toast('카페에 있을 때만 투표할 수 있어요');
     }, function (e) {
       visitBusy = false; if (done) done(false);
-      toast(e && e.code === 1 ? '위치 사용을 허락해야 방문 인증을 할 수 있어요' : '위치를 확인하지 못했어요. 잠시 뒤에 다시 눌러 주세요');
+      toast(e && e.code === 1 ? '위치 사용을 허락해야 투표할 수 있어요' : '위치를 확인하지 못했어요. 잠시 뒤에 다시 눌러 주세요');
     }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 20000 });
   }
   // 같은 카페는 한 폰에서 한 계정만 방문 인증할 수 있다(친구 계정으로 바꿔 가며 받는 것을 막는다).
@@ -1274,7 +1280,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   function devClaim(k) { if (who && who.u && !devVis[k]) { devVis[k] = who.u; save('cafemap.devvis', devVis); } }
   function xpVisit(i) {
     var k = cidOf(i), v = XP.vis[k], today = xpToday(), items = [], n, b, t, re = 0;
-    if (devOwner(k) && who && devOwner(k) !== who.u) return toast('이 폰에서는 이 카페를 다른 계정으로 이미 인증했어요');
+    if (devOwner(k) && who && devOwner(k) !== who.u) return toast('이 폰에서는 이 카페에 다른 계정으로 이미 투표했어요');
     devClaim(k);
     if (!v) {
       XP.vis[k] = [1, today]; items.push([500, '첫 방문 인증', D.name[i]]);
@@ -1290,16 +1296,32 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     xpGive(items);
   }
   // o: 1 자리 단추(bit가 그 자리), -1 없어요. 처음 답을 고를 때 XP를 받고, 답을 다 지우면 그 XP를 돌려놓는다.
+  // 동네 이름표: 시군구와 행정동 이름(자료를 새로 만들어도 바뀌지 않게 번호 대신 이름을 쓴다). 서버 칸 이름에 못 쓰는 글자는 바꾼다.
+  function dongKey(i) {
+    var d = D.dong[D.dongOf[i]], g = D.sgg[d[1]];
+    return (D.sido[g[1]] + ' ' + g[0] + ' ' + d[0]).replace(/[.$#\[\]\/]/g, '_');
+  }
+  // 이 카페에 다른 사람이 마지막으로 투표한 때(운영자 투표도 넣는다). 투표가 없으면 0.
+  function lastOtherVote(i) { var t = 0; (voters[i] || []).forEach(function (x) { if (!x.me && x.t > t) t = x.t; }); return t; }
+  // o: 1 자리 단추(bit가 그 자리), -1 없어요. 처음 답을 고를 때 XP를 받고, 답을 다 지우면 그 카페에서 받은 XP를 돌려놓는다.
+  // 새 동네 보너스는 동네마다 한 번이라 취소해도 돌려놓지 않는다.
   function xpVote(i, o, bit) {
-    var k = cidOf(i), legacy = !XP.vote[k] && !!myO[i], cur = XP.vote[k] || (myO[i] ? [myO[i], myC[i], 0] : [0, 0, 0]), had = cur[0] !== 0 && !legacy, v = votes[i] || [0, 0], amt, n, b;
+    var k = cidOf(i), legacy = !XP.vote[k] && !!myO[i], cur = XP.vote[k] || (myO[i] ? [myO[i], myC[i], 0] : [0, 0, 0]), had = cur[0] !== 0 && !legacy, amt, n, b;
     if (o === -1) { cur[0] = cur[0] === -1 ? 0 : -1; cur[1] = 0; }
     else { if (cur[0] !== 1) { cur[0] = 1; cur[1] = 0; } cur[1] ^= bit; if (!cur[1]) cur[0] = 0; }
     if (cur[0] && !had) {
-      var first = !isAdmin() && !(realVotes[i] || 0), items = [];
-      amt = (first ? 2000 : 1000) + 300; cur[2] = amt;
-      items.push([first ? 2000 : 1000, first ? '첫 콘센트 투표' : '콘센트 투표', D.name[i]]);
-      items.push([300, '콘센트 좌석 투표', D.name[i]]);
+      var first = !isAdmin() && !(realVotes[i] || 0), items = [], nm = D.name[i], dk = dongKey(i), ago = monthsAgo(i), last = lastOtherVote(i);
+      items.push([first ? 2000 : 1000, first ? '첫 콘센트 투표' : '콘센트 투표', nm]);
+      items.push([300, '콘센트 좌석 투표', nm]);
+      if (ago >= 0 && ago < 12) items.push([500, '새로 연 카페', nm]);
+      if (last && Date.now() - last > 180 * 86400000) items.push([500, '정보 새로 고침', nm]);
+      amt = items.reduce(function (a, it) { return a + it[0]; }, 0); cur[2] = amt;
       XP.vote[k] = cur;
+      if (!XP.dong[dk]) {
+        XP.dong[dk] = 1; items.push([500, '새 동네', D.dong[D.dongOf[i]][0]]);
+        n = xpCount(XP.dong); b = n > (XP.md || 0) ? xpBonus(n) : 0;
+        if (b) { XP.md = n; items.push([b, '동네 ' + n + '곳 달성']); }
+      }
       if (!XP.fo) { XP.fo = 1; items.push([1000, '생애 첫 투표']); }
       n = xpCount(XP.vote); b = n > (XP.mv || 0) ? xpBonus(n) : 0;
       if (b) { XP.mv = n; items.push([b, '투표한 카페 ' + n + '곳 달성']); }
@@ -1478,8 +1500,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     vote: ['로그인하고 투표하기', '한 사람이 한 번만 투표할 수 있게 확인해요.'],
     want: ['로그인하고 찜하기', '찜한 카페를 내 계정에 저장해서 다른 기기에서도 볼 수 있어요.'],
     gone: ['로그인하고 폐업 신고하기', '한 사람이 한 번만 신고할 수 있게 확인해요.'],
-    visit: ['로그인하고 방문 인증하기', '방문 기록과 XP를 내 계정에 저장해요.'],
-    menu: ['로그인', '방문 인증, 투표, 찜, 폐업 신고를 하려면 로그인이 필요해요.']
+    menu: ['로그인', '투표, 찜, 폐업 신고를 하려면 로그인이 필요해요.']
   };
   function needLogin(fn, what) { if (!loginOn || signedIn()) fn(); else openLogin(fn, what); }
   function openLogin(fn, what) {
@@ -2619,7 +2640,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     return p;
   }
   var toastTimer = 0;
-  function toast(t, kind) { var x = $('toast'); x.textContent = t; x.className = kind || ''; x.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { x.hidden = true; }, 3800); }
+  function toast(t, kind) { if (xpBusy) { xpQueue.push({ plain: t, kind: kind }); return; } var x = $('toast'); x.textContent = t; x.className = kind || ''; x.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { x.hidden = true; }, 3800); }
 
   // ----- 카드 하나를 돌려 쓴다 -----
   var panel = $('panel'), P = { kind: null, prev: null, anchor: null, cafe: -1 };
@@ -2759,8 +2780,22 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
         xinfo.appendChild(xtop);
         xinfo.appendChild(el('p', null, '다음 레벨까지 ' + fmt(1000 - XP.xp % 1000) + ' XP'));
         xl.appendChild(xinfo); xl.appendChild(icon('right'));
-      } else xl.appendChild(el('p', null, '로그인하면 방문 인증과 투표로 레벨을 쌓을 수 있어요'));
+      } else xl.appendChild(el('p', null, '로그인하면 투표로 레벨을 쌓을 수 있어요'));
       xsec.appendChild(xl);
+      if (signedIn()) {
+        var cnt = function (label) { return (XP.log || []).filter(function (e) { return e.r === label && e.a > 0; }).length; };
+        var stats = el('div', 'xstat');
+        [['투표한 카페', xpCount(XP.vote), 'vote'], ['새 동네', xpCount(XP.dong), 'list:새 동네'], ['새로 연 카페', cnt('새로 연 카페'), 'list:새로 연 카페'], ['정보 새로 고침', cnt('정보 새로 고침'), 'list:정보 새로 고침']].forEach(function (x) {
+          var b = btn(null, null, function () {
+            openRewards(x[2]);
+            // 메뉴에서 바로 연 목록이라 돌아갈 보상 체계 창이 없다. 닫기만 남긴다.
+            var t = document.querySelector('#xinfo .two'); if (t && t.children.length === 2) { var keep = t.lastChild; t.parentNode.replaceChild(keep, t); }
+          });
+          b.appendChild(el('b', null, String(x[1]))); b.appendChild(el('span', null, x[0]));
+          stats.appendChild(b);
+        });
+        xsec.appendChild(stats);
+      }
       if (XP_DEV) xsec.appendChild(toggleRow('거리 확인 (내 컴퓨터 시험용)', load('cafemap.nofar') !== 1, function (v) { save('cafemap.nofar', v ? 0 : 1); }));
       xsec.appendChild(el('span', 'xend'));
       sc.appendChild(xsec);
@@ -2773,6 +2808,14 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
         var title = function (text, ic) { var hd = el('div', 'xhead'), bd = el('span', 'xbadge'); bd.appendChild(icon(ic)); hd.appendChild(bd); hd.appendChild(el('h2', null, text)); box.appendChild(hd); };
         o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '보상 체계');
         o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
+        // 받은 곳 목록: XP 기록에서 그 이름으로 받은 것을 모은다(최근 것부터).
+        var listOf = function (label) { return (XP.log || []).filter(function (e) { return e.r === label && e.a > 0; }).slice().reverse(); };
+        var tapRow = function (label, xp) {
+          var n = label === '새 동네' ? xpCount(XP.dong) : listOf(label).length;
+          var r = btn('xrow xlink', null, function () { openRewards('list:' + label); }), l = el('span', null, label);
+          if (n) l.appendChild(el('small', null, n + '곳'));
+          r.appendChild(l); r.appendChild(el('b', null, '+' + fmt(xp) + ' XP')); r.appendChild(icon('right')); box.appendChild(r);
+        };
         var row = function (label, sub, xp, got) {
           var r = el('div', 'xrow' + (got ? ' got' : '')), l = el('span', null, label);
           if (sub) l.appendChild(el('small', null, sub));
@@ -2806,23 +2849,48 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
             var r = el('div', 'xrow'); r.appendChild(el('span', null, x[0])); r.appendChild(el('b', null, '+' + fmt(x[1]) + ' XP')); box.appendChild(r);
           });
         };
-        if (view === 'visit' || view === 'vote') {
-          title(view === 'visit' ? '방문 인증 보너스' : '투표 보너스', view === 'visit' ? 'stamp' : 'plug');
-          box.appendChild(el('p', null, view === 'visit' ? '방문 인증한 카페 수가 아래에 닿을 때마다 받아요.' : '콘센트 투표를 한 카페 수가 아래에 닿을 때마다 받아요.'));
-          if (view === 'visit') ladder(xnv, xnv, '방문 인증한 카페'); else ladder(XP.mv || 0, xno2, '투표한 카페');
+        if (view && view.indexOf('list:') === 0) {
+          var lab = view.slice(5), items2 = [];
+          title(lab, lab === '새 동네' ? 'map' : lab === '새로 연 카페' ? 'spark' : 'list');
+          if (lab === '새 동네') Object.keys(XP.dong).forEach(function (k) { var p = k.split(' '); items2.push({ c: p.slice(1).join(' '), t: 0 }); });
+          else listOf(lab).forEach(function (e) { items2.push({ c: e.c || '', t: e.t }); });
+          var ll2 = el('div', 'xll');
+          if (!items2.length) ll2.appendChild(el('p', 'xnone', '아직 없어요'));
+          items2.forEach(function (e) {
+            var r2 = el('div', 'xli'), rt2 = el('span', 'rt');
+            r2.appendChild(el('span', 'rs', e.c));
+            if (e.t) { var d2 = new Date(e.t); rt2.appendChild(el('small', null, (d2.getMonth() + 1) + '월 ' + d2.getDate() + '일')); }
+            r2.appendChild(rt2); ll2.appendChild(r2);
+          });
+          box.appendChild(ll2);
+          var two2 = el('div', 'two');
+          two2.appendChild(btn('btn', '뒤로', function () { openRewards(); }));
+          two2.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
+          box.appendChild(two2);
+        } else if (view === 'dong' || view === 'vote') {
+          title(view === 'dong' ? '동네 보너스' : '투표 보너스', view === 'dong' ? 'map' : 'plug');
+          box.appendChild(el('p', null, view === 'dong' ? '투표한 동네 수가 아래에 닿을 때마다 받아요.' : '콘센트 투표를 한 카페 수가 아래에 닿을 때마다 받아요.'));
+          if (view === 'dong') ladder(XP.md || 0, xpCount(XP.dong), '투표한 동네'); else ladder(XP.mv || 0, xno2, '투표한 카페');
+          if (view === 'dong' && xpCount(XP.dong)) {
+            box.appendChild(el('div', 'xgrp', '투표한 동네'));
+            var dl2 = el('div', 'xll');
+            Object.keys(XP.dong).forEach(function (k) { var r3 = el('div', 'xli'); r3.appendChild(el('span', 'rs', k.split(' ').slice(1).join(' '))); dl2.appendChild(r3); });
+            box.appendChild(dl2);
+          }
           box.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
         } else {
           title('보상 체계', 'trophy');
           box.appendChild(el('p', null, '1,000 XP를 모을 때마다 레벨이 1 올라요.'));
           box.appendChild(el('div', 'xgrp', '기본'));
-          row('첫 방문 인증', '', 500, false);
-          row('재방문 인증', '', 200, false);
           row('콘센트 투표', '', 1000, false);
           row('첫 콘센트 투표', '', 2000, false);
           row('콘센트 좌석 투표', '', 300, false);
+          box.appendChild(el('div', 'xgrp', '더 받는 경우'));
+          tapRow('새 동네', 500);
+          tapRow('새로 연 카페', 500);
+          tapRow('정보 새로 고침', 500);
           box.appendChild(el('div', 'xgrp', '시작 보너스'));
           row('로그인', '', 1000, true);
-          row('생애 첫 방문 인증', '', 1000, !!XP.fv);
           row('생애 첫 투표', '', 1000, !!XP.fo);
           var ok = btn('btn pri', '닫기', function () { o.remove(); });
           box.appendChild(ok);
@@ -2830,7 +2898,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
         o.appendChild(box); document.body.appendChild(o);
       };
       // 메뉴에는 보상 체계 아래에 달성 보너스 두 줄을 바로 둔다. 누르면 각각의 표가 뜬다.
-      [['보상 체계', null, 'trophy', 'rw'], ['방문 인증 보너스', 'visit', 'stamp', 'visit'], ['투표 보너스', 'vote', 'plug', 'vote']].forEach(function (x) {
+      [['보상 체계', null, 'trophy', 'rw'], ['투표 보너스', 'vote', 'plug', 'vote'], ['동네 보너스', 'dong', 'map', 'visit']].forEach(function (x) {
         var rw = btn('xrow xlink', null, function () { openRewards(x[1]); });
         var bd = el('span', 'xbadge ' + x[3]); bd.appendChild(icon(x[2])); rw.appendChild(bd);
         rw.appendChild(el('span', null, x[0])); rw.appendChild(icon('right'));
@@ -3486,42 +3554,34 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     var xs = function () {};
     if (XP_ON && loginOn) {
       r1.hidden = true; more.hidden = true;
-      var locating = false, xk = cidOf(i), vrow = el('div', 'xvisit'), vbtn = btn('xgo', null, function () { needLogin(function () { if (devOwner(xk) && devOwner(xk) !== who.u) { toast('이 폰에서는 이 카페를 다른 계정으로 이미 인증했어요'); return; } checkNear(i, function () { xpVisit(i); sync(); }, function (on) { locating = on; vbtn.disabled = on; if (on) { vName.textContent = '위치 확인 중'; vXp.textContent = ''; } else sync(); }); }, 'visit'); }), vdone = el('div', 'xdone');
-      vrow.appendChild(vbtn); vrow.appendChild(vdone); rec.insertBefore(vrow, rec.firstChild);
+      var locating = false, xk = cidOf(i);
       var xr = el('div', 'opts one four'), xhint = el('div', 'xhint');
       var plain = function (text, fn) { var bt = btn('opt', text, fn), n = el('span', 'n'); bt.appendChild(n); return [bt, n, text]; };
       // 투표를 바꾼 뒤 그 결과를 진짜 투표 기록(myO, myC)에 옮기고 서버에 올린다.
+      // 처음 투표할 때만 카페 30m 안인지 확인한다. 이미 투표한 카페는 어디서든 고칠 수 있다.
+      // 같은 카페는 한 폰에서 한 계정만 투표할 수 있다.
+      var apply = function (o, bit) {
+        xpVote(i, o, bit);
+        var m = XP.vote[xk] || [0, 0, 0];
+        myO[i] = m[0]; myC[i] = m[0] === 1 ? m[1] : 0;
+        store();
+      };
       var cast = function (o, bit) {
-        if (signedIn() && !XP.vis[xk]) { toast('방문 인증을 하면 투표할 수 있어요'); return; }
+        if (locating) return;
         needLogin(function () {
-          if (!XP.vis[xk]) { toast('방문 인증을 하면 투표할 수 있어요'); return; }
-          xpVote(i, o, bit);
-          var m = XP.vote[xk] || [0, 0, 0];
-          myO[i] = m[0]; myC[i] = m[0] === 1 ? m[1] : 0;
-          store();
+          if (myO[i]) { apply(o, bit); return; }
+          if (devOwner(xk) && devOwner(xk) !== who.u) { toast('이 폰에서는 이 카페에 다른 계정으로 이미 투표했어요'); return; }
+          checkNear(i, function () { devClaim(xk); apply(o, bit); }, function (on) { locating = on; xr.classList.toggle('busy', on); if (on) toast('위치 확인 중'); });
         }, 'vote');
       };
       var xb = CHAIRS.map(function (c) { var x = plain(c[1], function () { cast(1, c[2]); }); xr.appendChild(x[0]); return [x, c]; });
       var xno = plain('없어요', function () { cast(-1, 0); }); xr.appendChild(el('span', 'vsep')); xr.appendChild(xno[0]);
       rec.insertBefore(xr, more); rec.insertBefore(xhint, more);
       rec.querySelector('.vh b').textContent = '콘센트 좌석 (중복 선택)';
-      // 방문 인증 단추 안: 도장 아이콘, 이름, 받을 XP. 생애 첫 인증이면 보너스 칩을 아래에 붙인다.
-      vbtn.textContent = '';
-      var vIco = el('span', 'xgi'), vTxt = el('span', 'xgt'), vName = el('b'), vXp = el('span', 'xgx'), vBonus = el('span', 'xgb');
-      vIco.appendChild(icon('stamp')); vTxt.appendChild(vName); vTxt.appendChild(vBonus);
-      vbtn.appendChild(vIco); vbtn.appendChild(vTxt); vbtn.appendChild(vXp);
       xs = function () {
-        var vis = XP.vis[xk], mine = [myO[i], myC[i]], v = votes[i] || [0, 0, 0, 0, 0], today = xpToday(), can = !!vis && signedIn();
-        var doneToday = !!vis && vis[1] === today;
-        vbtn.hidden = doneToday;
-        if (!locating) {
-          vName.textContent = vis ? '재방문 인증' : '방문 인증';
-          vXp.textContent = '+' + (vis ? 200 : 500) + ' XP';
-          vBonus.hidden = true;
-        }
-        vdone.textContent = '';
-        xb.forEach(function (cb) { var on = mine[0] === 1 && (mine[1] & cb[1][2]) !== 0; setBtn(cb[0], on, v[cb[1][3]] + (on ? 1 : 0)); cb[0][0].classList.toggle('locked', !can); });
-        setBtn(xno, mine[0] === -1, v[1] + (mine[0] === -1 ? 1 : 0)); xno[0].classList.toggle('locked', !can);
+        var mine = [myO[i], myC[i]], v = votes[i] || [0, 0, 0, 0, 0];
+        xb.forEach(function (cb) { var on = mine[0] === 1 && (mine[1] & cb[1][2]) !== 0; setBtn(cb[0], on, v[cb[1][3]] + (on ? 1 : 0)); });
+        setBtn(xno, mine[0] === -1, v[1] + (mine[0] === -1 ? 1 : 0));
         total.textContent = people(v[0] + v[1] + (mine[0] ? 1 : 0));
         xhint.textContent = '';
       };
