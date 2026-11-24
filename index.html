@@ -1068,6 +1068,31 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     xpSave();
     if (!xpBusy) xpPump();
   }
+  // 방문 인증 거리: 카페에서 30m 안(사용자가 정함). 폰이 알려 주는 위치 오차가 크면(건물 안, 지하) 그만큼 봐주되 최대 30m까지만.
+  // 폰 위치로는 층과 바로 옆 가게를 구별할 수 없어서, 같은 건물에서도 인증될 수 있다(알고 정한 한계).
+  var VISIT_M = 30, VISIT_SLACK = 30;
+  function distM(lat1, lng1, lat2, lng2) {
+    var r = Math.PI / 180, x = (lng2 - lng1) * r * Math.cos((lat1 + lat2) / 2 * r), y = (lat2 - lat1) * r;
+    return Math.sqrt(x * x + y * y) * 6371000;
+  }
+  // 위치를 한 번 받아서 카페 근처인지 확인한 뒤 ok()를 부른다. 위치는 여기서만 쓰고 저장하지 않는다.
+  var visitBusy = false;
+  function checkNear(i, ok, done) {
+    if (XP.nofar) { ok(); return; }
+    if (!navigator.geolocation) { toast('이 브라우저에서는 위치를 확인할 수 없어요'); return; }
+    if (visitBusy) return;
+    visitBusy = true; if (done) done(true);
+    navigator.geolocation.getCurrentPosition(function (p) {
+      visitBusy = false; if (done) done(false);
+      var d = distM(p.coords.latitude, p.coords.longitude, D.lat[i] / 1e5, D.lng[i] / 1e5);
+      var limit = VISIT_M + Math.min(p.coords.accuracy || 0, VISIT_SLACK);
+      if (d <= limit) ok();
+      else toast(d < 1000 ? '카페에서 ' + Math.round(d) + 'm 떨어져 있어요. 카페에 가서 눌러 주세요' : '카페 근처에서만 방문 인증을 할 수 있어요');
+    }, function (e) {
+      visitBusy = false; if (done) done(false);
+      toast(e && e.code === 1 ? '위치 사용을 허락해야 방문 인증을 할 수 있어요' : '위치를 확인하지 못했어요. 잠시 뒤에 다시 눌러 주세요');
+    }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 20000 });
+  }
   function xpVisit(i) {
     var k = cidOf(i), v = XP.vis[k], today = xpToday(), items = [], n, b, t, re = 0;
     if (!v) {
@@ -2531,7 +2556,8 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       xl.appendChild(xtop);
       xl.appendChild(el('p', null, '다음 레벨까지 ' + fmt(1000 - XP.xp % 1000) + ' XP'));
       xsec.appendChild(xl);
-      xsec.appendChild(btn('link', '체험 기록 지우고 처음부터', function () { XP = { xp: 1000, vis: {}, vote: {}, fv: 0, fo: 0, mv: 0 }; xpSave(); renderPanel(); toast('체험 기록을 지웠어요'); }));
+      xsec.appendChild(toggleRow('거리 확인', !XP.nofar, function (v) { XP.nofar = v ? 0 : 1; xpSave(); }));
+      xsec.appendChild(btn('link', '체험 기록 지우고 처음부터', function () { var nf = XP.nofar; XP = { xp: 1000, vis: {}, vote: {}, fv: 0, fo: 0, mv: 0, nofar: nf }; xpSave(); renderPanel(); toast('체험 기록을 지웠어요'); }));
       sc.appendChild(xsec);
       // 보상 체계는 메뉴에 적지 않고, 줄을 누르면 위에 뜨는 창에서 본다.
       // 창 안의 달성 보너스 두 줄(방문 인증 보너스, 투표 보너스)을 누르면 같은 창이 그 표로 바뀌고, 뒤로를 누르면 돌아온다.
@@ -3190,7 +3216,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     var xs = function () {};
     if (XP_ON) {
       r1.hidden = true; more.hidden = true;
-      var xk = cidOf(i), vrow = el('div', 'xvisit'), vbtn = btn('xgo', null, function () { xpVisit(i); sync(); }), vdone = el('div', 'xdone');
+      var xk = cidOf(i), vrow = el('div', 'xvisit'), vbtn = btn('xgo', null, function () { checkNear(i, function () { xpVisit(i); sync(); }, function (on) { vbtn.disabled = on; if (on) vbtn.textContent = '위치 확인 중'; else sync(); }); }), vdone = el('div', 'xdone');
       vrow.appendChild(vbtn); vrow.appendChild(vdone); rec.insertBefore(vrow, rec.firstChild);
       var xr = el('div', 'opts one four'), xhint = el('div', 'xhint');
       var plain = function (text, fn) { var bt = btn('opt', text, fn), n = el('span', 'n'); bt.appendChild(n); return [bt, n, text]; };
