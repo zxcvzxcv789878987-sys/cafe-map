@@ -403,10 +403,16 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 #celeb .cc { position: relative; width: min(256px, 74vw); padding: 26px 20px 22px; border-radius: 22px; background: var(--surface); box-shadow: 0 12px 32px rgba(0, 0, 0, .16); display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; animation: ccPop .35s cubic-bezier(.2, .9, .3, 1.25); }
 #celeb .md { position: relative; width: 60px; height: 60px; border-radius: 18px; display: grid; place-items: center; color: var(--c1); background: color-mix(in srgb, var(--c1) 13%, var(--surface)); animation: mdPop .45s .05s cubic-bezier(.2, .9, .3, 1.5) both; }
 #celeb .md svg.i { width: 30px; height: 30px; }
+/* 로티 그림 칸과 화면 가득 폭죽, 확인 단추 */
+#celeb .md.lt { width: 132px; height: 132px; margin: -6px 0 -10px; border-radius: 0; background: none; }
+#celeb .cf, #lvup .cf { position: absolute; inset: 0; pointer-events: none; }
+#celeb .cc { z-index: 1; }
+#celeb .cc .btn { align-self: stretch; height: 46px; margin-top: 14px; border-radius: 13px; font-size: 15px; }
+#lvup .box { position: relative; z-index: 1; }
 #celeb .ct { margin-top: 12px; font-size: 12.5px; font-weight: 700; color: var(--c1); }
 #celeb .cn { font-size: 18px; font-weight: 800; }
 #celeb .cx { margin-top: 2px; color: var(--c1); font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; animation: lvRise .4s .3s both; }
-#celeb .bs { position: absolute; left: 50%; top: 56px; width: 0; height: 0; }
+#celeb .bs { display: none; position: absolute; left: 50%; top: 56px; width: 0; height: 0; }
 #celeb .bs i { position: absolute; left: -3.5px; top: -3.5px; width: 7px; height: 7px; border-radius: 2px; background: var(--c1); opacity: 0; animation: bsFly .8s var(--d) ease-out forwards; }
 #celeb .bs i:nth-child(3n) { background: var(--c2); border-radius: 50%; }
 #celeb .bs i:nth-child(4n) { background: #6a5ae0; }
@@ -1339,32 +1345,59 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     void x.offsetWidth; x.hidden = false;
     toastTimer = setTimeout(xpPump, 1500);
   }
-  // 축하 장면: 가운데 메달과 이름, 받은 XP. 주위로 색 조각이 터진다. 2.4초 뒤 저절로 닫히거나 누르면 닫힌다.
+  // 로티 애니메이션: 재생기는 처음 필요할 때 받아 온다. 그림 자료는 lottie/ 폴더(출처는 lottie/CREDITS.txt).
+  var LOTTIE_JS = 'https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie_light.min.js', lottieP = null, lottieJ = {};
+  function lottieLib() {
+    if (window.lottie) return Promise.resolve(window.lottie);
+    if (!lottieP) lottieP = new Promise(function (res, rej) {
+      var sc = document.createElement('script'); sc.src = LOTTIE_JS; sc.async = true;
+      sc.onload = function () { if (window.lottie) res(window.lottie); else { lottieP = null; rej(new Error('lottie')); } };
+      sc.onerror = function () { lottieP = null; rej(new Error('lottie')); };
+      document.head.appendChild(sc);
+    });
+    return lottieP;
+  }
+  function lottieJson(n) {
+    if (!lottieJ[n]) lottieJ[n] = fetch('lottie/' + n + '.json').then(function (r) { if (!r.ok) throw new Error('json'); return r.json(); }).catch(function (e) { delete lottieJ[n]; throw e; });
+    return lottieJ[n];
+  }
+  function playLottie(box, n, cover) {
+    return Promise.all([lottieLib(), lottieJson(n)]).then(function (a) {
+      if (!box.isConnected) return null;
+      box.textContent = '';
+      return a[0].loadAnimation({ container: box, renderer: 'svg', loop: false, autoplay: true, animationData: a[1], rendererSettings: { preserveAspectRatio: cover ? 'xMidYMid slice' : 'xMidYMid meet' } });
+    });
+  }
+  // 미리 받아 두기(로그인한 사람만, 앱이 뜬 뒤 조용히)
+  function lottiePrefetch() { lottieLib().then(function () { ['gift', 'trophy', 'coffee', 'confetti'].forEach(function (n) { lottieJson(n).catch(function () {}); }); }, function () {}); }
+  var REDUCE = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // 축하 장면: 가운데 그림(로티)과 이름, 받은 XP. 뒤로 화면 가득 폭죽. 확인 단추를 눌러야 닫힌다.
+  // 그림: 생애 첫 투표는 선물 상자, 투표 보너스는 트로피, 동네 보너스는 웃는 커피잔.
   function xpCelebrate(it, next) {
     var old = $('celeb'); if (old) old.remove();
-    var o = el('div'), card = el('div', 'cc'), medal = el('div', 'md'), burst = el('div', 'bs'), done = false;
-    var visit = /동네/.test(it[1]), kind = /달성$/.test(it[1]) ? 'goal' : visit ? 'visit' : 'vote';
-    o.id = 'celeb'; o.className = kind; o.setAttribute('role', 'status');
-    medal.appendChild(icon(kind === 'goal' ? 'trophy' : visit ? 'map' : 'plug'));
-    for (var k = 0; k < 12; k++) {
-      var p = el('i'), ang = k / 12 * Math.PI * 2, dist = 50 + (k % 3) * 12;
-      p.style.setProperty('--x', Math.round(Math.cos(ang) * dist) + 'px'); p.style.setProperty('--y', Math.round(Math.sin(ang) * dist) + 'px');
-      p.style.setProperty('--d', (k % 4) * 40 + 'ms'); burst.appendChild(p);
-    }
-    card.appendChild(burst); card.appendChild(medal);
-    card.appendChild(el('div', 'ct', kind === 'goal' ? '보너스 달성' : '처음이에요'));
+    var o = el('div'), conf = el('div', 'cf'), card = el('div', 'cc'), medal = el('div', 'md lt'), done = false;
+    var goal = /달성$/.test(it[1]), dong = /^동네/.test(it[1]);
+    var kind = goal ? (dong ? 'visit' : 'goal') : 'vote', pic = goal ? (dong ? 'coffee' : 'trophy') : 'gift';
+    o.id = 'celeb'; o.className = kind; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', it[1]);
+    card.appendChild(medal);
+    card.appendChild(el('div', 'ct', goal ? '보너스 달성' : '처음이에요'));
     card.appendChild(el('div', 'cn', it[1]));
     card.appendChild(el('div', 'cx', '+' + fmt(it[0]) + ' XP'));
-    o.appendChild(card); document.body.appendChild(o);
     var close = function () { if (done) return; done = true; o.classList.add('out'); setTimeout(function () { o.remove(); next(); }, 220); };
-    o.addEventListener('click', close);
-    setTimeout(close, 2400);
+    var ok = btn('btn pri', '확인', close); card.appendChild(ok);
+    o.appendChild(conf); o.appendChild(card); document.body.appendChild(o);
+    // 그림을 1.5초 안에 못 받으면 예전 아이콘을 보여 준다(그 뒤에 받아지면 그림으로 바뀐다).
+    var fb = setTimeout(function () { if (!medal.firstChild) { medal.classList.remove('lt'); medal.appendChild(icon(goal ? (dong ? 'map' : 'trophy') : 'plug')); } }, 1500);
+    playLottie(medal, pic).then(function (a) { if (a) { clearTimeout(fb); medal.classList.add('lt'); } }, function () {});
+    if (!REDUCE) playLottie(conf, 'confetti', true).catch(function () {});
+    setTimeout(function () { if (o.isConnected) ok.focus(); }, 50);
   }
   function xpLevelUp(from, to, items) {
     var old = $('lvup'); if (old) old.remove();
     var o = el('div'), box = el('div', 'box'), ok = btn(null, '확인', function () { o.remove(); });
     o.id = 'lvup'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '레벨 업');
     o.appendChild(el('div', 'ring'));
+    var lconf = el('div', 'cf'); o.appendChild(lconf);
     box.appendChild(el('div', 'cap', 'LEVEL UP'));
     // 숫자가 지금 레벨부터 오른 레벨까지 하나씩 올라간다. 오를 때마다 숫자가 살짝 튀어 오른다.
     var num = el('div', 'num', 'Lv.' + from); box.appendChild(num);
@@ -1377,7 +1410,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
         cur++; num.textContent = 'Lv.' + cur;
         num.classList.remove('bump'); void num.offsetWidth; num.classList.add('bump');
         if (cur < to) setTimeout(tick, cur === to - 1 ? gap * 1.8 : gap);
-        else num.classList.add('done');
+        else { num.classList.add('done'); playLottie(lconf, 'confetti', true).catch(function () {}); }
       }, 650);
     }
     box.appendChild(el('div', 'from', 'Lv.' + from + ' → Lv.' + to));
@@ -1397,6 +1430,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   // items: [[XP, 까닭], ...]
   // items: [[XP, 까닭, 카페 이름(없어도 됨)], ...]. 받은 것마다 XP 기록(XP.log)에 남긴다(최근 300개까지).
   function xpGive(items) {
+    lottiePrefetch();
     if (!xpLvFrom) xpLvFrom = Math.floor(XP.xp / 1000);
     if (!Array.isArray(XP.log)) XP.log = xpRebuild();
     var now = Date.now();
@@ -3360,8 +3394,12 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     list.forEach(function (x) { ids[x.id] = 1; });
     var acc = !signedIn() || !SHARE.db ? Promise.resolve() : token().then(function (t) {
       return fetch(SHARE.db + '/v2/feedback.json?orderBy=%22u%22&equalTo=%22' + encodeURIComponent(who.u) + '%22&auth=' + encodeURIComponent(t));
-    }).then(function (r) { return r.ok ? r.json() : null; }).then(function (all) {
-      for (var id in all || {}) if (!ids[id]) { var v = all[id]; ids[id] = 1; list.push({ id: id, k: v.k, m: v.m, t: v.t || 0 }); }
+    }).then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); }).then(function (all) {
+      all = all || {};
+      for (var id in all) if (!ids[id]) { var v = all[id]; ids[id] = 1; list.push({ id: id, k: v.k, m: v.m, t: v.t || 0 }); }
+      // 이 계정으로 보냈는데 서버에 없는 것(운영자가 지운 것)은 목록과 이 기기 기록에서 뺀다. 로그인 없이 보낸 것은 확인할 수 없어 둔다.
+      var gone = list.filter(function (x) { return (x.acc === undefined || x.acc === who.u) && !all[x.id]; }).map(function (x) { return x.id; });
+      if (gone.length) { list = list.filter(function (x) { return gone.indexOf(x.id) < 0; }); save('cafemap.myfb', fbMine().filter(function (x) { return gone.indexOf(x.id) < 0; })); }
     }).catch(function () {});
     return acc.then(function () {
       list.sort(function (a, b) { return (b.t || 0) - (a.t || 0); });
@@ -3479,6 +3517,16 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       fitVisible(o);
     };
   }
+  // 문의를 보낸 뒤: 확인 단추를 눌러 닫는 창
+  function fbSent() {
+    var old = $('xinfo'); if (old) old.remove();
+    var o = el('div'), box = el('div', 'xbox nick');
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '문의를 보냈어요');
+    box.appendChild(el('h2', null, '문의를 보냈어요'));
+    box.appendChild(el('p', 'xexp', '답변이 오면 메뉴 단추에 빨간 점이 떠요. 메뉴의 내 문의에서 볼 수 있어요.'));
+    box.appendChild(btn('btn pri', '확인', function () { o.remove(); }));
+    o.appendChild(box); document.body.appendChild(o);
+  }
   function openFeedback() {
     var old = $('xinfo'); if (old) old.remove();
     var o = el('div'), box = el('div', 'xbox'), hd = el('div', 'xhead'), bd = el('span', 'xbadge'), ta = document.createElement('textarea');
@@ -3514,7 +3562,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       };
       (signedIn() ? token().then(go, function () { return go(''); }) : go(''))
         .then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); })
-        .then(function (d) { fbRemember({ id: d.name, k: rec.k, m: rec.m, t: Date.now() }); o.remove(); toast('보냈어요. 메뉴의 내 문의에서 답변을 볼 수 있어요'); if (P.kind === 'menu') renderPanel(); })
+        .then(function (d) { fbRemember({ id: d.name, k: rec.k, m: rec.m, t: Date.now(), acc: signedIn() ? who.u : '' }); o.remove(); fbSent(); if (P.kind === 'menu') renderPanel(); })
         .catch(function () { sending = false; send.textContent = '보내기'; toast('보내지 못했어요. 잠시 뒤에 다시 해 주세요'); });
     });
     two.appendChild(btn('btn', '닫기', function () { o.remove(); }));
