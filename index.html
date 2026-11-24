@@ -268,6 +268,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .rec .opts.three .opt { font-size: 12.5px; }
 .rec .acts { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .opt.quiet { border-color: transparent; color: var(--ink-3); padding: 0 8px; }
+.acts .opt { display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+.acts .opt .fxs { width: 17px; height: 17px; vertical-align: 0; }
 .opt.quiet:hover { color: var(--ink); border-color: var(--line-2); }
 .opt.quiet[aria-pressed=true] { background: var(--pri); border-color: var(--pri); color: var(--on-pri); }
 .opt.quiet[aria-pressed=true] svg.i { fill: none; }
@@ -1094,6 +1096,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
 .xbox.done { align-items: center; text-align: center; }
 .xbox.done .dti { width: 92px; margin: 0 auto 2px; }
 .xbox.done .btn { align-self: stretch; }
+.xbox.done .two { align-self: stretch; }
 /* 움직임을 줄인 폰: 그림은 움직이지 않고 끝난 모양으로 */
 @media (prefers-reduced-motion: reduce) { .fx * { animation-duration: .001s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; } }
 </style>
@@ -1816,6 +1819,18 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     var x = $('toast'); clearTimeout(toastTimer); toastSeq++; x.hidden = true; x.textContent = ''; x.className = 'xp art';
     var ti = el('div', 'ti'); ti.appendChild(fxArt(pic)); x.appendChild(ti); x.appendChild(el('b', null, bold));
     void x.offsetWidth; x.hidden = false; toastTimer = setTimeout(function () { toastOut(x); }, 2000);
+  }
+  // 폐업 신고 확인 창: 가볍게 눌리지 않게 한 번 묻고, 신고 뒤에 어떻게 되는지 알린다.
+  function confirmGone(go) {
+    var old = $('xinfo'); if (old) old.remove();
+    var o = el('div'), box = el('div', 'xbox nick done'), ti = el('div', 'dti'), two = el('div', 'two');
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '폐업 신고');
+    ti.appendChild(fxArt('mi_flag')); box.appendChild(ti);
+    box.appendChild(el('h2', null, '폐업으로 신고할까요?'));
+    box.appendChild(el('p', 'xexp', '운영자가 확인한 뒤 지도에서 지울지 정해요. 신고하면 내 지도에서는 이 카페가 바로 빠져요.'));
+    two.appendChild(btn('btn', '취소', function () { o.remove(); }));
+    two.appendChild(btn('btn pri', '신고하기', function () { o.remove(); go(); }));
+    box.appendChild(two); o.appendChild(box); document.body.appendChild(o);
   }
   // 그림이 든 확인 창: 그림, 제목, 아래 글, 확인 단추. big이면 아래 글을 크게(닉네임).
   function doneBox(pic, title, sub, big, next) {
@@ -4739,7 +4754,11 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     bWant.classList.add('heart');
     bWant.appendChild(fxIcon('mi_heart')); bWant.appendChild(document.createTextNode('찜'));
     // 폐업 신고: 가 보니 이 카페가 없을 때 누른다. 내 지도에서는 바로 빠지고, 다른 사람에게는 신고 수로 보인다.
-    var bGone = voteBtn('폐업 신고', function () { setGone(i, !myGone[i]); sync(); refilter(); requestDraw(); }, 'gone');
+    var bGone = voteBtn('폐업 신고', function () {
+      var go = function (on) { setGone(i, on); sync(); refilter(); requestDraw(); };
+      if (myGone[i]) { go(false); return; }
+      confirmGone(function () { go(true); });
+    }, 'gone');
     bGone[0].classList.add('quiet'); bGone[0].insertBefore(fxIcon('mi_flag'), bGone[0].firstChild);
     bGone[0].title = '가 보니 이 카페가 없을 때 눌러 주세요';
     r3.appendChild(bWant); r3.appendChild(bGone[0]);
