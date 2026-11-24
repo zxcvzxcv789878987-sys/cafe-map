@@ -446,9 +446,17 @@ button.xlink .xbadge.vote { --pri: #f76707; --pri2: #ffa94d; }
 button.xlink .xbadge.rw { --pri: #6a5ae0; --pri2: #8b7bf2; }
 button.xlink .xbadge.bug { --pri: #e03131; --pri2: #ff8787; }
 button.xlink .xbadge.ask { --pri: #1c7ed6; --pri2: #74c0fc; }
-/* 개선 건의 창 */
-.xbox.bug { --pri: #e03131; --pri2: #ff8787; }
-.xbox.ask { --pri: #1c7ed6; --pri2: #74c0fc; }
+/* 문의 창: 종류마다 색이 다르다. 앱 오류 빨강, 카페 정보 오류 청록, 기능 제안 보라, 기타 문의 파랑. */
+.xbox.fb-bug, .fbk .fb-bug { --pri: #e03131; --pri2: #ff8787; }
+.xbox.fb-data, .fbk .fb-data { --pri: #0ca678; --pri2: #38d9a9; }
+.xbox.fb-idea, .fbk .fb-idea { --pri: #6a5ae0; --pri2: #8b7bf2; }
+.xbox.fb-ask, .fbk .fb-ask { --pri: #1c7ed6; --pri2: #74c0fc; }
+.fbk { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 4px; }
+.fbk button { display: flex; align-items: center; gap: 7px; height: 44px; padding: 0 12px; border-radius: 12px; background: var(--surface-2); color: var(--ink-2); font-size: 14px; font-weight: 650; }
+.fbk button svg.i { width: 17px; height: 17px; color: var(--pri); flex: none; }
+.fbk button[aria-pressed=true] { background: linear-gradient(155deg, var(--pri2), var(--pri)); color: #fff; box-shadow: 0 4px 10px color-mix(in srgb, var(--pri) 28%, transparent); }
+.fbk button[aria-pressed=true] svg.i { color: #fff; }
+.xbox .fbto { font-size: 12px; }
 .xbox textarea { width: 100%; min-height: 150px; resize: vertical; margin-top: 8px; padding: 12px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); font: inherit; font-size: 16px; line-height: 1.5; }
 .xbox textarea:focus { outline: 2px solid var(--pri); outline-offset: -1px; border-color: transparent; }
 .xms span.next b { color: var(--ink); }
@@ -2618,15 +2626,10 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     });
     st.appendChild(stTabs); conf.appendChild(st);
     sc.appendChild(conf);
-    // 개선 건의: 오류 버그 신고와 건의사항 문의. 누르면 글을 쓰는 창이 뜨고, 보내기를 누르면 운영자에게 가는 메일이 열린다.
-    var fb = el('div', 'fsec');
-    fb.appendChild(el('div', 'ftitle', '개선 건의'));
-    [['오류 버그 신고', 'bug', 'bug'], ['건의사항 문의', 'ask', 'chat']].forEach(function (x) {
-      var r = btn('xrow xlink', null, function () { openFeedback(x[1], x[0]); }), bd = el('span', 'xbadge ' + x[1]);
-      bd.appendChild(icon(x[2])); r.appendChild(bd); r.appendChild(el('span', null, x[0])); r.appendChild(icon('right'));
-      fb.appendChild(r);
-    });
-    sc.appendChild(fb);
+    // 문의하기: 누르면 글을 쓰는 창이 뜬다. 종류는 창 안에서 고른다.
+    var fb = el('div', 'fsec'), fr = btn('xrow xlink', null, function () { openFeedback(); }), fbd = el('span', 'xbadge ask');
+    fbd.appendChild(icon('chat')); fr.appendChild(fbd); fr.appendChild(el('span', null, '문의하기')); fr.appendChild(icon('right'));
+    fb.appendChild(fr); sc.appendChild(fb);
     var info = el('div', 'fsec'), ul = el('ul', 'mlist');
     info.style.borderBottom = '0';
     info.appendChild(el('div', 'ftitle', '지도 자료'));
@@ -2650,16 +2653,35 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     var pl = el('li'), pa = el('a', null, '개인정보처리방침'); pa.href = 'privacy.html'; pa.target = '_blank'; pa.rel = 'noopener'; pl.appendChild(pa); ul.appendChild(pl);
     info.appendChild(ul); sc.appendChild(info);
   }
-  // 개선 건의 창. 서버에 따로 저장하지 않고, 쓴 내용을 담은 메일을 운영자 주소(share.js의 contact)로 연다.
-  function openFeedback(kind, title) {
+  // 문의 창. 서버에 따로 저장하지 않고, 쓴 내용을 담은 메일을 운영자 주소(share.js의 contact)로 연다.
+  // 종류를 고르면 창의 색과 안내, 예시 문구가 바뀐다. 앱 오류만 기기 정보를 덧붙인다(원인을 찾는 데 필요해서).
+  var FB_KINDS = [
+    ['bug', '앱 오류', 'bug', '어떤 화면에서 무엇을 눌렀을 때 어떻게 됐는지 적어 주세요.', '예) 카페를 누르면 카드가 안 열려요'],
+    ['data', '카페 정보 오류', 'pin', '카페 이름과 무엇이 틀렸는지 적어 주세요. 위치, 넓이, 없는 카페 모두 좋아요.', '예) OO카페 위치가 길 건너편으로 찍혀 있어요'],
+    ['idea', '기능 제안', 'spark', '있었으면 하는 기능이나 바꾸면 좋을 점을 적어 주세요.', '예) 주차 되는 카페만 볼 수 있으면 좋겠어요'],
+    ['ask', '기타 문의', 'chat', '궁금한 점을 적어 주세요.', '예) 투표는 어떻게 집계되나요?']
+  ];
+  function openFeedback() {
     var to = (window.CAFE_SHARE && window.CAFE_SHARE.contact) || '';
     var old = $('xinfo'); if (old) old.remove();
-    var o = el('div'), box = el('div', 'xbox ' + kind), hd = el('div', 'xhead'), bd = el('span', 'xbadge'), ta = document.createElement('textarea');
-    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', title);
+    var o = el('div'), box = el('div', 'xbox'), hd = el('div', 'xhead'), bd = el('span', 'xbadge'), ta = document.createElement('textarea');
+    var desc = el('p'), kinds = el('div', 'fbk'), cur = null;
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '문의하기');
     o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
-    bd.appendChild(icon(kind === 'bug' ? 'bug' : 'chat')); hd.appendChild(bd); hd.appendChild(el('h2', null, title)); box.appendChild(hd);
-    box.appendChild(el('p', null, kind === 'bug' ? '어떤 화면에서 무엇을 눌렀을 때 어떻게 됐는지 적어 주세요.' : '바라는 점이나 궁금한 점을 적어 주세요.'));
-    ta.placeholder = kind === 'bug' ? '예) 카페를 누르면 카드가 안 열려요' : '예) 이런 기능이 있으면 좋겠어요';
+    bd.appendChild(icon('chat')); hd.appendChild(bd); hd.appendChild(el('h2', null, '문의하기')); box.appendChild(hd);
+    var pick = function (k) {
+      cur = k; box.className = 'xbox fb-' + k[0];
+      bd.textContent = ''; bd.appendChild(icon(k[2]));
+      desc.textContent = k[3]; ta.placeholder = k[4];
+      [].forEach.call(kinds.children, function (c) { c.setAttribute('aria-pressed', String(c.dataset.k === k[0])); });
+    };
+    FB_KINDS.forEach(function (k) {
+      var c = btn(null, null, function () { pick(k); ta.focus(); });
+      c.dataset.k = k[0]; c.className = 'fb-' + k[0];
+      c.appendChild(icon(k[2])); c.appendChild(el('span', null, k[1]));
+      kinds.appendChild(c);
+    });
+    box.appendChild(kinds); box.appendChild(desc);
     ta.maxLength = 1500; box.appendChild(ta);
     var two = el('div', 'two');
     two.appendChild(btn('btn', '닫기', function () { o.remove(); }));
@@ -2668,13 +2690,14 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       if (!text) { ta.focus(); toast('내용을 적어 주세요'); return; }
       if (!to) { toast('받는 주소가 아직 설정되지 않았어요'); return; }
       var body = text;
-      if (kind === 'bug') body += '\n\n----\n기기: ' + navigator.userAgent + '\n화면: ' + innerWidth + 'x' + innerHeight + '\n주소: ' + location.href + '\n페이지 갱신: ' + document.lastModified;
-      location.href = 'mailto:' + to + '?subject=' + encodeURIComponent('[카페지도] ' + title) + '&body=' + encodeURIComponent(body);
+      if (cur[0] === 'bug') body += '\n\n----\n기기: ' + navigator.userAgent + '\n화면: ' + innerWidth + 'x' + innerHeight + '\n주소: ' + location.href + '\n페이지 갱신: ' + document.lastModified;
+      location.href = 'mailto:' + to + '?subject=' + encodeURIComponent('[카페지도] ' + cur[1]) + '&body=' + encodeURIComponent(body);
       o.remove(); toast('메일 앱에서 보내기를 눌러 주세요');
     }));
     box.appendChild(two);
-    if (to) box.appendChild(el('p', null, '메일 앱이 열려요. 메일 앱이 없으면 ' + to + ' 로 보내 주세요.'));
-    o.appendChild(box); document.body.appendChild(o); ta.focus();
+    if (to) box.appendChild(el('p', 'fbto', '메일 앱이 열려요. 메일 앱이 없으면 ' + to + ' 로 보내 주세요.'));
+    pick(FB_KINDS[0]);
+    o.appendChild(box); document.body.appendChild(o);
   }
   $('menuBtn').addEventListener('click', function () { if (P.kind === 'menu') closePanel(); else { P.prev = null; openPanel('menu'); } });
 
