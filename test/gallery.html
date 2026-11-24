@@ -674,7 +674,9 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   #toast.xp { top: auto; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); }
 }
 
-body { margin: 0; min-height: 100vh; background: #f4f3f0; }
+/* 앱은 지도 화면이라 스크롤을 막아 두었다. 이 페이지는 스크롤되게 푼다. */
+html, body { height: auto; overflow: visible; }
+body { margin: 0; min-height: 100vh; background: #f4f3f0; overflow-y: auto; }
 .tw { max-width: 560px; margin: 0 auto; padding: 18px 12px 40px; }
 .tw h1 { font-size: 20px; margin: 4px 4px 6px; }
 .tw > p { margin: 0 4px 12px; font-size: 13.5px; color: var(--ink-2); line-height: 1.5; }
