@@ -1527,11 +1527,10 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   function cidOf(i) { return hash36(D.name[i] + '|' + fullAddr(i)); }
   var idxOfCid = null;
   function cidIndex() { if (!idxOfCid) { idxOfCid = {}; for (var j = 0; j < N; j++) idxOfCid[cidOf(j)] = j; } return idxOfCid; }
-  // 한 카페의 기록을 모은다. 있음이 더 많으면 있음, 없음이 더 많으면 없음.
-  // 수가 같으면 내 기록을 따르고, 내 기록이 없으면 있음으로 본다(본 사람이 있다는 뜻이므로).
+  // 한 카페의 기록을 모은다. 있음이 없음보다 많거나 같으면 있음, 없음이 더 많으면 없음. 기록이 없으면 모름.
   function tally(i) {
     var v = votes[i], y = (v ? v[0] : 0) + (myO[i] === 1 ? 1 : 0), n = (v ? v[1] : 0) + (myO[i] === -1 ? 1 : 0);
-    outlet[i] = y > n ? 1 : n > y ? -1 : y ? (myO[i] || 1) : 0;
+    outlet[i] = y && y >= n ? 1 : n ? -1 : 0;
     chair[i] = outlet[i] === 1 ? ((v ? (v[2] ? 1 : 0) | (v[3] ? 2 : 0) | (v[4] ? 4 : 0) : 0) | (myO[i] === 1 ? myC[i] : 0)) : 0;
   }
   // 내 기록: { 카페 이름표: { o, c } }
@@ -1572,7 +1571,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   // 예전에는 "가 봤어요"와 "가고 싶어요"가 따로 있었는데, 단추가 많고 같은 기능이라는 말을 듣고 찜 하나로 합쳤다.
   var wanted = load('cafemap.want') || {}, want = new Uint8Array(N);
   // 없어진 카페: 가 보니 없더라는 표시. 내 것은 이 기기에 적고 서버에도 올린다.
-  // 내가 표시한 곳은 내 지도에서 바로 빠진다. 남들이 표시한 곳은 지도에서 빼지 않고 카드에 "없어졌다는 신고 N명"으로만 알린다.
+  // 신고만으로는 누구의 지도에서도 빼지 않는다. 운영자가 확인하고 지우기로 하면 removed.js에 적혀 모두의 지도에서 빠진다.
   // (로그인이 없어서 한 사람이 브라우저를 바꿔 가며 여러 번 표시할 수 있다. 남의 표시로 지도에서 빼면 멀쩡한 카페를 지울 수 있다.)
   var goneMine = load('cafemap.gone') || {}, myGone = new Uint8Array(N), goneVotes = {};
   (function () {
@@ -1827,7 +1826,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '폐업 신고');
     ti.appendChild(fxArt('mi_flag')); box.appendChild(ti);
     box.appendChild(el('h2', null, '폐업으로 신고할까요?'));
-    box.appendChild(el('p', 'xexp', '운영자가 확인한 뒤 지도에서 지울지 정해요. 신고하면 내 지도에서는 이 카페가 바로 빠져요.'));
+    box.appendChild(el('p', 'xexp', '운영자가 확인한 뒤 지도에서 지울지 정해요.'));
     two.appendChild(btn('btn', '취소', function () { o.remove(); }));
     two.appendChild(btn('btn pri', '신고하기', function () { o.remove(); go(); }));
     box.appendChild(two); o.appendChild(box); document.body.appendChild(o);
@@ -2329,8 +2328,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       if (ok && S.stale) ok = staleCafe(i);
       if (ok && S.seen === 'want') ok = want[i] === 1;
       if (ok && S.fresh) { var ma = monthsAgo(i); ok = ma >= 0 && ma < S.fresh; }
-      // 없어진 카페: 내가 없다고 한 곳만 내 지도에서 뺀다. 남들이 없다고 한 곳은 빼지 않고 카드에서 알린다.
-      if (ok && (myGone[i] === 1 || removed[i] === 1)) ok = false;
+      // 없어진 카페: 운영자가 확인하고 지우기로 한 곳만 뺀다. 신고만 된 곳은 그대로 둔다.
+      if (ok && removed[i] === 1) ok = false;
       if (ok) { r = dongReg[D.dongOf[i]]; rCnt[r]++; rSx[r] += mx[i]; rSy[r] += my[i]; }
       pass[i] = ok && regMask[D.dongOf[i]] ? 1 : 0;
       if (pass[i]) n++;
@@ -4753,7 +4752,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     var bWant = btn('opt', null, function () { needLogin(function () { setWant(i, !want[i]); if (want[i]) fxToast('latte', '찜했어요'); sync(); if (S.seen !== 'all') refilter(); requestDraw(); }, 'want'); });
     bWant.classList.add('heart');
     bWant.appendChild(fxIcon('mi_heart')); bWant.appendChild(document.createTextNode('찜'));
-    // 폐업 신고: 가 보니 이 카페가 없을 때 누른다. 내 지도에서는 바로 빠지고, 다른 사람에게는 신고 수로 보인다.
+    // 폐업 신고: 가 보니 이 카페가 없을 때 누른다. 운영자가 확인한 뒤 모두의 지도에서 빼거나 남긴다.
     var bGone = voteBtn('폐업 신고', function () {
       var go = function (on) { setGone(i, on); sync(); refilter(); requestDraw(); };
       if (myGone[i]) { go(false); return; }
