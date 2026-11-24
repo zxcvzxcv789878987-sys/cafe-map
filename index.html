@@ -569,6 +569,26 @@ button.xlink .xbadge.rank, .xbox.rank { --pri: #d6336c; --pri2: #f783ac; }
 .nkrow input { flex: 1; min-width: 0; height: 46px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); font: inherit; font-size: 16px; }
 .nkrow input:focus { outline: 2px solid var(--pri); outline-offset: -1px; border-color: transparent; }
 .nkrow .btn { flex: none; }
+button.xlink .xbadge.inbox, .xbox.fbl { --pri: #0b7285; --pri2: #66d9e8; }
+button.xlink .xbadge.adm { --pri: #495057; --pri2: #adb5bd; }
+/* 새 답변 빨간 점: 메뉴 단추 오른쪽 위, 내 문의 줄과 목록의 상태 옆 */
+#menuBtn { position: relative; }
+#menuBtn.dot::after { content: ""; position: absolute; top: 9px; right: 9px; width: 8px; height: 8px; border-radius: 50%; background: #fa5252; box-shadow: 0 0 0 2px var(--surface); }
+.fbdot { display: inline-block; width: 7px; height: 7px; margin-left: 6px; border-radius: 50%; background: #fa5252; vertical-align: 2px; }
+/* 내 문의, 받은 문의 목록과 한 건 보기 */
+.xll .fbi { width: 100%; text-align: left; background: none; border-radius: 0; color: inherit; font: inherit; }
+.xll .fbi .rs { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fbst { font-size: 12px; font-weight: 650; color: var(--ink-3); white-space: nowrap; }
+.fbst.on { color: #0b7285; }
+.fbst.todo { color: #e8590c; }
+.fbd { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; max-height: 58vh; margin-top: 4px; }
+.fbd .fbq { white-space: pre-wrap; font-size: 14.5px; line-height: 1.6; }
+.fbd .fbt { font-size: 12px; color: var(--ink-3); overflow-wrap: anywhere; }
+.fbd .fba { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; padding: 12px 14px; border-radius: 14px; background: var(--surface-2); white-space: pre-wrap; font-size: 14px; line-height: 1.6; }
+.fbd .fba b { font-size: 12.5px; color: #0b7285; }
+.fbd .fbwait { margin: 6px 0 0; font-size: 13.5px; color: var(--ink-2); }
+.fbd .fbal { margin-top: 8px; font-size: 13px; }
+.fbd textarea { min-height: 120px; }
 button.xlink .xbadge.qna { --pri: #1c7ed6; --pri2: #74c0fc; }
 /* 문의 창: 종류마다 색이 다르다. 앱 오류 빨강, 기능 제안 노랑, 기타 문의 파랑. */
 .xbox.fb-bug, .fbk .fb-bug { --pri: #e03131; --pri2: #ff8787; }
@@ -697,6 +717,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.500" r="3.500"/><path d="M5 20a7 7 0 0 1 14 0"/></symbol>
   <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M4 7h3.500c2.200 0 3.300 1.200 4.500 3.500l1 2c1.200 2.300 2.300 3.500 4.500 3.500H20M17 13.500l3 2.500-3 2.500M4 16.500h3.500c1 0 1.800-.300 2.400-.800M14.100 8.300c.600-.500 1.400-.800 2.400-.800H20M17 5l3 2.500L17 10"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.500"/><path d="M12 7.500V12l3 2"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 13.500 6.500 5.500h11l2.500 8v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 13.500h4.500l1.200 2h4.600l1.200-2H20"/></symbol>
   <symbol id="i-out" viewBox="0 0 24 24"><path d="M14 5h5v5M19 5l-8 8M10 6H6a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-4"/></symbol>
 </svg>
 
@@ -3058,7 +3079,18 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     // 문의하기: 누르면 글을 쓰는 창이 뜬다. 종류는 창 안에서 고른다.
     var fb = el('div', 'fsec'), fr = btn('xrow xlink', null, function () { openFeedback(); }), fbd = el('span', 'xbadge qna');
     fbd.appendChild(icon('chat')); fr.appendChild(fbd); fr.appendChild(el('span', null, '문의하기')); fr.appendChild(icon('right'));
-    fb.appendChild(fr); sc.appendChild(fb);
+    var fbRows = [];
+    if (fbMine().length || signedIn()) {
+      var mr = btn('xrow xlink', null, function () { openMyFb(); }), mbd = el('span', 'xbadge inbox'), ml = el('span', null, '내 문의');
+      mbd.appendChild(icon('inbox')); mr.appendChild(mbd);
+      if (fbNew > 0) ml.appendChild(el('i', 'fbdot'));
+      mr.appendChild(ml); mr.appendChild(icon('right')); fbRows.push(mr);
+    }
+    if (isAdmin()) {
+      var ar = btn('xrow xlink', null, function () { openAdminFb(); }), abd = el('span', 'xbadge adm');
+      abd.appendChild(icon('inbox')); ar.appendChild(abd); ar.appendChild(el('span', null, '받은 문의')); ar.appendChild(icon('right')); fbRows.push(ar);
+    }
+    fb.appendChild(fr); fbRows.forEach(function (r) { fb.appendChild(r); }); sc.appendChild(fb);
     var info = el('div', 'fsec'), ul = el('ul', 'mlist');
     info.style.borderBottom = '0';
     info.appendChild(el('div', 'ftitle', '지도 자료'));
@@ -3079,9 +3111,9 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   // 문의함은 아무도 읽을 수 없게 막혀 있다(운영자만 비밀 키로 읽는다). 로그인 없이도 보낼 수 있다.
   // 종류를 고르면 창의 색과 안내, 예시 문구가 바뀐다. 앱 오류만 기기 정보를 덧붙인다(원인을 찾는 데 필요해서).
   var FB_KINDS = [
-    ['bug', '앱 오류', 'bug', '어떤 화면에서 무엇을 눌렀을 때 어떻게 됐는지 적어 주세요.', '예) 카페를 누르면 카드가 안 열려요'],
-    ['idea', '기능 제안', 'bulb', '있었으면 하는 기능이나 바꾸면 좋을 점을 적어 주세요.', '예) 주차 되는 카페만 볼 수 있으면 좋겠어요'],
-    ['etc', '기타 문의', 'help', '궁금한 점을 적어 주세요.', '예) 투표는 어떻게 집계되나요?']
+    ['bug', '앱 오류', 'bug', '어떤 화면에서 무엇을 눌렀을 때 어떻게 됐는지 적어 주세요.'],
+    ['idea', '기능 제안', 'bulb', '있었으면 하는 기능이나 바꾸면 좋을 점을 적어 주세요.'],
+    ['etc', '기타 문의', 'help', '궁금한 점을 적어 주세요.']
   ];
   // 투표자 창: 이 카페에 누가 무엇을 골랐는지. 이름은 보이지 않고 운영자와 나만 표시한다.
   function openVoters(i) {
@@ -3286,6 +3318,138 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     }
     vv.addEventListener('resize', place); vv.addEventListener('scroll', place); place();
   }
+  // ----- 내 문의와 답변 -----
+  // 이 기기에서 보낸 문의: [{ id, k, m, t }]. 최근 50개까지.
+  function fbMine() { var a = load('cafemap.myfb'); return Array.isArray(a) ? a : []; }
+  function fbRemember(x) { var a = fbMine().filter(function (y) { return y.id !== x.id; }); a.unshift(x); save('cafemap.myfb', a.slice(0, 50)); }
+  var FB_KIND_NAME = { bug: '앱 오류', idea: '기능 제안', etc: '기타 문의' };
+  var fbNew = 0;   // 아직 안 본 답변 수
+  function fbSeen() { return load('cafemap.fbseen') || {}; }
+  // 내 문의 목록: 이 기기 것과, 로그인했으면 계정에 연결된 것을 합친다. 답변도 같이 받아 온다.
+  function fbLoad() {
+    var list = fbMine().slice(), ids = {};
+    list.forEach(function (x) { ids[x.id] = 1; });
+    var acc = !signedIn() || !SHARE.db ? Promise.resolve() : token().then(function (t) {
+      return fetch(SHARE.db + '/v2/feedback.json?orderBy=%22u%22&equalTo=%22' + encodeURIComponent(who.u) + '%22&auth=' + encodeURIComponent(t));
+    }).then(function (r) { return r.ok ? r.json() : null; }).then(function (all) {
+      for (var id in all || {}) if (!ids[id]) { var v = all[id]; ids[id] = 1; list.push({ id: id, k: v.k, m: v.m, t: v.t || 0 }); }
+    }).catch(function () {});
+    return acc.then(function () {
+      list.sort(function (a, b) { return (b.t || 0) - (a.t || 0); });
+      return Promise.all(list.map(function (x) {
+        return fetch(SHARE.db + '/v2/fbreply/' + x.id + '.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (rp) { x.r = rp; }, function () {});
+      })).then(function () { return list; });
+    });
+  }
+  // 앱을 열 때 새 답변이 있는지 본다. 있으면 메뉴 단추에 빨간 점.
+  function fbCheck() {
+    if (!SHARE.db || (!fbMine().length && !signedIn())) return;
+    fbLoad().then(function (list) {
+      var seen = fbSeen();
+      fbNew = list.filter(function (x) { return x.r && x.r.t && seen[x.id] !== x.r.t; }).length;
+      $('menuBtn').classList.toggle('dot', fbNew > 0);
+      if (P.kind === 'menu') renderPanel();
+    });
+  }
+  function fbWhen(t) { if (!t) return ''; var d = new Date(t); return (d.getMonth() + 1) + '월 ' + d.getDate() + '일'; }
+  // 내 문의 창: 목록, 누르면 내 글과 답변
+  function openMyFb(view) {
+    var old = $('xinfo'); if (old) old.remove();
+    var o = el('div'), box = el('div', 'xbox fbl'), hd = el('div', 'xhead'), bd = el('span', 'xbadge');
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '내 문의');
+    o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
+    bd.appendChild(icon('inbox')); hd.appendChild(bd); hd.appendChild(el('h2', null, '내 문의')); box.appendChild(hd);
+    var ll = el('div', 'xll'); ll.appendChild(el('p', 'xnone', '불러오는 중')); box.appendChild(ll);
+    var foot = el('div'); box.appendChild(foot);
+    foot.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
+    o.appendChild(box); document.body.appendChild(o);
+    fbLoad().then(function (list) {
+      ll.textContent = '';
+      if (!list.length) { ll.appendChild(el('p', 'xnone', '아직 보낸 문의가 없어요')); return; }
+      var seen = fbSeen();
+      var show = function (x) {
+        // 한 건 보기: 내 글, 답변
+        hd.querySelector('h2').textContent = FB_KIND_NAME[x.k] || '문의';
+        ll.textContent = ''; ll.className = 'fbd';
+        ll.appendChild(el('div', 'fbq', x.m || ''));
+        ll.appendChild(el('div', 'fbt', fbWhen(x.t) + ' 보냄'));
+        if (x.r && x.r.m) {
+          var a = el('div', 'fba'); a.appendChild(el('b', null, '운영자 답변')); a.appendChild(el('div', null, x.r.m)); a.appendChild(el('div', 'fbt', fbWhen(x.r.t)));
+          ll.appendChild(a);
+          seen[x.id] = x.r.t; save('cafemap.fbseen', seen);
+        } else ll.appendChild(el('p', 'fbwait', '아직 답변이 없어요. 답변이 오면 메뉴 단추에 빨간 점이 떠요.'));
+        foot.textContent = '';
+        var two = el('div', 'two');
+        two.appendChild(btn('btn', '뒤로', function () { o.remove(); openMyFb(); }));
+        two.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
+        foot.appendChild(two);
+        fbCheck();
+      };
+      list.forEach(function (x) {
+        var r = btn('xli fbi', null, function () { show(x); }), l = el('span'), rt = el('span', 'rt');
+        l.appendChild(el('span', 'rs', (x.m || '').split('\n')[0]));
+        l.appendChild(el('small', null, (FB_KIND_NAME[x.k] || '문의') + ', ' + fbWhen(x.t)));
+        var st = el('span', 'fbst' + (x.r && x.r.m ? ' on' : ''), x.r && x.r.m ? '답변 왔어요' : '답변 기다리는 중');
+        if (x.r && x.r.t && seen[x.id] !== x.r.t) st.appendChild(el('i', 'fbdot'));
+        rt.appendChild(st); r.appendChild(l); r.appendChild(rt); ll.appendChild(r);
+      });
+    });
+  }
+  // 운영자: 받은 문의 창. 모든 문의를 최근 것부터 보고, 한 건을 눌러 답변을 적어 보낸다.
+  function openAdminFb() {
+    if (!isAdmin()) return;
+    var old = $('xinfo'); if (old) old.remove();
+    var o = el('div'), box = el('div', 'xbox fbl'), hd = el('div', 'xhead'), bd = el('span', 'xbadge');
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '받은 문의');
+    o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
+    bd.appendChild(icon('inbox')); hd.appendChild(bd); hd.appendChild(el('h2', null, '받은 문의')); box.appendChild(hd);
+    var ll = el('div', 'xll'); ll.appendChild(el('p', 'xnone', '불러오는 중')); box.appendChild(ll);
+    var foot = el('div'); foot.appendChild(btn('btn pri', '닫기', function () { o.remove(); })); box.appendChild(foot);
+    o.appendChild(box); document.body.appendChild(o);
+    var tk = '';
+    token().then(function (t) {
+      tk = encodeURIComponent(t);
+      return Promise.all([fetch(SHARE.db + '/v2/feedback.json?auth=' + tk), fetch(SHARE.db + '/v2/fbreply.json?auth=' + tk)]);
+    }).then(function (rs) {
+      if (!rs[0].ok) throw new Error('db');
+      return Promise.all([rs[0].json(), rs[1].ok ? rs[1].json() : null]);
+    }).then(function (d) {
+      var all = d[0] || {}, reps = d[1] || {}, list = [];
+      for (var id in all) list.push({ id: id, k: all[id].k, m: all[id].m, t: all[id].t || 0, d: all[id].d, u: all[id].u, r: reps[id] });
+      list.sort(function (a, b) { return b.t - a.t; });
+      ll.textContent = '';
+      if (!list.length) { ll.appendChild(el('p', 'xnone', '받은 문의가 없어요')); return; }
+      list.forEach(function (x) {
+        var r = btn('xli fbi', null, function () { answer(x); }), l = el('span'), rt = el('span', 'rt');
+        l.appendChild(el('span', 'rs', (x.m || '').split('\n')[0]));
+        l.appendChild(el('small', null, (FB_KIND_NAME[x.k] || '문의') + ', ' + fbWhen(x.t)));
+        rt.appendChild(el('span', 'fbst' + (x.r ? ' on' : ' todo'), x.r ? '답변함' : '답변 전'));
+        r.appendChild(l); r.appendChild(rt); ll.appendChild(r);
+      });
+    }).catch(function () { ll.textContent = ''; ll.appendChild(el('p', 'xnone', '문의를 불러오지 못했어요')); });
+    var answer = function (x) {
+      hd.querySelector('h2').textContent = FB_KIND_NAME[x.k] || '문의';
+      ll.textContent = ''; ll.className = 'fbd';
+      ll.appendChild(el('div', 'fbq', x.m || ''));
+      ll.appendChild(el('div', 'fbt', fbWhen(x.t) + (x.u ? ', 로그인한 사용자' : ', 로그인 안 한 사용자')));
+      if (x.d) ll.appendChild(el('div', 'fbt', x.d));
+      var ta = document.createElement('textarea'); ta.maxLength = 1500; ta.value = x.r ? x.r.m : ''; ta.setAttribute('aria-label', '답변');
+      ll.appendChild(el('b', 'fbal', x.r ? '보낸 답변 (고칠 수 있어요)' : '답변'));
+      ll.appendChild(ta);
+      foot.textContent = '';
+      var two = el('div', 'two'), sending = false, send = btn('btn pri', x.r ? '고치기' : '답변 보내기', function () {
+        var v = ta.value.trim();
+        if (!v) { toast('답변을 적어 주세요'); return; }
+        if (sending) return; sending = true; send.textContent = '보내는 중';
+        fetch(SHARE.db + '/v2/fbreply/' + x.id + '.json?auth=' + tk, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ m: v, t: { '.sv': 'timestamp' } }) })
+          .then(function (r) { if (!r.ok) throw new Error('db'); toast('답변을 보냈어요'); o.remove(); openAdminFb(); })
+          .catch(function () { sending = false; send.textContent = '답변 보내기'; toast('보내지 못했어요'); });
+      });
+      two.appendChild(btn('btn', '뒤로', function () { o.remove(); openAdminFb(); }));
+      two.appendChild(send); foot.appendChild(two);
+      fitVisible(o);
+    };
+  }
   function openFeedback() {
     var old = $('xinfo'); if (old) old.remove();
     var o = el('div'), box = el('div', 'xbox'), hd = el('div', 'xhead'), bd = el('span', 'xbadge'), ta = document.createElement('textarea');
@@ -3296,7 +3460,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     var pick = function (k) {
       cur = k; box.className = 'xbox fb-' + k[0];
       bd.textContent = ''; bd.appendChild(icon(k[2]));
-      desc.textContent = k[3]; ta.placeholder = k[4];
+      desc.textContent = k[3];
       [].forEach.call(kinds.children, function (c) { c.setAttribute('aria-pressed', String(c.dataset.k === k[0])); });
     };
     FB_KINDS.forEach(function (k) {
@@ -3315,8 +3479,13 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       var rec = { k: cur[0], m: text, t: { '.sv': 'timestamp' } };
       if (cur[0] === 'bug') rec.d = (navigator.userAgent + ' | ' + innerWidth + 'x' + innerHeight + ' | ' + document.lastModified).slice(0, 600);
       sending = true; send.textContent = '보내는 중';
-      fetch(SHARE.db + '/v2/feedback.json', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rec) })
-        .then(function (r) { if (!r.ok) throw new Error('db'); o.remove(); toast('보냈어요. 고맙습니다'); })
+      var go = function (t) {
+        if (t) rec.u = who.u;
+        return fetch(SHARE.db + '/v2/feedback.json' + (t ? '?auth=' + encodeURIComponent(t) : ''), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rec) });
+      };
+      (signedIn() ? token().then(go, function () { return go(''); }) : go(''))
+        .then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); })
+        .then(function (d) { fbRemember({ id: d.name, k: rec.k, m: rec.m, t: Date.now() }); o.remove(); toast('보냈어요. 메뉴의 내 문의에서 답변을 볼 수 있어요'); if (P.kind === 'menu') renderPanel(); })
         .catch(function () { sending = false; send.textContent = '보내기'; toast('보내지 못했어요. 잠시 뒤에 다시 해 주세요'); });
     });
     two.appendChild(btn('btn', '닫기', function () { o.remove(); }));
@@ -3325,6 +3494,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     pick(FB_KINDS[0]);
     o.appendChild(box); document.body.appendChild(o); fitVisible(o);
   }
+  setTimeout(fbCheck, 2500);
   $('menuBtn').addEventListener('click', function () { if (P.kind === 'menu') closePanel(); else { P.prev = null; openPanel('menu'); } });
 
   // ----- 필터 칩 -----

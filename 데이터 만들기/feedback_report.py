@@ -25,6 +25,15 @@ def main():
         # 오류 문구에 주소(비밀 키 포함)가 섞이지 않게 종류만 적는다.
         print('문의함을 받지 못했다:', type(e).__name__)
         return 1
+    # 답변(v2/fbreply)도 같이 받아서, 아직 답하지 않은 문의를 알려 준다. 답변은 앱의 메뉴 "받은 문의"에서 적는다.
+    try:
+        with urllib.request.urlopen(DB + '/v2/fbreply.json?auth=' + urllib.parse.quote(secret), timeout=30) as r:
+            replies = json.load(r) or {}
+    except Exception as e:
+        print('답변을 받지 못했다:', type(e).__name__)
+        replies = {}
+    todo = [k for k in items if k not in replies]
+    print('답변 전 %d건 (앱 메뉴의 받은 문의에서 답할 수 있다)' % len(todo))
     seen = set(json.load(open(SEEN, encoding='utf-8'))) if os.path.exists(SEEN) else set()
     rows = sorted(items.items(), key=lambda kv: (kv[1] or {}).get('t', 0))
     new = rows if '--all' in sys.argv else [kv for kv in rows if kv[0] not in seen]
@@ -37,7 +46,7 @@ def main():
         v = v or {}
         when = datetime.datetime.fromtimestamp(v.get('t', 0) / 1000).strftime('%Y-%m-%d %H:%M') if v.get('t') else ''
         print('---')
-        print('[%s] %s' % (KIND.get(v.get('k'), v.get('k', '')), when))
+        print('[%s] %s%s' % (KIND.get(v.get('k'), v.get('k', '')), when, ' (답변함)' if k in replies else ' (답변 전)'))
         print(v.get('m', ''))
         if v.get('d'):
             print('(기기 정보: %s)' % v['d'])

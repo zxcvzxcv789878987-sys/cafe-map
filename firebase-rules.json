@@ -126,6 +126,30 @@
           "t": {
             ".validate": "newData.val() === now"
           },
+          "u": {
+            ".validate": "auth != null && newData.val() === auth.uid"
+          },
+          "$other": {
+            ".validate": false
+          }
+        },
+        ".read": "auth != null && (auth.uid === 'YJZkK7gP9xYP2fBjh2KWnJHDOsl1' || (query.orderByChild === 'u' && query.equalTo === auth.uid))",
+        ".indexOn": [
+          "u"
+        ]
+      },
+      "fbreply": {
+        ".read": "auth != null && auth.uid === 'YJZkK7gP9xYP2fBjh2KWnJHDOsl1'",
+        "$id": {
+          ".read": true,
+          ".write": "auth != null && auth.uid === 'YJZkK7gP9xYP2fBjh2KWnJHDOsl1'",
+          ".validate": "newData.hasChildren(['m', 't']) && root.child('v2/feedback/' + $id).exists()",
+          "m": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 1500"
+          },
+          "t": {
+            ".validate": "newData.val() === now"
+          },
           "$other": {
             ".validate": false
           }
@@ -133,7 +157,9 @@
       },
       "rank": {
         ".read": true,
-        ".indexOn": ["x"],
+        ".indexOn": [
+          "x"
+        ],
         "$uid": {
           ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'",
           ".validate": "newData.hasChildren(['n', 'x', 't']) && (!data.exists() || newData.child('n').val() === data.child('n').val() || (newData.child('nt').val() === now && (!data.child('nt').exists() || now - data.child('nt').val() >= 15552000000)))",
