@@ -88,6 +88,25 @@
           }
         }
       },
+      "gonedec": {
+        ".read": true,
+        "$cafe": {
+          ".write": "auth != null && auth.uid === 'YJZkK7gP9xYP2fBjh2KWnJHDOsl1'",
+          ".validate": "$cafe.matches(/^[0-9a-z]+$/) && $cafe.length <= 12 && newData.hasChildren(['d', 't'])",
+          "d": {
+            ".validate": "newData.val() === 0 || newData.val() === 1"
+          },
+          "t": {
+            ".validate": "newData.val() === now"
+          },
+          "m": {
+            ".validate": "newData.isString() && newData.val().length <= 300"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      },
       "seats": {
         ".read": true,
         "$cafe": {

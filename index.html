@@ -642,6 +642,10 @@ button.xlink .xbadge.adm { --pri: #495057; --pri2: #adb5bd; }
 .fbd .fbwait { margin: 6px 0 0; font-size: 13.5px; color: var(--ink-2); }
 .fbd .fbal { margin-top: 8px; font-size: 13px; }
 .fbd textarea { min-height: 120px; }
+.two.three { grid-template-columns: repeat(3, 1fr); }
+.xll .gsub { padding: 12px 2px 2px; font-size: 12.5px; font-weight: 700; color: var(--ink-2); }
+.fbd .gsee { align-self: flex-start; margin-top: 2px; }
+.fbd .gsee + textarea, .fbd .fbal + textarea { min-height: 80px; }
 /* 시험 모드 단추와 버튼 모음 */
 #testbtn { position: fixed; left: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 86px); z-index: 70; display: inline-flex; align-items: center; gap: 5px; height: 38px; padding: 0 14px 0 11px; border-radius: 999px; background: #212529; color: #fff; font-size: 13px; font-weight: 700; box-shadow: var(--sh-1); }
 #testbtn svg.i { width: 15px; height: 15px; }
@@ -1641,7 +1645,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   }
   function xpPush() {
     if (!loginOn || !signedIn()) return;
-    var body = { xp: XP.xp, vis: XP.vis, vote: XP.vote, dong: XP.dong, fv: XP.fv || 0, fo: XP.fo || 0, mv: XP.mv || 0, md: XP.md || 0, mo: XP.mo || 0, mr: XP.mr || 0, log: XP.log || [], t: { '.sv': 'timestamp' } };
+    var body = { xp: XP.xp, vis: XP.vis, vote: XP.vote, near: XP.near || {}, dong: XP.dong, fv: XP.fv || 0, fo: XP.fo || 0, mv: XP.mv || 0, md: XP.md || 0, mo: XP.mo || 0, mr: XP.mr || 0, log: XP.log || [], t: { '.sv': 'timestamp' } };
     if (XP.nick) body.nick = XP.nick;
     if (XP.nickT) body.nickT = XP.nickT;
     if (XP.nickOk) body.nickOk = 1;
@@ -2024,6 +2028,13 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       xpGive([[-amt, '기록 취소', D.name[i]]]);
     } else { XP.vote[k] = cur; xpSave(); }
   }
+  // 카페 근처에서 기록한 적이 있는가. 있으면 기록을 지운 뒤에도 어디서든 다시 기록할 수 있다.
+  function beenNear(i) {
+    var k = cidOf(i), nm = D.name[i];
+    if (XP.near && XP.near[k]) return true;
+    return (XP.log || []).some(function (e) { return e.c === nm && /콘센트 기록$/.test(e.r) && e.a > 0; });
+  }
+  function markNear(i) { XP.near = XP.near || {}; XP.near[cidOf(i)] = 1; }
   function seatCount() { var n = 0; for (var j = 0; j < N; j++) if (outlet[j] === 1) n++; return n; }
 
   // ----- 기록을 모두가 같이 보기 위한 서버(Firebase Realtime Database) -----
@@ -2135,28 +2146,64 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       return fetch(url, on ? { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ t: { '.sv': 'timestamp' } }) } : { method: 'DELETE' });
     }).then(function (r) { if (!r.ok) throw new Error('db'); }).catch(function () { /* 다음에 열 때 다시 올린다 */ });
   }
+  // 운영자가 확인한 결과: v2/gonedec/<카페> = { d: 1 지움, 0 남김, t: 정한 때, m: 덧붙인 말 }. 누구나 읽고 운영자만 쓴다.
+  // 지움이면 모두의 지도에서 빠진다. 남김이면 그 전 신고는 세지 않고 그 뒤에 들어온 신고만 센다.
+  var fbNew = 0;   // 아직 안 본 문의 답변 수
+  var goneAll = {}, goneDec = {}, goneNew = 0, removedJs = removed.slice();
+  var D1 = 86400000;
+  // 신고 수와 지도에서 뺄 카페를 다시 센다. 서버에 있는 내 신고 목록을 돌려준다.
+  function recountGone() {
+    var ix = cidIndex(), mineOnServer = {}, k, u, j, dt;
+    goneVotes = {};
+    for (k in goneAll) {
+      j = ix[k];
+      dt = goneDec[k] && goneDec[k].d === 0 ? goneDec[k].t || 0 : 0;
+      for (u in goneAll[k]) {
+        if (who && u === who.u) { mineOnServer[k] = 1; continue; }
+        if (j !== undefined && ((goneAll[k][u] || {}).t || 0) > dt) goneVotes[j] = (goneVotes[j] || 0) + 1;
+      }
+    }
+    removed.set(removedJs);
+    for (k in goneDec) if (goneDec[k] && goneDec[k].d === 1) { j = ix[k]; if (j !== undefined) removed[j] = 1; }
+    goneNewCount();
+    return mineOnServer;
+  }
+  // 내 신고 목록: [{ k, j, t: 신고한 때, dec: 내 신고 뒤에 나온 결정 }]. 최근 것부터.
+  function myGoneList() {
+    var ix = cidIndex(), out = [], k, j, t, dec;
+    for (k in goneMine) {
+      j = ix[k]; if (j === undefined) continue;
+      t = ((goneAll[k] || {})[who && who.u] || {}).t || Date.now();
+      dec = goneDec[k] && (goneDec[k].t || 0) >= t ? goneDec[k] : null;
+      out.push({ k: k, j: j, t: t, dec: dec });
+    }
+    return out.sort(function (a, b) { return b.t - a.t; });
+  }
+  function goneSeen() { return load('cafemap.goneseen') || {}; }
+  function goneNewCount() {
+    var seen = goneSeen();
+    goneNew = signedIn() ? myGoneList().filter(function (x) { return x.dec && seen[x.k] !== x.dec.t; }).length : 0;
+    menuDot();
+  }
+  // 메뉴 단추의 빨간 점: 새 문의 답변이나 새 폐업 신고 결과가 있을 때
+  function menuDot() { var mb = $('menuBtn'); if (mb) mb.classList.toggle('dot', fbNew > 0 || goneNew > 0); }
   function pullGone() {
     if (!shareOn) return Promise.resolve();
-    return fetch(SHARE.db + ROOT + '/gone.json').then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); }).then(function (all) {
-      var ix = cidIndex(), mineOnServer = {}, k, u, j;
-      goneVotes = {};
-      for (k in all || {}) {
-        j = ix[k];
-        for (u in all[k]) {
-          if (who && u === who.u) { mineOnServer[k] = 1; continue; }
-          if (j !== undefined) goneVotes[j] = (goneVotes[j] || 0) + 1;
-        }
-      }
+    var dec = loginOn ? fetch(SHARE.db + '/v2/gonedec.json').then(function (r) { return r.ok ? r.json() : {}; }, function () { return {}; }) : Promise.resolve({});
+    return Promise.all([fetch(SHARE.db + ROOT + '/gone.json').then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); }), dec]).then(function (res) {
+      goneAll = res[0] || {}; goneDec = res[1] || {};
+      var ix = cidIndex(), k, j, mineOnServer = recountGone();
       if (loginOn) {
         // 로그인 방식: 서버의 내 계정 것이 기준이다.
         goneMine = signedIn() ? mineOnServer : {};
-        save('cafemap.gone', goneMine); applyMine();
+        save('cafemap.gone', goneMine); applyMine(); goneNewCount();
       } else {
         // 이 기기의 내 표시와 서버가 다르면 이 기기 것으로 맞춘다.
         for (k in goneMine) if (!mineOnServer[k]) { j = ix[k]; if (j !== undefined) pushGone(j); }
         for (k in mineOnServer) if (!goneMine[k]) { j = ix[k]; if (j !== undefined) pushGone(j); }
       }
       refilter(); requestDraw();
+      if (P.kind === 'menu') renderPanel();
     }).catch(function () { /* 서버에 닿지 못하면 내 표시만으로 보여 준다 */ });
   }
   pullGone();
@@ -3735,12 +3782,15 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     // 문의하기: 누르면 글을 쓰는 창이 뜬다. 종류는 창 안에서 고른다.
     var fb = el('div', 'fsec'), fr = btn('xrow xlink', null, function () { openFeedback(); }), fbd = el('span', 'xbadge pic mn');
     // 내 문의는 문의하기 창 안에서 본다. 새 답변이 있으면 문의하기 줄에 빨간 점.
-    var fl = el('span', null, '문의하기'); if (fbNew > 0) fl.appendChild(el('i', 'fbdot'));
+    var fl = el('span', null, '문의하기'); if (fbNew > 0 || goneNew > 0) fl.appendChild(el('i', 'fbdot'));
     fbd.appendChild(fxStill('mi_ask')); fr.appendChild(fbd); fr.appendChild(fl); fr.appendChild(icon('right'));
     var fbRows = [];
     if (isAdmin() && !TEST) {
       var ar = btn('xrow xlink', null, function () { openAdminFb(); }), abd = el('span', 'xbadge pic mn');
       abd.appendChild(fxStill('mi_inbox')); ar.appendChild(abd); ar.appendChild(el('span', null, '받은 문의')); ar.appendChild(icon('right')); fbRows.push(ar);
+      var gr = btn('xrow xlink', null, function () { openAdminGone(); }), gbd = el('span', 'xbadge pic mn'), gl = el('span', null, '받은 폐업 신고');
+      if (adminGone().todo.length) gl.appendChild(el('i', 'fbdot'));
+      gbd.appendChild(fxStill('mi_flag')); gr.appendChild(gbd); gr.appendChild(gl); gr.appendChild(icon('right')); fbRows.push(gr);
       var tr = btn('xrow xlink', null, function () { location.href = location.pathname + '?test'; }), tbd = el('span', 'xbadge pic mn');
       tbd.appendChild(fxStill('mi_test')); tr.appendChild(tbd); tr.appendChild(el('span', null, '시험 모드')); tr.appendChild(icon('right')); fbRows.push(tr);
     }
@@ -3978,7 +4028,6 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   function fbMine() { var a = load('cafemap.myfb'); return Array.isArray(a) ? a : []; }
   function fbRemember(x) { var a = fbMine().filter(function (y) { return y.id !== x.id; }); a.unshift(x); save('cafemap.myfb', a.slice(0, 50)); }
   var FB_KIND_NAME = { bug: '앱 오류', idea: '기능 제안', etc: '기타 문의' };
-  var fbNew = 0;   // 아직 안 본 답변 수
   function fbSeen() { return load('cafemap.fbseen') || {}; }
   // 내 문의 목록: 이 기기 것과, 로그인했으면 계정에 연결된 것을 합친다. 답변도 같이 받아 온다.
   function fbLoad() {
@@ -4006,7 +4055,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     fbLoad().then(function (list) {
       var seen = fbSeen();
       fbNew = list.filter(function (x) { return x.r && x.r.t && seen[x.id] !== x.r.t; }).length;
-      $('menuBtn').classList.toggle('dot', fbNew > 0);
+      menuDot();
       if (P.kind === 'menu') renderPanel();
     });
   }
@@ -4110,6 +4159,141 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       fitVisible(o);
     };
   }
+  // ----- 폐업 신고의 결과 -----
+  var GONE_SAY = {
+    1: ['지도에서 지웠어요', '확인해 보니 문을 닫은 카페라 지도에서 지웠어요. 알려 주셔서 고마워요.'],
+    0: ['영업 중이라 남겼어요', '확인해 보니 아직 영업 중이라 지도에 남겨 뒀어요.']
+  };
+  // 내 폐업 신고 창: 목록, 누르면 그 카페의 결과
+  function openMyGone(fromFb) {
+    var old = $('xinfo'); if (old) old.remove();
+    var o = el('div'), box = el('div', 'xbox fbl'), hd = el('div', 'xhead'), bd = el('span', 'xbadge pic');
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '내 폐업 신고');
+    o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
+    bd.appendChild(fxStill('mi_flag')); hd.appendChild(bd); hd.appendChild(el('h2', null, '내 폐업 신고')); box.appendChild(hd);
+    var ll = el('div', 'xll'), foot = el('div');
+    box.appendChild(ll); box.appendChild(foot);
+    var ends = function (back) {
+      foot.textContent = '';
+      if (!back) { foot.appendChild(btn('btn pri', '닫기', function () { o.remove(); })); return; }
+      var two = el('div', 'two'); two.appendChild(btn('btn', '뒤로', back)); two.appendChild(btn('btn pri', '닫기', function () { o.remove(); })); foot.appendChild(two);
+    };
+    var list = myGoneList(), seen = goneSeen();
+    var show = function (x) {
+      hd.querySelector('h2').textContent = D.name[x.j];
+      ll.textContent = ''; ll.className = 'fbd';
+      ll.appendChild(el('div', 'fbt', fullAddr(x.j)));
+      ll.appendChild(el('div', 'fbt', fbWhen(x.t) + ' 신고'));
+      if (x.dec) {
+        var a = el('div', 'fba'); a.appendChild(el('b', null, '운영자 답변'));
+        a.appendChild(el('div', null, GONE_SAY[x.dec.d][1] + (x.dec.m ? '\n' + x.dec.m : '')));
+        a.appendChild(el('div', 'fbt', fbWhen(x.dec.t)));
+        ll.appendChild(a);
+        seen[x.k] = x.dec.t; save('cafemap.goneseen', seen); goneNewCount();
+        if (P.kind === 'menu') renderPanel();
+      } else ll.appendChild(el('p', 'fbwait', '운영자가 확인하고 있어요. 결과가 나오면 메뉴 단추에 빨간 점이 떠요.'));
+      ends(function () { o.remove(); openMyGone(fromFb); });
+    };
+    if (!list.length) ll.appendChild(el('p', 'xnone', '신고한 카페가 없어요'));
+    list.forEach(function (x) {
+      var r = btn('xli fbi', null, function () { show(x); }), l = el('span'), rt = el('span', 'rt');
+      l.appendChild(el('span', 'rs', D.name[x.j]));
+      l.appendChild(el('small', null, fbWhen(x.t) + ' 신고'));
+      var st = el('span', 'fbst' + (x.dec ? ' on' : ''), x.dec ? GONE_SAY[x.dec.d][0] : '확인 중');
+      if (x.dec && seen[x.k] !== x.dec.t) st.appendChild(el('i', 'fbdot'));
+      rt.appendChild(st); r.appendChild(l); r.appendChild(rt); ll.appendChild(r);
+    });
+    ends(fromFb ? function () { o.remove(); openFeedback(); } : null);
+    o.appendChild(box); document.body.appendChild(o); fitVisible(o);
+  }
+  // 운영자가 볼 신고 묶음. todo: 아직 정하지 않은 것(남긴 뒤 새로 들어온 신고 포함), done: 정한 것.
+  function adminGone() {
+    var ix = cidIndex(), todo = [], done = [], k, j, u, dec, rs, fresh;
+    for (k in goneAll) {
+      j = ix[k]; if (j === undefined) continue;
+      dec = goneDec[k] || null; rs = [];
+      for (u in goneAll[k]) rs.push(((goneAll[k][u] || {}).t) || 0);
+      rs.sort(function (a, b) { return b - a; });
+      fresh = dec ? rs.filter(function (t) { return t > (dec.t || 0); }) : rs;
+      var x = { k: k, j: j, dec: dec, rs: rs, n: rs.length, last: rs[0] || 0 };
+      // 남긴 뒤 새로 들어온 신고는 새 신고 수만 센다.
+      if (fresh.length && !(dec && dec.d === 1)) { x.n = fresh.length; todo.push(x); } else done.push(x);
+    }
+    todo.sort(function (a, b) { return b.n - a.n || b.last - a.last; });
+    done.sort(function (a, b) { return (b.dec ? b.dec.t : 0) - (a.dec ? a.dec.t : 0); });
+    return { todo: todo, done: done };
+  }
+  // 운영자: 받은 폐업 신고 창. 카페마다 지우기 또는 남기기를 정하면 신고한 사람들에게 답이 간다.
+  function openAdminGone() {
+    if (!isAdmin()) return;
+    var old = $('xinfo'); if (old) old.remove();
+    var o = el('div'), box = el('div', 'xbox fbl'), hd = el('div', 'xhead'), bd = el('span', 'xbadge pic');
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '받은 폐업 신고');
+    o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
+    bd.appendChild(fxStill('mi_flag')); hd.appendChild(bd); hd.appendChild(el('h2', null, '받은 폐업 신고')); box.appendChild(hd);
+    var ll = el('div', 'xll'); ll.appendChild(el('p', 'xnone', '불러오는 중')); box.appendChild(ll);
+    var foot = el('div'); foot.appendChild(btn('btn pri', '닫기', function () { o.remove(); })); box.appendChild(foot);
+    o.appendChild(box); document.body.appendChild(o);
+    var tk = '';
+    token().then(function (t) {
+      tk = encodeURIComponent(t);
+      return Promise.all([fetch(SHARE.db + '/v2/gone.json'), fetch(SHARE.db + '/v2/gonedec.json')]);
+    }).then(function (rs) {
+      if (!rs[0].ok) throw new Error('db');
+      return Promise.all([rs[0].json(), rs[1].ok ? rs[1].json() : null]);
+    }).then(function (d) {
+      goneAll = d[0] || {}; goneDec = d[1] || {}; recountGone(); refilter(); requestDraw();
+      var g = adminGone();
+      ll.textContent = '';
+      if (!g.todo.length && !g.done.length) { ll.appendChild(el('p', 'xnone', '받은 신고가 없어요')); return; }
+      var row = function (x) {
+        var r = btn('xli fbi', null, function () { decide(x); }), l = el('span'), rt = el('span', 'rt');
+        l.appendChild(el('span', 'rs', D.name[x.j]));
+        l.appendChild(el('small', null, x.n + '명, ' + fbWhen(x.last)));
+        var todo = g.todo.indexOf(x) >= 0;
+        rt.appendChild(el('span', 'fbst' + (todo ? ' todo' : ' on'), todo ? '확인 전' : GONE_SAY[x.dec.d][0]));
+        r.appendChild(l); r.appendChild(rt); ll.appendChild(r);
+      };
+      if (g.todo.length) { ll.appendChild(el('div', 'gsub', '확인 전 ' + g.todo.length + '곳')); g.todo.forEach(row); }
+      if (g.done.length) { ll.appendChild(el('div', 'gsub', '정한 것 ' + g.done.length + '곳')); g.done.forEach(row); }
+    }).catch(function () { ll.textContent = ''; ll.appendChild(el('p', 'xnone', '신고를 불러오지 못했어요')); });
+    var decide = function (x) {
+      hd.querySelector('h2').textContent = D.name[x.j];
+      ll.textContent = ''; ll.className = 'fbd';
+      ll.appendChild(el('div', 'fbq', fullAddr(x.j)));
+      ll.appendChild(el('div', 'fbt', '신고 ' + x.rs.length + '명: ' + x.rs.map(fbWhen).join(', ')));
+      if (x.dec) ll.appendChild(el('div', 'fbt', fbWhen(x.dec.t) + ' ' + GONE_SAY[x.dec.d][0] + (x.dec.m ? ': ' + x.dec.m : '')));
+      var look = btn('btn', '카페 보기', function () { o.remove(); selectCafe(x.j, true); });
+      look.classList.add('gsee'); ll.appendChild(look);
+      var ta = document.createElement('textarea'); ta.maxLength = 300; ta.value = x.dec && x.dec.m ? x.dec.m : ''; ta.setAttribute('aria-label', '덧붙일 말');
+      ll.appendChild(el('b', 'fbal', '덧붙일 말 (안 써도 돼요)'));
+      ll.appendChild(ta);
+      var sending = false;
+      var put = function (d) {
+        if (sending) return; sending = true;
+        var v = ta.value.trim(), rec = d === null ? null : { d: d, t: { '.sv': 'timestamp' } };
+        if (rec && v) rec.m = v;
+        fetch(SHARE.db + '/v2/gonedec/' + x.k + '.json?auth=' + tk, rec ? { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rec) } : { method: 'DELETE' })
+          .then(function (r) {
+            if (!r.ok) throw new Error('db');
+            if (rec) goneDec[x.k] = { d: d, t: Date.now(), m: rec.m }; else delete goneDec[x.k];
+            if (TEST) { if (rec) testGone().dec[x.k] = goneDec[x.k]; else delete testGone().dec[x.k]; }
+            recountGone(); refilter(); requestDraw();
+            toast(rec ? GONE_SAY[d][0] : '결정을 되돌렸어요');
+            o.remove(); openAdminGone();
+          })
+          .catch(function () { sending = false; toast('저장하지 못했어요'); });
+      };
+      if (x.dec) { var un = btn('btn', '결정 되돌리기', function () { put(null); }); un.classList.add('gsee'); ll.appendChild(un); }
+      foot.textContent = '';
+      var three = el('div', 'two three');
+      three.appendChild(btn('btn', '뒤로', function () { o.remove(); openAdminGone(); }));
+      three.appendChild(btn('btn', '남기기', function () { put(0); }));
+      three.appendChild(btn('btn pri', '지우기', function () { put(1); }));
+      foot.appendChild(three);
+      fitVisible(o);
+    };
+  }
   // 문의를 보낸 뒤: 확인 단추를 눌러 닫는 창
   function fbSent() { doneBox('plane', '문의를 보냈어요', '답변이 오면 메뉴 단추에 빨간 점이 떠요. 메뉴의 내 문의에서 볼 수 있어요.'); }
   function openFeedback() {
@@ -4126,6 +4310,14 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       if (fbMine().length) myl.appendChild(el('small', null, fbMine().length + '건'));
       if (fbNew > 0) myl.appendChild(el('i', 'fbdot'));
       my.appendChild(myl); my.appendChild(icon('right')); box.appendChild(my);
+    }
+    // 내 폐업 신고: 신고한 카페와 운영자가 확인한 결과
+    if (signedIn() && nKeys(goneMine)) {
+      var mg = btn('xrow xlink fbmy', null, function () { openMyGone(true); }), mgl = el('span', null, '내 폐업 신고'), mgb = el('span', 'xbadge pic mn');
+      mgb.appendChild(fxStill('mi_flag')); mg.appendChild(mgb);
+      mgl.appendChild(el('small', null, nKeys(goneMine) + '건'));
+      if (goneNew > 0) mgl.appendChild(el('i', 'fbdot'));
+      mg.appendChild(mgl); mg.appendChild(icon('right')); box.appendChild(mg);
     }
     var pick = function (k) {
       cur = k; box.className = 'xbox fb-' + k[0];
@@ -4177,6 +4369,20 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       replies: { '-TEST1': { m: '좋은 제안 고맙습니다. 주차 정보는 공식 자료를 찾는 대로 넣어 볼게요.', t: now - 86400000 } }
     };
   }
+  // 가짜 폐업 신고: 시험 사용자가 셋(지움, 남김, 확인 전), 다른 사람만 한 곳
+  var TG = null;
+  function testGone() {
+    if (TG) return TG;
+    var now = Date.now(), a = cidOf(10), b = cidOf(20), c = cidOf(30), d = cidOf(40), me = 'test-user';
+    TG = { all: {}, dec: {} };
+    TG.all[a] = { p1: { t: now - 6 * D1 }, p2: { t: now - 4 * D1 } }; TG.all[a][me] = { t: now - 5 * D1 };
+    TG.dec[a] = { d: 1, t: now - D1 };
+    TG.all[b] = {}; TG.all[b][me] = { t: now - 3 * D1 };
+    TG.dec[b] = { d: 0, t: now - 2 * D1, m: '직접 가 보니 영업 중이었어요. 간판이 바뀌어서 헷갈리셨을 것 같아요.' };
+    TG.all[c] = { p3: { t: now - 2 * D1 } }; TG.all[c][me] = { t: now - D1 };
+    TG.all[d] = { p1: { t: now - 3 * D1 }, p2: { t: now - 2 * D1 }, p4: { t: now - 3600000 } };
+    return TG;
+  }
   function testMock(url, m) {
     var path = url.replace(/^https:\/\/[^/]+/, '').split('?')[0];
     if (/googleapis\.com/.test(url)) return {};
@@ -4190,6 +4396,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         return o;
       }
       if (path === '/v2/fbreply.json') return testFb().replies;
+      if (path === '/v2/gone.json') return testGone().all;
+      if (path === '/v2/gonedec.json') return testGone().dec;
       var mr = path.match(/^\/v2\/fbreply\/([^/]+)\.json$/); if (mr) return testFb().replies[mr[1]] || null;
       if (path === '/v2/feedback.json') {
         // 내 문의 찾기(계정 번호로 찾는 요청)에는 시험 사용자 것만 준다.
@@ -4236,6 +4444,11 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         ['내 문의 (답변 온 상태)', function () { myFbSetup(); openMyFb(); }],
         ['새 답변 빨간 점', function () { myFbSetup(); fbCheck(); toast('왼쪽 위 메뉴 단추를 보세요'); }],
         ['받은 문의 (운영자 화면)', function () { var u0 = who.u; who.u = SHARE.admin; openAdminFb(); who.u = u0; }]
+      ]],
+      ['폐업 신고', [
+        ['내 폐업 신고 (답이 온 상태)', function () { save('cafemap.goneseen', {}); goneNewCount(); openMyGone(); }],
+        ['새 결과 빨간 점', function () { save('cafemap.goneseen', {}); goneNewCount(); toast('왼쪽 위 메뉴 단추를 보세요'); }],
+        ['받은 폐업 신고 (운영자 화면)', function () { var u0 = who.u; who.u = SHARE.admin; openAdminGone(); who.u = u0; }]
       ]],
       ['그 밖', [
         ['기록한 사람 보기', function () { var now = Date.now(); voters[0] = [{ o: 1, c: 'wn', t: now - 3600000, admin: true }, { o: 1, c: 's', t: now - 86400000 }, { o: -1, c: '', t: now - 2 * 86400000 }, { o: 1, c: 'w', t: now - 600000, me: true }]; openVoters(0); }],
@@ -4785,9 +4998,9 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         if (locating) return;
         needLogin(function () {
           if (canRevote(i)) { checkNear(i, function () { apply(o, bit, true); }, function (on) { locating = on; xr.classList.toggle('busy', on); if (on) toast('위치 확인 중'); }); return; }
-          if (myO[i]) { apply(o, bit); return; }
+          if (myO[i] || beenNear(i)) { markNear(i); apply(o, bit); return; }
           if (devOwner(xk) && devOwner(xk) !== who.u) { toast('이 폰에서는 이 카페에 다른 계정으로 이미 기록했어요'); return; }
-          checkNear(i, function () { devClaim(xk); apply(o, bit); }, function (on) { locating = on; xr.classList.toggle('busy', on); if (on) toast('위치 확인 중'); });
+          checkNear(i, function () { devClaim(xk); markNear(i); apply(o, bit); }, function (on) { locating = on; xr.classList.toggle('busy', on); if (on) toast('위치 확인 중'); });
         }, 'vote');
       };
       var xb = CHAIRS.map(function (c) { var x = plain(c[1], function () { cast(1, c[2]); }); xr.appendChild(x[0]); return [x, c]; });

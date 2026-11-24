@@ -2,7 +2,8 @@
 # 사용법: python -I -X utf8 "데이터 만들기/gone_report.py"        (새로 생긴 것만)
 #         python -I -X utf8 "데이터 만들기/gone_report.py" --all  (지금 2명 이상인 것 전부)
 # 서버의 신고 목록(v2/gone)은 누구나 읽을 수 있다. 카페 이름표는 지도(index.html)와 같은 방법으로 만든다.
-# 지우기로 정한 카페는 removed.js의 목록에 이름표를 넣는다.
+# 지울지 남길지는 앱의 메뉴 "받은 폐업 신고"에서 정한다(v2/gonedec). 정한 카페는 여기서 빼고, 남긴 카페는 그 뒤에 들어온 신고만 센다.
+# removed.js에 이름표를 넣어도 지도에서 빠진다(예전 방법).
 import sys, os, json, urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -54,7 +55,22 @@ def main():
     except Exception as e:
         print('신고 목록을 받지 못했다:', e)
         return 1
-    hot = {k: len(v) for k, v in gone.items() if isinstance(v, dict) and len(v) >= NEED}
+    try:
+        with urllib.request.urlopen(DB + '/v2/gonedec.json', timeout=30) as r:
+            dec = json.load(r) or {}
+    except Exception:
+        dec = {}   # 규칙을 게시하기 전에는 읽을 수 없다
+    hot = {}
+    for k, v in gone.items():
+        if not isinstance(v, dict):
+            continue
+        d = dec.get(k) or {}
+        if d.get('d') == 1:
+            continue
+        after = d.get('t', 0) if d.get('d') == 0 else 0
+        n = sum(1 for x in v.values() if isinstance(x, dict) and x.get('t', 0) > after)
+        if n >= NEED:
+            hot[k] = n
     seen = json.load(open(SEEN, encoding='utf-8')) if os.path.exists(SEEN) else {}
     show = hot if '--all' in sys.argv else {k: n for k, n in hot.items() if seen.get(k, 0) < n}
     print('폐업 신고가 있는 카페 %d곳, 그중 %d명 이상 %d곳' % (len(gone), NEED, len(hot)))
