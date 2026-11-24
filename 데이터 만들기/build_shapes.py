@@ -1,7 +1,8 @@
 # 행정동 경계(geojson)를 지도의 지역 단계(시도 > 시 > 구 > 동)에 맞춰 합치고 단순하게 만들어 regions.js로 저장한다.
-# 경계 자료: github.com/vuski/admdongkor (CC BY 4.0, 원자료는 통계청 SGIS, 공공누리 제1유형)
+# 경계 자료: 행정안전부 주소기반산업지원서비스의 "구역의 도형"(행정동 TL_SCCO_GEMD). juso_dong.py가 geojson으로 바꿔 준다.
+# (2026-11-24 전에는 github.com/vuski/admdongkor, 원자료 통계청 SGIS를 썼다.)
 # 사용법: python -X utf8 build_shapes.py <행정동 geojson> <cafes.js> <출력 regions.js>
-import sys, json, collections
+import sys, json, collections, re
 from shapely.geometry import shape, Point
 from shapely.ops import unary_union
 import shapely
@@ -15,7 +16,8 @@ SIDO_SHORT = {'서울특별시': '서울', '경기도': '경기', '인천광역�
 
 
 def norm(s):
-    return s.replace('·', '').replace('.', '').replace(' ', '')
+    # 공식 경계는 "가양제1동", 카페 자료는 "가양1동"처럼 적으므로 숫자 앞의 "제"를 뺀다.
+    return re.sub(r'제(\d)', r'\1', s.replace('·', '').replace('.', '').replace(' ', ''))
 
 
 # 0. 카페 자료의 지역 이름. 경계 자료는 "수원시영통구"처럼 붙여 쓰므로 카페 자료 표기로 맞춘다.
