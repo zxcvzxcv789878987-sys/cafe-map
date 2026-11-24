@@ -941,6 +941,11 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
 @keyframes c3Ck { from { transform: scale(.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 /* 목록과 표 머리의 작은 그림: 바탕 없이 그림만, 움직임은 끝난 모양으로 */
 .xbadge.pic { background: none; }
+/* 보상 체계: 묶음 사이 가로선, 줄 이름 앞 작은 그림 */
+.xbox .xsep { flex: none; height: 1px; margin: 6px 0 0; background: var(--line); }
+.xrow .rlb { display: inline-flex; align-items: center; flex-wrap: wrap; }
+.xrow .ric { flex: none; display: inline-block; width: 26px; height: 26px; margin: -4px 9px -4px 0; }
+.xrow .ric .fx { width: 100%; }
 button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2px; }
 .fx.still .sp { display: none; }
 .xhead .xbadge.pic { width: 52px; height: 52px; margin: -6px 0; }
@@ -3356,14 +3361,21 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
         // 받은 곳 목록: XP 기록에서 그 이름으로 받은 것을 모은다(최근 것부터).
         var listOf = function (label) { return (XP.log || []).filter(function (e) { return xpSame(e.r, label) && e.a > 0; }).slice().reverse(); };
+        // 줄 이름 앞의 작은 그림. 그림이 없는 줄도 같은 너비를 비워 글자 줄을 맞춘다.
+        var ROW_PIC = { '콘센트 기록': 'plug', '새 동네': 'town', '새로 연 카페': 'shop', '오랜만의 기록': 'cal', '생애 첫 기록': 'stamp' };
+        var rowLabel = function (label) {
+          var l = el('span', 'rlb'), ric = el('span', 'ric');
+          if (ROW_PIC[label]) ric.appendChild(fxStill(ROW_PIC[label]));
+          l.appendChild(ric); l.appendChild(document.createTextNode(label)); return l;
+        };
         var tapRow = function (label, xp) {
           var n = label === '새 동네' ? xpCount(XP.dong) : listOf(label).length;
-          var r = btn('xrow xlink', null, function () { openRewards('list:' + label); }), l = el('span', null, label);
+          var r = btn('xrow xlink', null, function () { openRewards('list:' + label); }), l = rowLabel(label);
           if (n) l.appendChild(el('small', null, n + '곳'));
           r.appendChild(l); r.appendChild(el('b', null, '+' + fmt(xp) + ' XP')); r.appendChild(icon('right')); box.appendChild(r);
         };
         var row = function (label, sub, xp, got) {
-          var r = el('div', 'xrow' + (got ? ' got' : '')), l = el('span', null, label);
+          var r = el('div', 'xrow' + (got ? ' got' : '')), l = rowLabel(label);
           if (sub) l.appendChild(el('small', null, sub));
           r.appendChild(l); r.appendChild(el('b', null, '+' + fmt(xp) + ' XP')); box.appendChild(r);
         };
@@ -3397,7 +3409,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         };
         if (view && view.indexOf('list:') === 0) {
           var lab = view.slice(5), items2 = [];
-          title(lab, lab === '새 동네' ? 'map' : lab === '새로 연 카페' ? 'spark' : 'list');
+          var LIST_PIC = { '새 동네': 'town', '새로 연 카페': 'shop', '오랜만의 기록': 'cal' };
+          title(lab, LIST_PIC[lab] ? 'pic:' + LIST_PIC[lab] : 'list');
           box.appendChild(el('p', 'xexp', XP_WHAT[lab] || ''));
           if (lab === '새 동네') Object.keys(XP.dong).forEach(function (k) { var p = k.split(' '); items2.push({ c: p.slice(1).join(' '), t: 0 }); });
           else listOf(lab).forEach(function (e) { items2.push({ c: e.c || '', t: e.t }); });
@@ -3486,10 +3499,12 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
           row('콘센트 기록', '', 1000, false);
           row('첫 콘센트 기록', '', 2000, false);
           row('콘센트 좌석 기록', '', 300, false);
+          box.appendChild(el('div', 'xsep'));
           box.appendChild(el('div', 'xgrp', '더 받는 경우'));
           tapRow('새 동네', 500);
           tapRow('새로 연 카페', 500);
           tapRow('오랜만의 기록', 500);
+          box.appendChild(el('div', 'xsep'));
           box.appendChild(el('div', 'xgrp', '시작 보너스'));
           row('로그인', '', 1000, true);
           row('생애 첫 기록', '', 1000, !!XP.fo);
