@@ -620,6 +620,8 @@ button.xlink .xbadge.adm { --pri: #495057; --pri2: #adb5bd; }
 /* 새 답변 빨간 점: 메뉴 단추 오른쪽 위, 내 문의 줄과 목록의 상태 옆 */
 #menuBtn { position: relative; }
 #menuBtn.dot::after { content: ""; position: absolute; top: 9px; right: 9px; width: 8px; height: 8px; border-radius: 50%; background: #fa5252; box-shadow: 0 0 0 2px var(--surface); }
+.xbox .fbmy { flex: none; margin: 0 0 4px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.xbox .fbmy small { display: inline-block; margin-left: 7px; color: var(--ink-3); font-size: 12px; }
 .fbdot { display: inline-block; width: 7px; height: 7px; margin-left: 6px; border-radius: 50%; background: #fa5252; vertical-align: 2px; }
 /* 내 문의, 받은 문의 목록과 한 건 보기 */
 .xll .fbi { width: 100%; text-align: left; background: none; border-radius: 0; color: inherit; font: inherit; }
@@ -3612,14 +3614,10 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     sc.appendChild(conf);
     // 문의하기: 누르면 글을 쓰는 창이 뜬다. 종류는 창 안에서 고른다.
     var fb = el('div', 'fsec'), fr = btn('xrow xlink', null, function () { openFeedback(); }), fbd = el('span', 'xbadge qna');
-    fbd.appendChild(icon('chat')); fr.appendChild(fbd); fr.appendChild(el('span', null, '문의하기')); fr.appendChild(icon('right'));
+    // 내 문의는 문의하기 창 안에서 본다. 새 답변이 있으면 문의하기 줄에 빨간 점.
+    var fl = el('span', null, '문의하기'); if (fbNew > 0) fl.appendChild(el('i', 'fbdot'));
+    fbd.appendChild(icon('chat')); fr.appendChild(fbd); fr.appendChild(fl); fr.appendChild(icon('right'));
     var fbRows = [];
-    if (fbMine().length || signedIn()) {
-      var mr = btn('xrow xlink', null, function () { openMyFb(); }), mbd = el('span', 'xbadge inbox'), ml = el('span', null, '내 문의');
-      mbd.appendChild(icon('inbox')); mr.appendChild(mbd);
-      if (fbNew > 0) ml.appendChild(el('i', 'fbdot'));
-      mr.appendChild(ml); mr.appendChild(icon('right')); fbRows.push(mr);
-    }
     if (isAdmin() && !TEST) {
       var ar = btn('xrow xlink', null, function () { openAdminFb(); }), abd = el('span', 'xbadge adm');
       abd.appendChild(icon('inbox')); ar.appendChild(abd); ar.appendChild(el('span', null, '받은 문의')); ar.appendChild(icon('right')); fbRows.push(ar);
@@ -3893,7 +3891,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   }
   function fbWhen(t) { if (!t) return ''; var d = new Date(t); return (d.getMonth() + 1) + '월 ' + d.getDate() + '일'; }
   // 내 문의 창: 목록, 누르면 내 글과 답변
-  function openMyFb(view) {
+  function openMyFb(view, fromFb) {
     var old = $('xinfo'); if (old) old.remove();
     var o = el('div'), box = el('div', 'xbox fbl'), hd = el('div', 'xhead'), bd = el('span', 'xbadge');
     o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '내 문의');
@@ -3901,7 +3899,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     bd.appendChild(icon('inbox')); hd.appendChild(bd); hd.appendChild(el('h2', null, '내 문의')); box.appendChild(hd);
     var ll = el('div', 'xll'); ll.appendChild(el('p', 'xnone', '불러오는 중')); box.appendChild(ll);
     var foot = el('div'); box.appendChild(foot);
-    foot.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
+    if (fromFb) { var two0 = el('div', 'two'); two0.appendChild(btn('btn', '뒤로', function () { o.remove(); openFeedback(); })); two0.appendChild(btn('btn pri', '닫기', function () { o.remove(); })); foot.appendChild(two0); }
+    else foot.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
     o.appendChild(box); document.body.appendChild(o);
     fbLoad().then(function (list) {
       ll.textContent = '';
@@ -3920,7 +3919,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         } else ll.appendChild(el('p', 'fbwait', '아직 답변이 없어요. 답변이 오면 메뉴 단추에 빨간 점이 떠요.'));
         foot.textContent = '';
         var two = el('div', 'two');
-        two.appendChild(btn('btn', '뒤로', function () { o.remove(); openMyFb(); }));
+        two.appendChild(btn('btn', '뒤로', function () { o.remove(); openMyFb(null, fromFb); }));
         two.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
         foot.appendChild(two);
         fbCheck();
@@ -3999,6 +3998,13 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '문의하기');
     o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
     bd.appendChild(icon('chat')); hd.appendChild(bd); hd.appendChild(el('h2', null, '문의하기')); box.appendChild(hd);
+    // 내 문의: 보낸 문의와 답변. 누르면 목록, 목록의 뒤로는 이 창으로.
+    if (fbMine().length || signedIn()) {
+      var my = btn('xrow xlink fbmy', null, function () { openMyFb(null, true); }), myl = el('span', null, '내 문의');
+      if (fbMine().length) myl.appendChild(el('small', null, fbMine().length + '건'));
+      if (fbNew > 0) myl.appendChild(el('i', 'fbdot'));
+      my.appendChild(myl); my.appendChild(icon('right')); box.appendChild(my);
+    }
     var pick = function (k) {
       cur = k; box.className = 'xbox fb-' + k[0];
       bd.textContent = ''; bd.appendChild(icon(k[2]));
