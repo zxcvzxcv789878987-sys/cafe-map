@@ -1102,7 +1102,8 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       .then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); })
       .then(function (srv) {
         if (srv && typeof srv.xp === 'number') { delete srv.t; XP = xpNorm(srv); save(xpKey(), XP); xpHeal(); }
-        else { XP = xpFresh(); try { localStorage.removeItem(xpKey()); } catch (e) { /* 그냥 넘어간다 */ } }
+        // 처음 로그인한 계정: 로그인 XP를 지금 시각으로 기록에 남기고 서버에 올린다.
+        else { XP = xpFresh(); XP.log = [{ t: Date.now(), a: 1000, r: '로그인' }]; xpSave(); }
         for (var vk in XP.vis) devClaim(vk);
         if (P.kind === 'menu' || P.kind === 'detail') renderPanel();
       }).catch(function () { /* 서버에 닿지 못하면 이 기기에 적어 둔 것으로 보여 준다 */ });
