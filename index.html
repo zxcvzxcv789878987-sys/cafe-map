@@ -490,6 +490,10 @@ button.xlink.xrow b { margin-right: 6px; }
 .xgrp { font-size: 12.5px; font-weight: 700; color: var(--ink-2); margin-top: 8px; }
 .xrow { display: flex; justify-content: space-between; gap: 10px; font-size: 13.5px; padding: 3px 0; }
 .xrow small { display: block; color: var(--ink-3); font-size: 12px; }
+/* 보상 체계의 더 받는 경우: 받은 곳 수는 이름 바로 오른쪽 같은 줄에 */
+/* 화살표가 있는 줄과 없는 줄의 XP 오른쪽 끝을 맞춘다(화살표 15px, 사이 16px) */
+.xbox:has(> .xlink) > .xrow:not(.xlink) { padding-right: 31px; }
+button.xlink.xrow > span small { display: inline-block; margin-left: 7px; padding: 1px 7px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); font-size: 11.5px; font-weight: 650; vertical-align: 1px; }
 .xrow b { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .xrow.got { color: var(--pri); }
 .xrow.got b::before { content: "✓ "; }
@@ -541,6 +545,20 @@ button.xlink .xbadge.rank, .xbox.rank { --pri: #d6336c; --pri2: #f783ac; }
 .rkl .rktag { flex: none; padding: 1px 7px; border-radius: 999px; background: color-mix(in srgb, var(--pri) 12%, var(--surface)); color: var(--pri); font-size: 11px; font-weight: 700; }
 .rkl { overflow-x: hidden; }
 .rkl .xli.rkme { padding-left: 8px; padding-right: 8px; border-radius: 12px; background: color-mix(in srgb, var(--pri) 9%, var(--surface)); }
+.rkl button.xli { width: 100%; text-align: left; background: none; border-radius: 0; color: inherit; font: inherit; }
+.rkl button.xli:active { background: var(--surface-2); }
+.rkl button.xli.rkme { border-radius: 12px; background: color-mix(in srgb, var(--pri) 9%, var(--surface)); }
+/* 랭킹에서 누른 사람 창 */
+.xbox.person .pstop { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.xbox.person .pstop h2 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.xbox.person .psno { flex: none; font-size: 15px; font-weight: 800; color: #d6336c; }
+.xbox.person .rktag { flex: none; padding: 1px 7px; border-radius: 999px; background: #fcebf1; color: #d6336c; font-size: 11px; font-weight: 700; }
+.xbox.person .pslv { display: flex; align-items: baseline; justify-content: space-between; }
+.xbox.person .pslv b { font-size: 26px; font-weight: 800; }
+.xbox.person .pslv span { font-size: 13.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.xstat.static > div { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 13px 2px 12px; }
+.xstat.static > div + div::before { content: ""; position: absolute; left: 0; top: 16px; bottom: 16px; width: 1px; background: var(--line); }
+.xstat.static { margin: 0; }
 .rkl .rkgap { text-align: center; color: var(--ink-3); padding: 4px 0; }
 .xbox .xexp.warn { background: #fff4e6; color: #a8460b; }
 .nkcur { margin: 4px 0 2px; font-size: 20px; font-weight: 800; }
@@ -1162,6 +1180,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     var body = { xp: XP.xp, vis: XP.vis, vote: XP.vote, dong: XP.dong, fv: XP.fv || 0, fo: XP.fo || 0, mv: XP.mv || 0, md: XP.md || 0, log: XP.log || [], t: { '.sv': 'timestamp' } };
     if (XP.nick) body.nick = XP.nick;
     if (XP.nickT) body.nickT = XP.nickT;
+    if (XP.nickOk) body.nickOk = 1;
     if (XP.nickP) body.nickP = 1;
     rankPush();
     token().then(function (t) {
@@ -1171,8 +1190,8 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   // 랭킹 칸: 닉네임과 XP만 올린다. 누구나 읽을 수 있는 곳이라 다른 것은 넣지 않는다. 실패해도 다음에 바뀔 때 다시 올린다.
   // 고치기(PATCH)로 올려서 서버의 nt(닉네임 바꾼 때)를 지우지 않는다. 닉네임을 바꾼 뒤 처음 올릴 때만 nt를 서버 시각으로 보낸다(XP.nickP).
   function rankPush() {
-    if (!loginOn || !signedIn() || !XP.nick) return;
-    var body = { n: XP.nick, x: XP.xp, t: { '.sv': 'timestamp' } }, sent = !!XP.nickP;
+    if (!loginOn || !signedIn() || !XP.nick || !XP.nickOk) return;
+    var body = { n: XP.nick, x: XP.xp, v: xpCount(XP.vote), d: xpCount(XP.dong), o: xpLogCount('새로 연 카페'), r: xpLogCount('오랜만의 투표'), t: { '.sv': 'timestamp' } }, sent = !!XP.nickP;
     if (sent) body.nt = { '.sv': 'timestamp' };
     token().then(function (t) {
       return fetch(SHARE.db + '/v2/rank/' + who.u + '.json?auth=' + encodeURIComponent(t), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -1230,6 +1249,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
         else { XP = xpFresh(); XP.nick = randomNick(); XP.log = [{ t: Date.now(), a: 1000, r: '로그인' }]; xpSave(); }
         for (var vk in XP.vis) devClaim(vk);
         if (P.kind === 'menu' || P.kind === 'detail') renderPanel();
+        if (XP_ON && !XP.nickOk) setTimeout(openNickFirst, 400);
       }).catch(function () { /* 서버에 닿지 못하면 이 기기에 적어 둔 것으로 보여 준다 */ });
   }
   function xpBonus(n) { var b = { 3: 1000, 5: 2000, 10: 3000, 15: 4000, 20: 5000, 30: 7000, 40: 8000 }; return b[n] || (n >= 50 && n % 100 === 0 ? 20000 : n >= 50 && n % 10 === 0 ? 10000 : 0); }
@@ -1242,6 +1262,8 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     '새로 연 카페': '문을 연 지 1년이 안 된 카페에 투표하면 받아요.',
     '오랜만의 투표': '6개월 넘게 아무도 투표하지 않은 카페에 투표하면 받아요.'
   };
+  // XP 기록에서 그 이름으로 받은 곳 수
+  function xpLogCount(label) { return (XP.log || []).filter(function (e) { return xpSame(e.r, label) && e.a > 0; }).length; }
   function xpSame(r, label) { return r === label || (label === '오랜만의 투표' && r === '정보 새로 고침'); }
   function xpCount(o) { var n = 0, k; for (k in o) n++; return n; }
   // 풍선은 받은 까닭마다 하나씩, 차례로 띄운다(예: "+500 XP 방문 인증" 다음에 "+1,000 XP 생애 첫 방문 인증").
@@ -2847,7 +2869,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
         if (XP_ON) {
           var nk = el('div', 'mnick');
           nk.appendChild(el('span', null, '닉네임')); nk.appendChild(el('b', null, XP.nick || ''));
-          nk.appendChild(btn('btn sm', '바꾸기', openNick));
+          nk.appendChild(btn('btn sm', '바꾸기', function () { if (XP.nickOk) openNick(); else openNickFirst(); }));
           acc.appendChild(nk);
         }
         acc.appendChild(btn('link', '계정 삭제', deleteAccount));
@@ -3128,6 +3150,55 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     box.appendChild(two);
     o.appendChild(box); document.body.appendChild(o); fitVisible(o);
   }
+  // 닉네임 정하기 창(처음 한 번): 다른 이름을 몇 번이든 뽑을 수 있다. 창 밖을 눌러도 닫히지 않는다.
+  function openNickFirst() {
+    if (!signedIn() || XP.nickOk) return;
+    var old = $('xinfo'); if (old) old.remove();
+    var o = el('div'), box = el('div', 'xbox nick'), inp = document.createElement('input'), field = el('label', 'nkfield');
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '닉네임 정하기');
+    box.appendChild(el('h2', null, '닉네임 정하기'));
+    inp.type = 'text'; inp.maxLength = 12; inp.value = XP.nick || randomNick(); inp.placeholder = '닉네임'; inp.setAttribute('enterkeyhint', 'done'); inp.setAttribute('aria-label', '닉네임');
+    var again = btn('nkre', null, function (e) { e.preventDefault(); inp.value = randomNick(); });
+    again.appendChild(icon('shuffle')); again.appendChild(el('span', null, '다른 이름'));
+    field.appendChild(inp); field.appendChild(again); box.appendChild(field);
+    var p = el('p', 'nknote'); p.appendChild(icon('clock')); p.appendChild(el('span', null, '정한 뒤에는 6개월에 한 번만 바꿀 수 있어요.')); box.appendChild(p);
+    var done = function () {
+      var v = inp.value.trim().replace(/\s+/g, ' ');
+      if (!v) { toast('닉네임을 적어 주세요'); return; }
+      if (Array.from(v).length > 12) { toast('닉네임은 열두 자까지예요'); return; }
+      if (nickBad(v)) { toast('쓸 수 없는 말이 들어 있어요'); return; }
+      XP.nick = v; XP.nickOk = 1; xpSave(); o.remove();
+      if (P.kind === 'menu') renderPanel();
+      toast('닉네임을 정했어요');
+    };
+    inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') done(); });
+    box.appendChild(btn('btn pri', '정하기', done));
+    o.appendChild(box); document.body.appendChild(o); fitVisible(o);
+  }
+  // 랭킹에서 누른 사람: 닉네임, 등수, 레벨과 XP, 네 칸. 뒤로를 누르면 랭킹으로 돌아간다.
+  function openPerson(no, x) {
+    var old = $('xinfo'); if (old) old.remove();
+    var o = el('div'), box = el('div', 'xbox nick person');
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', x.n || '사용자');
+    o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
+    var top = el('div', 'pstop');
+    top.appendChild(el('span', 'psno', no + '등'));
+    var nm = el('h2', null, x.n || '이름 없음'); top.appendChild(nm);
+    if (x.u === SHARE.admin) top.appendChild(el('span', 'rktag', '운영자'));
+    box.appendChild(top);
+    var lv = el('div', 'pslv'); lv.appendChild(el('b', null, 'Lv.' + Math.floor(x.x / 1000))); lv.appendChild(el('span', null, '총 ' + fmt(x.x) + ' XP')); box.appendChild(lv);
+    var st = el('div', 'xstat static');
+    [['투표한 카페', x.v], ['새 동네', x.d], ['새로 연 카페', x.o], ['오랜만의 투표', x.r]].forEach(function (y) {
+      var c = el('div'), num = el('b', null, String(y[1] || 0)); num.appendChild(el('small', null, '곳'));
+      c.appendChild(num); c.appendChild(el('span', null, y[0])); st.appendChild(c);
+    });
+    box.appendChild(st);
+    var two = el('div', 'two');
+    two.appendChild(btn('btn', '뒤로', function () { openRank(); }));
+    two.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
+    box.appendChild(two);
+    o.appendChild(box); document.body.appendChild(o);
+  }
   // 전체 랭킹 창: XP 순으로 50등까지. XP가 같으면 같은 등수. 내가 50등 밖이면 맨 아래에 내 등수를 붙인다.
   function openRank() {
     var old = $('xinfo'); if (old) old.remove();
@@ -3140,7 +3211,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     box.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
     o.appendChild(box); document.body.appendChild(o);
     var line = function (no, x) {
-      var r = el('div', 'xli' + (x.u === me ? ' rkme' : '')), l = el('span', 'rkname'), rt = el('span', 'rt');
+      var r = btn('xli' + (x.u === me ? ' rkme' : ''), null, function () { openPerson(no, x); }), l = el('span', 'rkname'), rt = el('span', 'rt');
       l.appendChild(el('b', 'rkn' + (no <= 3 ? ' top' : ''), String(no)));
       l.appendChild(el('span', 'rs', x.n || '이름 없음'));
       if (x.u === SHARE.admin) l.appendChild(el('span', 'rktag', '운영자'));
@@ -3153,9 +3224,9 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     if (!SHARE.db) { fail(); return; }
     fetch(SHARE.db + '/v2/rank.json?orderBy=%22x%22&limitToLast=50').then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); }).then(function (all) {
       var list = [], u, v;
-      for (u in all || {}) { v = all[u]; if (v && typeof v.x === 'number') list.push({ u: u, n: v.n, x: v.x, t: v.t || 0 }); }
+      for (u in all || {}) { v = all[u]; if (v && typeof v.x === 'number') list.push({ u: u, n: v.n, x: v.x, t: v.t || 0, v: v.v || 0, d: v.d || 0, o: v.o || 0, r: v.r || 0 }); }
       // 내 줄은 이 기기의 XP와 닉네임이 더 새것일 수 있어 그것으로 보여 준다.
-      list.forEach(function (x) { if (x.u === me) { x.x = XP.xp; x.n = XP.nick || x.n; } });
+      list.forEach(function (x) { if (x.u === me) { x.x = XP.xp; x.n = XP.nick || x.n; x.v = xpCount(XP.vote); x.d = xpCount(XP.dong); x.o = xpLogCount('새로 연 카페'); x.r = xpLogCount('오랜만의 투표'); } });
       list.sort(function (a, b) { return b.x - a.x || a.t - b.t; });
       ll.textContent = '';
       if (!list.length) { ll.appendChild(el('p', 'xnone', '아직 없어요')); return; }
@@ -3167,7 +3238,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       fetch(SHARE.db + '/v2/rank.json?orderBy=%22x%22&startAt=' + (XP.xp + 1)).then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); }).then(function (above) {
         var c = 0, k; for (k in above || {}) if (k !== me) c++;
         ll.appendChild(el('div', 'rkgap', '⋯'));
-        ll.appendChild(line(c + 1, { u: me, n: XP.nick, x: XP.xp }));
+        ll.appendChild(line(c + 1, { u: me, n: XP.nick, x: XP.xp, v: xpCount(XP.vote), d: xpCount(XP.dong), o: xpLogCount('새로 연 카페'), r: xpLogCount('오랜만의 투표') }));
       }).catch(function () { /* 내 등수만 못 붙인다 */ });
     }).catch(fail);
   }

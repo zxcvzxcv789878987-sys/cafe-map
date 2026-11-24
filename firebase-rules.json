@@ -143,6 +143,18 @@
           "x": {
             ".validate": "newData.isNumber() && newData.val() >= 0"
           },
+          "v": {
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          },
+          "d": {
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          },
+          "o": {
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          },
+          "r": {
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          },
           "t": {
             ".validate": "newData.val() === now"
           },
