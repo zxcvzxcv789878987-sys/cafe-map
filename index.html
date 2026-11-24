@@ -416,8 +416,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .xrow b { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .xrow.got { color: var(--pri); }
 .xrow.got b::before { content: "✓ "; }
-/* 달성 보너스 표. 받은 칸은 보라로 채우고 체크, 다음 목표는 테두리와 번짐에 선물과 "N곳 남음", 아직인 칸은 옅은 회색에 자물쇠. */
-.xms { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; margin: 6px 2px 4px; }
+/* 달성 보너스 표. 받은 칸은 보라로 채우고 체크, 다음 목표는 테두리와 번짐에 선물, 아직인 칸은 옅은 회색에 자물쇠. */
+.xms { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 1fr; gap: 9px; margin: 6px 2px 4px; }
 .xms span { display: flex; flex-direction: column; align-items: center; padding: 9px 2px 8px; border-radius: 14px; background: var(--surface-2); color: var(--ink-3); font-size: 11px; font-variant-numeric: tabular-nums; }
 .xms span svg.i { width: 15px; height: 15px; margin-bottom: 4px; opacity: .45; }
 .xms span b { font-size: 13.5px; font-weight: 750; color: var(--ink-2); line-height: 1.25; }
@@ -427,7 +427,6 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .xms span.next { background: var(--surface); color: var(--pri); box-shadow: 0 0 0 2px var(--pri), 0 0 0 6px rgba(106, 90, 224, .14); }
 .xms span.next b { color: var(--ink); }
 .xms span.next svg.i { opacity: 1; }
-.xms span em { font-style: normal; font-size: 10.5px; font-weight: 750; margin-top: 1px; }
 /* 표 위: 지금 몇 곳인지, 다음 보너스가 얼마인지, 거기까지 얼마나 왔는지(칸 하나가 카페 한 곳). */
 .xprog { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 8px; padding: 12px 14px 10px; border-radius: 14px 14px 0 0; background: color-mix(in srgb, var(--pri) 9%, var(--surface)); }
 .xprog small { display: block; font-size: 11.5px; color: var(--ink-3); }
@@ -2508,7 +2507,6 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
             var got = have >= m, isNext = !got && m === next, c = el('span', got ? 'got' : isNext ? 'next' : '');
             c.appendChild(icon(got ? 'check' : isNext ? 'gift' : 'lock'));
             c.appendChild(el('b', null, m + '곳')); c.appendChild(document.createTextNode('+' + fmt(xpBonus(m))));
-            if (isNext) c.appendChild(el('em', null, (m - count) + '곳 남음'));
             c.setAttribute('aria-label', m + '곳, ' + fmt(xpBonus(m)) + ' XP, ' + (got ? '받음' : isNext ? '다음 목표' : '아직'));
             g.appendChild(c);
           });
