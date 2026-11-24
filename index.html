@@ -458,10 +458,13 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .xnote { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-3); }
 /* 메뉴의 레벨 칸(누르면 XP 기록) */
 button.xlvbtn { width: 100%; display: flex; flex-direction: row; align-items: center; gap: 10px; text-align: left; padding: 4px 0; }
-/* 메뉴의 내 기록 네 칸 */
-.xstat { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 4px 0 6px; }
-.xstat button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 9px 2px; border-radius: 12px; background: var(--surface-2); }
-.xstat b { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
+/* 메뉴의 내 기록 네 칸: 흰 카드 하나를 가는 선으로 나눈다 */
+.xstat { display: grid; grid-template-columns: repeat(4, 1fr); margin: 6px 0 8px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); overflow: hidden; }
+.xstat button { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 13px 2px 12px; background: none; border-radius: 0; }
+.xstat button + button::before { content: ""; position: absolute; left: 0; top: 16px; bottom: 16px; width: 1px; background: var(--line); }
+.xstat button:active { background: var(--surface-2); }
+.xstat b { font-size: 19px; font-weight: 800; letter-spacing: -.01em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.xstat b small { margin-left: 1px; font-size: 12px; font-weight: 650; color: var(--ink-2); }
 .xstat span { font-size: 11.5px; color: var(--ink-2); white-space: nowrap; }
 button.xlvbtn .top { display: flex; justify-content: space-between; align-items: baseline; width: 100%; }
 button.xlvbtn .xlvtxt { flex: 1; display: flex; flex-direction: column; gap: 4px; }
@@ -516,7 +519,21 @@ button.xlink .xbadge.vote { --pri: #f76707; --pri2: #ffa94d; }
 button.xlink .xbadge.rw { --pri: #6a5ae0; --pri2: #8b7bf2; }
 button.xlink .xbadge.bug { --pri: #e03131; --pri2: #ff8787; }
 button.xlink .xbadge.rank, .xbox.rank { --pri: #d6336c; --pri2: #f783ac; }
-.xbox.nick { --pri: #1098ad; --pri2: #66d9e8; }
+/* 닉네임 창: 색 띠와 색 칸 없이 차분하게 */
+.xbox.nick { gap: 12px; padding: 22px 20px 18px; }
+.xbox.nick::before { display: none; }
+.xbox.nick h2 { font-size: 19px; }
+.nkfield { display: flex; align-items: center; gap: 8px; height: 54px; padding: 0 7px 0 14px; border: 1.5px solid var(--line-2); border-radius: 14px; background: var(--surface); }
+.nkfield:focus-within { border-color: var(--pri); }
+.nkfield input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: none; color: var(--ink); font: inherit; font-size: 17px; font-weight: 650; }
+.nkfield .nkre { flex: none; display: inline-flex; align-items: center; gap: 5px; height: 38px; padding: 0 11px; border-radius: 10px; background: var(--surface-2); color: var(--ink-2); font-size: 13px; font-weight: 650; }
+.nkfield .nkre svg.i { width: 15px; height: 15px; }
+.nkfield .nkre:active { background: var(--line); }
+.nknote { display: flex; gap: 7px; align-items: flex-start; margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+.xbox .nknote { color: var(--ink-2); }
+.nknote svg.i { flex: none; width: 15px; height: 15px; margin-top: 2px; color: #e8590c; }
+.xbox.nick .two { margin-top: 4px; }
+.xbox.nick .btn { height: 48px; border-radius: 13px; font-size: 15px; }
 .rkl .xli > span.rkname { flex-direction: row; align-items: center; gap: 8px; min-width: 0; }
 .rkl .rkn { flex: none; min-width: 24px; text-align: center; color: var(--ink-2); }
 .rkl .rkn.top { color: var(--pri); }
@@ -658,6 +675,8 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.010M4 12h.010M4 18h.010"/></symbol>
   <symbol id="i-podium" viewBox="0 0 24 24"><path d="M9 20V9.500h6V20M3.500 20v-6.500H9M15 15h5.500v5M2.500 20h19M12 3.500l.900 1.800 2 .300-1.450 1.400.350 2-1.800-.950-1.800.950.350-2L9.100 5.600l2-.300z"/></symbol>
   <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.500" r="3.500"/><path d="M5 20a7 7 0 0 1 14 0"/></symbol>
+  <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M4 7h3.500c2.200 0 3.300 1.200 4.500 3.500l1 2c1.200 2.300 2.300 3.500 4.500 3.500H20M17 13.500l3 2.500-3 2.500M4 16.500h3.500c1 0 1.800-.300 2.400-.800M14.100 8.300c.600-.500 1.400-.800 2.400-.800H20M17 5l3 2.500L17 10"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.500"/><path d="M12 7.500V12l3 2"/></symbol>
   <symbol id="i-out" viewBox="0 0 24 24"><path d="M14 5h5v5M19 5l-8 8M10 6H6a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-4"/></symbol>
 </svg>
 
@@ -1110,6 +1129,17 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     '명랑한', '뽀송한', '따뜻한', '반짝이는', '수다스런', '꼼꼼한', '상냥한', '엉성한', '부지런한', '심심한'];
   var NICK_ANIMALS = ['쿼카', '수달', '고양이', '다람쥐', '펭귄', '판다', '너구리', '여우', '고슴도치', '토끼', '알파카', '코알라', '햄스터', '물개', '부엉이', '사슴', '오리', '카피바라', '두더지', '참새',
     '돌고래', '거북이', '해달', '양', '강아지', '미어캣', '올빼미', '나무늘보', '병아리', '고래'];
+  // 닉네임에 못 쓰는 말. 띄어쓰기, 숫자, 기호를 빼고 소문자로 바꾼 뒤 이 말이 들어 있으면 막는다(예: "시 1 발"도 막힌다).
+  // 운영진인 척하는 이름(운영자, 관리자)도 막는다. 앱에서만 거른다.
+  var NICK_BAD = ['시발', '씨발', '씨빨', '씨팔', '시팔', '씨바', '쓰발', '쓰바', 'ㅅㅂ', 'ㅆㅂ', 'ㅅㅂㄹ', '병신', '븅신', '빙신', '병쉰', 'ㅂㅅ', '좆', '존나', '졸라', '존니', 'ㅈㄴ', 'ㅈ같',
+    '개새', '개색', '개세', '개쉐', '개섀', '새끼', '쌔끼', '새키', 'ㅅㄲ', '개같', '개년', '개놈', '미친', '미췬', 'ㅁㅊ', '또라이', '돌아이', '지랄', 'ㅈㄹ', '염병', '엠창', '니애미', '니앰', '느금', '니미', '애미', '애비', '닥쳐', '꺼져',
+    '썅', '쌍년', '쌍놈', '걸레', '창녀', '창놈', '보지', '자지', '섹스', '쎅스', '섹쓰', '야동', '몸캠', '강간', '자위', '딸딸', '찐따', '김치녀', '장애인', '틀딱', '급식충', '맘충', '일베', '노무', '운지',
+    'fuck', 'fuk', 'shit', 'bitch', 'sex', 'porn', 'dick', 'pussy', 'nigger', 'nigga', 'asshole', 'bastard', 'slut', 'whore',
+    '운영자', '관리자', '운영진', 'admin', '카페지도'];
+  function nickBad(v) {
+    var t = v.toLowerCase().replace(/[\s0-9_.\-~!@#$%^&*()+=?<>,'"`/\\|:;\[\]{}]/g, '');
+    return NICK_BAD.some(function (w) { return t.indexOf(w) >= 0; });
+  }
   function randomNick() {
     var pk = function (a) { return a[Math.floor(Math.random() * a.length)]; };
     for (var k = 0; k < 20; k++) { var nn = pk(NICK_MOODS) + ' ' + pk(NICK_ANIMALS); if (Array.from(nn).length <= 12) return nn; }
@@ -2858,7 +2888,8 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
             // 메뉴에서 바로 연 목록이라 돌아갈 보상 체계 창이 없다. 닫기만 남긴다.
             var t = document.querySelector('#xinfo .two'); if (t && t.children.length === 2) { var keep = t.lastChild; t.parentNode.replaceChild(keep, t); }
           });
-          b.appendChild(el('b', null, String(x[1]))); b.appendChild(el('span', null, x[0]));
+          var num = el('b', null, String(x[1])); num.appendChild(el('small', null, '곳'));
+          b.appendChild(num); b.appendChild(el('span', null, x[0]));
           stats.appendChild(b);
         });
         xsec.appendChild(stats);
@@ -3055,33 +3086,36 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   }
   // 닉네임 바꾸기 창: 적거나 "다른 이름"으로 새로 뽑는다. 열두 자까지. 6개월(180일)에 한 번만 바꿀 수 있다.
   var NICK_GAP = 180 * 86400000;
-  function ymd(t) { var d = new Date(t); return d.getFullYear() + '년 ' + (d.getMonth() + 1) + '월 ' + d.getDate() + '일'; }
+  // 날짜가 줄 끝에서 끊기지 않게 칸 대신 붙는 빈칸을 쓴다.
+  function ymd(t) { var d = new Date(t); return d.getFullYear() + '년 ' + (d.getMonth() + 1) + '월 ' + d.getDate() + '일'; }
   function openNick() {
     var old = $('xinfo'); if (old) old.remove();
-    var o = el('div'), box = el('div', 'xbox nick'), hd = el('div', 'xhead'), bd = el('span', 'xbadge');
+    var o = el('div'), box = el('div', 'xbox nick');
     var nextOk = (XP.nickT || 0) + NICK_GAP, locked = !!XP.nickT && Date.now() < nextOk;
+    var note = function (text) { var p = el('p', 'nknote'); p.appendChild(icon('clock')); p.appendChild(el('span', null, text)); return p; };
     o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '닉네임');
     o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
-    bd.appendChild(icon('user')); hd.appendChild(bd); hd.appendChild(el('h2', null, '닉네임')); box.appendChild(hd);
+    box.appendChild(el('h2', null, '닉네임'));
     if (locked) {
       // 아직 바꿀 수 없을 때: 지금 닉네임과 다음에 바꿀 수 있는 날
       box.appendChild(el('div', 'nkcur', XP.nick || ''));
-      box.appendChild(el('p', 'xexp warn', '닉네임은 6개월에 한 번만 바꿀 수 있어요. ' + ymd(nextOk) + '부터 다시 바꿀 수 있어요.'));
+      box.appendChild(note('6개월에 한 번만 바꿀 수 있어요. ' + ymd(nextOk) + '부터 다시 바꿀 수 있어요.'));
       box.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
       o.appendChild(box); document.body.appendChild(o);
       return;
     }
-    var inp = document.createElement('input');
-    box.appendChild(el('p', 'xexp', '전체 랭킹에 이 이름으로 보여요.'));
-    inp.type = 'text'; inp.maxLength = 12; inp.value = XP.nick || ''; inp.placeholder = '닉네임'; inp.setAttribute('enterkeyhint', 'done');
-    var nr = el('div', 'nkrow'); nr.appendChild(inp);
-    nr.appendChild(btn('btn', '다른 이름', function () { inp.value = randomNick(); }));
-    box.appendChild(nr);
-    box.appendChild(el('p', 'xexp warn', '닉네임은 6개월에 한 번만 바꿀 수 있어요. 저장하면 ' + ymd(Date.now() + NICK_GAP) + '까지 다시 바꿀 수 없어요.'));
+    var inp = document.createElement('input'), field = el('label', 'nkfield');
+    inp.type = 'text'; inp.maxLength = 12; inp.value = XP.nick || ''; inp.placeholder = '닉네임'; inp.setAttribute('enterkeyhint', 'done'); inp.setAttribute('aria-label', '닉네임');
+    var again = btn('nkre', null, function (e) { e.preventDefault(); inp.value = randomNick(); });
+    again.appendChild(icon('shuffle')); again.appendChild(el('span', null, '다른 이름'));
+    field.appendChild(inp); field.appendChild(again);
+    box.appendChild(field);
+    box.appendChild(note('6개월에 한 번만 바꿀 수 있어요. 저장하면 ' + ymd(Date.now() + NICK_GAP) + '까지 다시 바꿀 수 없어요.'));
     var done = function () {
       var v = inp.value.trim().replace(/\s+/g, ' ');
       if (!v) { toast('닉네임을 적어 주세요'); return; }
       if (Array.from(v).length > 12) { toast('닉네임은 열두 자까지예요'); return; }
+      if (nickBad(v)) { toast('쓸 수 없는 말이 들어 있어요'); return; }
       if (v === XP.nick) { o.remove(); return; }
       XP.nick = v; XP.nickT = Date.now(); XP.nickP = 1; xpSave(); o.remove();
       if (P.kind === 'menu') renderPanel();
