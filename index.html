@@ -1585,9 +1585,9 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   function xpToday() { var d = new Date(); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); }
   // 더 받는 경우가 무엇인지(목록 창 위에 적는다).
   var XP_WHAT = {
-    '새 동네': '처음 기록하는 동이면 받아요. 성수1가1동, 서교동 같은 동마다 한 번씩 받아요.',
-    '새로 연 카페': '문을 연 지 1년이 안 된 카페에 기록하면 받아요.',
-    '오랜만의 기록': '6개월 넘게 아무도 기록하지 않은 카페에 기록하면 받아요.'
+    '새 동네': '동 단위로, 그 동에서 처음 콘센트를 기록하면 받아요. 동마다 한 번씩이에요.',
+    '새로 연 카페': '문 연 지 1년이 안 된 카페에 콘센트를 기록하면 받아요.',
+    '오랜만의 기록': '6개월 넘게 아무도 기록하지 않은 카페에 콘센트를 기록하면 받아요.'
   };
   // XP 기록에서 그 이름으로 받은 곳 수
   function xpLogCount(label) { return (XP.log || []).filter(function (e) { return xpSame(e.r, label) && e.a > 0; }).length; }
@@ -3442,11 +3442,11 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         } else if (view === 'newb' || view === 'oldb') {
           var lb = view === 'newb' ? '새로 연 카페' : '오랜만의 기록';
           title(lb + ' 보너스', 'pic:' + BONUS_PIC[view]);
-          box.appendChild(el('p', null, view === 'newb' ? '문 연 지 1년이 안 된 카페를 기록한 수예요. 3곳, 5곳, 10곳처럼 아래 수가 될 때마다 보너스를 받아요.' : '6개월 넘게 아무도 기록하지 않았던 카페를 기록한 수예요. 3곳, 5곳, 10곳처럼 아래 수가 될 때마다 보너스를 받아요.'));
+          box.appendChild(el('p', null, view === 'newb' ? '문 연 지 1년이 안 된 카페에 콘센트를 기록하면 1곳으로 세요. 3곳, 5곳, 10곳처럼 아래 수가 될 때마다 보너스를 받아요.' : '6개월 넘게 아무도 기록하지 않은 카페에 콘센트를 기록하면 1곳으로 세요. 3곳, 5곳, 10곳처럼 아래 수가 될 때마다 보너스를 받아요.'));
           ladder(XP[view === 'newb' ? 'mo' : 'mr'] || 0, xpLogCount(lb), lb);
           var got6 = listOf(lb);
           if (got6.length) {
-            box.appendChild(el('div', 'xgrp', lb));
+            box.appendChild(el('div', 'xsep')); box.appendChild(el('div', 'xgrp', lb));
             var bl6 = el('div', 'xll');
             got6.forEach(function (e) {
               var r6 = el('div', 'xli'), rt6 = el('span', 'rt');
@@ -3459,14 +3459,14 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
           endBtns();
         } else if (view === 'dong' || view === 'vote') {
           title(view === 'dong' ? '새 동네 보너스' : '콘센트 보너스', 'pic:' + BONUS_PIC[view]);
-          box.appendChild(el('p', null, view === 'dong' ? '처음 기록한 동(성수1가1동, 서교동처럼)의 수예요. 3곳, 5곳, 10곳처럼 아래 수가 될 때마다 보너스를 받아요.' : '콘센트를 기록한 카페 수예요. 3곳, 5곳, 10곳처럼 아래 수가 될 때마다 보너스를 받아요.'));
+          box.appendChild(el('p', null, view === 'dong' ? '동 단위로 세요. 그 동에서 처음 콘센트를 기록하면 1곳이에요. 3곳, 5곳, 10곳처럼 아래 수가 될 때마다 보너스를 받아요.' : '콘센트를 기록한 카페 수예요. 3곳, 5곳, 10곳처럼 아래 수가 될 때마다 보너스를 받아요.'));
           if (view === 'dong') ladder(XP.md || 0, xpCount(XP.dong), '기록한 동네'); else ladder(XP.mv || 0, xno2, '기록한 카페');
           // 콘센트 보너스 창: 기록한 카페 목록(새로 연 카페는 초록, 오랜만의 기록은 파랑 표시)
           if (view === 'vote' && xno2) {
             var tagOf = {};
             (XP.log || []).forEach(function (e) { var r = xpName(e.r); if (e.a > 0 && e.c && (r === '새로 연 카페' || r === '오랜만의 기록')) (tagOf[e.c] || (tagOf[e.c] = {}))[r] = 1; });
             // 기록한 카페 목록만: 카페 이름과, 새로 연 카페, 오랜만의 기록이었던 곳의 표시(사용자: "N곳 중" 묶음은 빼기)
-            box.appendChild(el('div', 'xgrp', '기록한 카페'));
+            box.appendChild(el('div', 'xsep')); box.appendChild(el('div', 'xgrp', '기록한 카페'));
             // 목록: 기록한 차례의 최근 것부터(XP 기록에 남은 것), 기록에 없는 옛것은 뒤에
             var names = [], seenN = {}, ix4 = cidIndex();
             (XP.log || []).slice().reverse().forEach(function (e) { var r = xpName(e.r); if (e.a > 0 && e.c && (r === '콘센트 기록' || r === '첫 콘센트 기록') && !seenN[e.c]) { seenN[e.c] = 1; names.push(e.c); } });
@@ -3486,7 +3486,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
             box.appendChild(vl);
           }
           if (view === 'dong' && xpCount(XP.dong)) {
-            box.appendChild(el('div', 'xgrp', '기록한 동네'));
+            box.appendChild(el('div', 'xsep')); box.appendChild(el('div', 'xgrp', '기록한 동네'));
             var dl2 = el('div', 'xll');
             Object.keys(XP.dong).forEach(function (k) { var r3 = el('div', 'xli'); r3.appendChild(el('span', 'rs', k.split(' ').slice(1).join(' '))); dl2.appendChild(r3); });
             box.appendChild(dl2);
