@@ -446,17 +446,16 @@ button.xlink .xbadge.vote { --pri: #f76707; --pri2: #ffa94d; }
 button.xlink .xbadge.rw { --pri: #6a5ae0; --pri2: #8b7bf2; }
 button.xlink .xbadge.bug { --pri: #e03131; --pri2: #ff8787; }
 button.xlink .xbadge.ask { --pri: #1c7ed6; --pri2: #74c0fc; }
-/* 문의 창: 종류마다 색이 다르다. 앱 오류 빨강, 카페 정보 오류 청록, 기능 제안 보라, 기타 문의 파랑. */
+/* 문의 창: 종류마다 색이 다르다. 앱 오류 빨강, 기능 제안 보라, 기타 문의 파랑. */
 .xbox.fb-bug, .fbk .fb-bug { --pri: #e03131; --pri2: #ff8787; }
-.xbox.fb-data, .fbk .fb-data { --pri: #0ca678; --pri2: #38d9a9; }
 .xbox.fb-idea, .fbk .fb-idea { --pri: #6a5ae0; --pri2: #8b7bf2; }
 .xbox.fb-ask, .fbk .fb-ask { --pri: #1c7ed6; --pri2: #74c0fc; }
-.fbk { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 4px; }
-.fbk button { display: flex; align-items: center; gap: 7px; height: 44px; padding: 0 12px; border-radius: 12px; background: var(--surface-2); color: var(--ink-2); font-size: 14px; font-weight: 650; }
+.fbk { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin: 6px 0 4px; }
+.fbk button { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; height: 62px; padding: 0 4px; border-radius: 12px; background: var(--surface-2); color: var(--ink-2); font-size: 14px; font-weight: 650; }
 .fbk button svg.i { width: 17px; height: 17px; color: var(--pri); flex: none; }
 .fbk button[aria-pressed=true] { background: linear-gradient(155deg, var(--pri2), var(--pri)); color: #fff; box-shadow: 0 4px 10px color-mix(in srgb, var(--pri) 28%, transparent); }
 .fbk button[aria-pressed=true] svg.i { color: #fff; }
-.xbox .fbto { font-size: 12px; }
+
 .xbox textarea { width: 100%; min-height: 150px; resize: vertical; margin-top: 8px; padding: 12px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); font: inherit; font-size: 16px; line-height: 1.5; }
 .xbox textarea:focus { outline: 2px solid var(--pri); outline-offset: -1px; border-color: transparent; }
 .xms span.next b { color: var(--ink); }
@@ -544,7 +543,11 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.500 4.500 4.500L19 7.500"/></symbol>
   <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 3.500v4M15 3.500v4M6.500 7.500h11v3.500a5.500 5.500 0 0 1-11 0zM12 16.500v4"/></symbol>
   <symbol id="i-bug" viewBox="0 0 24 24"><rect x="7.500" y="8" width="9" height="11.500" rx="4.500"/><path d="M12 8v11.500M9 8a3 3 0 0 1 6 0M4.500 12.500h3M16.500 12.500h3M5 18l2.500-1.500M19 18l-2.500-1.500M5 7l2.500 1.500M19 7l-2.500 1.500"/></symbol>
-  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M5 5.500h14v10.500h-8.500L6.500 19.500V16H5z"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M5 4.500h14v11h-8L7 19.500v-4H5z"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M7.500 4.500h9v5a4.500 4.500 0 0 1-9 0zM7.500 6.500H5a2.500 2.500 0 0 0 2.500 4M16.500 6.500H19a2.500 2.500 0 0 1-2.500 4M12 14v3.500M8.500 20h7M9.500 17.500h5"/></symbol>
+  <symbol id="i-stamp" viewBox="0 0 24 24"><path d="M9.500 4.500h5v4.500l2 3.500h-9l2-3.500zM5 12.500h14v3.500H5zM6.500 19.500h11"/></symbol>
+  <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9.500 17h5M10 20h4M12 3.500a5.500 5.500 0 0 0-3.300 9.900c.6.500.8 1.100.8 1.800V17h5v-1.800c0-.700.200-1.300.8-1.800A5.500 5.500 0 0 0 12 3.500z"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.500"/><path d="M9.700 9.500a2.400 2.400 0 0 1 4.600.900c0 1.600-2.300 1.900-2.300 3.400M12 16.800v.010"/></symbol>
   <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5.500" y="10.500" width="13" height="9.500" rx="2"/><path d="M8.500 10.500V8a3.500 3.500 0 0 1 7 0v2.500"/></symbol>
   <symbol id="i-gift" viewBox="0 0 24 24"><path d="M5 10.500h14v9H5zM3.500 7.500h17v3h-17zM12 7.500v12M12 7.500C10.500 4.300 7 4 7 6c0 1.500 2.500 1.500 5 1.500zM12 7.500c1.500-3.200 5-3.500 5-1.500 0 1.500-2.500 1.500-5 1.500z"/></symbol>
   <symbol id="i-locate" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7.500"/><path d="M12 2v2.500M12 19.500V22M2 12h2.500M19.500 12H22"/></symbol>
@@ -2572,12 +2575,12 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
           });
         };
         if (view === 'visit' || view === 'vote') {
-          title(view === 'visit' ? '방문 인증 보너스' : '투표 보너스', view === 'visit' ? 'pin' : 'plug');
+          title(view === 'visit' ? '방문 인증 보너스' : '투표 보너스', view === 'visit' ? 'stamp' : 'plug');
           box.appendChild(el('p', null, view === 'visit' ? '방문 인증한 카페 수가 아래에 닿을 때마다 받아요.' : '콘센트 투표를 한 카페 수가 아래에 닿을 때마다 받아요.'));
           if (view === 'visit') ladder(xnv, xnv, '방문 인증한 카페'); else ladder(XP.mv || 0, xno2, '투표한 카페');
           box.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
         } else {
-          title('보상 체계', 'spark');
+          title('보상 체계', 'trophy');
           box.appendChild(el('p', null, '1,000 XP를 모을 때마다 레벨이 1 올라요.'));
           box.appendChild(el('div', 'xgrp', '기본'));
           row('첫 방문 인증', '', 500, false);
@@ -2595,7 +2598,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
         o.appendChild(box); document.body.appendChild(o);
       };
       // 메뉴에는 보상 체계 아래에 달성 보너스 두 줄을 바로 둔다. 누르면 각각의 표가 뜬다.
-      [['보상 체계', null, 'spark', 'rw'], ['방문 인증 보너스', 'visit', 'pin', 'visit'], ['투표 보너스', 'vote', 'plug', 'vote']].forEach(function (x) {
+      [['보상 체계', null, 'trophy', 'rw'], ['방문 인증 보너스', 'visit', 'stamp', 'visit'], ['투표 보너스', 'vote', 'plug', 'vote']].forEach(function (x) {
         var rw = btn('xrow xlink', null, function () { openRewards(x[1]); });
         var bd = el('span', 'xbadge ' + x[3]); bd.appendChild(icon(x[2])); rw.appendChild(bd);
         rw.appendChild(el('span', null, x[0])); rw.appendChild(icon('right'));
@@ -2653,19 +2656,18 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     var pl = el('li'), pa = el('a', null, '개인정보처리방침'); pa.href = 'privacy.html'; pa.target = '_blank'; pa.rel = 'noopener'; pl.appendChild(pa); ul.appendChild(pl);
     info.appendChild(ul); sc.appendChild(info);
   }
-  // 문의 창. 서버에 따로 저장하지 않고, 쓴 내용을 담은 메일을 운영자 주소(share.js의 contact)로 연다.
+  // 문의 창. 쓴 내용은 지도 서버의 문의함(v2/feedback)에 쌓이고, 매일 도는 확인 작업이 읽어서 운영자에게 알려 준다.
+  // 문의함은 아무도 읽을 수 없게 막혀 있다(운영자만 비밀 키로 읽는다). 로그인 없이도 보낼 수 있다.
   // 종류를 고르면 창의 색과 안내, 예시 문구가 바뀐다. 앱 오류만 기기 정보를 덧붙인다(원인을 찾는 데 필요해서).
   var FB_KINDS = [
     ['bug', '앱 오류', 'bug', '어떤 화면에서 무엇을 눌렀을 때 어떻게 됐는지 적어 주세요.', '예) 카페를 누르면 카드가 안 열려요'],
-    ['data', '카페 정보 오류', 'pin', '카페 이름과 무엇이 틀렸는지 적어 주세요. 위치, 넓이, 없는 카페 모두 좋아요.', '예) OO카페 위치가 길 건너편으로 찍혀 있어요'],
-    ['idea', '기능 제안', 'spark', '있었으면 하는 기능이나 바꾸면 좋을 점을 적어 주세요.', '예) 주차 되는 카페만 볼 수 있으면 좋겠어요'],
-    ['ask', '기타 문의', 'chat', '궁금한 점을 적어 주세요.', '예) 투표는 어떻게 집계되나요?']
+    ['idea', '기능 제안', 'bulb', '있었으면 하는 기능이나 바꾸면 좋을 점을 적어 주세요.', '예) 주차 되는 카페만 볼 수 있으면 좋겠어요'],
+    ['ask', '기타 문의', 'help', '궁금한 점을 적어 주세요.', '예) 투표는 어떻게 집계되나요?']
   ];
   function openFeedback() {
-    var to = (window.CAFE_SHARE && window.CAFE_SHARE.contact) || '';
     var old = $('xinfo'); if (old) old.remove();
     var o = el('div'), box = el('div', 'xbox'), hd = el('div', 'xhead'), bd = el('span', 'xbadge'), ta = document.createElement('textarea');
-    var desc = el('p'), kinds = el('div', 'fbk'), cur = null;
+    var desc = el('p'), kinds = el('div', 'fbk'), cur = null, sending = false;
     o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '문의하기');
     o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
     bd.appendChild(icon('chat')); hd.appendChild(bd); hd.appendChild(el('h2', null, '문의하기')); box.appendChild(hd);
@@ -2683,19 +2685,21 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     });
     box.appendChild(kinds); box.appendChild(desc);
     ta.maxLength = 1500; box.appendChild(ta);
-    var two = el('div', 'two');
-    two.appendChild(btn('btn', '닫기', function () { o.remove(); }));
-    two.appendChild(btn('btn pri', '보내기', function () {
+    var two = el('div', 'two'), send = btn('btn pri', '보내기', function () {
       var text = ta.value.trim();
+      if (sending) return;
       if (!text) { ta.focus(); toast('내용을 적어 주세요'); return; }
-      if (!to) { toast('받는 주소가 아직 설정되지 않았어요'); return; }
-      var body = text;
-      if (cur[0] === 'bug') body += '\n\n----\n기기: ' + navigator.userAgent + '\n화면: ' + innerWidth + 'x' + innerHeight + '\n주소: ' + location.href + '\n페이지 갱신: ' + document.lastModified;
-      location.href = 'mailto:' + to + '?subject=' + encodeURIComponent('[카페지도] ' + cur[1]) + '&body=' + encodeURIComponent(body);
-      o.remove(); toast('메일 앱에서 보내기를 눌러 주세요');
-    }));
+      if (!SHARE.db) { toast('지금은 문의를 받을 수 없어요'); return; }
+      var rec = { k: cur[0], m: text, t: { '.sv': 'timestamp' } };
+      if (cur[0] === 'bug') rec.d = (navigator.userAgent + ' | ' + innerWidth + 'x' + innerHeight + ' | ' + document.lastModified).slice(0, 600);
+      sending = true; send.textContent = '보내는 중';
+      fetch(SHARE.db + '/v2/feedback.json', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rec) })
+        .then(function (r) { if (!r.ok) throw new Error('db'); o.remove(); toast('보냈어요. 고맙습니다'); })
+        .catch(function () { sending = false; send.textContent = '보내기'; toast('보내지 못했어요. 잠시 뒤에 다시 해 주세요'); });
+    });
+    two.appendChild(btn('btn', '닫기', function () { o.remove(); }));
+    two.appendChild(send);
     box.appendChild(two);
-    if (to) box.appendChild(el('p', 'fbto', '메일 앱이 열려요. 메일 앱이 없으면 ' + to + ' 로 보내 주세요.'));
     pick(FB_KINDS[0]);
     o.appendChild(box); document.body.appendChild(o);
   }

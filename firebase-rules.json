@@ -9,8 +9,12 @@
         "$uid": {
           ".write": "auth != null && auth.uid === $uid",
           ".validate": "newData.hasChildren(['t'])",
-          "t": { ".validate": "newData.val() === now" },
-          "$other": { ".validate": false }
+          "t": {
+            ".validate": "newData.val() === now"
+          },
+          "$other": {
+            ".validate": false
+          }
         }
       }
     },
@@ -21,10 +25,18 @@
         "$uid": {
           ".write": "auth != null && auth.uid === $uid",
           ".validate": "newData.hasChildren(['o', 'c', 't'])",
-          "o": { ".validate": "newData.val() === 1 || newData.val() === -1" },
-          "c": { ".validate": "newData.isString() && newData.val().length <= 3 && newData.val().matches(/^[nws]*$/)" },
-          "t": { ".validate": "newData.val() === now" },
-          "$other": { ".validate": false }
+          "o": {
+            ".validate": "newData.val() === 1 || newData.val() === -1"
+          },
+          "c": {
+            ".validate": "newData.isString() && newData.val().length <= 3 && newData.val().matches(/^[nws]*$/)"
+          },
+          "t": {
+            ".validate": "newData.val() === now"
+          },
+          "$other": {
+            ".validate": false
+          }
         }
       }
     },
@@ -36,10 +48,18 @@
           "$uid": {
             ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'",
             ".validate": "newData.hasChildren(['t'])",
-            "h": { ".validate": "newData.val() === 1" },
-            "p": { ".validate": "newData.val() === 1" },
-            "t": { ".validate": "newData.val() === now" },
-            "$other": { ".validate": false }
+            "h": {
+              ".validate": "newData.val() === 1"
+            },
+            "p": {
+              ".validate": "newData.val() === 1"
+            },
+            "t": {
+              ".validate": "newData.val() === now"
+            },
+            "$other": {
+              ".validate": false
+            }
           }
         }
       },
@@ -59,8 +79,12 @@
           "$uid": {
             ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'",
             ".validate": "newData.hasChildren(['t'])",
-            "t": { ".validate": "newData.val() === now" },
-            "$other": { ".validate": false }
+            "t": {
+              ".validate": "newData.val() === now"
+            },
+            "$other": {
+              ".validate": false
+            }
           }
         }
       },
@@ -71,10 +95,39 @@
           "$uid": {
             ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'",
             ".validate": "newData.hasChildren(['o', 'c', 't'])",
-            "o": { ".validate": "newData.val() === 1 || newData.val() === -1" },
-            "c": { ".validate": "newData.isString() && newData.val().length <= 3 && newData.val().matches(/^[nws]*$/)" },
-            "t": { ".validate": "newData.val() === now" },
-            "$other": { ".validate": false }
+            "o": {
+              ".validate": "newData.val() === 1 || newData.val() === -1"
+            },
+            "c": {
+              ".validate": "newData.isString() && newData.val().length <= 3 && newData.val().matches(/^[nws]*$/)"
+            },
+            "t": {
+              ".validate": "newData.val() === now"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      },
+      "feedback": {
+        "$id": {
+          ".write": "!data.exists()",
+          ".validate": "newData.hasChildren(['k', 'm', 't'])",
+          "k": {
+            ".validate": "newData.isString() && newData.val().matches(/^(bug|idea|ask)$/)"
+          },
+          "m": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 1500"
+          },
+          "d": {
+            ".validate": "newData.isString() && newData.val().length <= 600"
+          },
+          "t": {
+            ".validate": "newData.val() === now"
+          },
+          "$other": {
+            ".validate": false
           }
         }
       }
