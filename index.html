@@ -444,6 +444,13 @@ button.xlink .xbadge svg.i { width: 16px; height: 16px; opacity: 1; }
 button.xlink .xbadge.visit { --pri: #0ca678; --pri2: #38d9a9; }
 button.xlink .xbadge.vote { --pri: #f76707; --pri2: #ffa94d; }
 button.xlink .xbadge.rw { --pri: #6a5ae0; --pri2: #8b7bf2; }
+button.xlink .xbadge.bug { --pri: #e03131; --pri2: #ff8787; }
+button.xlink .xbadge.ask { --pri: #1c7ed6; --pri2: #74c0fc; }
+/* 개선 건의 창 */
+.xbox.bug { --pri: #e03131; --pri2: #ff8787; }
+.xbox.ask { --pri: #1c7ed6; --pri2: #74c0fc; }
+.xbox textarea { width: 100%; min-height: 150px; resize: vertical; margin-top: 8px; padding: 12px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); font: inherit; font-size: 16px; line-height: 1.5; }
+.xbox textarea:focus { outline: 2px solid var(--pri); outline-offset: -1px; border-color: transparent; }
 .xms span.next b { color: var(--ink); }
 .xms span.next svg.i { opacity: 1; }
 /* 표 위: 지금 몇 곳인지, 다음 보너스가 얼마인지, 거기까지 얼마나 왔는지(칸 하나가 카페 한 곳). */
@@ -528,6 +535,8 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   <symbol id="i-size" viewBox="0 0 24 24"><path d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.500 4.500 4.500L19 7.500"/></symbol>
   <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 3.500v4M15 3.500v4M6.500 7.500h11v3.500a5.500 5.500 0 0 1-11 0zM12 16.500v4"/></symbol>
+  <symbol id="i-bug" viewBox="0 0 24 24"><rect x="7.500" y="8" width="9" height="11.500" rx="4.500"/><path d="M12 8v11.500M9 8a3 3 0 0 1 6 0M4.500 12.500h3M16.500 12.500h3M5 18l2.500-1.500M19 18l-2.500-1.500M5 7l2.500 1.500M19 7l-2.500 1.500"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M5 5.500h14v10.500h-8.500L6.500 19.500V16H5z"/></symbol>
   <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5.500" y="10.500" width="13" height="9.500" rx="2"/><path d="M8.500 10.500V8a3.500 3.500 0 0 1 7 0v2.500"/></symbol>
   <symbol id="i-gift" viewBox="0 0 24 24"><path d="M5 10.500h14v9H5zM3.500 7.500h17v3h-17zM12 7.500v12M12 7.500C10.500 4.300 7 4 7 6c0 1.500 2.500 1.500 5 1.500zM12 7.500c1.500-3.200 5-3.500 5-1.500 0 1.500-2.500 1.500-5 1.500z"/></symbol>
   <symbol id="i-locate" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7.500"/><path d="M12 2v2.500M12 19.500V22M2 12h2.500M19.500 12H22"/></symbol>
@@ -1240,15 +1249,21 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   // ----- 투표할 때만 로그인 -----
   // 투표 단추를 누르면 여기를 거친다. 로그인이 필요 없거나 이미 했으면 바로 하고, 아니면 로그인 창을 띄운 뒤 로그인이 끝나면 이어서 한다.
   var loginEl = null, loginThen = null, gLoading = null;
-  function needLogin(fn) { if (!loginOn || signedIn()) fn(); else openLogin(fn); }
-  function openLogin(fn) {
+  var LOGIN_TEXT = {
+    vote: ['로그인하고 투표하기', '한 사람이 한 번만 투표할 수 있게 확인해요.'],
+    want: ['로그인하고 찜하기', '찜한 카페를 내 계정에 저장해서 다른 기기에서도 볼 수 있어요.'],
+    gone: ['로그인하고 폐업 신고하기', '한 사람이 한 번만 신고할 수 있게 확인해요.'],
+    menu: ['로그인', '투표, 찜, 폐업 신고를 하려면 로그인이 필요해요.']
+  };
+  function needLogin(fn, what) { if (!loginOn || signedIn()) fn(); else openLogin(fn, what); }
+  function openLogin(fn, what) {
     loginThen = fn;
+    var lt = LOGIN_TEXT[what] || LOGIN_TEXT.vote;
     if (!loginEl) {
       loginEl = el('div'); loginEl.id = 'login';
       var box = el('div', 'lbox'), g = el('div', 'gbtn'), msg = el('p', 'lmsg');
       g.id = 'gbtn'; msg.id = 'lmsg';
-      box.appendChild(el('h2', null, '로그인하고 투표하기'));
-      box.appendChild(el('p', null, '한 사람이 한 번만 투표할 수 있게 확인해요.'));
+      box.appendChild(el('h2', 'ltitle')); box.appendChild(el('p', 'ldesc'));
       box.appendChild(g); box.appendChild(msg);
       box.appendChild(btn('link', '닫기', closeLogin));
       loginEl.appendChild(box);
@@ -1256,6 +1271,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       $('app').appendChild(loginEl);
     }
     loginEl.hidden = false;
+    loginEl.querySelector('.ltitle').textContent = lt[0]; loginEl.querySelector('.ldesc').textContent = lt[1];
     // 카카오톡 같은 앱 안의 화면에서는 구글이 로그인을 막는다. 미리 알려 준다.
     $('lmsg').textContent = /KAKAOTALK|NAVER\(inapp|Instagram|FBAN|FBAV|Line\//i.test(navigator.userAgent) ? '이 앱 안에서는 구글 로그인이 막혀 있어요. 사파리나 크롬에서 열어 주세요.' : '';
     loadGoogle(function () {
@@ -2489,8 +2505,8 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
         }).catch(function () {});
       } else {
         whoEl.appendChild(el('b', null, '로그인하지 않았어요'));
-        whoEl.appendChild(el('small', null, '투표와 찜은 로그인해야 할 수 있어요'));
-        row.appendChild(whoEl); row.appendChild(btn('btn sm pri', '로그인', function () { openLogin(null); }));
+        whoEl.appendChild(el('small', null, '투표, 찜, 폐업 신고는 로그인해야 할 수 있어요'));
+        row.appendChild(whoEl); row.appendChild(btn('btn sm pri', '로그인', function () { openLogin(null, 'menu'); }));
       }
       if (row) acc.appendChild(row);
       sc.appendChild(acc);
@@ -2602,6 +2618,15 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     });
     st.appendChild(stTabs); conf.appendChild(st);
     sc.appendChild(conf);
+    // 개선 건의: 오류 버그 신고와 건의사항 문의. 누르면 글을 쓰는 창이 뜨고, 보내기를 누르면 운영자에게 가는 메일이 열린다.
+    var fb = el('div', 'fsec');
+    fb.appendChild(el('div', 'ftitle', '개선 건의'));
+    [['오류 버그 신고', 'bug', 'bug'], ['건의사항 문의', 'ask', 'chat']].forEach(function (x) {
+      var r = btn('xrow xlink', null, function () { openFeedback(x[1], x[0]); }), bd = el('span', 'xbadge ' + x[1]);
+      bd.appendChild(icon(x[2])); r.appendChild(bd); r.appendChild(el('span', null, x[0])); r.appendChild(icon('right'));
+      fb.appendChild(r);
+    });
+    sc.appendChild(fb);
     var info = el('div', 'fsec'), ul = el('ul', 'mlist');
     info.style.borderBottom = '0';
     info.appendChild(el('div', 'ftitle', '지도 자료'));
@@ -2624,6 +2649,32 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     // 개인정보처리방침: 스토어에 올릴 때도 이 주소를 적는다.
     var pl = el('li'), pa = el('a', null, '개인정보처리방침'); pa.href = 'privacy.html'; pa.target = '_blank'; pa.rel = 'noopener'; pl.appendChild(pa); ul.appendChild(pl);
     info.appendChild(ul); sc.appendChild(info);
+  }
+  // 개선 건의 창. 서버에 따로 저장하지 않고, 쓴 내용을 담은 메일을 운영자 주소(share.js의 contact)로 연다.
+  function openFeedback(kind, title) {
+    var to = (window.CAFE_SHARE && window.CAFE_SHARE.contact) || '';
+    var old = $('xinfo'); if (old) old.remove();
+    var o = el('div'), box = el('div', 'xbox ' + kind), hd = el('div', 'xhead'), bd = el('span', 'xbadge'), ta = document.createElement('textarea');
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', title);
+    o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
+    bd.appendChild(icon(kind === 'bug' ? 'bug' : 'chat')); hd.appendChild(bd); hd.appendChild(el('h2', null, title)); box.appendChild(hd);
+    box.appendChild(el('p', null, kind === 'bug' ? '어떤 화면에서 무엇을 눌렀을 때 어떻게 됐는지 적어 주세요.' : '바라는 점이나 궁금한 점을 적어 주세요.'));
+    ta.placeholder = kind === 'bug' ? '예) 카페를 누르면 카드가 안 열려요' : '예) 이런 기능이 있으면 좋겠어요';
+    ta.maxLength = 1500; box.appendChild(ta);
+    var two = el('div', 'two');
+    two.appendChild(btn('btn', '닫기', function () { o.remove(); }));
+    two.appendChild(btn('btn pri', '보내기', function () {
+      var text = ta.value.trim();
+      if (!text) { ta.focus(); toast('내용을 적어 주세요'); return; }
+      if (!to) { toast('받는 주소가 아직 설정되지 않았어요'); return; }
+      var body = text;
+      if (kind === 'bug') body += '\n\n----\n기기: ' + navigator.userAgent + '\n화면: ' + innerWidth + 'x' + innerHeight + '\n주소: ' + location.href + '\n페이지 갱신: ' + document.lastModified;
+      location.href = 'mailto:' + to + '?subject=' + encodeURIComponent('[카페지도] ' + title) + '&body=' + encodeURIComponent(body);
+      o.remove(); toast('메일 앱에서 보내기를 눌러 주세요');
+    }));
+    box.appendChild(two);
+    if (to) box.appendChild(el('p', null, '메일 앱이 열려요. 메일 앱이 없으면 ' + to + ' 로 보내 주세요.'));
+    o.appendChild(box); document.body.appendChild(o); ta.focus();
   }
   $('menuBtn').addEventListener('click', function () { if (P.kind === 'menu') closePanel(); else { P.prev = null; openPanel('menu'); } });
 
@@ -2719,7 +2770,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     if (act === 'want') {
       // 찜을 켜면 찜한 곳이 다 보이게 지도를 맞추고 목록을 연다. 끄면 목록을 닫는다.
       if (S.seen === 'want') { S.seen = 'all'; if (P.kind === 'list') closePanel(); changed(); }
-      else needLogin(function () { resetAll(); S.seen = 'want'; if (P.kind) closePanel(); showWanted(); });
+      else needLogin(function () { resetAll(); S.seen = 'want'; if (P.kind) closePanel(); showWanted(); }, 'want');
       return;
     }
     // 새로 오픈을 켤 때 기준(1년)을 잠깐 알려 준다.
@@ -3073,7 +3124,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     // 투표 칸. 콘센트 좌석 하나만 묻는다. 제목 오른쪽에 몇 명이 투표했는지 적는다.
     // 단추 안의 숫자는 그렇게 기록한 사람 수다(아무도 없으면 적지 않는다). 눌린 단추가 내 기록이다.
     var rec = el('div', 'rec'), r1 = el('div', 'opts one'), r2 = el('div', 'opts one three');
-    function voteBtn(text, fn) { var bt = btn('opt', text, function () { needLogin(fn); }), n = el('span', 'n'); bt.appendChild(n); return [bt, n, text]; }
+    function voteBtn(text, fn, what) { var bt = btn('opt', text, function () { needLogin(fn, what); }), n = el('span', 'n'); bt.appendChild(n); return [bt, n, text]; }
     function setBtn(x, on, count) {
       x[0].setAttribute('aria-pressed', String(on)); x[1].textContent = count ? count + '명' : '';
       x[0].setAttribute('aria-label', x[2] + ', ' + count + '명이 기록' + (on ? ', 내 기록' : ''));
@@ -3099,11 +3150,11 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     rec.appendChild(el('div', 'sep'));
     // 맨 아랫줄: 찜과 폐업 신고.
     var r3 = el('div', 'acts');
-    var bWant = btn('opt', null, function () { needLogin(function () { setWant(i, !want[i]); sync(); if (S.seen !== 'all') refilter(); requestDraw(); }); });
+    var bWant = btn('opt', null, function () { needLogin(function () { setWant(i, !want[i]); sync(); if (S.seen !== 'all') refilter(); requestDraw(); }, 'want'); });
     bWant.classList.add('heart');
     bWant.appendChild(icon('heart')); bWant.appendChild(document.createTextNode('찜'));
     // 폐업 신고: 가 보니 이 카페가 없을 때 누른다. 내 지도에서는 바로 빠지고, 다른 사람에게는 신고 수로 보인다.
-    var bGone = voteBtn('폐업 신고', function () { setGone(i, !myGone[i]); sync(); refilter(); requestDraw(); });
+    var bGone = voteBtn('폐업 신고', function () { setGone(i, !myGone[i]); sync(); refilter(); requestDraw(); }, 'gone');
     bGone[0].classList.add('quiet'); bGone[0].insertBefore(icon('flag'), bGone[0].firstChild);
     bGone[0].title = '가 보니 이 카페가 없을 때 눌러 주세요';
     r3.appendChild(bWant); r3.appendChild(bGone[0]);
