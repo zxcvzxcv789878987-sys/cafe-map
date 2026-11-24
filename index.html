@@ -477,18 +477,13 @@ button.xlvbtn { width: 100%; display: flex; flex-direction: row; align-items: ce
 .xstat.x4b .grp { display: flex; flex-direction: column; background: var(--surface-2); padding-top: 9px; }
 .xstat.x4b .hd { margin: 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--line); text-align: center; font-size: 11px; font-weight: 700; color: var(--ink-3); }
 .xstat.x4b .cols { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); }
-.xstat.x4b .cols button { padding: 7px 2px 11px; gap: 2px; }
 .xstat.x4b .cols button + button::before { top: 9px; bottom: 13px; }
-.xstat.x4b .cols b { font-size: 17px; }
-.xstat.x4b .cols span { font-size: 11px; }
-.xstat.x4b span.of { margin-top: 1px; font-size: 11px; font-weight: 700; color: var(--ink-3); font-variant-numeric: tabular-nums; }
-.xstat.x4b .cols .pr { display: flex; align-items: center; gap: 4px; width: calc(100% - 18px); margin-top: 3px; }
-.xstat.x4b .cols .pb { flex: 1; height: 3px; border-radius: 99px; background: color-mix(in srgb, var(--c) 18%, var(--surface)); overflow: hidden; }
-.xstat.x4b .cols .pb i { display: block; height: 100%; border-radius: 99px; background: var(--c); }
-.xstat.x4b .cols span.of { flex: none; font-size: 10px; font-weight: 700; color: var(--ink-2); }
-.xstat.x4b .cols .dong { --c: #0ca678; }
-.xstat.x4b .cols .newb { --c: #2b8a3e; }
-.xstat.x4b .cols .oldb { --c: #1c7ed6; }
+.xstat.x4b > button { justify-content: center; }
+.xstat.x4b > button b { font-size: 20px; }
+.xstat.x4b > button span { font-size: 11.5px; }
+.xstat.x4b .cols button { justify-content: center; gap: 2px; padding: 8px 2px 12px; }
+.xstat.x4b .cols b { font-size: 18px; }
+.xstat.x4b .cols span { font-size: 11.5px; }
 /* 기록 보너스 창: "N곳 중" 묶음(왼쪽 세로줄)과 목록 표시(초록 새로 연 카페, 파랑 오랜만의 기록) */
 .xsub { display: flex; flex-direction: column; gap: 2px; margin: 4px 0 2px 2px; padding: 2px 0 2px 12px; border-left: 2px solid var(--line); }
 .xsub .of { font-size: 12px; font-weight: 700; color: var(--ink-3); }
@@ -3326,7 +3321,6 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         var vb = btn('g vote', null, function () { openRewards('vote'); });
         var vn = el('b', null, String(nv0)); vn.appendChild(el('small', null, '곳'));
         vb.appendChild(vn); vb.appendChild(el('span', null, '기록한 카페'));
-        vb.appendChild(el('span', 'of', nv0 + '/' + nx0));
         stats.appendChild(vb);
         var grp = el('div', 'grp'), cols = el('div', 'cols');
         grp.appendChild(el('div', 'hd', nv0 + '곳 중'));
@@ -3334,7 +3328,6 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
           var b = btn(x[2], null, function () { openRewards(x[2]); }), nx = x[1] + 1;
           while (!xpBonus(nx)) nx++;
           b.appendChild(el('b', null, String(x[1]))); b.appendChild(el('span', null, x[0]));
-          b.appendChild(el('span', 'of', x[1] + '/' + nx));
           cols.appendChild(b);
         });
         grp.appendChild(cols); stats.appendChild(grp);
@@ -3425,7 +3418,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
           // 기록 보너스: 보너스 넷을 모은 창. 누르면 그 표로 가고, 표의 뒤로를 누르면 여기로 돌아온다.
           title('기록 보너스', 'gift');
           box.querySelector('.xhead .xbadge').classList.add('orange');
-          box.appendChild(el('p', null, '정한 수에 닿을 때마다 보너스를 받아요.'));
+          box.appendChild(el('p', null, '콘센트를 기록하면 아래 네 가지 수가 늘어요. 각각 3곳, 5곳, 10곳처럼 정해진 수가 될 때마다 보너스 XP를 더 받아요.'));
           [['콘센트 보너스', 'vote', 'plug', 'vote', xno2], ['새 동네 보너스', 'dong', 'map', 'visit', xpCount(XP.dong)], ['새로 연 카페 보너스', 'newb', 'spark', 'newb', xpLogCount('새로 연 카페')], ['오랜만의 기록 보너스', 'oldb', 'clock', 'oldb', xpLogCount('오랜만의 기록')]].forEach(function (x) {
             var nx7 = x[4] + 1; while (!xpBonus(nx7)) nx7++;
             var r7 = btn('xrow xlink', null, function () { openRewards(x[1], true); }), bd7 = el('span', 'xbadge pic');
@@ -3436,7 +3429,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         } else if (view === 'newb' || view === 'oldb') {
           var lb = view === 'newb' ? '새로 연 카페' : '오랜만의 기록';
           title(lb + ' 보너스', 'pic:' + BONUS_PIC[view]);
-          box.appendChild(el('p', null, view === 'newb' ? '새로 연 카페에 기록한 수가 아래에 닿을 때마다 받아요.' : '오랜만의 기록을 받은 수가 아래에 닿을 때마다 받아요.'));
+          box.appendChild(el('p', null, view === 'newb' ? '문 연 지 1년이 안 된 카페를 기록한 수예요. 3곳, 5곳, 10곳처럼 아래 수가 될 때마다 보너스를 받아요.' : '6개월 넘게 아무도 기록하지 않았던 카페를 기록한 수예요. 3곳, 5곳, 10곳처럼 아래 수가 될 때마다 보너스를 받아요.'));
           ladder(XP[view === 'newb' ? 'mo' : 'mr'] || 0, xpLogCount(lb), lb);
           var got6 = listOf(lb);
           if (got6.length) {
@@ -3453,7 +3446,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
           endBtns();
         } else if (view === 'dong' || view === 'vote') {
           title(view === 'dong' ? '새 동네 보너스' : '콘센트 보너스', 'pic:' + BONUS_PIC[view]);
-          box.appendChild(el('p', null, view === 'dong' ? '기록한 동네 수가 아래에 닿을 때마다 받아요.' : '콘센트를 기록한 카페 수가 아래에 닿을 때마다 받아요.'));
+          box.appendChild(el('p', null, view === 'dong' ? '처음 기록한 동(성수1가1동, 서교동처럼)의 수예요. 3곳, 5곳, 10곳처럼 아래 수가 될 때마다 보너스를 받아요.' : '콘센트를 기록한 카페 수예요. 3곳, 5곳, 10곳처럼 아래 수가 될 때마다 보너스를 받아요.'));
           if (view === 'dong') ladder(XP.md || 0, xpCount(XP.dong), '기록한 동네'); else ladder(XP.mv || 0, xno2, '기록한 카페');
           // 기록 보너스 창: "N곳 중" 새로 연 카페와 오랜만의 기록 수, 그리고 기록한 카페 목록(초록, 파랑 표시)
           if (view === 'vote' && xno2) {
