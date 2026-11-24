@@ -388,6 +388,28 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 #lvup .cap { font-size: 15px; font-weight: 700; letter-spacing: .28em; opacity: .85; animation: lvRise .5s .1s both; }
 #lvup .num { font-size: 84px; font-weight: 900; line-height: 1; letter-spacing: -.03em; animation: lvPop .6s .18s cubic-bezier(.2, .9, .3, 1.4) both; }
 #lvup .from { font-size: 15px; opacity: .8; animation: lvRise .5s .5s both; }
+/* 축하 장면(생애 첫, 달성 보너스) */
+#celeb { position: fixed; inset: 0; z-index: 88; display: grid; place-items: center; background: rgba(15, 20, 30, .42); animation: lvFade .2s ease; --c1: #0ca678; --c2: #63e6be; }
+#celeb.vote { --c1: #f76707; --c2: #ffa94d; }
+#celeb.goal { --c1: #f2a900; --c2: #ffe066; }
+#celeb.out { opacity: 0; transition: opacity .2s ease; }
+#celeb .cc { position: relative; width: min(280px, 78vw); padding: 30px 20px 22px; border-radius: 24px; background: var(--surface); box-shadow: 0 20px 50px rgba(0, 0, 0, .3); display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; animation: ccPop .45s cubic-bezier(.2, .9, .3, 1.4); }
+#celeb .md { position: relative; width: 76px; height: 76px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: radial-gradient(circle at 35% 30%, var(--c2), var(--c1)); box-shadow: 0 0 0 7px color-mix(in srgb, var(--c1) 18%, transparent), 0 8px 18px color-mix(in srgb, var(--c1) 40%, transparent); animation: mdSpin .7s .1s cubic-bezier(.2, .9, .3, 1.3) both; }
+#celeb .md svg.i { width: 38px; height: 38px; }
+#celeb .ct { margin-top: 10px; font-size: 12.5px; font-weight: 800; letter-spacing: .18em; color: var(--c1); }
+#celeb .cn { font-size: 19px; font-weight: 800; }
+#celeb .cx { margin-top: 4px; padding: 6px 16px; border-radius: 999px; background: linear-gradient(140deg, var(--c2), var(--c1)); color: #fff; font-size: 17px; font-weight: 900; animation: lvRise .4s .35s both; }
+#celeb .bs { position: absolute; left: 50%; top: 68px; width: 0; height: 0; }
+#celeb .bs i { position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; border-radius: 3px; background: var(--c1); opacity: 0; animation: bsFly .9s var(--d) ease-out forwards; }
+#celeb .bs i:nth-child(3n) { background: var(--c2); border-radius: 50%; }
+#celeb .bs i:nth-child(4n) { background: #6a5ae0; }
+@keyframes ccPop { from { transform: scale(.6); opacity: 0; } }
+@keyframes mdSpin { from { transform: scale(.2) rotate(-160deg); } }
+@keyframes bsFly { 0% { transform: translate(0, 0) scale(.6); opacity: 1; } 100% { transform: translate(var(--x), var(--y)) scale(1) rotate(200deg); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { #celeb, #celeb * { animation: none !important; } #celeb .bs { display: none; } }
+#lvup .got { margin-top: 18px; width: min(280px, 80vw); display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 16px; background: rgba(255, 255, 255, .12); animation: lvRise .5s .6s both; }
+#lvup .got .gr { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+#lvup .got .gr b { font-weight: 800; color: #ffe066; white-space: nowrap; }
 #lvup .ring { position: absolute; width: 220px; height: 220px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .5); animation: lvRing 1s .2s ease-out both; pointer-events: none; }
 #lvup button { margin-top: 26px; height: 46px; padding: 0 44px; border-radius: 999px; background: #fff; color: var(--pri); font-size: 16px; font-weight: 800; animation: lvRise .5s .7s both; }
 #lvup .num.bump { animation: lvBump .22s ease-out; }
@@ -401,7 +423,23 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 @media (prefers-reduced-motion: reduce) { #toast.xp, #lvup, #lvup * { animation: none !important; } }
 /* 카드의 방문 인증 줄 */
 .xvisit { display: flex; flex-direction: column; gap: 6px; }
-.xgo { height: 40px; border-radius: 999px; background: var(--pri); color: var(--on-pri); font-size: 14.5px; font-weight: 700; }
+/* 방문 인증 단추: 도장 아이콘, 이름과 보너스, 오른쪽에 받을 XP */
+.xgo { display: flex; align-items: center; gap: 11px; width: 100%; min-height: 54px; padding: 9px 14px 9px 10px; border-radius: 16px; text-align: left; color: #fff; background: linear-gradient(140deg, #0ca678, #20c997 55%, #63e6be); box-shadow: 0 6px 14px rgba(12, 166, 120, .28); }
+.xgo:disabled { opacity: .75; }
+.xgo .xgi { flex: none; width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; background: rgba(255, 255, 255, .22); }
+.xgo .xgi svg.i { width: 20px; height: 20px; }
+.xgo .xgt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.xgo .xgt b { font-size: 15px; font-weight: 800; }
+.xgo .xgb { align-self: flex-start; padding: 2px 8px; border-radius: 999px; background: #ffe066; color: #7a5500; font-size: 11.5px; font-weight: 800; }
+.xgo .xgb[hidden] { display: none; }
+.xgo .xgx { flex: none; padding: 5px 10px; border-radius: 999px; background: #fff; color: #087f5b; font-size: 13.5px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.xgo .xgx:empty { display: none; }
+/* 투표 단추 줄의 세로 구분선(일반 의자와 없어요 사이) */
+.rec .opts.four .vsep { flex: none; width: 1px; align-self: stretch; margin: 6px 2px; background: var(--line-2); }
+/* 투표 전 받을 XP 칩 */
+.xchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.xchip { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 750; background: color-mix(in srgb, #f76707 12%, var(--surface)); color: #d9480f; }
+.xchip.gold { background: #fff3bf; color: #7a5500; }
 .xgo[hidden] { display: none; }
 .xdone, .xhint { font-size: 12.5px; color: var(--ink-3); }
 .xdone:empty { display: none; }
@@ -1114,26 +1152,49 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   function xpCount(o) { var n = 0, k; for (k in o) n++; return n; }
   // 풍선은 받은 까닭마다 하나씩, 차례로 띄운다(예: "+500 XP 방문 인증" 다음에 "+1,000 XP 생애 첫 방문 인증").
   // 풍선이 다 지나간 뒤에 레벨이 올랐으면 화면 전체에 레벨 업 장면을 띄운다.
-  var xpQueue = [], xpBusy = false, xpLvFrom = 0;
+  var xpQueue = [], xpBusy = false, xpLvFrom = 0, xpLvItems = [];
   function xpPump() {
     var x = $('toast');
     if (!xpQueue.length) {
       xpBusy = false; x.hidden = true;
       var now = Math.floor(XP.xp / 1000);
-      if (xpLvFrom && now > xpLvFrom) xpLevelUp(xpLvFrom, now);
-      xpLvFrom = 0;
+      if (xpLvFrom && now > xpLvFrom) xpLevelUp(xpLvFrom, now, xpLvItems);
+      xpLvFrom = 0; xpLvItems = [];
       return;
     }
     xpBusy = true;
     var it = xpQueue.shift();
     clearTimeout(toastTimer);
+    // 생애 첫 인증, 생애 첫 투표, 달성 보너스는 작은 풍선 대신 축하 장면을 띄운다.
+    if (/^생애 첫|달성$/.test(it[1])) { x.hidden = true; xpCelebrate(it, xpPump); return; }
     x.hidden = true; x.textContent = ''; x.className = 'xp' + (it[0] < 0 ? ' minus' : '');
     x.appendChild(el('b', null, (it[0] >= 0 ? '+' : '−') + fmt(Math.abs(it[0])) + ' XP'));
     x.appendChild(el('span', null, it[1]));
     void x.offsetWidth; x.hidden = false;
     toastTimer = setTimeout(xpPump, 1500);
   }
-  function xpLevelUp(from, to) {
+  // 축하 장면: 가운데 메달과 이름, 받은 XP. 주위로 색 조각이 터진다. 2.4초 뒤 저절로 닫히거나 누르면 닫힌다.
+  function xpCelebrate(it, next) {
+    var old = $('celeb'); if (old) old.remove();
+    var o = el('div'), card = el('div', 'cc'), medal = el('div', 'md'), burst = el('div', 'bs'), done = false;
+    var visit = /방문|가 본/.test(it[1]), kind = /달성$/.test(it[1]) ? 'goal' : visit ? 'visit' : 'vote';
+    o.id = 'celeb'; o.className = kind; o.setAttribute('role', 'status');
+    medal.appendChild(icon(kind === 'goal' ? 'trophy' : visit ? 'stamp' : 'plug'));
+    for (var k = 0; k < 14; k++) {
+      var p = el('i'), ang = k / 14 * Math.PI * 2, dist = 90 + (k % 3) * 22;
+      p.style.setProperty('--x', Math.round(Math.cos(ang) * dist) + 'px'); p.style.setProperty('--y', Math.round(Math.sin(ang) * dist) + 'px');
+      p.style.setProperty('--d', (k % 4) * 40 + 'ms'); burst.appendChild(p);
+    }
+    card.appendChild(burst); card.appendChild(medal);
+    card.appendChild(el('div', 'ct', kind === 'goal' ? '보너스 달성' : '처음이에요'));
+    card.appendChild(el('div', 'cn', it[1]));
+    card.appendChild(el('div', 'cx', '+' + fmt(it[0]) + ' XP'));
+    o.appendChild(card); document.body.appendChild(o);
+    var close = function () { if (done) return; done = true; o.classList.add('out'); setTimeout(function () { o.remove(); next(); }, 220); };
+    o.addEventListener('click', close);
+    setTimeout(close, 2400);
+  }
+  function xpLevelUp(from, to, items) {
     var old = $('lvup'); if (old) old.remove();
     var o = el('div'), box = el('div', 'box'), ok = btn(null, '확인', function () { o.remove(); });
     o.id = 'lvup'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '레벨 업');
@@ -1154,6 +1215,16 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       }, 650);
     }
     box.appendChild(el('div', 'from', 'Lv.' + from + ' → Lv.' + to));
+    // 이번에 무엇으로 올랐는지
+    if (items && items.length) {
+      var got = el('div', 'got');
+      items.forEach(function (it) {
+        var r = el('div', 'gr');
+        r.appendChild(el('span', null, it[1])); r.appendChild(el('b', null, (it[0] >= 0 ? '+' : '−') + fmt(Math.abs(it[0])) + ' XP'));
+        got.appendChild(r);
+      });
+      box.appendChild(got);
+    }
     box.appendChild(ok); o.appendChild(box);
     document.body.appendChild(o); ok.focus();
   }
@@ -1164,7 +1235,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     if (!Array.isArray(XP.log)) XP.log = xpRebuild();
     var now = Date.now();
     items.forEach(function (it) {
-      XP.xp = Math.max(0, XP.xp + it[0]); xpQueue.push(it);
+      XP.xp = Math.max(0, XP.xp + it[0]); xpQueue.push(it); xpLvItems.push(it);
       var e = { t: now, a: it[0], r: it[1] }; if (it[2]) e.c = it[2]; XP.log.push(e);
     });
     if (XP.log.length > 300) XP.log = XP.log.slice(-300);
@@ -1561,6 +1632,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   window.cafeMap = map;
   var ldEl = document.getElementById('loading'); if (ldEl) ldEl.hidden = true;   // 자료를 다 읽었으니 로딩 표시를 내린다.
   window.cafeDraw = function () { draw(); };   // 시험용: 그리는 데 걸리는 시간을 잴 때 쓴다.
+  if (XP_DEV) window.cafeFake = function (i, list) { voters[i] = list; tally(i); };
   window.cafeTest = { layout: function (r) { var L = tagLayout(r), sc = 512 * Math.pow(2, L.zoom), o = {}; regChildren(r).forEach(function (k) { if (L[k]) o[rName[k]] = [Math.round((L[k].x - L[k].ax) * sc), Math.round((L[k].y - L[k].ay) * sc), L[k].z ? +(L[k].z - L.zoom).toFixed(2) : 0, inShape(k, L[k].x, L[k].y) ? 1 : 0, L[k].zc ? +(L[k].zc - L.zoom).toFixed(2) : 0]; }); return o; },
     go: function (path) { if (!path) { goRegion(-1); return -1; } for (var k = 0; k < NR; k++) if (regPath(k) === path) { goRegion(k); return k; } return null; },
     cur: function () { return S.reg; }, trimmed: function () { var o = []; for (var k = 0; k < NR; k++) if (rAll[k] >= 200 && fitBox(k)[0] !== rBox[k * 4] | fitBox(k)[2] !== rBox[k * 4 + 2] | fitBox(k)[1] !== rBox[k * 4 + 1] | fitBox(k)[3] !== rBox[k * 4 + 3]) o.push(regPath(k)); return o; }, relayout: function () { layoutCache = {}; draw(); },
@@ -3365,9 +3437,9 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     f1.appendChild(go);
     var f2 = fact('넓이');
     if (a > 0) { f2.appendChild(el('b', null, pyeong(a) + '평')); f2.appendChild(el('small', null, fmt(a) + '㎡' + (a >= S.bigPy * PYEONG ? ' · 대형' : ''))); } else f2.appendChild(el('small', null, '자료 없음'));
-    // 문 연 달. 넓이와 같은 줄에 적는다. 인허가 자료에서 같은 가게를 찾은 카페만 안다. 모르면 적지 않는다.
+    // 문 연 달. 넓이 아랫줄에 적는다. 인허가 자료에서 같은 가게를 찾은 카페만 안다. 모르면 적지 않는다.
     var ym = D.since ? D.since[i] : 0;
-    if (ym) { var f3 = f2, ago = monthsAgo(i); f3.appendChild(el('span', 'k2', '개업')); f3.appendChild(el('b', null, Math.floor(ym / 100) + '년 ' + (ym % 100) + '월')); if (ago < 3) f3.appendChild(el('small', null, '허가받은 달이에요. 아직 문 열기 전일 수 있어요')); else if (ago < 12) { var nw = el('small', 'newmark'); nw.appendChild(icon('spark')); nw.appendChild(document.createTextNode('새로 열었어요')); f3.appendChild(nw); } }
+    if (ym) { var f3 = fact('개업'), ago = monthsAgo(i); f3.appendChild(el('b', null, Math.floor(ym / 100) + '년 ' + (ym % 100) + '월')); if (ago < 3) f3.appendChild(el('small', null, '허가받은 달이에요. 아직 문 열기 전일 수 있어요')); else if (ago < 12) { var nw = el('small', 'newmark'); nw.appendChild(icon('spark')); nw.appendChild(document.createTextNode('새로 열었어요')); f3.appendChild(nw); } }
     // 투표 칸. 콘센트 좌석 하나만 묻는다. 제목 오른쪽에 몇 명이 투표했는지 적는다.
     // 단추 안의 숫자는 그렇게 기록한 사람 수다(아무도 없으면 적지 않는다). 눌린 단추가 내 기록이다.
     var rec = el('div', 'rec'), r1 = el('div', 'opts one'), r2 = el('div', 'opts one three');
@@ -3414,7 +3486,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     var xs = function () {};
     if (XP_ON && loginOn) {
       r1.hidden = true; more.hidden = true;
-      var xk = cidOf(i), vrow = el('div', 'xvisit'), vbtn = btn('xgo', null, function () { needLogin(function () { if (devOwner(xk) && devOwner(xk) !== who.u) { toast('이 폰에서는 이 카페를 다른 계정으로 이미 인증했어요'); return; } checkNear(i, function () { xpVisit(i); sync(); }, function (on) { vbtn.disabled = on; if (on) vbtn.textContent = '위치 확인 중'; else sync(); }); }, 'visit'); }), vdone = el('div', 'xdone');
+      var xk = cidOf(i), vrow = el('div', 'xvisit'), vbtn = btn('xgo', null, function () { needLogin(function () { if (devOwner(xk) && devOwner(xk) !== who.u) { toast('이 폰에서는 이 카페를 다른 계정으로 이미 인증했어요'); return; } checkNear(i, function () { xpVisit(i); sync(); }, function (on) { vbtn.disabled = on; if (on) { vName.textContent = '위치 확인 중'; vXp.textContent = ''; vBonus.hidden = true; } else sync(); }); }, 'visit'); }), vdone = el('div', 'xdone');
       vrow.appendChild(vbtn); vrow.appendChild(vdone); rec.insertBefore(vrow, rec.firstChild);
       var xr = el('div', 'opts one four'), xhint = el('div', 'xhint');
       var plain = function (text, fn) { var bt = btn('opt', text, fn), n = el('span', 'n'); bt.appendChild(n); return [bt, n, text]; };
@@ -3428,17 +3500,38 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
         }, 'vote');
       };
       var xb = CHAIRS.map(function (c) { var x = plain(c[1], function () { cast(1, c[2]); }); xr.appendChild(x[0]); return [x, c]; });
-      var xno = plain('없어요', function () { cast(-1, 0); }); xr.appendChild(xno[0]);
+      var xno = plain('없어요', function () { cast(-1, 0); }); xr.appendChild(el('span', 'vsep')); xr.appendChild(xno[0]);
       rec.insertBefore(xr, more); rec.insertBefore(xhint, more);
+      rec.querySelector('.vh b').textContent = '콘센트 좌석 (중복 선택)';
+      // 방문 인증 단추 안: 도장 아이콘, 이름, 받을 XP. 생애 첫 인증이면 보너스 칩을 아래에 붙인다.
+      vbtn.textContent = '';
+      var vIco = el('span', 'xgi'), vTxt = el('span', 'xgt'), vName = el('b'), vXp = el('span', 'xgx'), vBonus = el('span', 'xgb');
+      vIco.appendChild(icon('stamp')); vTxt.appendChild(vName); vTxt.appendChild(vBonus);
+      vbtn.appendChild(vIco); vbtn.appendChild(vTxt); vbtn.appendChild(vXp);
+      var chip = function (text, cls) { return el('span', 'xchip' + (cls ? ' ' + cls : ''), text); };
       xs = function () {
         var vis = XP.vis[xk], mine = [myO[i], myC[i]], v = votes[i] || [0, 0, 0, 0, 0], today = xpToday(), can = !!vis && signedIn();
         vbtn.hidden = !!vis && vis[1] === today;
-        vbtn.textContent = vis ? '재방문 인증 +200 XP' : '첫 방문 인증 +500 XP';
-        vdone.textContent = !vis ? (!signedIn() || XP.fv ? '' : '처음이라 생애 첫 방문 인증 +1,000 XP도 같이 받아요') : vis[1] === today ? '방문 인증 완료 (방문 ' + vis[0] + '번)' : '방문 ' + vis[0] + '번. 오늘은 아직 인증 안 했어요';
+        if (!vbtn.disabled) {
+          vName.textContent = vis ? '재방문 인증' : '첫 방문 인증';
+          vXp.textContent = '+' + (vis ? 200 : 500) + ' XP';
+          var lifeFirst = !vis && signedIn() && !XP.fv;
+          vBonus.textContent = lifeFirst ? '생애 첫 인증 보너스 +1,000 XP' : ''; vBonus.hidden = !lifeFirst;
+        }
+        vdone.textContent = !vis ? '' : vis[1] === today ? '방문 인증 완료 (방문 ' + vis[0] + '번)' : '방문 ' + vis[0] + '번. 오늘은 아직 인증 안 했어요';
         xb.forEach(function (cb) { var on = mine[0] === 1 && (mine[1] & cb[1][2]) !== 0; setBtn(cb[0], on, v[cb[1][3]] + (on ? 1 : 0)); cb[0][0].disabled = !can; });
         setBtn(xno, mine[0] === -1, v[1] + (mine[0] === -1 ? 1 : 0)); xno[0].disabled = !can;
         total.textContent = people(v[0] + v[1] + (mine[0] ? 1 : 0));
-        xhint.textContent = !can ? '방문 인증을 하면 투표할 수 있어요' : mine[0] ? '자리는 여러 개 고를 수 있어요' : '투표하면 +' + fmt((!isAdmin() && !(realVotes[i] || 0) ? 2000 : 1000) + 300) + ' XP' + (XP.fo ? '' : ', 생애 첫 투표 +1,000 XP');
+        // 투표 전 안내: 잠겨 있으면 까닭 한 줄, 투표할 수 있으면 받을 XP를 색 칩으로. 투표한 뒤에는 아무것도 없다.
+        xhint.textContent = ''; xhint.className = 'xhint';
+        if (!can) xhint.textContent = '방문 인증을 하면 투표할 수 있어요';
+        else if (!mine[0]) {
+          var firstV = !isAdmin() && !(realVotes[i] || 0);
+          xhint.className = 'xhint xchips';
+          xhint.appendChild(chip('투표하면 +' + fmt((firstV ? 2000 : 1000) + 300) + ' XP', 'main'));
+          if (firstV) xhint.appendChild(chip('첫 콘센트 투표 2배', 'gold'));
+          if (!XP.fo) xhint.appendChild(chip('생애 첫 투표 +1,000 XP', 'gold'));
+        }
       };
     }
     function sync() {
