@@ -480,7 +480,8 @@ button.xlvbtn { width: 100%; display: flex; flex-direction: row; align-items: ce
 .xstat.x4b .cols button + button::before { top: 9px; bottom: 13px; }
 .xstat.x4b > button { justify-content: center; }
 .xstat.x4b > button b { font-size: 20px; }
-.xstat.x4b > button span { font-size: 11.5px; }
+.xstat.x4b > button span { font-size: 11.5px; white-space: normal; text-align: center; line-height: 1.3; word-break: keep-all; }
+.xstat.static > div span { white-space: normal; text-align: center; line-height: 1.3; word-break: keep-all; }
 .xstat.x4b .cols button { justify-content: center; gap: 2px; padding: 8px 2px 12px; }
 .xstat.x4b .cols b { font-size: 18px; }
 .xstat.x4b .cols span { font-size: 11.5px; }
@@ -3325,7 +3326,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         while (!xpBonus(nx0)) nx0++;
         var vb = btn('g vote', null, function () { openRewards('vote'); });
         var vn = el('b', null, String(nv0)); vn.appendChild(el('small', null, '곳'));
-        vb.appendChild(vn); vb.appendChild(el('span', null, '기록한 카페'));
+        vb.appendChild(vn); vb.appendChild(el('span', null, '콘센트 기록한 카페'));
         stats.appendChild(vb);
         var grp = el('div', 'grp'), cols = el('div', 'cols');
         grp.appendChild(el('div', 'hd', nv0 + '곳 중'));
@@ -3460,13 +3461,13 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         } else if (view === 'dong' || view === 'vote') {
           title(view === 'dong' ? '새 동네 보너스' : '콘센트 보너스', 'pic:' + BONUS_PIC[view]);
           box.appendChild(el('p', null, view === 'dong' ? '동 단위로 세요. 그 동에서 처음 콘센트를 기록하면 1곳이에요. 3곳, 5곳, 10곳처럼 아래 수가 될 때마다 보너스를 받아요.' : '콘센트를 기록한 카페 수예요. 3곳, 5곳, 10곳처럼 아래 수가 될 때마다 보너스를 받아요.'));
-          if (view === 'dong') ladder(XP.md || 0, xpCount(XP.dong), '기록한 동네'); else ladder(XP.mv || 0, xno2, '기록한 카페');
+          if (view === 'dong') ladder(XP.md || 0, xpCount(XP.dong), '기록한 동네'); else ladder(XP.mv || 0, xno2, '콘센트 기록한 카페');
           // 콘센트 보너스 창: 기록한 카페 목록(새로 연 카페는 초록, 오랜만의 기록은 파랑 표시)
           if (view === 'vote' && xno2) {
             var tagOf = {};
             (XP.log || []).forEach(function (e) { var r = xpName(e.r); if (e.a > 0 && e.c && (r === '새로 연 카페' || r === '오랜만의 기록')) (tagOf[e.c] || (tagOf[e.c] = {}))[r] = 1; });
             // 기록한 카페 목록만: 카페 이름과, 새로 연 카페, 오랜만의 기록이었던 곳의 표시(사용자: "N곳 중" 묶음은 빼기)
-            box.appendChild(el('div', 'xsep')); box.appendChild(el('div', 'xgrp', '기록한 카페'));
+            box.appendChild(el('div', 'xsep')); box.appendChild(el('div', 'xgrp', '콘센트 기록한 카페'));
             // 목록: 기록한 차례의 최근 것부터(XP 기록에 남은 것), 기록에 없는 옛것은 뒤에
             var names = [], seenN = {}, ix4 = cidIndex();
             (XP.log || []).slice().reverse().forEach(function (e) { var r = xpName(e.r); if (e.a > 0 && e.c && (r === '콘센트 기록' || r === '첫 콘센트 기록') && !seenN[e.c]) { seenN[e.c] = 1; names.push(e.c); } });
@@ -3696,7 +3697,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     box.appendChild(top);
     var lv = el('div', 'pslv'); lv.appendChild(el('b', null, 'Lv.' + Math.floor(x.x / 1000))); lv.appendChild(el('span', null, '총 ' + fmt(x.x) + ' XP')); box.appendChild(lv);
     var st = el('div', 'xstat static');
-    [['기록한 카페', x.v], ['새 동네', x.d], ['새로 연 카페', x.o], ['오랜만의 기록', x.r]].forEach(function (y) {
+    [['콘센트 기록한 카페', x.v], ['새 동네', x.d], ['새로 연 카페', x.o], ['오랜만의 기록', x.r]].forEach(function (y) {
       var c = el('div'), num = el('b', null, String(y[1] || 0)); num.appendChild(el('small', null, '곳'));
       c.appendChild(num); c.appendChild(el('span', null, y[0])); st.appendChild(c);
     });
