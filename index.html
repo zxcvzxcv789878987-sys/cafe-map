@@ -416,6 +416,18 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .xrow b { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .xrow.got { color: var(--pri); }
 .xrow.got b::before { content: "✓ "; }
+/* 달성 보너스: 메뉴에서는 다음 목표 한 줄만 보이고, 누르면 전체 표가 든 창이 위에 뜬다. */
+button.xlink { width: 100%; align-items: center; text-align: left; padding: 7px 0; }
+button.xlink span { flex: 1; }
+button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
+#xinfo { position: fixed; inset: 0; z-index: 85; display: grid; place-items: center; padding: 18px; background: rgba(15, 20, 30, .5); }
+.xbox { width: min(360px, 100%); max-height: calc(100% - 20px); overflow-y: auto; background: var(--surface); border-radius: 18px; box-shadow: var(--sh-2); padding: 20px 18px 16px; display: flex; flex-direction: column; gap: 6px; }
+.xbox h2 { margin: 0; font-size: 18px; font-weight: 800; }
+.xbox p { margin: 0; font-size: 13px; color: var(--ink-3); }
+.xbox .btn { margin-top: 12px; align-self: stretch; height: 44px; flex: none; }
+.xbox .xms { grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.xbox .xms span { font-size: 11.5px; padding: 5px 1px; }
+.xbox .xms span.next { padding: 4px 0; }
 .xms { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .xms span { display: flex; flex-direction: column; align-items: center; padding: 6px 2px; border-radius: 10px; border: 1px solid var(--line-2); font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .xms span b { font-size: 13px; color: var(--ink); }
@@ -998,7 +1010,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       if (v[1] === today) return toast('오늘은 이미 인증했어요');
       for (t in XP.vis) if (XP.vis[t][1] === today && XP.vis[t][0] > 1) re++;
       if (re >= 3) return toast('재방문 인증은 하루 3곳까지예요');
-      v[0]++; v[1] = today; items.push([200, '재방문 인증 · ' + v[0] + '번째 방문']);
+      v[0]++; v[1] = today; items.push([200, '재방문 인증 (' + v[0] + '번째 방문)']);
     }
     xpGive(items);
   }
@@ -2436,11 +2448,11 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
     // XP 체험판: 내 레벨과 모은 XP, 그리고 보상 체계 전체(무엇을 하면 몇 XP인지, 어디까지 받았는지).
     if (XP_ON) {
       var xsec = el('div', 'fsec'), xl = el('div', 'xlv'), xtop = el('div', 'top');
-      var nv = xpCount(XP.vis), no2 = xpCount(XP.vote), lvNow = Math.floor(XP.xp / 1000);
+      var xnv = xpCount(XP.vis), xno2 = xpCount(XP.vote), lvNow = Math.floor(XP.xp / 1000);
       xsec.appendChild(el('div', 'ftitle', '내 레벨 (체험판)'));
       xtop.appendChild(el('b', null, 'Lv.' + lvNow)); xtop.appendChild(el('span', null, '총 ' + fmt(XP.xp) + ' XP'));
       xl.appendChild(xtop);
-      xl.appendChild(el('p', null, '다음 레벨까지 ' + fmt(1000 - XP.xp % 1000) + ' XP · 가 본 카페 ' + nv + '곳 · 투표한 카페 ' + no2 + '곳'));
+      xl.appendChild(el('p', null, '다음 레벨까지 ' + fmt(1000 - XP.xp % 1000) + ' XP'));
       xsec.appendChild(xl);
       xsec.appendChild(btn('link', '체험 기록 지우고 처음부터', function () { XP = { xp: 1000, vis: {}, vote: {}, fv: 0, fo: 0, mv: 0 }; xpSave(); renderPanel(); toast('체험 기록을 지웠어요'); }));
       sc.appendChild(xsec);
@@ -2464,20 +2476,40 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
       rs.appendChild(el('div', 'xgrp', '시작 보너스 (평생 한 번)'));
       xrow('생애 첫 방문 인증', '', 1000, !!XP.fv);
       xrow('생애 첫 투표', '', 1000, !!XP.fo);
-      var ladder = function (title, have) {
-        rs.appendChild(el('div', 'xgrp', title));
-        var g = el('div', 'xms'), nextDone = false;
-        [3, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100].forEach(function (m) {
-          var c = el('span', have >= m ? 'got' : '');
-          if (have < m && !nextDone) { c.className = 'next'; nextDone = true; }
-          c.appendChild(el('b', null, m + '곳')); c.appendChild(document.createTextNode('+' + fmt(xpBonus(m))));
-          g.appendChild(c);
-        });
-        rs.appendChild(g);
+      // 달성 보너스는 줄이 많아서 메뉴에 다 적지 않는다. 줄을 누르면 위에 뜨는 창에서 본다.
+      rs.appendChild(el('div', 'xgrp', '달성 보너스'));
+      var nextOf = function (have) { var m = have + 1; while (!xpBonus(m)) m++; return m; };
+      var openLadder = function () {
+        var old = $('xinfo'); if (old) old.remove();
+        var o = el('div'), box = el('div', 'xbox');
+        o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '달성 보너스');
+        o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
+        box.appendChild(el('h2', null, '달성 보너스'));
+        box.appendChild(el('p', null, '가 본 카페와 투표한 카페가 아래 수에 닿을 때마다 받아요. 두 줄은 따로 셉니다.'));
+        var ladder = function (title, have) {
+          box.appendChild(el('div', 'xgrp', title));
+          var g = el('div', 'xms'), nextDone = false;
+          [3, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100].forEach(function (m) {
+            var c = el('span', have >= m ? 'got' : '');
+            if (have < m && !nextDone) { c.className = 'next'; nextDone = true; }
+            c.appendChild(el('b', null, m + '곳')); c.appendChild(document.createTextNode('+' + fmt(xpBonus(m))));
+            g.appendChild(c);
+          });
+          box.appendChild(g);
+        };
+        ladder('가 본 카페 (지금 ' + xnv + '곳)', xnv);
+        ladder('투표한 카페 (지금 ' + xno2 + '곳)', XP.mv || 0);
+        box.appendChild(el('p', null, '100곳 뒤로는 10곳마다 +10,000 XP, 100곳마다 +20,000 XP예요.'));
+        var ok = btn('btn pri', '닫기', function () { o.remove(); });
+        box.appendChild(ok); o.appendChild(box); document.body.appendChild(o); ok.focus();
       };
-      ladder('달성 보너스 · 가 본 카페 ' + nv + '곳', nv);
-      ladder('달성 보너스 · 투표한 카페 ' + no2 + '곳', XP.mv || 0);
-      rs.appendChild(el('p', 'xnote', '100곳 뒤로는 10곳마다 +10,000 XP, 100곳마다 +20,000 XP예요.'));
+      var lrow = function (label, have) {
+        var m = nextOf(have), r = btn('xrow xlink', null, openLadder), l = el('span', null, label + ' ');
+        l.appendChild(el('small', null, '다음 ' + m + '곳'));
+        r.appendChild(l); r.appendChild(el('b', null, '+' + fmt(xpBonus(m)) + ' XP')); r.appendChild(icon('right')); rs.appendChild(r);
+      };
+      lrow('가 본 카페 ' + xnv + '곳', xnv);
+      lrow('투표한 카페 ' + xno2 + '곳', XP.mv || 0);
       sc.appendChild(rs);
     }
     // 환경설정
@@ -3025,11 +3057,11 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
         var vis = XP.vis[xk], mine = XP.vote[xk] || [0, 0, 0], v = votes[i] || [0, 0, 0, 0, 0], today = xpToday(), can = !!vis;
         vbtn.hidden = !!vis && vis[1] === today;
         vbtn.textContent = vis ? '재방문 인증 +200 XP' : '방문 인증 +500 XP';
-        vdone.textContent = !vis ? (XP.fv ? '' : '처음이라 생애 첫 방문 인증 +1,000 XP도 같이 받아요') : vis[1] === today ? '방문 인증 완료 · 방문 ' + vis[0] + '번' : '방문 ' + vis[0] + '번 · 오늘은 아직 인증 안 했어요';
+        vdone.textContent = !vis ? (XP.fv ? '' : '처음이라 생애 첫 방문 인증 +1,000 XP도 같이 받아요') : vis[1] === today ? '방문 인증 완료 (방문 ' + vis[0] + '번)' : '방문 ' + vis[0] + '번. 오늘은 아직 인증 안 했어요';
         xb.forEach(function (cb) { var on = mine[0] === 1 && (mine[1] & cb[1][2]) !== 0; setBtn(cb[0], on, v[cb[1][3]] + (on ? 1 : 0)); cb[0][0].disabled = !can; });
         setBtn(xno, mine[0] === -1, v[1] + (mine[0] === -1 ? 1 : 0)); xno[0].disabled = !can;
         total.textContent = people(v[0] + v[1] + (mine[0] ? 1 : 0));
-        xhint.textContent = !can ? '방문 인증을 하면 투표할 수 있어요' : mine[0] ? '자리는 여러 개 고를 수 있어요' : '투표하면 +' + fmt((v[0] + v[1] === 0 ? 2000 : 1000) + 300) + ' XP' + (XP.fo ? '' : ' · 생애 첫 투표 +1,000 XP');
+        xhint.textContent = !can ? '방문 인증을 하면 투표할 수 있어요' : mine[0] ? '자리는 여러 개 고를 수 있어요' : '투표하면 +' + fmt((v[0] + v[1] === 0 ? 2000 : 1000) + 300) + ' XP' + (XP.fo ? '' : ', 생애 첫 투표 +1,000 XP');
       };
     }
     function sync() {
