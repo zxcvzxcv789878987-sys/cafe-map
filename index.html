@@ -390,6 +390,10 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 #lvup .from { font-size: 15px; opacity: .8; animation: lvRise .5s .5s both; }
 #lvup .ring { position: absolute; width: 220px; height: 220px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .5); animation: lvRing 1s .2s ease-out both; pointer-events: none; }
 #lvup button { margin-top: 26px; height: 46px; padding: 0 44px; border-radius: 999px; background: #fff; color: var(--pri); font-size: 16px; font-weight: 800; animation: lvRise .5s .7s both; }
+#lvup .num.bump { animation: lvBump .22s ease-out; }
+#lvup .num.done { animation: lvDone .5s cubic-bezier(.2, .9, .3, 1.5); text-shadow: 0 0 28px rgba(255, 255, 255, .55); }
+@keyframes lvBump { 40% { transform: translateY(-8px) scale(1.08); } }
+@keyframes lvDone { 0% { transform: scale(1); } 45% { transform: scale(1.28); } 100% { transform: scale(1); } }
 @keyframes lvFade { from { opacity: 0; } }
 @keyframes lvPop { from { transform: scale(.3); opacity: 0; } }
 @keyframes lvRise { from { transform: translateY(12px); opacity: 0; } }
@@ -1019,7 +1023,20 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     o.id = 'lvup'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '레벨 업');
     o.appendChild(el('div', 'ring'));
     box.appendChild(el('div', 'cap', 'LEVEL UP'));
-    box.appendChild(el('div', 'num', 'Lv.' + to));
+    // 숫자가 지금 레벨부터 오른 레벨까지 하나씩 올라간다. 오를 때마다 숫자가 살짝 튀어 오른다.
+    var num = el('div', 'num', 'Lv.' + from); box.appendChild(num);
+    var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (still) num.textContent = 'Lv.' + to;
+    else {
+      var steps = to - from, cur = from, gap = Math.max(70, Math.min(260, 1100 / steps));
+      setTimeout(function tick() {
+        if (!o.isConnected) return;
+        cur++; num.textContent = 'Lv.' + cur;
+        num.classList.remove('bump'); void num.offsetWidth; num.classList.add('bump');
+        if (cur < to) setTimeout(tick, cur === to - 1 ? gap * 1.8 : gap);
+        else num.classList.add('done');
+      }, 650);
+    }
     box.appendChild(el('div', 'from', 'Lv.' + from + ' → Lv.' + to));
     box.appendChild(ok); o.appendChild(box);
     document.body.appendChild(o); ok.focus();
