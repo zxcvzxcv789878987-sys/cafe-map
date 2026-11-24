@@ -948,7 +948,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
 @keyframes lgTurn { 50% { transform: rotate(-14deg); } 100% { transform: rotate(0); } }
 .fx-login .shk { transform-origin: left bottom; animation: lgOpen .4s 1s cubic-bezier(.2, .9, .3, 1.5) forwards; }
 @keyframes lgOpen { to { transform: translateY(-3px) rotate(-16deg); } }
-/* 목록과 표 머리의 작은 그림: 바탕 없이 그림만, 움직임은 끝난 모양으로 */
+/* 목록과 표 머리의 작은 그림: 바탕 없이 그림만. 창이 열릴 때 한 번, 누르면 다시 움직인다 */
 .xbadge.pic { background: none; }
 /* 보상 체계: 묶음 사이 가로선, 줄 이름 앞 작은 그림 */
 .xbox .xsep { flex: none; height: 1px; margin: 6px 0 0; background: var(--line); }
@@ -960,10 +960,11 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
 .xrow .ric .rmkc { position: absolute; right: -5px; bottom: -4px; width: 14px; height: 14px; border-radius: 4px; background: var(--surface); }
 .xrow .ric .rmkc svg { display: block; width: 100%; height: 100%; }
 button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2px; }
-.fx.still .sp { display: none; }
+.fxi { display: block; width: 100%; height: 100%; cursor: pointer; }
+.fxi .fx { width: 100%; }
+.fxi .sp { display: none; }
 .xhead .xbadge.pic { width: 52px; height: 52px; margin: -6px 0; }
 .xbadge.pic .fx { width: 100%; }
-.fx.still * { animation-duration: .001s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; }
 /* 그림이 든 XP 알림: 그림이 왼쪽 위로 살짝 튀어나온다 */
 #toast.xp.art { padding-left: 70px; }
 #toast.xp .ti { position: absolute; left: 6px; bottom: 3px; width: 56px; height: 56px; pointer-events: none; }
@@ -1666,7 +1667,12 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   var fxN = 0;
   function fxArt(k) { var w = el('div', 'fx fxd ' + FX.cls[k]); w.innerHTML = FX.art[k].replace(/__ID__/g, String(++fxN)); return w; }
   // 움직이지 않는 작은 그림(목록의 아이콘 자리): 움직임이 끝난 모양으로 바로 보인다.
-  function fxStill(k) { var w = fxArt(k); w.classList.add('still'); return w; }
+  // 목록과 표 머리의 작은 그림: 창이 열릴 때 한 번 움직이고, 누르면 처음부터 다시 움직인다(줄을 누른 것으로 치지 않는다).
+  function fxStill(k) {
+    var w = el('span', 'fxi'); w.appendChild(fxArt(k));
+    w.addEventListener('click', function (e) { e.stopPropagation(); e.preventDefault(); w.textContent = ''; w.appendChild(fxArt(k)); });
+    return w;
+  }
   var BONUS_PIC = { vote: 'stampfull', dong: 'towns', newb: 'shops3', oldb: 'cal3' };
   // XP 알림에 붙는 그림
   var XP_PIC = { '새 동네': 'town', '새로 연 카페': 'shop', '콘센트 기록': 'plug', '첫 콘센트 기록': 'plug', '오랜만의 기록': 'cal' };
