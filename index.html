@@ -428,15 +428,15 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .xms span.next b { color: var(--ink); }
 .xms span.next svg.i { opacity: 1; }
 /* 표 위: 지금 몇 곳인지, 다음 보너스가 얼마인지, 거기까지 얼마나 왔는지(칸 하나가 카페 한 곳). */
+.xprog .of { display: inline; font-size: 15px; font-weight: 700; color: var(--ink-3); }
+.xpbar { margin-top: -6px; padding: 4px 14px 14px; border-radius: 0 0 14px 14px; background: color-mix(in srgb, var(--pri) 9%, var(--surface)); }
+.xpbar .tr { height: 10px; border-radius: 999px; background: color-mix(in srgb, var(--pri) 20%, var(--surface)); overflow: hidden; }
+.xpbar i { display: block; height: 100%; border-radius: 999px; background: var(--pri); }
 .xprog { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 8px; padding: 12px 14px 10px; border-radius: 14px 14px 0 0; background: color-mix(in srgb, var(--pri) 9%, var(--surface)); }
 .xprog small { display: block; font-size: 11.5px; color: var(--ink-3); }
 .xprog b { font-size: 22px; font-weight: 800; line-height: 1.2; }
 .xprog .r { text-align: right; }
 .xprog .r b { font-size: 16px; color: var(--pri); }
-.xseg { display: flex; gap: 3px; margin-top: -6px; padding: 2px 14px 8px; background: color-mix(in srgb, var(--pri) 9%, var(--surface)); }
-.xseg i { flex: 1; height: 7px; border-radius: 999px; background: color-mix(in srgb, var(--pri) 20%, var(--surface)); }
-.xseg i.on { background: var(--pri); }
-.xleft { margin: -6px 0 0 !important; padding: 2px 14px 12px; border-radius: 0 0 14px 14px; background: color-mix(in srgb, var(--pri) 9%, var(--surface)); font-size: 12.5px !important; color: var(--ink-2) !important; font-weight: 600; }
 /* 달성 보너스: 메뉴에서는 다음 목표 한 줄만 보이고, 누르면 전체 표가 든 창이 위에 뜬다. */
 button.xlink { width: 100%; align-items: center; text-align: left; padding: 7px 0; }
 button.xlink span { flex: 1; }
@@ -2484,24 +2484,20 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
           if (sub) l.appendChild(el('small', null, sub));
           r.appendChild(l); r.appendChild(el('b', null, '+' + fmt(xp) + ' XP')); box.appendChild(r);
         };
-        var link = function (label, to) {
-          var r = btn('xrow xlink', null, function () { openRewards(to); });
-          r.appendChild(el('span', null, label)); r.appendChild(icon('right')); box.appendChild(r);
-        };
         // 50곳 뒤로는 10곳마다 똑같으니 칸으로 그리지 않고 한 줄로 적는다. 다음 목표가 50곳을 넘으면 그 칸 하나만 덧붙인다.
         var MS = [3, 5, 10, 15, 20, 30, 40, 50];
         // have: 보너스를 받은 데까지의 수, count: 지금 실제 수, what: "방문 인증한 카페" 같은 이름
         var ladder = function (have, count, what) {
-          var next = count + 1, prev = 0, k;
+          var next = count + 1;
           while (!xpBonus(next)) next++;
-          for (k = next - 1; k > 0; k--) if (xpBonus(k)) { prev = k; break; }
-          var pr = el('div', 'xprog'), l = el('div', 'l'), r = el('div', 'r'), seg = el('div', 'xseg');
-          l.appendChild(el('small', null, what)); l.appendChild(el('b', null, count + '곳'));
-          r.appendChild(el('small', null, '다음 보너스')); r.appendChild(el('b', null, '+' + fmt(xpBonus(next)) + ' XP'));
+          // 다음 목표까지 얼마나 왔는지를 0곳부터 이어진 막대 하나와 "12 / 15곳"으로 보여 준다.
+          var pr = el('div', 'xprog'), l = el('div', 'l'), r = el('div', 'r'), num = el('b'), bar = el('div', 'xpbar'), fill = el('i');
+          num.appendChild(document.createTextNode(String(count)));
+          num.appendChild(el('small', 'of', ' / ' + next + '곳'));
+          l.appendChild(el('small', null, what)); l.appendChild(num);
+          r.appendChild(el('small', null, next + '곳 보너스')); r.appendChild(el('b', null, '+' + fmt(xpBonus(next)) + ' XP'));
           pr.appendChild(l); pr.appendChild(r); box.appendChild(pr);
-          for (k = prev + 1; k <= next; k++) seg.appendChild(el('i', k <= count ? 'on' : ''));
-          box.appendChild(seg);
-          box.appendChild(el('p', 'xleft', next + '곳까지 ' + (next - count) + '곳 남았어요'));
+          var track = el('div', 'tr'); fill.style.width = Math.round(count / next * 100) + '%'; track.appendChild(fill); bar.appendChild(track); box.appendChild(bar);
           var g = el('div', 'xms');
           (next > 50 ? MS.concat([next]) : MS).forEach(function (m) {
             var got = have >= m, isNext = !got && m === next, c = el('span', got ? 'got' : isNext ? 'next' : '');
@@ -2520,10 +2516,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
           box.appendChild(el('h2', null, view === 'visit' ? '방문 인증 보너스' : '투표 보너스'));
           box.appendChild(el('p', null, view === 'visit' ? '방문 인증한 카페 수가 아래에 닿을 때마다 받아요.' : '콘센트 투표를 한 카페 수가 아래에 닿을 때마다 받아요.'));
           if (view === 'visit') ladder(xnv, xnv, '방문 인증한 카페'); else ladder(XP.mv || 0, xno2, '투표한 카페');
-          var two = el('div', 'two');
-          two.appendChild(btn('btn', '뒤로', function () { openRewards(); }));
-          two.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
-          box.appendChild(two);
+          box.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
         } else {
           box.appendChild(el('h2', null, '보상 체계'));
           box.appendChild(el('p', null, '1,000 XP를 모을 때마다 레벨이 1 올라요.'));
@@ -2537,17 +2530,17 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
           row('로그인', '', 1000, true);
           row('생애 첫 방문 인증', '', 1000, !!XP.fv);
           row('생애 첫 투표', '', 1000, !!XP.fo);
-          box.appendChild(el('div', 'xgrp', '달성 보너스'));
-          link('방문 인증 보너스', 'visit');
-          link('투표 보너스', 'vote');
           var ok = btn('btn pri', '닫기', function () { o.remove(); });
           box.appendChild(ok);
         }
         o.appendChild(box); document.body.appendChild(o);
       };
-      var rw = btn('xrow xlink', null, function () { openRewards(); });
-      rw.appendChild(el('span', null, '보상 체계')); rw.appendChild(icon('right'));
-      xsec.insertBefore(rw, xsec.lastChild);
+      // 메뉴에는 보상 체계 아래에 달성 보너스 두 줄을 바로 둔다. 누르면 각각의 표가 뜬다.
+      [['보상 체계', null], ['방문 인증 보너스', 'visit'], ['투표 보너스', 'vote']].forEach(function (x) {
+        var rw = btn('xrow xlink', null, function () { openRewards(x[1]); });
+        rw.appendChild(el('span', null, x[0])); rw.appendChild(icon('right'));
+        xsec.insertBefore(rw, xsec.lastChild);
+      });
     }
     // 환경설정
     var conf = el('div', 'fsec');
