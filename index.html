@@ -427,6 +427,9 @@ button.xlvbtn > svg.i { width: 16px; height: 16px; opacity: .45; flex: none; }
 .xli > span { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .xli .rs { font-size: 14px; font-weight: 650; }
 .xli small { font-size: 12px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rec .vh .vwho { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; text-decoration: underline; text-underline-offset: 2px; }
+.xli.admin .rs { color: var(--pri); }
+.xbox .xadm { margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--pri) 9%, var(--surface)); color: var(--ink-2); font-size: 12.5px; }
 .xli .rt { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
 .xli b { font-size: 14px; font-weight: 750; color: var(--pri); font-variant-numeric: tabular-nums; }
 .xli.minus b { color: var(--ink-3); }
@@ -1099,7 +1102,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       .then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); })
       .then(function (srv) {
         if (srv && typeof srv.xp === 'number') { delete srv.t; XP = xpNorm(srv); save(xpKey(), XP); xpHeal(); }
-        else if (local) xpPush();
+        else { XP = xpFresh(); try { localStorage.removeItem(xpKey()); } catch (e) { /* 그냥 넘어간다 */ } }
         for (var vk in XP.vis) devClaim(vk);
         if (P.kind === 'menu' || P.kind === 'detail') renderPanel();
       }).catch(function () { /* 서버에 닿지 못하면 이 기기에 적어 둔 것으로 보여 준다 */ });
@@ -1294,19 +1297,20 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   }
   // 모두의 기록을 받아 와서 카페별로 센다.
   // 운영자를 뺀 다른 사람의 투표 수(카페 번호 -> 수). "첫 콘센트 투표"인지 볼 때 쓴다. 운영자의 투표는 다른 사람의 첫 투표를 빼앗지 않는다.
-  var realVotes = {};
+  var realVotes = {}, voters = {};   // voters: 카페 번호 -> [{ o, c, t, admin, me }]
   function isAdmin() { return !!(who && SHARE.admin && who.u === SHARE.admin); }
   function pull() {
     if (!shareOn) return Promise.resolve();
     return fetch(SHARE.db + ROOT + '/seats.json').then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); }).then(function (all) {
       var ix = cidIndex(), k, u, j, touched = [];
       for (j in votes) touched.push(+j);
-      votes = {}; srvMine = {}; realVotes = {};
+      votes = {}; srvMine = {}; realVotes = {}; voters = {};
       for (k in all || {}) {
         j = ix[k];
         for (u in all[k]) {
           var rec = all[k][u];
           if (!rec) continue;
+          if (j !== undefined && (rec.o === 1 || rec.o === -1)) (voters[j] || (voters[j] = [])).push({ o: rec.o, c: rec.c || '', t: rec.t || 0, admin: u === SHARE.admin, me: !!(who && u === who.u) });
           if (who && u === who.u) { srvMine[k] = rec; continue; }
           if (j === undefined) continue;
           if (u !== SHARE.admin && (rec.o === 1 || rec.o === -1)) realVotes[j] = (realVotes[j] || 0) + 1;
@@ -2812,6 +2816,31 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     ['idea', '기능 제안', 'bulb', '있었으면 하는 기능이나 바꾸면 좋을 점을 적어 주세요.', '예) 주차 되는 카페만 볼 수 있으면 좋겠어요'],
     ['etc', '기타 문의', 'help', '궁금한 점을 적어 주세요.', '예) 투표는 어떻게 집계되나요?']
   ];
+  // 투표자 창: 이 카페에 누가 무엇을 골랐는지. 이름은 보이지 않고 운영자와 나만 표시한다.
+  function openVoters(i) {
+    var list = (voters[i] || []).slice();
+    if (myO[i] && !list.some(function (x) { return x.me; })) list.push({ o: myO[i], c: chairStr(myC[i]), t: Date.now(), admin: isAdmin(), me: true });
+    if (!list.length) { toast('아직 투표한 사람이 없어요'); return; }
+    var old = $('xinfo'); if (old) old.remove();
+    var o = el('div'), box = el('div', 'xbox vote'), hd = el('div', 'xhead'), bd = el('span', 'xbadge');
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '투표한 사람');
+    o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
+    bd.appendChild(icon('plug')); hd.appendChild(bd); hd.appendChild(el('h2', null, '투표한 사람 ' + list.length + '명')); box.appendChild(hd);
+    list.sort(function (a, b) { return (b.t || 0) - (a.t || 0); });
+    var ll = el('div', 'xll'), names = { w: '벽면 소파', s: '바 의자', n: '일반 의자' };
+    list.forEach(function (x, n) {
+      var r = el('div', 'xli'), l = el('span'), rt = el('span', 'rt');
+      l.appendChild(el('span', 'rs', x.me ? '나' : x.admin ? '운영자' : '사용자 ' + (list.length - n)));
+      l.appendChild(el('small', null, x.o === -1 ? '없어요' : (x.c || '').split('').map(function (ch) { return names[ch]; }).filter(Boolean).join(', ') || '있어요'));
+      if (x.admin) r.classList.add('admin');
+      if (x.t) { var d = new Date(x.t); rt.appendChild(el('small', null, (d.getMonth() + 1) + '월 ' + d.getDate() + '일')); }
+      r.appendChild(l); r.appendChild(rt); ll.appendChild(r);
+    });
+    box.appendChild(ll);
+    if (list.some(function (x) { return x.admin; })) box.appendChild(el('p', 'xadm', '운영자 투표는 첫 콘센트 투표에 영향이 없어요. 운영자만 투표한 카페는 다음 사람이 첫 콘센트 투표 XP를 받아요.'));
+    box.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
+    o.appendChild(box); document.body.appendChild(o);
+  }
   // XP 기록 창: 최근 것부터, 무엇으로 몇 XP를 받았는지와 카페, 날짜.
   function openXpLog() {
     var old = $('xinfo'); if (old) old.remove();
@@ -3346,7 +3375,10 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       x[0].setAttribute('aria-pressed', String(on)); x[1].textContent = count ? count + '명' : '';
       x[0].setAttribute('aria-label', x[2] + ', ' + count + '명이 기록' + (on ? ', 내 기록' : ''));
     }
-    function vhead(title) { var hd = el('div', 'vh'), sm = el('small'); hd.appendChild(el('b', null, title)); hd.appendChild(sm); rec.appendChild(hd); return sm; }
+    function vhead(title) {
+      var hd = el('div', 'vh'), sm = btn('vwho', null, function () { openVoters(i); });
+      hd.appendChild(el('b', null, title)); hd.appendChild(sm); rec.appendChild(hd); return sm;
+    }
     function people(n) { return n ? n + '명 투표' : '아직 투표 없음'; }
     // 콘센트 좌석: 있는지 없는지. 있다고 한 사람이 있을 때만 그 아래에 어느 자리에 있는지를 묻는 칸이 펼쳐진다.
     // 자리 종류를 누르면 콘센트 좌석이 있다는 뜻이므로 "있어요"도 같이 켠다.
