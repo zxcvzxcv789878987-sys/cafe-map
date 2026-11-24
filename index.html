@@ -1100,6 +1100,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       .then(function (srv) {
         if (srv && typeof srv.xp === 'number') { delete srv.t; XP = xpNorm(srv); save(xpKey(), XP); xpHeal(); }
         else if (local) xpPush();
+        for (var vk in XP.vis) devClaim(vk);
         if (P.kind === 'menu' || P.kind === 'detail') renderPanel();
       }).catch(function () { /* 서버에 닿지 못하면 이 기기에 적어 둔 것으로 보여 준다 */ });
   }
@@ -1191,8 +1192,15 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       toast(e && e.code === 1 ? '위치 사용을 허락해야 방문 인증을 할 수 있어요' : '위치를 확인하지 못했어요. 잠시 뒤에 다시 눌러 주세요');
     }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 20000 });
   }
+  // 같은 카페는 한 폰에서 한 계정만 방문 인증할 수 있다(친구 계정으로 바꿔 가며 받는 것을 막는다).
+  // 이 폰에서 카페마다 처음 인증한 계정을 적어 두고, 로그아웃해도 지우지 않는다.
+  var devVis = load('cafemap.devvis') || {};
+  function devOwner(k) { return devVis[k]; }
+  function devClaim(k) { if (who && who.u && !devVis[k]) { devVis[k] = who.u; save('cafemap.devvis', devVis); } }
   function xpVisit(i) {
     var k = cidOf(i), v = XP.vis[k], today = xpToday(), items = [], n, b, t, re = 0;
+    if (devOwner(k) && who && devOwner(k) !== who.u) return toast('이 폰에서는 이 카페를 다른 계정으로 이미 인증했어요');
+    devClaim(k);
     if (!v) {
       XP.vis[k] = [1, today]; items.push([500, '첫 방문 인증', D.name[i]]);
       if (!XP.fv) { XP.fv = 1; items.push([1000, '생애 첫 방문 인증']); }
@@ -3369,7 +3377,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     var xs = function () {};
     if (XP_ON && loginOn) {
       r1.hidden = true; more.hidden = true;
-      var xk = cidOf(i), vrow = el('div', 'xvisit'), vbtn = btn('xgo', null, function () { needLogin(function () { checkNear(i, function () { xpVisit(i); sync(); }, function (on) { vbtn.disabled = on; if (on) vbtn.textContent = '위치 확인 중'; else sync(); }); }, 'visit'); }), vdone = el('div', 'xdone');
+      var xk = cidOf(i), vrow = el('div', 'xvisit'), vbtn = btn('xgo', null, function () { needLogin(function () { if (devOwner(xk) && devOwner(xk) !== who.u) { toast('이 폰에서는 이 카페를 다른 계정으로 이미 인증했어요'); return; } checkNear(i, function () { xpVisit(i); sync(); }, function (on) { vbtn.disabled = on; if (on) vbtn.textContent = '위치 확인 중'; else sync(); }); }, 'visit'); }), vdone = el('div', 'xdone');
       vrow.appendChild(vbtn); vrow.appendChild(vdone); rec.insertBefore(vrow, rec.firstChild);
       var xr = el('div', 'opts one four'), xhint = el('div', 'xhint');
       var plain = function (text, fn) { var bt = btn('opt', text, fn), n = el('span', 'n'); bt.appendChild(n); return [bt, n, text]; };
