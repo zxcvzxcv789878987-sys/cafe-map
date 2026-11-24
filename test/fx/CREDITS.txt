@@ -1,2 +1,2 @@
-trophy.json, heart.json: LottieFiles 무료 애니메이션(Lottie Simple License), Mahendra (trophy-yEGPe40FVr, heart-UQ3y0wAQco)
 번개 모양은 Microsoft Fluent Emoji Flat(MIT)의 High voltage를 본떴다. 나머지 그림은 이 앱에서 직접 그렸다.
+축하 화면 뒤 폭죽은 test/lottie/confetti.json(출처는 test/lottie/CREDITS.txt).
