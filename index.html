@@ -196,11 +196,10 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .facts dd small { color: var(--ink-3); font-size: 12.5px; }
 /* 넓이와 같은 줄에 적는 "개업" 이름표 */
 .facts dd .k2 { color: var(--ink-3); font-size: 13px; margin-left: 8px; }
-/* 개업 옆 작은 표시: 새로 열었어요(초록), 준비 중일 수 있어요(주황, 누르면 설명) */
-.facts dd small.newmark, .facts dd .omark { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 9px; border-radius: 999px; font-size: 12px; font-weight: 650; }
-.facts dd small.newmark { background: #ebfbee; color: #2b8a3e; }
-.facts dd small.newmark svg.i { width: 12px; height: 12px; fill: currentColor; }
-.facts dd .omark { background: #fff4e6; color: #d9480f; }
+.facts dd small.newmark { display: inline-flex; align-items: center; gap: 3px; color: #2b9a41; font-weight: 650; }
+.facts dd small.newmark svg.i { width: 13px; height: 13px; fill: currentColor; }
+/* 준비 중일 수 있어요: 새로 열었어요와 같은 모양의 주황 글씨. 누르면 설명이 잠깐 뜬다. */
+.facts dd .omark { display: inline-flex; align-items: center; gap: 3px; padding: 0; background: none; color: #e8590c; font-size: 12.5px; font-weight: 650; }
 .facts dd .omark svg.i { width: 13px; height: 13px; }
 /* 카드 맨 아래에 붙어 있는 단추 줄(필터의 적용하기) */
 .pfoot { flex: none; padding: 10px 14px calc(12px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); background: var(--surface); }
@@ -391,11 +390,11 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 #toast.xp.minus { background: var(--inv); color: var(--on-inv); }
 @keyframes xpPop { from { transform: translateX(-50%) translateY(14px) scale(.9); opacity: 0; } to { transform: translateX(-50%); opacity: 1; } }
 /* 레벨 업 장면: 화면 전체를 덮고, 확인을 눌러 닫는다. */
-#lvup { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; background: rgba(26, 20, 72, .9); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); animation: lvFade .25s ease; }
+#lvup { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; background: rgba(30, 22, 80, .9); animation: lvFade .25s ease; }
 #lvup .box { display: flex; flex-direction: column; align-items: center; gap: 6px; color: #fff; text-align: center; padding: 24px; }
-#lvup .cap { font-size: 13px; font-weight: 700; letter-spacing: .32em; color: #c9c1ff; animation: lvRise .5s .1s both; }
-#lvup .num { font-size: 80px; font-weight: 900; line-height: 1; letter-spacing: -.03em; animation: lvPop .6s .18s cubic-bezier(.2, .9, .3, 1.4) both; }
-#lvup .from { font-size: 14px; color: rgba(255, 255, 255, .7); animation: lvRise .5s .5s both; }
+#lvup .cap { font-size: 15px; font-weight: 700; letter-spacing: .28em; opacity: .85; animation: lvRise .5s .1s both; }
+#lvup .num { font-size: 84px; font-weight: 900; line-height: 1; letter-spacing: -.03em; animation: lvPop .6s .18s cubic-bezier(.2, .9, .3, 1.4) both; }
+#lvup .from { font-size: 15px; opacity: .8; animation: lvRise .5s .5s both; }
 /* 축하 장면(생애 첫, 달성 보너스) */
 #celeb { position: fixed; inset: 0; z-index: 88; display: grid; place-items: center; background: rgba(15, 20, 30, .2); animation: lvFade .2s ease; --c1: #0ca678; --c2: #63e6be; }
 #celeb.vote { --c1: #f76707; --c2: #ffa94d; }
@@ -415,15 +414,13 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 @keyframes mdPop { from { transform: scale(.4); opacity: 0; } }
 @keyframes bsFly { 0% { transform: translate(0, 0) scale(.6); opacity: 1; } 100% { transform: translate(var(--x), var(--y)) scale(1) rotate(200deg); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { #celeb, #celeb * { animation: none !important; } #celeb .bs { display: none; } }
-/* 이번에 받은 것: 흰 카드를 가는 선으로 나눈다 */
-#lvup .got { margin-top: 22px; width: min(290px, 82vw); display: flex; flex-direction: column; padding: 4px 16px; border-radius: 18px; background: #fff; color: var(--ink); text-align: left; animation: lvRise .5s .6s both; }
-#lvup .got .gr { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; font-size: 14px; }
-#lvup .got .gr + .gr { border-top: 1px solid var(--line); }
-#lvup .got .gr b { font-weight: 800; color: #6a5ae0; white-space: nowrap; font-variant-numeric: tabular-nums; }
-#lvup .ring { position: absolute; width: 220px; height: 220px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .3); animation: lvRing 1s .2s ease-out both; pointer-events: none; }
-#lvup button { margin-top: 12px; width: min(290px, 82vw); height: 50px; border-radius: 14px; background: rgba(255, 255, 255, .14); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .3); color: #fff; font-size: 16px; font-weight: 700; animation: lvRise .5s .7s both; }
+#lvup .got { margin-top: 18px; width: min(280px, 80vw); display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 16px; background: rgba(255, 255, 255, .12); animation: lvRise .5s .6s both; }
+#lvup .got .gr { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+#lvup .got .gr b { font-weight: 800; color: #ffe066; white-space: nowrap; }
+#lvup .ring { position: absolute; width: 220px; height: 220px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .5); animation: lvRing 1s .2s ease-out both; pointer-events: none; }
+#lvup button { margin-top: 26px; height: 46px; padding: 0 44px; border-radius: 999px; background: #fff; color: var(--pri); font-size: 16px; font-weight: 800; animation: lvRise .5s .7s both; }
 #lvup .num.bump { animation: lvBump .22s ease-out; }
-#lvup .num.done { animation: lvDone .5s cubic-bezier(.2, .9, .3, 1.5); }
+#lvup .num.done { animation: lvDone .5s cubic-bezier(.2, .9, .3, 1.5); text-shadow: 0 0 28px rgba(255, 255, 255, .55); }
 @keyframes lvBump { 40% { transform: translateY(-8px) scale(1.08); } }
 @keyframes lvDone { 0% { transform: scale(1); } 45% { transform: scale(1.28); } 100% { transform: scale(1); } }
 @keyframes lvFade { from { opacity: 0; } }
@@ -484,19 +481,7 @@ button.xlvbtn > svg.i { width: 16px; height: 16px; opacity: .45; flex: none; }
 .xli > span { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .xli .rs { font-size: 14px; font-weight: 650; }
 .xli small { font-size: 12px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-/* 투표 판의 제목 줄: 콘센트 아이콘과 제목, 오른쪽에 투표한 사람 수(누르면 창) */
-.rec .vh { align-items: center; }
-.rec .vh b { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 800; }
-.rec .vh b svg.i { width: 17px; height: 17px; color: #f76707; }
-.rec .vh b .vmul { margin-left: 1px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
-.rec .vh .vwho { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 2px 0 8px; font-size: 12.5px; font-weight: 600; color: var(--ink-3); font-variant-numeric: tabular-nums; }
-.rec .vh .vwho.has { color: var(--ink-2); }
-.rec .vh .vwho.has::after { content: ""; width: 6px; height: 6px; margin: 0 4px 0 2px; border-top: 1.5px solid currentColor; border-right: 1.5px solid currentColor; transform: rotate(45deg); }
-/* 투표 단추: 둥근 네모 칸. 고르면 연한 보라 바탕에 보라 테두리 */
-.rec .opts.four { gap: 6px; }
-.rec .opts.four .opt { height: 42px; border-radius: 12px; font-size: 13px; font-weight: 650; }
-.rec .opts.four .opt[aria-pressed=true] { background: color-mix(in srgb, var(--pri) 10%, var(--surface)); border-color: var(--pri); box-shadow: inset 0 0 0 .5px var(--pri); color: var(--pri); }
-.rec .opts.four .opt[aria-pressed=true] .n { opacity: 1; }
+.rec .vh .vwho { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; text-decoration: underline; text-underline-offset: 2px; }
 .xli.admin .rs { color: var(--pri); }
 .xbox .xadm { margin-top: 8px; color: var(--ink-2); font-size: 13px; line-height: 1.5; }
 .xbox .xexp { margin: 0 0 2px; color: var(--ink-2); font-size: 13.5px; line-height: 1.55; }
@@ -3854,19 +3839,19 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       var xb = CHAIRS.map(function (c) { var x = plain(c[1], function () { cast(1, c[2]); }); xr.appendChild(x[0]); return [x, c]; });
       var xno = plain('없어요', function () { cast(-1, 0); }); xr.appendChild(el('span', 'vsep')); xr.appendChild(xno[0]);
       rec.insertBefore(xr, more); rec.insertBefore(xhint, more);
-      var vhb = rec.querySelector('.vh b'); vhb.textContent = ''; vhb.appendChild(icon('plug')); vhb.appendChild(document.createTextNode('콘센트 좌석')); vhb.appendChild(el('span', 'vmul', '(중복 선택)'));
+      rec.querySelector('.vh b').textContent = '콘센트 좌석 (중복 선택)';
       xs = function () {
         var mine = [myO[i], myC[i]], v = votes[i] || [0, 0, 0, 0, 0];
         xb.forEach(function (cb) { var on = mine[0] === 1 && (mine[1] & cb[1][2]) !== 0; setBtn(cb[0], on, v[cb[1][3]] + (on ? 1 : 0)); });
         setBtn(xno, mine[0] === -1, v[1] + (mine[0] === -1 ? 1 : 0));
-        total.textContent = people(v[0] + v[1] + (mine[0] ? 1 : 0)); total.classList.toggle('has', v[0] + v[1] + (mine[0] ? 1 : 0) > 0);
+        total.textContent = people(v[0] + v[1] + (mine[0] ? 1 : 0));
         xhint.textContent = '';
       };
     }
     function sync() {
       var v = votes[i] || [0, 0, 0, 0, 0];
       var ny = v[0] + (myO[i] === 1 ? 1 : 0), nn = v[1] + (myO[i] === -1 ? 1 : 0);
-      total.textContent = people(ny + nn); total.classList.toggle('has', ny + nn > 0);
+      total.textContent = people(ny + nn);
       bWant.setAttribute('aria-pressed', String(want[i] === 1));
       setBtn(bGone, myGone[i] === 1, (goneVotes[i] || 0) + (myGone[i] === 1 ? 1 : 0));
       more.classList.toggle('on', ny > 0); more.inert = ny === 0;
