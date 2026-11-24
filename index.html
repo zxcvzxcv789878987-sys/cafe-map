@@ -1002,16 +1002,47 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     save('cafemap.gone', goneMine);
     pushGone(i);
   }
-  // ----- XP 체험판 -----
-  // 보상 체계(방문 인증, XP, 레벨)를 미리 눌러 보는 판이다. 주소 끝에 ?xp=1을 붙이거나 메뉴의 "카페 N곳" 줄을 다섯 번 누르면 켜진다.
-  // 서버에는 아무것도 올리지 않고 이 기기에만 저장한다. 거리 확인도 하지 않는다(어디서든 방문 인증이 된다). 로그인도 묻지 않는다.
+  // ----- XP와 레벨 -----
+  // 방문 인증과 콘센트 투표로 XP를 모으고, 1,000 XP마다 레벨이 오른다. 로그인한 계정에 저장한다(서버 v2/xp/<계정>, 본인만 읽고 쓴다).
+  // 이 기기에도 계정별로 적어 두어서, 서버에 닿지 못할 때는 그것으로 보여 준다.
   // 규칙(2026-11-24 확정): 레벨 = XP / 1,000, 1,000 XP로 시작. 첫 방문 500, 재방문 200(같은 카페 하루 한 번, 하루 3곳까지),
   //   투표 1,000(아무도 투표 안 한 카페면 2,000) + 좌석 300, 생애 첫 인증과 첫 투표에 1,000씩, 달성 보너스는 xpBonus.
-  if (/[?&]xp=1/.test(location.search)) save('cafemap.xpdemo.on', 1);
-  var XP_ON = load('cafemap.xpdemo.on') === 1;
+  var XP_ON = true;
+  // 내 컴퓨터에서 시험할 때만 거리 확인을 끌 수 있다(실제 주소에서는 늘 켜져 있다).
+  var XP_DEV = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   // vis: { 카페: [방문 횟수, 마지막으로 인증한 날] }, vote: { 카페: [1 있음 / -1 없음, 자리 비트, 받은 XP] }, fv, fo: 생애 첫 인증, 첫 투표 보너스를 받았는가, mv: 투표 달성 보너스를 받은 가장 큰 개수
-  var XP = load('cafemap.xpdemo') || { xp: 1000, vis: {}, vote: {}, fv: 0, fo: 0, mv: 0 };
-  function xpSave() { save('cafemap.xpdemo', XP); }
+  function xpFresh() { return { xp: 1000, vis: {}, vote: {}, fv: 0, fo: 0, mv: 0 }; }
+  function xpKey() { return who && who.u ? 'cafemap.xp.' + who.u : ''; }
+  function xpNorm(x) { x = x || xpFresh(); x.vis = x.vis || {}; x.vote = x.vote || {}; if (typeof x.xp !== 'number') x.xp = 1000; return x; }
+  var XP = xpNorm(who && who.u ? load('cafemap.xp.' + who.u) : null);
+  try { localStorage.removeItem('cafemap.xpdemo'); localStorage.removeItem('cafemap.xpdemo.on'); } catch (e) { /* 체험판 때 남은 것 */ }
+  var xpTimer = 0;
+  function xpSave() {
+    if (!xpKey()) return;
+    save(xpKey(), XP);
+    // 여러 번 연달아 바뀌어도 서버에는 한 번만 올린다.
+    clearTimeout(xpTimer); xpTimer = setTimeout(xpPush, 600);
+  }
+  function xpPush() {
+    if (!loginOn || !signedIn()) return;
+    var body = { xp: XP.xp, vis: XP.vis, vote: XP.vote, fv: XP.fv || 0, fo: XP.fo || 0, mv: XP.mv || 0, t: { '.sv': 'timestamp' } };
+    token().then(function (t) {
+      return fetch(SHARE.db + '/v2/xp/' + who.u + '.json?auth=' + encodeURIComponent(t), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    }).then(function (r) { if (!r.ok) throw new Error('db'); }).catch(function () { /* 다음에 바뀔 때 다시 올린다 */ });
+  }
+  // 로그인하면 계정에 저장된 XP를 받아 온다. 서버의 것이 기준이다.
+  function pullXp() {
+    if (!loginOn || !signedIn()) { XP = xpFresh(); return Promise.resolve(); }
+    var local = load(xpKey());
+    XP = xpNorm(local);
+    return token().then(function (t) { return fetch(SHARE.db + '/v2/xp/' + who.u + '.json?auth=' + encodeURIComponent(t)); })
+      .then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); })
+      .then(function (srv) {
+        if (srv && typeof srv.xp === 'number') { delete srv.t; XP = xpNorm(srv); save(xpKey(), XP); }
+        else if (local) xpPush();
+        if (P.kind === 'menu' || P.kind === 'detail') renderPanel();
+      }).catch(function () { /* 서버에 닿지 못하면 이 기기에 적어 둔 것으로 보여 준다 */ });
+  }
   function xpBonus(n) { var b = { 3: 1000, 5: 2000, 10: 3000, 15: 4000, 20: 5000, 30: 7000, 40: 8000 }; return b[n] || (n >= 50 && n % 100 === 0 ? 20000 : n >= 50 && n % 10 === 0 ? 10000 : 0); }
   function xpNext(n) { var m = n + 1; while (!xpBonus(m)) m++; return m - n; }
   function xpToday() { var d = new Date(); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); }
@@ -1078,7 +1109,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   // 위치를 한 번 받아서 카페 근처인지 확인한 뒤 ok()를 부른다. 위치는 여기서만 쓰고 저장하지 않는다.
   var visitBusy = false;
   function checkNear(i, ok, done) {
-    if (XP.nofar) { ok(); return; }
+    if (XP_DEV && load('cafemap.nofar') === 1) { ok(); return; }
     if (!navigator.geolocation) { toast('이 브라우저에서는 위치를 확인할 수 없어요'); return; }
     if (visitBusy) return;
     visitBusy = true; if (done) done(true);
@@ -1110,7 +1141,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   }
   // o: 1 자리 단추(bit가 그 자리), -1 없어요. 처음 답을 고를 때 XP를 받고, 답을 다 지우면 그 XP를 돌려놓는다.
   function xpVote(i, o, bit) {
-    var k = cidOf(i), cur = XP.vote[k] || [0, 0, 0], had = cur[0] !== 0, v = votes[i] || [0, 0], amt, n, b;
+    var k = cidOf(i), cur = XP.vote[k] || (myO[i] ? [myO[i], myC[i], 0] : [0, 0, 0]), had = cur[0] !== 0, v = votes[i] || [0, 0], amt, n, b;
     if (o === -1) { cur[0] = cur[0] === -1 ? 0 : -1; cur[1] = 0; }
     else { if (cur[0] !== 1) { cur[0] = 1; cur[1] = 0; } cur[1] ^= bit; if (!cur[1]) cur[0] = 0; }
     if (cur[0] && !had) {
@@ -1158,6 +1189,8 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       .then(function (r) { if (!r.ok) { var e = new Error('auth'); e.status = r.status; throw e; } return r.json(); });
   }
   function token() {
+    // 내 컴퓨터에서 로그인한 상태를 흉내 내어 시험할 때만 쓴다(서버는 이 값을 받아 주지 않으므로 아무것도 저장되지 않는다).
+    if (XP_DEV && load('cafemap.devauth') === 1) return Promise.resolve('dev');
     if (loginOn && !signedIn()) return Promise.reject(new Error('login'));
     if (idToken && Date.now() < idUntil) return Promise.resolve(idToken);
     function fresh() {
@@ -1282,6 +1315,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       }).catch(function () { /* 서버에 닿지 못하면 이 기기에 적어 둔 찜으로 보여 준다 */ });
   }
   pullWant();
+  pullXp();
   // ----- 투표할 때만 로그인 -----
   // 투표 단추를 누르면 여기를 거친다. 로그인이 필요 없거나 이미 했으면 바로 하고, 아니면 로그인 창을 띄운 뒤 로그인이 끝나면 이어서 한다.
   var loginEl = null, loginThen = null, gLoading = null;
@@ -1289,7 +1323,8 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     vote: ['로그인하고 투표하기', '한 사람이 한 번만 투표할 수 있게 확인해요.'],
     want: ['로그인하고 찜하기', '찜한 카페를 내 계정에 저장해서 다른 기기에서도 볼 수 있어요.'],
     gone: ['로그인하고 폐업 신고하기', '한 사람이 한 번만 신고할 수 있게 확인해요.'],
-    menu: ['로그인', '투표, 찜, 폐업 신고를 하려면 로그인이 필요해요.']
+    visit: ['로그인하고 방문 인증하기', '방문 기록과 XP를 내 계정에 저장해요.'],
+    menu: ['로그인', '방문 인증, 투표, 찜, 폐업 신고를 하려면 로그인이 필요해요.']
   };
   function needLogin(fn, what) { if (!loginOn || signedIn()) fn(); else openLogin(fn, what); }
   function openLogin(fn, what) {
@@ -1344,7 +1379,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       idToken = d.idToken; idUntil = Date.now() + (+d.expiresIn - 60) * 1000;
       var then = loginThen; closeLogin();
       // 서버에 있던 내 투표를 먼저 받아 온 다음, 누르려던 투표를 이어서 한다.
-      Promise.all([pull(), pullGone(), pullWant()]).then(function () { toast('로그인했어요'); if (P.kind === 'menu') renderPanel(); if (then) then(); });
+      Promise.all([pull(), pullGone(), pullWant(), pullXp()]).then(function () { toast('로그인했어요'); if (P.kind === 'menu') renderPanel(); if (then) then(); });
     }, function () { $('lmsg').textContent = '로그인하지 못했어요. 다시 해 주세요.'; });
   }
   // 계정 삭제: 서버에 있는 내 투표, 폐업 신고, 찜을 모두 지운 다음 계정을 없앤다. 되돌릴 수 없어서 한 번 더 묻는다.
@@ -1356,6 +1391,8 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       for (k in mine) jobs.push(fetch(SHARE.db + '/v2/seats/' + k + '/' + who.u + '.json?auth=' + a, { method: 'DELETE' }));
       for (k in goneMine) jobs.push(fetch(SHARE.db + '/v2/gone/' + k + '/' + who.u + '.json?auth=' + a, { method: 'DELETE' }));
       jobs.push(fetch(SHARE.db + '/v2/want/' + who.u + '.json?auth=' + a, { method: 'DELETE' }));
+      jobs.push(fetch(SHARE.db + '/v2/xp/' + who.u + '.json?auth=' + a, { method: 'DELETE' }));
+      if (xpKey()) { try { localStorage.removeItem(xpKey()); } catch (e) { /* 그냥 넘어간다 */ } }
       return Promise.all(jobs).then(function (rs) {
         if (rs.some(function (r) { return !r.ok; })) throw new Error('db');
         cleared = true;
@@ -1373,6 +1410,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     // 찜도 계정에 있는 것이므로 이 기기에서는 비운다.
     wanted = {}; want.fill(0); save('cafemap.want', wanted); save('cafemap.wantSynced', null);
     if (S.seen === 'want') S.seen = 'all';
+    XP = xpFresh();
     applyMine(); pull(); pullGone(); refilter(); requestDraw(); renderChips();
     if (P.kind === 'detail' || P.kind === 'menu' || P.kind === 'list') renderPanel();
     toast('로그아웃했어요');
@@ -2547,21 +2585,24 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
       if (row) acc.appendChild(row);
       sc.appendChild(acc);
     }
-    // XP 체험판: 내 레벨과 모은 XP, 그리고 보상 체계 전체(무엇을 하면 몇 XP인지, 어디까지 받았는지).
-    if (XP_ON) {
+    // 내 레벨과 모은 XP, 그리고 보상 체계(무엇을 하면 몇 XP인지, 어디까지 받았는지). 로그인하지 않았으면 레벨 대신 안내만 둔다.
+    if (XP_ON && loginOn) {
       var xsec = el('div', 'fsec'), xl = el('div', 'xlv'), xtop = el('div', 'top');
       var xnv = xpCount(XP.vis), xno2 = xpCount(XP.vote), lvNow = Math.floor(XP.xp / 1000);
-      xsec.appendChild(el('div', 'ftitle', '내 레벨 (체험판)'));
-      xtop.appendChild(el('b', null, 'Lv.' + lvNow)); xtop.appendChild(el('span', null, '총 ' + fmt(XP.xp) + ' XP'));
-      xl.appendChild(xtop);
-      xl.appendChild(el('p', null, '다음 레벨까지 ' + fmt(1000 - XP.xp % 1000) + ' XP'));
+      xsec.appendChild(el('div', 'ftitle', '내 레벨'));
+      if (signedIn()) {
+        xtop.appendChild(el('b', null, 'Lv.' + lvNow)); xtop.appendChild(el('span', null, '총 ' + fmt(XP.xp) + ' XP'));
+        xl.appendChild(xtop);
+        xl.appendChild(el('p', null, '다음 레벨까지 ' + fmt(1000 - XP.xp % 1000) + ' XP'));
+      } else xl.appendChild(el('p', null, '로그인하면 방문 인증과 투표로 레벨을 쌓을 수 있어요'));
       xsec.appendChild(xl);
-      xsec.appendChild(toggleRow('거리 확인', !XP.nofar, function (v) { XP.nofar = v ? 0 : 1; xpSave(); }));
-      xsec.appendChild(btn('link', '체험 기록 지우고 처음부터', function () { var nf = XP.nofar; XP = { xp: 1000, vis: {}, vote: {}, fv: 0, fo: 0, mv: 0, nofar: nf }; xpSave(); renderPanel(); toast('체험 기록을 지웠어요'); }));
+      if (XP_DEV) xsec.appendChild(toggleRow('거리 확인 (내 컴퓨터 시험용)', load('cafemap.nofar') !== 1, function (v) { save('cafemap.nofar', v ? 0 : 1); }));
+      xsec.appendChild(el('span', 'xend'));
       sc.appendChild(xsec);
       // 보상 체계는 메뉴에 적지 않고, 줄을 누르면 위에 뜨는 창에서 본다.
       // 창 안의 달성 보너스 두 줄(방문 인증 보너스, 투표 보너스)을 누르면 같은 창이 그 표로 바뀌고, 뒤로를 누르면 돌아온다.
       var openRewards = function (view) {
+        xnv = xpCount(XP.vis); xno2 = xpCount(XP.vote);
         var old = $('xinfo'); if (old) old.remove();
         var o = el('div'), box = el('div', 'xbox' + (view ? ' ' + view : ''));
         var title = function (text, ic) { var hd = el('div', 'xhead'), bd = el('span', 'xbadge'); bd.appendChild(icon(ic)); hd.appendChild(bd); hd.appendChild(el('h2', null, text)); box.appendChild(hd); };
@@ -2663,13 +2704,6 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     info.style.borderBottom = '0';
     info.appendChild(el('div', 'ftitle', '지도 자료'));
     ['카페 ' + fmt(N) + '곳', '카페 목록: 소상공인시장진흥공단 상가정보', '넓이와 개업: 행정안전부 인허가 자료', '지역 경계: 통계청 SGIS (vuski/admdongkor)'].forEach(function (t) { ul.appendChild(el('li', null, t)); });
-    // 맨 윗줄("카페 N곳")을 다섯 번 누르면 XP 체험판이 켜지고 꺼진다. 메뉴를 다시 그리면 횟수는 처음부터 센다.
-    var taps = 0;
-    ul.firstChild.addEventListener('click', function () {
-      if (++taps < 5) return;
-      taps = 0; XP_ON = !XP_ON; save('cafemap.xpdemo.on', XP_ON ? 1 : 0);
-      toast(XP_ON ? 'XP 체험판을 켰어요' : 'XP 체험판을 껐어요'); renderPanel();
-    });
     // 배경 지도의 출처 표시(예전에는 지도 구석의 i 단추에 있었다). 자료를 쓰는 조건이라 링크와 함께 남긴다.
     var li = el('li', null, '배경 지도: ');
     [['OpenFreeMap', 'https://openfreemap.org/'], ['© OpenMapTiles', 'https://www.openmaptiles.org/'], ['© OpenStreetMap contributors', 'https://www.openstreetmap.org/copyright']].forEach(function (x, n) {
@@ -3212,22 +3246,32 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     bGone[0].title = '가 보니 이 카페가 없을 때 눌러 주세요';
     r3.appendChild(bWant); r3.appendChild(bGone[0]);
     rec.appendChild(r3);
-    // XP 체험판: 있어요/없어요와 자리 물음 대신, 방문 인증 줄과 단추 넷(자리 셋, 없어요)을 보여 준다. 방문 인증 전에는 단추가 눌리지 않는다.
+    // 있어요/없어요와 자리 물음 대신, 방문 인증 줄과 단추 넷(자리 셋, 없어요)을 보여 준다. 방문 인증 전에는 투표 단추가 눌리지 않는다.
+    // 방문 인증은 로그인한 뒤 카페 근처에서만 된다. 투표 단추를 누르면 진짜 콘센트 투표(v2/seats)로 저장되고 XP도 같이 받는다.
     var xs = function () {};
-    if (XP_ON) {
+    if (XP_ON && loginOn) {
       r1.hidden = true; more.hidden = true;
-      var xk = cidOf(i), vrow = el('div', 'xvisit'), vbtn = btn('xgo', null, function () { checkNear(i, function () { xpVisit(i); sync(); }, function (on) { vbtn.disabled = on; if (on) vbtn.textContent = '위치 확인 중'; else sync(); }); }), vdone = el('div', 'xdone');
+      var xk = cidOf(i), vrow = el('div', 'xvisit'), vbtn = btn('xgo', null, function () { needLogin(function () { checkNear(i, function () { xpVisit(i); sync(); }, function (on) { vbtn.disabled = on; if (on) vbtn.textContent = '위치 확인 중'; else sync(); }); }, 'visit'); }), vdone = el('div', 'xdone');
       vrow.appendChild(vbtn); vrow.appendChild(vdone); rec.insertBefore(vrow, rec.firstChild);
       var xr = el('div', 'opts one four'), xhint = el('div', 'xhint');
       var plain = function (text, fn) { var bt = btn('opt', text, fn), n = el('span', 'n'); bt.appendChild(n); return [bt, n, text]; };
-      var xb = CHAIRS.map(function (c) { var x = plain(c[1], function () { xpVote(i, 1, c[2]); sync(); }); xr.appendChild(x[0]); return [x, c]; });
-      var xno = plain('없어요', function () { xpVote(i, -1, 0); sync(); }); xr.appendChild(xno[0]);
+      // 투표를 바꾼 뒤 그 결과를 진짜 투표 기록(myO, myC)에 옮기고 서버에 올린다.
+      var cast = function (o, bit) {
+        needLogin(function () {
+          xpVote(i, o, bit);
+          var m = XP.vote[xk] || [0, 0, 0];
+          myO[i] = m[0]; myC[i] = m[0] === 1 ? m[1] : 0;
+          store();
+        }, 'vote');
+      };
+      var xb = CHAIRS.map(function (c) { var x = plain(c[1], function () { cast(1, c[2]); }); xr.appendChild(x[0]); return [x, c]; });
+      var xno = plain('없어요', function () { cast(-1, 0); }); xr.appendChild(xno[0]);
       rec.insertBefore(xr, more); rec.insertBefore(xhint, more);
       xs = function () {
-        var vis = XP.vis[xk], mine = XP.vote[xk] || [0, 0, 0], v = votes[i] || [0, 0, 0, 0, 0], today = xpToday(), can = !!vis;
+        var vis = XP.vis[xk], mine = [myO[i], myC[i]], v = votes[i] || [0, 0, 0, 0, 0], today = xpToday(), can = !!vis && signedIn();
         vbtn.hidden = !!vis && vis[1] === today;
         vbtn.textContent = vis ? '재방문 인증 +200 XP' : '첫 방문 인증 +500 XP';
-        vdone.textContent = !vis ? (XP.fv ? '' : '처음이라 생애 첫 방문 인증 +1,000 XP도 같이 받아요') : vis[1] === today ? '방문 인증 완료 (방문 ' + vis[0] + '번)' : '방문 ' + vis[0] + '번. 오늘은 아직 인증 안 했어요';
+        vdone.textContent = !vis ? (!signedIn() || XP.fv ? '' : '처음이라 생애 첫 방문 인증 +1,000 XP도 같이 받아요') : vis[1] === today ? '방문 인증 완료 (방문 ' + vis[0] + '번)' : '방문 ' + vis[0] + '번. 오늘은 아직 인증 안 했어요';
         xb.forEach(function (cb) { var on = mine[0] === 1 && (mine[1] & cb[1][2]) !== 0; setBtn(cb[0], on, v[cb[1][3]] + (on ? 1 : 0)); cb[0][0].disabled = !can; });
         setBtn(xno, mine[0] === -1, v[1] + (mine[0] === -1 ? 1 : 0)); xno[0].disabled = !can;
         total.textContent = people(v[0] + v[1] + (mine[0] ? 1 : 0));
