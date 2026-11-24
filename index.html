@@ -434,15 +434,10 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .xprog b { font-size: 22px; font-weight: 800; line-height: 1.2; }
 .xprog .r { text-align: right; }
 .xprog .r b { font-size: 16px; color: var(--pri); }
-.xseg { display: flex; gap: 3px; padding: 0 14px 6px; background: color-mix(in srgb, var(--pri) 9%, var(--surface)); }
+.xseg { display: flex; gap: 3px; margin-top: -6px; padding: 2px 14px 8px; background: color-mix(in srgb, var(--pri) 9%, var(--surface)); }
 .xseg i { flex: 1; height: 7px; border-radius: 999px; background: color-mix(in srgb, var(--pri) 20%, var(--surface)); }
 .xseg i.on { background: var(--pri); }
-.xleft { margin: 0 !important; padding: 0 14px 12px; border-radius: 0 0 14px 14px; background: color-mix(in srgb, var(--pri) 9%, var(--surface)); font-size: 12.5px !important; color: var(--ink-2) !important; font-weight: 600; }
-.xkey { display: flex; gap: 14px; justify-content: center; font-size: 11.5px; color: var(--ink-3); margin-top: 2px; }
-.xkey span { display: inline-flex; align-items: center; gap: 5px; }
-.xkey i { width: 10px; height: 10px; border-radius: 4px; background: var(--surface-2); }
-.xkey i.got { background: var(--pri); }
-.xkey i.next { background: var(--surface); box-shadow: 0 0 0 2px var(--pri); }
+.xleft { margin: -6px 0 0 !important; padding: 2px 14px 12px; border-radius: 0 0 14px 14px; background: color-mix(in srgb, var(--pri) 9%, var(--surface)); font-size: 12.5px !important; color: var(--ink-2) !important; font-weight: 600; }
 /* 달성 보너스: 메뉴에서는 다음 목표 한 줄만 보이고, 누르면 전체 표가 든 창이 위에 뜬다. */
 button.xlink { width: 100%; align-items: center; text-align: left; padding: 7px 0; }
 button.xlink span { flex: 1; }
@@ -2518,10 +2513,10 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
             g.appendChild(c);
           });
           box.appendChild(g);
-          var key = el('div', 'xkey');
-          [['got', '받음'], ['next', '다음 목표'], ['', '아직']].forEach(function (x) { var sp = el('span'); sp.appendChild(el('i', x[0])); sp.appendChild(document.createTextNode(x[1])); key.appendChild(sp); });
-          box.appendChild(key);
-          box.appendChild(el('p', null, '50곳 뒤로는 10곳마다 +10,000 XP, 100곳마다 +20,000 XP를 받아요.'));
+          // 50곳 뒤의 규칙은 다른 줄들처럼 이름과 XP를 양쪽에 맞춰 두 줄로 적는다.
+          [['50곳 뒤로 10곳마다', 10000], ['100곳마다', 20000]].forEach(function (x) {
+            var r = el('div', 'xrow'); r.appendChild(el('span', null, x[0])); r.appendChild(el('b', null, '+' + fmt(x[1]) + ' XP')); box.appendChild(r);
+          });
         };
         if (view === 'visit' || view === 'vote') {
           box.appendChild(el('h2', null, view === 'visit' ? '방문 인증 보너스' : '투표 보너스'));
