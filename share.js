@@ -6,5 +6,7 @@
 window.CAFE_SHARE = {
   key: 'AIzaSyDhIfiAF6logObWpjQq_deLOxdu-VK_mTM',
   db: 'https://cafe-map-486ae-default-rtdb.firebaseio.com',
-  google: '591551793146-5f7t31sr9iom3p8vmhg3b9gac3kicu43.apps.googleusercontent.com'
+  google: '591551793146-5f7t31sr9iom3p8vmhg3b9gac3kicu43.apps.googleusercontent.com',
+  // admin: 운영자 계정 번호(공개해도 되는 값). 운영자의 투표는 투표 수에는 들어가지만, 다른 사람의 "첫 콘센트 투표" 2배를 빼앗지 않고, 운영자는 2배를 받지 않는다.
+  admin: 'YJZkK7gP9xYP2fBjh2KWnJHDOsl1'
 };

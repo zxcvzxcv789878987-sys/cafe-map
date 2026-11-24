@@ -1220,7 +1220,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     if (o === -1) { cur[0] = cur[0] === -1 ? 0 : -1; cur[1] = 0; }
     else { if (cur[0] !== 1) { cur[0] = 1; cur[1] = 0; } cur[1] ^= bit; if (!cur[1]) cur[0] = 0; }
     if (cur[0] && !had) {
-      var first = v[0] + v[1] === 0, items = [];
+      var first = !isAdmin() && !(realVotes[i] || 0), items = [];
       amt = (first ? 2000 : 1000) + 300; cur[2] = amt;
       items.push([first ? 2000 : 1000, first ? '첫 콘센트 투표' : '콘센트 투표', D.name[i]]);
       items.push([300, '콘센트 좌석 투표', D.name[i]]);
@@ -1293,12 +1293,15 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
     }).catch(function () { if (!quiet) toast('기록은 이 기기에 저장했어요. 같이 보는 곳에는 다음에 다시 올릴게요.'); });
   }
   // 모두의 기록을 받아 와서 카페별로 센다.
+  // 운영자를 뺀 다른 사람의 투표 수(카페 번호 -> 수). "첫 콘센트 투표"인지 볼 때 쓴다. 운영자의 투표는 다른 사람의 첫 투표를 빼앗지 않는다.
+  var realVotes = {};
+  function isAdmin() { return !!(who && SHARE.admin && who.u === SHARE.admin); }
   function pull() {
     if (!shareOn) return Promise.resolve();
     return fetch(SHARE.db + ROOT + '/seats.json').then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); }).then(function (all) {
       var ix = cidIndex(), k, u, j, touched = [];
       for (j in votes) touched.push(+j);
-      votes = {}; srvMine = {};
+      votes = {}; srvMine = {}; realVotes = {};
       for (k in all || {}) {
         j = ix[k];
         for (u in all[k]) {
@@ -1306,6 +1309,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
           if (!rec) continue;
           if (who && u === who.u) { srvMine[k] = rec; continue; }
           if (j === undefined) continue;
+          if (u !== SHARE.admin && (rec.o === 1 || rec.o === -1)) realVotes[j] = (realVotes[j] || 0) + 1;
           var v = votes[j] || (votes[j] = [0, 0, 0, 0, 0]);
           if (rec.o === 1) { v[0]++; var bits = chairBits(rec.c); if (bits & 1) v[2]++; if (bits & 2) v[3]++; if (bits & 4) v[4]++; }
           else if (rec.o === -1) v[1]++;
@@ -3401,7 +3405,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
         xb.forEach(function (cb) { var on = mine[0] === 1 && (mine[1] & cb[1][2]) !== 0; setBtn(cb[0], on, v[cb[1][3]] + (on ? 1 : 0)); cb[0][0].disabled = !can; });
         setBtn(xno, mine[0] === -1, v[1] + (mine[0] === -1 ? 1 : 0)); xno[0].disabled = !can;
         total.textContent = people(v[0] + v[1] + (mine[0] ? 1 : 0));
-        xhint.textContent = !can ? '방문 인증을 하면 투표할 수 있어요' : mine[0] ? '자리는 여러 개 고를 수 있어요' : '투표하면 +' + fmt((v[0] + v[1] === 0 ? 2000 : 1000) + 300) + ' XP' + (XP.fo ? '' : ', 생애 첫 투표 +1,000 XP');
+        xhint.textContent = !can ? '방문 인증을 하면 투표할 수 있어요' : mine[0] ? '자리는 여러 개 고를 수 있어요' : '투표하면 +' + fmt((!isAdmin() && !(realVotes[i] || 0) ? 2000 : 1000) + 300) + ' XP' + (XP.fo ? '' : ', 생애 첫 투표 +1,000 XP');
       };
     }
     function sync() {
