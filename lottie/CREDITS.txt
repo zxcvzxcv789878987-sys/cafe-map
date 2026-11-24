@@ -1,5 +1,6 @@
-축하 장면 애니메이션: LottieFiles 무료 애니메이션 (Lottie Simple License, 상업적 사용 가능)
-trophy.json   Trophy by Mahendra              https://lottiefiles.com/free-animation/trophy-yEGPe40FVr
-gift.json     Gift premium animation by Tahir https://lottiefiles.com/free-animation/gift-premium-animation-Pg7cXYxP39
-coffee.json   Coffee Like by Bojan Mitevski   https://lottiefiles.com/free-animation/coffee-like-nHkpzaQNpj
+축하 화면 뒤 폭죽: LottieFiles 무료 애니메이션 (Lottie Simple License, 상업적 사용 가능)
 confetti.json Confetti - Full Screen by Rohith R Krishnan https://lottiefiles.com/free-animation/confetti-full-screen-xgkBYevLrg
+
+축하 화면, XP 알림, 확인 창의 그림(쿠폰판, 동네 판, 지도, 가게, 콘센트, 달력, 라떼, 종이비행기, 컵)은 이 앱에서 직접 그렸다(index.html의 FX).
+그중 번개 모양은 Microsoft Fluent Emoji Flat의 High voltage를 본떴다. MIT License, LICENSE-fluentui-emoji.txt 참고.
+https://github.com/microsoft/fluentui-emoji
