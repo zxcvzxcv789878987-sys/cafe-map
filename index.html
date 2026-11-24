@@ -480,8 +480,8 @@ button.xlvbtn > svg.i { width: 16px; height: 16px; opacity: .45; flex: none; }
 .xli small { font-size: 12px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rec .vh .vwho { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; text-decoration: underline; text-underline-offset: 2px; }
 .xli.admin .rs { color: var(--pri); }
-.xbox .xadm { margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--pri) 9%, var(--surface)); color: var(--ink-2); font-size: 12.5px; }
-.xbox .xexp { margin: 2px 0 4px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--pri) 9%, var(--surface)); color: var(--ink); font-size: 13.5px; line-height: 1.5; }
+.xbox .xadm { margin-top: 8px; color: var(--ink-2); font-size: 13px; line-height: 1.5; }
+.xbox .xexp { margin: 0 0 2px; color: var(--ink-2); font-size: 13.5px; line-height: 1.55; }
 .xbox .xnone { padding: 14px 2px; color: var(--ink-3); font-size: 13.5px; }
 button.xlink.xrow b { margin-right: 6px; }
 .xli .rt { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
@@ -502,21 +502,22 @@ button.xlink.xrow > span small { display: inline-block; margin-left: 7px; paddin
 .xms span { display: flex; flex-direction: column; align-items: center; padding: 9px 2px 8px; border-radius: 14px; background: var(--surface-2); color: var(--ink-3); font-size: 11px; font-variant-numeric: tabular-nums; }
 .xms span svg.i { width: 15px; height: 15px; margin-bottom: 4px; opacity: .45; }
 .xms span b { font-size: 13.5px; font-weight: 750; color: var(--ink-2); line-height: 1.25; }
-.xms span.got { background: linear-gradient(155deg, var(--pri2, #8b7bf2), var(--pri)); color: rgba(255, 255, 255, .9); box-shadow: 0 4px 10px color-mix(in srgb, var(--pri) 30%, transparent); }
+.xms span.got { background: var(--pri); color: rgba(255, 255, 255, .9); }
 .xms span.got b { color: #fff; }
 .xms span.got svg.i { opacity: 1; stroke-width: 3; }
-.xms span.next { background: var(--surface); color: var(--pri); box-shadow: 0 0 0 2px var(--pri), 0 0 0 6px color-mix(in srgb, var(--pri) 14%, transparent); }
+.xms span.next { background: var(--surface); color: var(--pri); box-shadow: inset 0 0 0 1.5px var(--pri); }
 /* 팝업마다 색을 다르게: 보상 체계는 보라, 방문 인증 보너스는 청록, 투표 보너스는 주황. 안쪽의 칸, 막대, 단추가 모두 이 색을 따른다. */
 .xbox.visit, .xbox.dong { --pri: #0ca678; --pri2: #38d9a9; }
 .xbox.vote { --pri: #f76707; --pri2: #ffa94d; }
 .xbox { --pri2: #8b7bf2; }
 .xbox { position: relative; overflow: hidden; }
-.xbox::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 6px; background: linear-gradient(90deg, var(--pri2), var(--pri)); }
+/* 팝업은 색 띠 없이 흰 바탕. 아래 큰 단추는 팝업 색과 상관없이 앱 기본 보라. */
+.xbox .btn.pri, .xbox .btn.pri:hover { background: #6a5ae0; color: #fff; }
 .xbox .xhead { display: flex; align-items: center; gap: 10px; }
-.xbadge { flex: none; width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; color: #fff; background: linear-gradient(155deg, var(--pri2), var(--pri)); }
+.xbadge { flex: none; width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; color: var(--pri); background: color-mix(in srgb, var(--pri) 13%, var(--surface)); }
 .xbadge svg.i { width: 20px; height: 20px; }
 /* 메뉴의 세 줄 앞에 붙는 같은 색 아이콘 */
-button.xlink .xbadge { flex: none; width: 28px; height: 28px; border-radius: 9px; margin-right: 10px; }
+button.xlink .xbadge { flex: none; width: 30px; height: 30px; border-radius: 9px; margin-right: 11px; }
 button.xlink .xbadge svg.i { width: 16px; height: 16px; opacity: 1; }
 button.xlink .xbadge.visit { --pri: #0ca678; --pri2: #38d9a9; }
 button.xlink .xbadge.vote { --pri: #f76707; --pri2: #ffa94d; }
@@ -525,7 +526,6 @@ button.xlink .xbadge.bug { --pri: #e03131; --pri2: #ff8787; }
 button.xlink .xbadge.rank, .xbox.rank { --pri: #d6336c; --pri2: #f783ac; }
 /* 닉네임 창: 색 띠와 색 칸 없이 차분하게 */
 .xbox.nick { gap: 12px; padding: 22px 20px 18px; }
-.xbox.nick::before { display: none; }
 .xbox.nick h2 { font-size: 19px; }
 .nkfield { display: flex; align-items: center; gap: 8px; height: 54px; padding: 0 7px 0 14px; border: 1.5px solid var(--line-2); border-radius: 14px; background: var(--surface); }
 .nkfield:focus-within { border-color: var(--pri); }
@@ -574,8 +574,7 @@ button.xlink .xbadge.qna { --pri: #1c7ed6; --pri2: #74c0fc; }
 .fbk { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin: 6px 0 4px; }
 .fbk button { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; height: 62px; padding: 0 4px; border-radius: 12px; background: var(--surface-2); color: var(--ink-2); font-size: 14px; font-weight: 650; }
 .fbk button svg.i { width: 17px; height: 17px; color: var(--pri); flex: none; }
-.fbk button[aria-pressed=true] { background: linear-gradient(155deg, var(--pri2), var(--pri)); color: #fff; box-shadow: 0 4px 10px color-mix(in srgb, var(--pri) 28%, transparent); }
-.fbk button[aria-pressed=true] svg.i { color: #fff; }
+.fbk button[aria-pressed=true] { background: var(--surface); color: var(--pri); box-shadow: inset 0 0 0 1.5px var(--pri); }
 
 .xbox textarea { width: 100%; min-height: 150px; resize: vertical; margin-top: 8px; padding: 12px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); font: inherit; font-size: 16px; line-height: 1.5; }
 .xbox textarea:focus { outline: 2px solid var(--pri); outline-offset: -1px; border-color: transparent; }
