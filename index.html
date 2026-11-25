@@ -577,6 +577,14 @@ button.xlink.xrow b { margin-right: 6px; }
 /* XP 받는 법: 콘센트 기록 아래 들여 쓴 묶음(첫 기록, 이런 곳이면 더) */
 .xnest { display: flex; flex-direction: column; margin: 0 0 2px 13px; padding-left: 12px; border-left: 2px solid var(--line); }
 .xnest .xnh { font-size: 12px; font-weight: 700; color: var(--ink-3); margin: 6px 0 0; }
+/* XP 받는 법 창은 줄 사이를 넉넉히(사용자: 너무 촘촘하다, 세로로 길게) */
+.xbox.roomy button.xlink.xrow { padding: 12px 0; }
+.xbox.roomy > .xrow:not(.xlink) { padding: 9px 0; }
+.xbox.roomy .xgrp { margin-top: 14px; margin-bottom: 2px; }
+.xbox.roomy .xnest { margin-top: 2px; }
+.xbox.roomy .xnest .xnh { margin: 12px 0 2px; }
+.xbox.roomy .xsep { margin: 14px 0 0; }
+.xbox.roomy > p { margin-bottom: 4px; }
 .xgrp { font-size: 12.5px; font-weight: 700; color: var(--ink-2); margin-top: 8px; }
 .xrow { display: flex; justify-content: space-between; gap: 10px; font-size: 13.5px; padding: 3px 0; }
 .xrow small { display: block; color: var(--ink-3); font-size: 12px; }
@@ -3985,6 +3993,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
           //  콘센트 기록 줄 아래에 들여 쓴 묶음으로, 그 기록이 첫 기록이거나 새 동네, 새로 연 카페, 오랜만의 기록이면 더 받는 것을 둔다.
           //  "N/M곳"은 다음 모으기 보너스까지의 수. 누르면 그 표(받은 곳 목록이 같이 있다)로 가고, 뒤로를 누르면 여기로 온다.
           title('XP 받는 법', 'pic:mi_rule');
+          box.classList.add('roomy');
           box.appendChild(el('p', null, '1,000 XP를 모을 때마다 레벨이 1 올라요.'));
           box.appendChild(el('div', 'xgrp', '콘센트를 기록하면'));
           var nextOf = function (c) { var m = c + 1; while (!xpBonus(m)) m++; return m; };
