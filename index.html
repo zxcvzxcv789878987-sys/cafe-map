@@ -676,6 +676,11 @@ button.xlink.xrow b { margin-right: 6px; }
 .dxsum span { font-size: 12.5px; font-weight: 700; color: var(--ink-2); }
 .dxsum b { font-size: 22px; font-weight: 800; color: #d6336c; font-variant-numeric: tabular-nums; }
 .dxsum b small { font-size: 14px; font-weight: 700; color: var(--ink-3); }
+.dxbon { display: flex; align-items: center; gap: 7px; width: 100%; margin-top: 2px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); text-align: left; font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.dxbon span { flex: 1; }
+.dxbon b { font-weight: 800; color: #d6336c; font-variant-numeric: tabular-nums; }
+.dxbon svg.i { width: 16px; height: 16px; color: #d6336c; flex: none; }
+.dxbon svg.i:last-child { width: 14px; height: 14px; color: var(--ink-3); }
 .dxfoot { position: sticky; bottom: -16px; z-index: 2; margin: 2px -18px -16px; padding: 14px 18px 16px; background: linear-gradient(rgba(255, 255, 255, 0), var(--surface) 14px); }
 .xbox .dxfoot .btn { margin-top: 0; width: 100%; }
 .dxbar { position: sticky; top: -20px; z-index: 1; display: flex; flex-direction: column; gap: 6px; margin: 2px -2px 0; padding: 6px 2px 4px; background: var(--surface); }
@@ -2479,10 +2484,26 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     // 50곳 뒤로는 10곳마다 똑같으니 칸으로 그리지 않고 한 줄로 적는다. 다음 목표가 50곳을 넘으면 그 칸 하나만 덧붙인다.
     var MS = [3, 5, 10, 15, 20, 30, 40, 50];
     // have: 보너스를 받은 데까지의 수, count: 지금 실제 수, what: "방문 인증한 카페" 같은 이름
-    var ladder = function (have, count, what, unit) {
+    // max: 끝이 있는 것(브랜드는 199개). 다 모으면 다음 목표 대신 다 모았다고 적는다.
+    var ladder = function (have, count, what, unit, max) {
       unit = unit || '곳';
       var next = count + 1;
       while (!xpBonus(next)) next++;
+      if (max && next > max) {
+        var pd = el('div', 'xprog'), pl = el('div', 'l'), pr2 = el('div', 'r'), pn = el('b');
+        pn.appendChild(document.createTextNode(String(count))); pn.appendChild(el('small', 'of', ' / ' + max + unit));
+        pl.appendChild(el('small', null, what)); pl.appendChild(pn);
+        pr2.appendChild(el('b', null, '다 모았어요'));
+        pd.appendChild(pl); pd.appendChild(pr2); box.appendChild(pd);
+        var bar2 = el('div', 'xpbar'), tr2 = el('div', 'tr'), f2 = el('i'); f2.style.width = '100%'; tr2.appendChild(f2); bar2.appendChild(tr2); box.appendChild(bar2);
+        var g2 = el('div', 'xms');
+        MS.filter(function (m) { return m <= max; }).forEach(function (m) {
+          var c2 = el('span', have >= m ? 'got' : ''); c2.appendChild(icon(have >= m ? 'check' : 'lock'));
+          c2.appendChild(el('b', null, m + unit)); c2.appendChild(document.createTextNode('+' + fmt(xpBonus(m)))); g2.appendChild(c2);
+        });
+        box.appendChild(g2);
+        return;
+      }
       // 다음 목표까지 얼마나 왔는지를 0곳부터 이어진 막대 하나와 "12 / 15곳"으로 보여 준다.
       var pr = el('div', 'xprog'), l = el('div', 'l'), r = el('div', 'r'), num = el('b'), bar = el('div', 'xpbar'), fill = el('i');
       num.appendChild(document.createTextNode(String(count)));
@@ -2527,7 +2548,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       // 새 브랜드 보너스: 모은 브랜드 수 표와 도감 가는 줄
       title('새 브랜드 보너스', 'pic:' + BONUS_PIC.brand);
       box.appendChild(el('p', null, '브랜드마다 처음 콘센트를 기록하면 1개로 세요.'));
-      ladder(XP.mb || 0, xpCount(XP.br), '모은 브랜드', '개');
+      ladder(XP.mb || 0, dexHave(), '모은 브랜드', '개', D.brands.length);
       box.appendChild(el('div', 'xsep'));
       var dxr = btn('xrow xlink', null, function () { openDex(-1, function () { openRewards('brand', back); }); }), dxb = el('span', 'xbadge pic');
       dxb.appendChild(fxStill('mi_dex')); dxr.appendChild(dxb);
@@ -3059,6 +3080,12 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       bd.appendChild(fxStill('mi_dex')); hd.appendChild(bd); hd.appendChild(el('h2', null, '브랜드 도감')); box.appendChild(hd);
       var sum = el('div', 'dxsum'), sl = el('span'), nb = el('b');
       sum.appendChild(sl); sum.appendChild(nb); box.appendChild(sum);
+      // 새 브랜드 보너스 창(모은 브랜드 수 표)을 여는 단추. 표 안의 브랜드 도감 줄로 다시 돌아온다.
+      var have0 = dexHave(), nx0 = have0 + 1; while (!xpBonus(nx0)) nx0++;
+      var bon = btn('dxbon', null, function () { openRewards('brand', true); });
+      bon.appendChild(icon('gift')); bon.appendChild(el('span', null, '새 브랜드 보너스'));
+      bon.appendChild(el('b', null, nx0 > D.brands.length ? '다 모았어요' : have0 + '/' + nx0 + '개')); bon.appendChild(icon('right'));
+      box.appendChild(bon);
       var bar = el('div', 'dxbar'), sq = el('label', 'search inset dxq'), inp = el('input');
       sq.appendChild(icon('search'));
       inp.type = 'search'; inp.placeholder = '브랜드 이름'; inp.value = dexQ; inp.autocomplete = 'off'; inp.setAttribute('aria-label', '브랜드 이름 찾기');
