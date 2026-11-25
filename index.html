@@ -2079,9 +2079,41 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     xpSave();
     if (!xpBusy) xpPump();
   }
-  // 방문 인증 거리: 카페에서 30m 안(사용자가 정함). 폰이 알려 주는 위치 오차가 크면(건물 안, 지하) 그만큼 봐주되 최대 30m까지만.
+  // 기록할 수 있는 거리(2026-11-26 사용자가 정함).
+  //  카카오의 실제 매장 위치를 찾으면: 가게 크기로 정한 반경(최소 15m) + 폰이 알려 주는 위치 오차 최대 15m.
+  //    가게 크기 반경 = 가게 가운데에서 가장 먼 모서리까지(모양을 몰라서 가로세로 1:3 가게로 계산) + 지도 점 오차 10m. 넓이를 모르면 30m.
+  //  못 찾으면(카카오에 없는 카페, 카카오에 닿지 못함): 건물 주소 점에서 30m + 폰 오차 최대 30m(예전 기준).
   // 폰 위치로는 층과 바로 옆 가게를 구별할 수 없어서, 같은 건물에서도 인증될 수 있다(알고 정한 한계).
-  var VISIT_M = 30, VISIT_SLACK = 30;
+  var VISIT_M = 30, VISIT_SLACK = 30, SHOP_SLACK = 15;
+  function shopRadius(i) {
+    var a = D.area[i];
+    if (!(a > 0)) return 30;
+    var w = Math.sqrt(a / 3), l = w * 3;
+    return Math.max(15, Math.round(Math.sqrt(w * w + l * l) / 2 + 10));
+  }
+  // 그 카페의 카카오 매장 위치를 그때 묻는다(저장하지 않는다). 못 찾으면 null. 4초 안에 답이 없으면 포기한다.
+  function kakaoSpot(i, ulat, ulng, cb) {
+    if (D.kakao) { cb(D.kakao[i] ? [D.lat[i] / 1e5, D.lng[i] / 1e5] : null); return; }   // 이 컴퓨터용 자료는 이미 카카오 좌표
+    var kid = D.kid ? D.kid[i] : 0;
+    if (!liveKey || !kid) { cb(null); return; }
+    var done = false, fin = function (v) { if (done) return; done = true; cb(v); };
+    setTimeout(function () { fin(null); }, 4000);
+    liveSdkLoad(function () {
+      var S2 = kakao.maps.services, at = new kakao.maps.LatLng(ulat, ulng);
+      var pick = function (data) { for (var k = 0; k < (data || []).length; k++) if (+data[k].id === kid) return [+data[k].y, +data[k].x]; return null; };
+      // 이름으로 내 주변을 먼저 찾고, 없으면 내 주변 카페를 가까운 순으로 본다.
+      livePlaces.keywordSearch(D.name[i], function (data, st) {
+        var hit = st === S2.Status.OK ? pick(data) : null;
+        if (hit) return fin(hit);
+        livePlaces.categorySearch('CE7', function (d2, st2, pg) {
+          var h2 = st2 === S2.Status.OK ? pick(d2) : null;
+          if (h2) return fin(h2);
+          if (st2 === S2.Status.OK && pg.hasNextPage && pg.current < 3) pg.nextPage(); else fin(null);
+        }, { location: at, radius: 400, sort: S2.SortBy.DISTANCE });
+      }, { location: at, radius: 2000 });
+    });
+    if (liveSdk === 3) fin(null);
+  }
   function distM(lat1, lng1, lat2, lng2) {
     var r = Math.PI / 180, x = (lng2 - lng1) * r * Math.cos((lat1 + lat2) / 2 * r), y = (lat2 - lat1) * r;
     return Math.sqrt(x * x + y * y) * 6371000;
@@ -2094,11 +2126,15 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     if (visitBusy) return;
     visitBusy = true; if (done) done(true);
     navigator.geolocation.getCurrentPosition(function (p) {
-      visitBusy = false; if (done) done(false);
-      var d = distM(p.coords.latitude, p.coords.longitude, D.lat[i] / 1e5, D.lng[i] / 1e5);
-      var limit = VISIT_M + Math.min(p.coords.accuracy || 0, VISIT_SLACK);
-      if (d <= limit) ok();
-      else toast('카페에 있을 때만 기록할 수 있어요');
+      var ulat = p.coords.latitude, ulng = p.coords.longitude, acc = p.coords.accuracy || 0;
+      kakaoSpot(i, ulat, ulng, function (spot) {
+        visitBusy = false; if (done) done(false);
+        var d, limit;
+        if (spot) { d = distM(ulat, ulng, spot[0], spot[1]); limit = shopRadius(i) + Math.min(acc, SHOP_SLACK); }
+        else { d = distM(ulat, ulng, D.lat[i] / 1e5, D.lng[i] / 1e5); limit = VISIT_M + Math.min(acc, VISIT_SLACK); }
+        if (d <= limit) ok();
+        else toast('카페에 있을 때만 기록할 수 있어요');
+      });
     }, function (e) {
       visitBusy = false; if (done) done(false);
       toast(e && e.code === 1 ? '위치 사용을 허락해야 기록할 수 있어요' : '위치를 확인하지 못했어요. 잠시 뒤에 다시 눌러 주세요');
@@ -4681,6 +4717,19 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     two.appendChild(btn('btn pri', '닫기', close));
     box.appendChild(two);
     o.appendChild(box); document.body.appendChild(o);
+  }
+  // 시험 모드에서만: 기록 거리 확인을 위치를 넣어 돌려 본다(콘솔에서 testNear(카페 번호, 위도, 경도, 오차), testFind(이름)).
+  if (TEST) {
+    window.testFind = function (q) { var out = []; for (var j = 0; j < N && out.length < 10; j++) if (D.name[j].indexOf(q) >= 0) out.push([j, D.name[j], fullAddr(j), D.area[j]]); return out; };
+    window.testNear = function (j, la, ln, acc) {
+      return new Promise(function (res) {
+        kakaoSpot(j, la, ln, function (spot) {
+          var d = spot ? distM(la, ln, spot[0], spot[1]) : distM(la, ln, D.lat[j] / 1e5, D.lng[j] / 1e5);
+          var lim = spot ? shopRadius(j) + Math.min(acc || 0, SHOP_SLACK) : VISIT_M + Math.min(acc || 0, VISIT_SLACK);
+          res({ kakao: spot, building: [D.lat[j] / 1e5, D.lng[j] / 1e5], dist: Math.round(d), limit: lim, ok: d <= lim });
+        });
+      });
+    };
   }
   if (TEST) {
     var tb = btn('', null, testMenu); tb.id = 'testbtn'; tb.appendChild(fxIcon('mi_test')); tb.appendChild(document.createTextNode('시험'));
