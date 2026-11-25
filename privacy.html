@@ -91,5 +91,19 @@
   <h2>10. 바뀔 때</h2>
   <p>이 방침이 바뀌면 이 페이지에 새 시행일과 함께 올립니다.</p>
 </main>
+<script>
+// 이스터 에그(2026-11-26): 끝까지 내려 읽으면 이 기기에 표시를 남긴다. 지도 앱이 이 표시를 보고 기록한다.
+(function () {
+  var done = false;
+  window.addEventListener('scroll', function () {
+    if (done) return;
+    var h = document.documentElement;
+    if (window.innerHeight + window.scrollY >= h.scrollHeight - 4) {
+      done = true;
+      try { if (!localStorage.getItem('cafemap.egg.privacy')) localStorage.setItem('cafemap.egg.privacy', String(Date.now())); } catch (e) { /* 저장을 못 하면 넘어간다 */ }
+    }
+  }, { passive: true });
+})();
+</script>
 </body>
 </html>
