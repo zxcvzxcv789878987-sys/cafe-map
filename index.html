@@ -1711,7 +1711,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   function ymdKey(t) { if (!t) return ''; var d = new Date(t); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
   function pubPush() {
     if (!loginOn || !signedIn() || !XP.pub || !XP.nick) return;
-    var log = (XP.log || []).slice(-100).map(function (e) { var x = { d: ymdKey(e.t), a: e.a || 0, r: xpName(e.r) }; if (e.c) x.c = e.c; return x; });
+    var log = (XP.log || []).slice(-100).map(function (e) { var x = { d: ymdKey(e.t), a: e.a || 0, r: xpShow(e.r) }; if (e.c) x.c = e.c; return x; });
     var body = { n: XP.nick, log: log, t: { '.sv': 'timestamp' } };
     token().then(function (t) {
       return fetch(SHARE.db + '/v2/pub/' + who.u + '.json?auth=' + encodeURIComponent(t), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -1876,6 +1876,11 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   var XP_OLD = { '콘센트 투표': '콘센트 기록', '첫 콘센트 투표': '첫 콘센트 기록', '콘센트 좌석 투표': '콘센트 좌석 기록', '생애 첫 투표': '생애 첫 기록', '오랜만의 투표': '오랜만의 기록', '정보 새로 고침': '오랜만의 기록', '투표 취소': '기록 취소' };
   function xpName(r) { r = r || ''; return XP_OLD[r] || r.replace(/^투표한 카페 (\d+)곳 달성$/, '기록한 카페 $1곳 달성'); }
   function xpSame(r, label) { return xpName(r) === label; }
+  // 화면에 보이는 이름. 기록 안의 이름(xpName)은 그대로 두고, 달성 보너스만 각 보너스 창의 표 안 이름에 맞춘다(사용자 2026-11-26).
+  //  기록한 카페 3곳 달성 → 콘센트 기록한 카페 3곳 달성, 동네 3곳 달성 → 새 동네 3곳 달성. 새로 연 카페, 오랜만의 기록은 이미 같다.
+  function xpShow(r) {
+    return xpName(r).replace(/^기록한 카페 (\d+)곳 달성$/, '콘센트 기록한 카페 $1곳 달성').replace(/^동네 (\d+)곳 달성$/, '새 동네 $1곳 달성');
+  }
   function xpCount(o) { var n = 0, k; for (k in o) n++; return n; }
   // 풍선은 받은 까닭마다 하나씩, 차례로 띄운다(예: "+500 XP 방문 인증" 다음에 "+1,000 XP 생애 첫 방문 인증").
   // 풍선이 다 지나간 뒤에 레벨이 올랐으면 화면 전체에 레벨 업 장면을 띄운다.
@@ -1898,7 +1903,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     if (/^생애 첫|달성$/.test(it[1])) { x.hidden = true; xpCelebrate(it, xpPump); return; }
     toastSeq++; x.hidden = true; x.textContent = ''; x.className = 'xp' + (it[0] < 0 ? ' minus' : '');
     x.appendChild(el('b', null, (it[0] >= 0 ? '+' : '−') + fmt(Math.abs(it[0])) + ' XP'));
-    x.appendChild(el('span', null, it[1]));
+    x.appendChild(el('span', null, xpShow(it[1])));
     var pic = it[0] > 0 && XP_PIC[xpName(it[1])];
     if (pic) { var ti = el('div', 'ti'); ti.appendChild(fxArt(pic)); x.insertBefore(ti, x.firstChild); x.classList.add('art'); }
     void x.offsetWidth; x.hidden = false;
@@ -2043,10 +2048,10 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     var goal = /달성$/.test(it[1]), dong = /^동네/.test(it[1]);
     var fresh = /^새로 연 카페/.test(it[1]), old = /^오랜만의 기록/.test(it[1]);
     var kind = fresh ? 'fresh' : old ? 'old' : goal ? (dong ? 'visit' : 'goal') : 'vote', pic = fresh ? 'shops3' : old ? 'cal3' : goal ? (dong ? 'towns' : 'stampfull') : 'stamp';
-    o.id = 'celeb'; o.className = kind; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', it[1]);
+    o.id = 'celeb'; o.className = kind; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', xpShow(it[1]));
     var art = fxArt(pic); art.classList.add('keep'); medal.appendChild(art); card.appendChild(medal);
     card.appendChild(el('div', 'ct', goal ? '보너스 달성' : '처음이에요'));
-    card.appendChild(el('div', 'cn', it[1]));
+    card.appendChild(el('div', 'cn', xpShow(it[1])));
     card.appendChild(el('div', 'cx', '+' + fmt(it[0]) + ' XP'));
     var close = function () { if (done) return; done = true; o.classList.add('out'); setTimeout(function () { o.remove(); next(); }, 220); };
     var ok = btn('btn pri', '확인', close); card.appendChild(ok);
@@ -2083,7 +2088,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       var got = el('div', 'got');
       items.forEach(function (it) {
         var r = el('div', 'gr');
-        r.appendChild(el('span', null, it[1])); r.appendChild(el('b', null, (it[0] >= 0 ? '+' : '−') + fmt(Math.abs(it[0])) + ' XP'));
+        r.appendChild(el('span', null, xpShow(it[1]))); r.appendChild(el('b', null, (it[0] >= 0 ? '+' : '−') + fmt(Math.abs(it[0])) + ' XP'));
         got.appendChild(r);
       });
       box.appendChild(got);
@@ -4266,7 +4271,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     };
     XP.log.slice().reverse().forEach(function (e) {
       var r = el('div', 'xli' + (e.a < 0 ? ' minus' : '')), l = el('span'), rt = el('span', 'rt');
-      l.appendChild(el('span', 'rs', xpName(e.r)));
+      l.appendChild(el('span', 'rs', xpShow(e.r)));
       if (e.c) l.appendChild(el('small', null, e.c));
       rt.appendChild(el('b', null, (e.a >= 0 ? '+' : '−') + fmt(Math.abs(e.a)) + ' XP'));
       rt.appendChild(el('small', null, when(e.t)));
