@@ -1224,11 +1224,20 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
 .egc.blank.hard { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--pri) 22%, var(--line)); }
 .egc.blank .egart .fxs { filter: grayscale(1); opacity: .25; }
 .egc.none { visibility: hidden; }
-/* 투명 단추(이스터 에그): 뒤로 단추 위, 같은 크기, 보이지 않음. 연 사람에게는 최애 카페 바로가기 단추가 된다. */
+/* 투명 단추(이스터 에그): 뒤로 단추 위, 같은 크기, 보이지 않음. 연 사람에게는 내 메모 단추가 된다. */
 .nbtn.favb { -webkit-tap-highlight-color: transparent; }
 .nbtn.favb.ghost { opacity: 0; box-shadow: none; }
-.nbtn.favb svg.i, .opt.fav svg.i { color: #f2a900; }
-.opt.fav[aria-pressed=true] svg.i { color: #f08c00; }
+.nbtn.favb svg.i, .opt.memo svg.i { color: #e8a200; }
+.memol { display: flex; gap: 7px; align-items: flex-start; width: 100%; margin-top: 8px; padding: 9px 11px; border-radius: 10px; background: color-mix(in srgb, #ffc83d 15%, var(--surface)); font-size: 13.5px; line-height: 1.45; color: var(--ink); text-align: left; word-break: keep-all; }
+.memol svg.i { flex: none; width: 16px; height: 16px; margin-top: 1px; color: #e8a200; }
+.xbox.memo .memonm { margin: 2px 0 10px; font-size: 15px; font-weight: 800; color: var(--ink); }
+.memota { display: block; width: 100%; box-sizing: border-box; border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 12px; font: inherit; font-size: 15px; line-height: 1.5; resize: none; background: var(--surface); color: var(--ink); }
+.memota:focus { outline: none; border-color: var(--pri); }
+.memocnt { margin: 4px 2px 0; text-align: right; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.mlist { max-height: 56vh; overflow: auto; margin-top: 4px; }
+.mrow { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; width: 100%; padding: 12px 4px; border-bottom: 1px solid var(--line); text-align: left; }
+.mrow b { font-size: 14px; font-weight: 800; color: var(--ink); }
+.mrow span { font-size: 13px; line-height: 1.45; color: var(--ink-2); word-break: keep-all; }
 .eggcorner { width: 16px; height: 16px; cursor: default; }
 .eggtiny { width: 8px; height: 8px; cursor: default; }
 .eggtiny .fxs { width: 8px; height: 8px; display: block; }
@@ -2026,7 +2035,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     seen: saved.seen === 'want' ? 'want' : 'all',   // 찜한 곳만 보기: all 전부, want 찜한 곳만
     outline: saved.outline !== false,   // 환경설정: 고른 지역의 경계선과 색칠을 보일지
     nav: saved.nav === 'naver' ? 'naver' : 'kakao',
-    favHide: !!saved.favHide,   // 환경설정: 최애 카페 바로가기 단추 숨김(투명 단추 에그를 연 사람만 보임)   // 환경설정: 길찾기에 쓸 지도 앱(티맵은 여는 주소를 확인할 수 없고 실제로 안 열려서 뺐다)
+    favHide: !!saved.favHide,   // 환경설정: 내 메모 단추 숨김(투명 단추 에그를 연 사람만 보임)   // 환경설정: 길찾기에 쓸 지도 앱(티맵은 여는 주소를 확인할 수 없고 실제로 안 열려서 뺐다)
     start: saved.startSet && (saved.start === 'korea' || saved.start === 'last') ? saved.start : 'me',   // 환경설정: 시작할 때 보여 줄 곳. me 내 위치(기본), korea 전국, last 마지막에 보던 곳. 직접 고른 적이 없으면(startSet 없음) 내 위치
     startSet: !!saved.startSet,
     // 보너스 카페 칩: XP를 더 받는 곳만 보기. 하나만 고른다. new 새로 연 카페(개업 1년 이내), old 오랜만의 기록을 기다리는 곳(마지막 기록 6개월 지남),
@@ -2184,7 +2193,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   }
   function xpPush() {
     if (!loginOn || !signedIn()) return;
-    var body = { xp: XP.xp, vis: XP.vis, vote: XP.vote, near: XP.near || {}, dong: XP.dong, fv: XP.fv || 0, fo: XP.fo || 0, mv: XP.mv || 0, md: XP.md || 0, mo: XP.mo || 0, mr: XP.mr || 0, br: XP.br || {}, mb: XP.mb || 0, log: XP.log || [], pub: XP.pub ? 1 : 0, egg: XP.egg || {}, ega: XP.ega || {}, egs: XP.egs || {}, sp: XP.sp || 0, spl: XP.spl || [], fav: XP.fav || '', t: { '.sv': 'timestamp' } };
+    var body = { xp: XP.xp, vis: XP.vis, vote: XP.vote, near: XP.near || {}, dong: XP.dong, fv: XP.fv || 0, fo: XP.fo || 0, mv: XP.mv || 0, md: XP.md || 0, mo: XP.mo || 0, mr: XP.mr || 0, br: XP.br || {}, mb: XP.mb || 0, log: XP.log || [], pub: XP.pub ? 1 : 0, egg: XP.egg || {}, ega: XP.ega || {}, egs: XP.egs || {}, sp: XP.sp || 0, spl: XP.spl || [], memo: XP.memo || {}, t: { '.sv': 'timestamp' } };
     if (XP.nick) body.nick = XP.nick;
     if (XP.nickT) body.nickT = XP.nickT;
     if (XP.nickOk) body.nickOk = 1;
@@ -2597,22 +2606,58 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     ['dawn2', '단골 아침형', '서로 다른 날 세 번, 새벽 4시부터 아침 7시 사이에 콘센트를 기록했어요.', 'dawn'],
     ['stay2', '카공족', '하루에 두 카페에서 각각 2시간 넘게 머물렀어요.', 'tour3'],
     ['offroute2', '차 탄 산책', '걷는 길을 띄워 놓고 시속 20km 넘게 움직였어요(버스나 택시를 탔어요).', 'offroute'],
-    ['qmark2', '투명 단추', '지도 오른쪽 아래 뒤로 단추 위의 보이지 않는 단추를 눌렀어요. 최애 카페 바로가기 단추가 생겨요.', 'qmark']
+    ['qmark2', '투명 단추', '지도 오른쪽 아래 뒤로 단추 위의 보이지 않는 단추를 눌렀어요. 카페마다 나만 보는 메모를 남길 수 있게 돼요.', 'qmark']
   ];
   // 여는 차례대로 값이 오른다(사용자 2026-11-26: 점점 비싸지게). 원두는 카페 1곳 기록에 3,000쯤 모이니 처음은 1곳어치, 스무째는 100곳어치.
   var EGG_PRICES = [3000, 5000, 10000, 15000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000, 120000, 150000, 180000, 210000, 240000, 270000, 300000], EGG_WAIT = 60000, EGG_VIEW = TEST ? 'cafemap.eggviewT' : 'cafemap.eggview';
   var DOKDO = [131.8686, 37.2413];
   // 백령도: 한국섬진흥원 2025 유인섬 경계(옹진군 백령도)의 가운데. 시험 단추로 가 볼 때 쓴다.
   var BAENG = [124.678, 37.94987];
-  var favBtn = null, FAV_SVG = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z" fill="currentColor"/></svg>';
+  var favBtn = null, MEMO_SVG = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h9.5L19 7v13.5H6z" fill="currentColor" opacity=".25"/><path d="M6 3.5h9.5L19 7v13.5H6zM15.5 3.5V7H19M9 11h7M9 14.5h7M9 18h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>';
   function favOn() { return !!(XP && XP.egs && XP.egs.qmark2); }
   function favRender() {
     if (!favBtn) return;
     var on = favOn();
     favBtn.classList.toggle('ghost', !on); favBtn.hidden = on && !!S.favHide;
-    favBtn.innerHTML = on ? FAV_SVG + '<span class="t">최애</span>' : '';
-    if (on) { favBtn.setAttribute('aria-label', '최애 카페 바로가기'); favBtn.removeAttribute('aria-hidden'); favBtn.tabIndex = 0; }
+    favBtn.innerHTML = on ? MEMO_SVG + '<span class="t">메모</span>' : '';
+    if (on) { favBtn.setAttribute('aria-label', '내 메모'); favBtn.removeAttribute('aria-hidden'); favBtn.tabIndex = 0; }
     else { favBtn.setAttribute('aria-hidden', 'true'); favBtn.removeAttribute('aria-label'); favBtn.tabIndex = -1; }
+  }
+  // 나만의 메모 쓰기 창. done은 저장하거나 지운 뒤 부른다.
+  function openMemo(i, done) {
+    var old = $('xinfo'); if (old) old.remove();
+    var c = cidOf(i), cur = (XP.memo || {})[c], o = el('div'), box = el('div', 'xbox memo');
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '나만의 메모');
+    o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
+    var hd = el('div', 'xhead'), bd = el('span', 'xbadge'); bd.innerHTML = MEMO_SVG; hd.appendChild(bd); hd.appendChild(el('h2', null, '나만의 메모')); box.appendChild(hd);
+    box.appendChild(el('p', 'memonm', D.name[i]));
+    var ta = el('textarea', 'memota'), cnt = el('div', 'memocnt'); ta.maxLength = 80; ta.rows = 3; ta.value = cur ? cur.m : ''; ta.setAttribute('aria-label', '메모');
+    var count = function () { cnt.textContent = ta.value.length + ' / 80'; }; ta.addEventListener('input', count); count();
+    box.appendChild(ta); box.appendChild(cnt);
+    var finish = function (v, msg) { XP.memo = XP.memo || {}; if (v) XP.memo[c] = { m: v, t: Date.now() }; else delete XP.memo[c]; xpSave(); o.remove(); toast(msg); if (done) done(); };
+    var two = el('div', 'two');
+    two.appendChild(cur ? btn('btn', '지우기', function () { finish('', '메모를 지웠어요'); }) : btn('btn', '닫기', function () { o.remove(); }));
+    two.appendChild(btn('btn pri', '저장', function () { var v = ta.value.trim(); finish(v, v ? '메모를 남겼어요. 나만 볼 수 있어요' : '메모를 지웠어요'); }));
+    box.appendChild(two); o.appendChild(box); document.body.appendChild(o);
+    setTimeout(function () { ta.focus(); }, 60);
+  }
+  // 내 메모 목록. 누르면 그 카페 카드를 연다.
+  function openMemos() {
+    var old = $('xinfo'); if (old) old.remove();
+    var o = el('div'), box = el('div', 'xbox memo'), ix = cidIndex();
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '내 메모');
+    o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
+    var hd = el('div', 'xhead'), bd = el('span', 'xbadge'); bd.innerHTML = MEMO_SVG; hd.appendChild(bd); hd.appendChild(el('h2', null, '내 메모')); box.appendChild(hd);
+    var list = Object.keys(XP.memo || {}).map(function (c) { return [XP.memo[c], ix[c]]; })
+      .filter(function (x) { return x[1] !== undefined && x[0] && x[0].m; }).sort(function (a, b) { return (b[0].t || 0) - (a[0].t || 0); });
+    if (!list.length) box.appendChild(el('p', 'xexp', '아직 메모가 없어요. 카페 카드의 메모 단추로 남겨 보세요.'));
+    else {
+      var ls = el('div', 'mlist');
+      list.forEach(function (x) { var r = btn('mrow', null, function () { o.remove(); closePanel(); selectCafe(x[1], true); }); r.appendChild(el('b', null, D.name[x[1]])); r.appendChild(el('span', null, x[0].m)); ls.appendChild(r); });
+      box.appendChild(ls);
+    }
+    var f = el('div', 'dxfoot'); f.appendChild(btn('btn pri', '닫기', function () { o.remove(); })); box.appendChild(f);
+    o.appendChild(box); document.body.appendChild(o);
   }
   function eggName(id) { for (var k = 0; k < EGGS.length; k++) if (EGGS[k][0] === id) return EGGS[k]; return null; }
   function eggHard(id) { var e = eggName(id); return !!(e && e[3]); }
@@ -2664,7 +2709,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       XP.spl = XP.spl || []; XP.spl.push({ t: XP.egs[id], a: price, r: '이스터 에그 열기' }); xpSave();
       justOpen = id; draw();
       if (id === 'qmark') setTimeout(function () { toast('히든 보너스가 미리 열렸어요. 원두 모으는 법의 보너스 표에서 볼 수 있어요'); }, 900);
-      if (id === 'qmark2') { favRender(); setTimeout(function () { toast('최애 카페 바로가기 단추가 생겼어요. 카페 카드에서 최애 카페를 정해 주세요'); }, 900); }
+      if (id === 'qmark2') { favRender(); setTimeout(function () { toast('나만의 메모가 생겼어요. 카페 카드의 메모 단추로 남겨 보세요'); }, 900); }
     };
     // 알 한 칸. 닫힌 알은 누르면 흔들리고, 연 알은 그 에그 그림(누르면 다시 움직임). 방금 연 알은 깨지는 알을 보여 준 뒤 그 에그 그림으로 바뀐다.
     // 어려운 에그의 닫힌 알은 짙은 보라 띠에 금빛 지그재그가 있는 알(egghard)이다.
@@ -5694,7 +5739,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       nvTabs.appendChild(bt);
     });
     nv.appendChild(nvTabs); conf.appendChild(nv); dragPick(nvTabs);
-    if (XP_ON && favOn()) conf.appendChild(toggleRow('최애 카페 바로가기 단추', !S.favHide, function (v) { S.favHide = !v; persist(); favRender(); }));
+    if (XP_ON && favOn()) conf.appendChild(toggleRow('내 메모 단추', !S.favHide, function (v) { S.favHide = !v; persist(); favRender(); }));
     conf.appendChild(toggleRow('지역 경계', S.outline, function (v) { S.outline = v; refilter(); draw(); renderChips(); persist(); }));
     // 내 XP 기록 공개: 켜면 랭킹과 기록한 사람 창에서 다른 사람이 내 닉네임과 XP 기록(날짜까지)을 볼 수 있다. 기본은 꺼짐.
     if (loginOn && signedIn() && XP_ON) conf.appendChild(toggleRow('내 원두 기록 공개', !!XP.pub, function (v) {
@@ -7189,17 +7234,20 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     bGone[0].classList.add('quiet'); bGone[0].insertBefore(fxIcon('mi_flag'), bGone[0].firstChild);
     bGone[0].title = '가 보니 이 카페가 없을 때 눌러 주세요';
     r3.appendChild(bWant); r3.appendChild(bGone[0]);
-    if (XP_ON && favOn()) {
-      var bFav = btn('opt fav', null, function () {
-        var c = cidOf(i); XP.fav = XP.fav === c ? '' : c; xpSave();
-        bFav.setAttribute('aria-pressed', String(XP.fav === c));
-        toast(XP.fav === c ? '최애 카페로 정했어요. 지도의 최애 단추로 바로 와요' : '최애 카페를 풀었어요');
-      });
-      bFav.innerHTML = FAV_SVG; bFav.appendChild(document.createTextNode('최애'));
-      bFav.setAttribute('aria-pressed', String(XP.fav === cidOf(i)));
-      r3.insertBefore(bFav, bGone[0]);
-    }
     rec.appendChild(r3);
+    // 나만의 메모(투명 단추 에그를 연 사람만): 찜 옆 메모 단추, 메모가 있으면 그 아래에 내 메모 줄(누르면 고침). 나만 본다.
+    if (XP_ON && favOn()) {
+      var myMemo = (XP.memo || {})[cidOf(i)], again = function () { if (P.kind === 'detail' && P.cafe === i) renderPanel(); };
+      var bMemo = btn('opt memo', null, function () { openMemo(i, again); });
+      bMemo.innerHTML = MEMO_SVG; bMemo.appendChild(document.createTextNode('메모'));
+      bMemo.setAttribute('aria-pressed', String(!!myMemo));
+      r3.insertBefore(bMemo, bGone[0]);
+      if (myMemo) {
+        var ml = btn('memol', null, function () { openMemo(i, again); });
+        ml.innerHTML = MEMO_SVG; ml.appendChild(el('span', null, myMemo.m)); ml.setAttribute('aria-label', '내 메모: ' + myMemo.m + ', 눌러서 고치기');
+        rec.appendChild(ml);
+      }
+    }
     // 있어요/없어요와 자리 물음 대신, 방문 인증 줄과 단추 넷(자리 셋, 없어요)을 보여 준다. 방문 인증 전에는 투표 단추가 눌리지 않는다.
     // 방문 인증은 로그인한 뒤 카페 근처에서만 된다. 투표 단추를 누르면 진짜 콘센트 투표(v2/seats)로 저장되고 XP도 같이 받는다.
     var xs = function () {};
@@ -7568,14 +7616,12 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   });
   $('navBack').addEventListener('click', function () { if (S.reg >= 0) { closePanel(); goRegion(rParent[S.reg]); } });
   // 투명 단추(숨은 물음표의 어려운 짝, 사용자 2026-11-26): 뒤로 단추 바로 위, 같은 크기, 완전 투명. 누르면 조용히 기록한다.
-  // 그 에그를 원두로 연 사람에게는 같은 자리에 최애 카페 바로가기 단추가 보인다(환경설정에서 숨길 수 있음).
+  // 그 에그를 원두로 연 사람에게는 같은 자리에 내 메모 단추가 보인다(환경설정에서 숨길 수 있음). 누르면 메모한 카페 목록.
   favBtn = document.createElement('button'); favBtn.type = 'button'; favBtn.className = 'nbtn favb'; favBtn.id = 'navFav';
   $('navBack').parentNode.insertBefore(favBtn, $('navBack'));
   favBtn.addEventListener('click', function () {
     if (!favOn()) { eggFound('qmark2'); return; }
-    var k = XP.fav ? cidIndex()[XP.fav] : undefined;
-    if (k === undefined) { toast('카페 카드에서 최애 카페를 정해 주세요'); return; }
-    closePanel(); selectCafe(k, true);
+    openMemos();
   });
   favRender();
   // 처음부터: 전국으로 돌아가면서 필터, 새로 오픈, 찜도 모두 푼다.
