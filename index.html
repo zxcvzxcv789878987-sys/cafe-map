@@ -4737,6 +4737,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
           var c = map.getCenter(); meMarker([c.lng, c.lat]);
           var d = 0, t = setInterval(function () { d += 30; onHeading({ webkitCompassHeading: d % 360 }); if (d >= 720) clearInterval(t); }, 250);
         }],
+        ['내 위치 캐릭터 (마우스, 터치 따라보기)', function () { var c = map.getCenter(); meMarker([c.lng, c.lat]); toast('지도 위에서 마우스를 움직이거나 터치해 보세요'); }],
         ['걷는 길 판', function () { var j = bigCafe(); routeInfo = { i: j, dist: 690, min: 10 }; P.cafe = j; sel = j; P.prev = 'detail'; openPanel('route'); }]
       ]],
       ['내 기록', [
@@ -5622,11 +5623,47 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       if (!me) return;
       var el2 = me.getElement(); el2.classList.add('has-dir');
       el2.querySelector('.cone').style.transform = 'rotate(' + Math.round(headDeg) + 'deg)';
-      // 캐릭터 눈동자도 보는 방향으로 옮긴다. 몸은 그대로 두고 컵 윗부분 흰 곳 안에서만 움직인다(위가 북쪽인 지도라 방향 그대로).
-      var r = headDeg * Math.PI / 180, ex = (Math.sin(r) * 3).toFixed(2), ey = (-Math.cos(r) * 2.4).toFixed(2);
-      el2.querySelectorAll('.dot circle').forEach(function (c) { c.style.transform = 'translate(' + ex + 'px,' + ey + 'px)'; });
+      if (Date.now() >= glanceUntil) lookAt(headDeg);      // 터치한 곳을 보는 동안에는 눈동자를 그대로 둔다
     });
   }
+  // 캐릭터 눈동자를 그 방향으로 옮긴다. 몸은 그대로 두고 컵 윗부분 흰 곳 안에서만 움직인다(위가 북쪽인 지도라 방향 그대로).
+  function lookAt(deg) {
+    if (!me) return;
+    var r = deg * Math.PI / 180, ex = (Math.sin(r) * 3).toFixed(2), ey = (-Math.cos(r) * 2.4).toFixed(2);
+    me.getElement().querySelectorAll('.dot circle').forEach(function (c) { c.style.transform = 'translate(' + ex + 'px,' + ey + 'px)'; });
+  }
+  // 눈동자가 화면의 한 점(마우스, 터치한 곳)을 본다(사용자 요청 2026-11-26).
+  //  컴퓨터: 나침반이 없으면 마우스를 따라본다. 나침반 방향이 한 번이라도 오면 그것을 따른다.
+  //  휴대폰: 지도를 터치하면 그곳을 보고, 끌면 손가락을 따라본다. 손을 떼고 1.5초 뒤에 다시 폰이 보는 방향으로 돌아간다(나침반이 없으면 그대로).
+  var lookRaf = 0, lookXY = null, glanceUntil = 0;
+  function lookToward(x, y) {
+    lookXY = [x, y];
+    if (lookRaf) return;
+    lookRaf = requestAnimationFrame(function () {
+      lookRaf = 0;
+      if (!me || !lookXY) return;
+      var b = map.getContainer().getBoundingClientRect(), p = map.project(me.getLngLat());
+      var dx = lookXY[0] - b.left - p.x, dy = lookXY[1] - b.top - p.y;
+      if (dx * dx + dy * dy < 100) return;      // 캐릭터 바로 위에서는 그대로 둔다
+      lookAt(Math.atan2(dx, -dy) * 180 / Math.PI);
+    });
+  }
+  if (window.matchMedia && matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    map.getContainer().addEventListener('mousemove', function (e) { if (me && headDeg === null) lookToward(e.clientX, e.clientY); });
+  }
+  var touching = false;
+  map.getContainer().addEventListener('pointerdown', function (e) {
+    if (e.pointerType === 'mouse' || !me) return;
+    touching = true; glanceUntil = Infinity; lookToward(e.clientX, e.clientY);
+  }, { passive: true });
+  map.getContainer().addEventListener('pointermove', function (e) { if (touching && e.pointerType !== 'mouse' && me) lookToward(e.clientX, e.clientY); }, { passive: true });
+  var endTouch = function (e) {
+    if (e.pointerType === 'mouse' || !touching) return;
+    touching = false; glanceUntil = Date.now() + 1500;
+    setTimeout(function () { if (!touching && Date.now() >= glanceUntil && headDeg !== null) lookAt(headDeg); }, 1550);
+  };
+  window.addEventListener('pointerup', endTouch, { passive: true });
+  window.addEventListener('pointercancel', endTouch, { passive: true });
   // 방향 듣기는 앱을 열 때부터 켜 둔다(안드로이드는 허락 없이 온다). 아이폰은 사람이 단추를 누른 그 순간에만 허락을 물을 수 있어서,
   // 내 위치 단추를 누를 때(gesture) 아직 허락받지 않았으면 묻는다. 열 때 저절로는 묻지 않는다(물으면 실패하고 다시 묻지 못했다).
   var headListen = false, headAsked = false;
