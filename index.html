@@ -5425,11 +5425,14 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       var d = el('div', 'me'); d.setAttribute('aria-label', '내 위치');
       d.innerHTML = '<svg class="cone" viewBox="0 0 84 84" aria-hidden="true"><path d="M42 42 L24 4 A40 40 0 0 1 60 4 Z"/></svg><i class="dot"></i>';
       d.querySelector('.dot').appendChild(fxIcon('char'));
+      d.querySelectorAll('.dot circle').forEach(function (c) { c.setAttribute('r', '1.55'); });
       me = new maplibregl.Marker({ element: d }).setLngLat(ll).addTo(map);
     } else me.setLngLat(ll);
   }
   function setFollow(on) { follow = on; $('locate').setAttribute('aria-pressed', String(on)); }
+  var lastFix = null;      // 실시간으로 받은 마지막 위치와 받은 때. 단추를 누르면 이것으로 바로 간다.
   function onFix(p) {
+    lastFix = { p: p, t: Date.now() };
     var ll = [p.coords.longitude, p.coords.latitude];
     meMarker(ll);
     myLoc = { x: (ll[0] + 180) / 360, y: mercY(ll[1]) };
@@ -5461,8 +5464,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       if (!me) return;
       var el2 = me.getElement(); el2.classList.add('has-dir');
       el2.querySelector('.cone').style.transform = 'rotate(' + Math.round(headDeg) + 'deg)';
-      // 캐릭터 눈도 보는 방향으로 살짝 옮긴다(위가 북쪽인 지도라 방향 그대로).
-      var r = headDeg * Math.PI / 180, ex = (Math.sin(r) * .8).toFixed(2), ey = (-Math.cos(r) * .7).toFixed(2);
+      // 캐릭터 눈동자도 보는 방향으로 옮긴다. 몸은 그대로 두고 컵 윗부분 흰 곳 안에서만 움직인다(위가 북쪽인 지도라 방향 그대로).
+      var r = headDeg * Math.PI / 180, ex = (Math.sin(r) * 3).toFixed(2), ey = (-Math.cos(r) * 2.4).toFixed(2);
       el2.querySelectorAll('.dot circle').forEach(function (c) { c.style.transform = 'translate(' + ex + 'px,' + ey + 'px)'; });
     });
   }
@@ -5487,7 +5490,11 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   $('locate').addEventListener('click', function () { startHeading(true); setFollow(true); locateMe(); });
   function locateMe(done) {
     if (!navigator.geolocation) { toast('이 브라우저에서는 위치를 가져올 수 없어요.'); return; }
-    navigator.geolocation.getCurrentPosition(function (p) {
+    // 실시간으로 받아 둔 위치가 15초 안의 것이면 기다리지 않고 바로 간다(새로 받으면 2초쯤 걸린다).
+    if (lastFix && Date.now() - lastFix.t < 15000) { gotHere(lastFix.p); return; }
+    navigator.geolocation.getCurrentPosition(gotHere, function () { setFollow(false); toast('위치를 가져오지 못했어요. 브라우저에서 위치 권한을 허용해 주세요.'); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 });
+    function gotHere(p) {
+      lastFix = { p: p, t: Date.now() };
       var ll = [p.coords.longitude, p.coords.latitude];
       meMarker(ll); startWatch();
       myLoc = { x: (ll[0] + 180) / 360, y: mercY(ll[1]) };
@@ -5515,7 +5522,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       }
       flying = true; setTimeout(function () { flying = false; }, dur + 100);
       map.flyTo({ center: ll, zoom: zTo, duration: dur, curve: 1.2, essential: true });
-    }, function () { setFollow(false); toast('위치를 가져오지 못했어요. 브라우저에서 위치 권한을 허용해 주세요.'); }, { enableHighAccuracy: true, timeout: 10000 });
+    }
   }
   // 누르면 동전처럼 뒤집히면서 "OO 전체 보기"(흰색)와 "동별로 보기"(기본색)가 바뀐다. 글자와 색은 뒤집히는 중간에 바꾼다.
   $('navAll').addEventListener('click', function () {
