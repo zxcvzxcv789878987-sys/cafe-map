@@ -1,2 +1,3 @@
 번개 모양은 Microsoft Fluent Emoji Flat(MIT)의 High voltage를 본떴다. 나머지 그림은 이 앱에서 직접 그렸다.
 축하 화면 뒤 폭죽은 test/lottie/confetti.json(출처는 test/lottie/CREDITS.txt).
+시안의 지도는 regions.js(통계청 SGIS 경계)와 cafes.js(카페가 있는 동 목록)로 그렸다. 다녀온 동은 예시다.
