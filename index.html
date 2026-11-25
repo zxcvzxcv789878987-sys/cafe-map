@@ -656,6 +656,8 @@ button.xlink .xbadge.rank, .xbox.rank { --pri: #6a5ae0; --pri2: #8b7bf2; }
 .xstat.static > div { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 13px 2px 12px; }
 .xstat.static > div + div::before { content: ""; position: absolute; left: 0; top: 16px; bottom: 16px; width: 1px; background: var(--line); }
 .xstat.static { margin: 0; }
+.xstat.ro { margin: 0; }
+.xstat.ro button { pointer-events: none; }
 .rkl .rkgap { text-align: center; color: var(--ink-3); padding: 4px 0; }
 .xbox .xexp.warn { background: #fff4e6; color: #a8460b; }
 .nkcur { margin: 4px 0 2px; font-size: 20px; font-weight: 800; }
@@ -4206,11 +4208,16 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     if (x.u === SHARE.admin) top.appendChild(el('span', 'rktag', '운영자'));
     box.appendChild(top);
     var lv = el('div', 'pslv'); lv.appendChild(el('b', null, 'Lv.' + Math.floor(x.x / 1000))); lv.appendChild(el('span', null, '총 ' + fmt(x.x) + ' XP')); box.appendChild(lv);
-    var st = el('div', 'xstat static');
-    [['콘센트 기록한 카페', x.v], ['새 동네', x.d], ['새로 연 카페', x.o], ['오랜만의 기록', x.r]].forEach(function (y) {
-      var c = el('div'), num = el('b', null, String(y[1] || 0)); num.appendChild(el('small', null, '곳'));
-      c.appendChild(num); c.appendChild(el('span', null, y[0])); st.appendChild(c);
+    // 메뉴의 레벨 밑 칸과 같은 모양: 왼쪽 콘센트 기록한 카페, 오른쪽에 "N곳 중"과 새 동네, 새로 연 카페, 오랜만의 기록. 누를 수는 없다.
+    var st = el('div', 'xstat x4b ro'), vb = btn('g vote', null, null), vn = el('b', null, String(x.v || 0));
+    vn.appendChild(el('small', null, '곳')); vb.appendChild(vn); vb.appendChild(el('span', null, '콘센트 기록한 카페')); vb.tabIndex = -1; st.appendChild(vb);
+    var grp = el('div', 'grp'), cols = el('div', 'cols');
+    grp.appendChild(el('div', 'hd', (x.v || 0) + '곳 중'));
+    [['새 동네', x.d, 'dong'], ['새로 연 카페', x.o, 'newb'], ['오랜만의 기록', x.r, 'oldb']].forEach(function (y) {
+      var b = btn(y[2], null, null); b.tabIndex = -1;
+      b.appendChild(el('b', null, String(y[1] || 0))); b.appendChild(el('span', null, y[0])); cols.appendChild(b);
     });
+    grp.appendChild(cols); st.appendChild(grp);
     box.appendChild(st);
     // XP 기록: 본인이 공개를 켠 사람만 보인다. 날짜까지만.
     var lg = el('div', 'xll pslog'); lg.appendChild(el('p', 'xnone', '불러오는 중'));
