@@ -592,7 +592,11 @@ button.xlink.xrow b { margin-right: 6px; }
 .dxsum span { font-size: 12.5px; font-weight: 700; color: var(--ink-2); }
 .dxsum b { font-size: 22px; font-weight: 800; color: #d6336c; font-variant-numeric: tabular-nums; }
 .dxsum b small { font-size: 14px; font-weight: 700; color: var(--ink-3); }
-.dxtabs { display: grid; grid-template-columns: repeat(4, 1fr); padding: 3px; border-radius: 11px; margin: 6px 0 2px; position: sticky; top: -20px; z-index: 1; box-shadow: 0 0 0 6px var(--surface); }
+.dxbar { position: sticky; top: -20px; z-index: 1; display: flex; flex-direction: column; gap: 6px; margin: 2px -2px 0; padding: 6px 2px 4px; background: var(--surface); }
+.dxbar .dxq { margin: 0; }
+.dxtabs { display: grid; grid-template-columns: repeat(4, 1fr); padding: 3px; border-radius: 11px; }
+.dxtabs.dim { opacity: .45; }
+.dxg .xnone { grid-column: 1 / -1; text-align: center; }
 .dxtabs button { height: 32px; padding: 0 2px; border-radius: 8px; font-size: 12.5px; white-space: nowrap; }
 .dxg { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 8px; margin-top: 4px; }
 .dxc { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 19px 4px 9px; border-radius: 14px; background: color-mix(in srgb, var(--dc, #c9ced6) 12%, var(--surface)); }
@@ -2346,7 +2350,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   var DEX_SPARK = "<g transform=\"translate(27.4 5.2) scale(2.04)\" style=\"transform-box:view-box\"><path class=\"sp\" style=\"--d:0.55s\" fill=\"#FFB02E\" d=\"M0 -1C.15 -.15 .15 -.15 1 0C.15 .15 .15 .15 0 1C-.15 .15 -.15 .15 -1 0C-.15 -.15 -.15 -.15 0 -1Z\"/></g><g transform=\"translate(4.4 9.6) scale(1.6)\" style=\"transform-box:view-box\"><path class=\"sp\" style=\"--d:0.7s\" fill=\"#FFB02E\" d=\"M0 -1C.15 -.15 .15 -.15 1 0C.15 .15 .15 .15 0 1C-.15 .15 -.15 .15 -1 0C-.15 -.15 -.15 -.15 0 -1Z\"/></g>";
   var DEX_PAL = [['#F0525A', '#fff'], ['#F7862B', '#fff'], ['#F5B800', '#5A4100'], ['#2FAE6B', '#fff'], ['#12B5A5', '#fff'], ['#2D9CDB', '#fff'], ['#3B6FE0', '#fff'], ['#7C5CE8', '#fff'], ['#B95BD6', '#fff'], ['#EC5C93', '#fff'], ['#9A6A4F', '#fff'], ['#2F4B8C', '#fff']];
   var DEX_FIX = { '스타벅스': 3, '이디야': 11, '메가MGC커피': 2, '빽다방': 2, '컴포즈커피': 2, '커피빈': 7, '할리스': 0, '투썸플레이스': 0, '블루보틀': 5, '파스쿠찌': 0 };
-  var DEX_GRP = { P: '프랜차이즈', L: '저가커피', D: '디저트' }, dexTab = 'all';
+  var DEX_GRP = { P: '프랜차이즈', L: '저가커피', D: '디저트' }, dexTab = 'all', dexQ = '';
   var brandIx = {};
   D.brands.forEach(function (b, j) { brandIx[b[0]] = j; });
   function dexColor(j) {
@@ -2428,7 +2432,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     var o = el('div'), box = el('div', 'xbox dex');
     o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '브랜드 도감');
     o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
-    o.appendChild(box); document.body.appendChild(o);
+    o.appendChild(box); document.body.appendChild(o); fitVisible(o);
+    dexQ = '';
     var foot = function (bk) {
       if (!bk) { box.appendChild(btn('btn pri', '닫기', function () { o.remove(); })); return; }
       var two = el('div', 'two');
@@ -2436,32 +2441,47 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       box.appendChild(two);
     };
     var go = function (i) { o.remove(); selectCafe(i, true); };
+    // 목록: 탭(전체, 프랜차이즈, 저가커피, 디저트)과 브랜드 이름 찾기. 찾을 때는 탭과 상관없이 모든 브랜드에서 찾는다.
     function grid() {
       box.textContent = ''; box.scrollTop = 0;
       var hd = el('div', 'xhead'), bd = el('span', 'xbadge pic');
       bd.appendChild(fxStill('mi_dex')); hd.appendChild(bd); hd.appendChild(el('h2', null, '브랜드 도감')); box.appendChild(hd);
-      var sum = el('div', 'dxsum'), nb = el('b'), got = 0, all = 0;
+      var sum = el('div', 'dxsum'), sl = el('span'), nb = el('b');
+      sum.appendChild(sl); sum.appendChild(nb); box.appendChild(sum);
+      var bar = el('div', 'dxbar'), sq = el('label', 'search inset dxq'), inp = el('input');
+      sq.appendChild(icon('search'));
+      inp.type = 'search'; inp.placeholder = '브랜드 이름'; inp.value = dexQ; inp.autocomplete = 'off'; inp.setAttribute('aria-label', '브랜드 이름 찾기');
+      sq.appendChild(inp); bar.appendChild(sq);
       var tabs = el('div', 'sort dxtabs');
       [['all', '전체'], ['P', '프랜차이즈'], ['L', '저가커피'], ['D', '디저트']].forEach(function (t) {
-        var b = btn(null, t[1], function () { dexTab = t[0]; grid(); });
+        var b = btn(null, t[1], function () { dexTab = t[0]; dexQ = ''; grid(); });
         b.setAttribute('aria-pressed', String(dexTab === t[0])); tabs.appendChild(b);
       });
-      var g = el('div', 'dxg');
-      D.brands.forEach(function (b, j) {
-        if (dexTab !== 'all' && b[1] !== dexTab) return;
-        var on = dexGot(j), c = btn('dxc' + (on ? '' : ' off'), null, function () { detail(j, grid); });
-        all++; if (on) got++;
-        if (on) c.style.setProperty('--dc', dexColor(j)[0]);
-        c.appendChild(el('span', 'no', dexNo(j)));
-        if (on && XP.br[b[0]] > seen) c.appendChild(el('span', 'new', 'NEW'));
-        c.appendChild(dexArt(j, on, 'still'));
-        c.appendChild(el('span', 'nm', b[0]));
-        c.setAttribute('aria-label', dexNo(j) + ' ' + b[0] + (on ? ', 모음' : ', 아직'));
-        g.appendChild(c);
-      });
-      nb.appendChild(document.createTextNode(String(got))); nb.appendChild(el('small', null, ' / ' + all));
-      sum.appendChild(el('span', null, dexTab === 'all' ? '모은 브랜드' : '모은 ' + DEX_GRP[dexTab])); sum.appendChild(nb);
-      box.appendChild(sum); box.appendChild(tabs); box.appendChild(g);
+      bar.appendChild(tabs); box.appendChild(bar);
+      var g = el('div', 'dxg'); box.appendChild(g);
+      function fill() {
+        var q = dexQ.replace(/\s/g, '').toLowerCase(), got = 0, all = 0;
+        g.textContent = '';
+        tabs.classList.toggle('dim', !!q);
+        D.brands.forEach(function (b, j) {
+          if (q) { if (b[0].replace(/\s/g, '').toLowerCase().indexOf(q) < 0) return; }
+          else if (dexTab !== 'all' && b[1] !== dexTab) return;
+          var on = dexGot(j), c = btn('dxc' + (on ? '' : ' off'), null, function () { detail(j, grid); });
+          all++; if (on) got++;
+          if (on) c.style.setProperty('--dc', dexColor(j)[0]);
+          c.appendChild(el('span', 'no', dexNo(j)));
+          if (on && XP.br[b[0]] > seen) c.appendChild(el('span', 'new', 'NEW'));
+          c.appendChild(dexArt(j, on, 'still'));
+          c.appendChild(el('span', 'nm', b[0]));
+          c.setAttribute('aria-label', dexNo(j) + ' ' + b[0] + (on ? ', 모음' : ', 아직'));
+          g.appendChild(c);
+        });
+        if (!all) g.appendChild(el('p', 'xnone', '찾는 브랜드가 없어요'));
+        sl.textContent = q || dexTab === 'all' ? '모은 브랜드' : '모은 ' + DEX_GRP[dexTab];
+        nb.textContent = ''; nb.appendChild(document.createTextNode(String(got))); nb.appendChild(el('small', null, ' / ' + all));
+      }
+      inp.addEventListener('input', function () { dexQ = inp.value; fill(); });
+      fill();
       foot(back);
     }
     function detail(j, bk) {
