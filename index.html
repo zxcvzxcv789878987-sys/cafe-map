@@ -4833,9 +4833,10 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       return;
     }
     if (act === 'want') {
-      // 찜을 켜면 찜한 곳이 다 보이게 지도를 맞추고 목록을 연다. 끄면 목록을 닫는다.
+      // 찜을 켜고 끈다. 끌 때 찜 목록이 열려 있으면 닫는다.
       if (S.seen === 'want') { S.seen = 'all'; if (P.kind === 'list') closePanel(); changed(); }
-      else needLogin(function () { resetAll(); S.seen = 'want'; if (P.kind) closePanel(); showWanted(); }, 'want');
+      // 다른 필터처럼 보던 화면 그대로 찜한 곳만 남긴다(지도를 옮기지 않는다. 사용자 요청 2026-11-26).
+      else needLogin(function () { resetAll(); S.seen = 'want'; if (P.kind && P.kind !== 'detail') closePanel(); changed(); }, 'want');
       return;
     }
     if (act === 'bonus') { toggleMenu('bonus', 'bonus'); return; }
@@ -5014,15 +5015,6 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   }
 
   // 찜한 곳만 보기를 켰을 때: 지역을 전국으로 풀고, 찜한 곳이 모두 들어오게 지도를 맞춘 다음 목록을 연다.
-  function showWanted() {
-    S.reg = -1; S.showAll = false; hoverPill = -1;
-    refilter();
-    var x0 = 1, y0 = 1, x1 = 0, y1 = 0, n = 0;
-    for (var i = 0; i < N; i++) if (pass[i]) { n++; if (mx[i] < x0) x0 = mx[i]; if (mx[i] > x1) x1 = mx[i]; if (my[i] < y0) y0 = my[i]; if (my[i] > y1) y1 = my[i]; }
-    if (n) map.fitBounds([mercToLngLat(x0, y1), mercToLngLat(x1, y0)], { padding: fitPad(), maxZoom: 15, duration: 0 });
-    draw(); renderChips(); persist();
-    P.prev = null; openPanel('list');
-  }
   // ----- 필터: 걸러 보기와 설정을 카드 하나에 모았다. 위에 노트북 작업 조건, 아래에 브랜드 -----
   var brandQ = '';
   function toggleRow(label, on, fn) {
