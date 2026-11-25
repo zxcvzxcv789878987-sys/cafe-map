@@ -1,3 +1,0 @@
-Noto Emoji Animation (Google), CC BY 4.0
-https://googlefonts.github.io/noto-emoji-animation/
-원본: https://fonts.gstatic.com/s/e/notoemoji/latest/<코드>/lottie.json
