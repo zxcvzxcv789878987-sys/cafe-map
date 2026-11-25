@@ -227,6 +227,13 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .facts dd .omark { display: inline-flex; align-items: center; gap: 3px; padding: 0; background: none; color: #d6336c; font-size: 12.5px; font-weight: 650; }
 .facts dd .omark svg.i { width: 13px; height: 13px; }
 /* 카드 맨 아래에 붙어 있는 단추 줄(필터의 적용하기) */
+/* 걷는 길 판 */
+.rtbody { padding: 6px 18px calc(18px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 14px; }
+.rtbig { display: flex; align-items: baseline; gap: 8px; }
+.rtbig .rtkind { font-size: 13px; font-weight: 700; color: #6a5ae0; }
+.rtbig b { font-size: 30px; font-weight: 800; letter-spacing: -.02em; }
+.rtbig small { font-size: 15px; color: var(--ink-3); font-weight: 600; }
+.rtbody .btn.ext { display: flex; align-items: center; justify-content: center; height: 46px; border-radius: 12px; font-size: 14.5px; font-weight: 700; text-decoration: none; color: var(--ink); background: var(--surface-2); }
 .pfoot { flex: none; padding: 10px 14px calc(12px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); background: var(--surface); }
 .pfoot .btn { width: 100%; height: 46px; border-radius: 12px; font-size: 15px; font-weight: 700; }
 .pfoot .btn small { font-weight: 600; opacity: .7; margin-left: 2px; }
@@ -298,7 +305,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .opt.quiet[aria-pressed=true] { background: var(--pri); border-color: var(--pri); color: var(--on-pri); }
 .opt.quiet[aria-pressed=true] svg.i { fill: none; }
 /* 주소 옆의 길찾기 */
-.facts .go { color: var(--ink); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line-2); font-size: 12.5px; font-weight: 650; }
+.facts .go { background: none; font-family: inherit; cursor: pointer; color: var(--ink); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line-2); font-size: 12.5px; font-weight: 650; }
 .facts .go:hover { border-color: var(--ink-3); }
 .facts .go svg.i { width: 14px; height: 14px; }
 .opt[aria-pressed=true] { background: var(--pri); border-color: var(--pri); color: var(--on-pri); }
@@ -1231,6 +1238,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
 <script src="share.js"></script>
 <script src="removed.js"></script>
 <script src="kakao.js"></script>
+<script src="route.js"></script>
 <script src="regions.js"></script>
 <script src="landmarks.js"></script>
 <script>
@@ -3639,6 +3647,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     // 풀지 않으면 그 카페가 필터나 지역과 상관없이 지도에 계속 남는다.
     if (kind !== 'detail' && sel >= 0) { sel = -1; requestDraw(); }
     if (kind !== 'detail') panel.removeAttribute('data-embed');
+    if (kind !== 'route' && routeOn) clearRoute();
     panel.dataset.kind = kind; panel.hidden = false;
     // 카드는 아래에서 위로 올라오며 나타난다(이미 카드가 떠 있을 때 내용만 바뀌는 경우는 빼고).
     var fresh = kind === 'detail' ? was !== 'detail' : !was, keep = was === kind ? snap : 'half';
@@ -3673,6 +3682,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     if (wantReload) { panel.hidden = true; softReload(); return; }
     document.body.classList.remove('sheet-open');
     if (was === 'detail') requestDraw();
+    if (routeOn) { clearRoute(); requestDraw(); }
     renderChips();
     // 카드를 치운다. 카드 안에 띄워 둔 카카오맵 화면도 같이 내린다.
     var done = function () {
@@ -3719,6 +3729,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     if (P.kind === 'region') renderRegion();
     else if (P.kind === 'filter') renderFilter();
     else if (P.kind === 'bonus') renderBonus();
+    else if (P.kind === 'route') renderRoute();
     else if (P.kind === 'list') renderList();
     else if (P.kind === 'search') renderSearch();
     else if (P.kind === 'detail') renderDetail(P.cafe);
@@ -5149,6 +5160,83 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     inp.addEventListener('input', function () { brandQ = inp.value; fill(); });
     fillLap(); fillTabs(); fill();
   }
+  // ----- 걷는 길 -----
+  // 걷기는 앱 안에서: 내 위치에서 카페까지 걷는 길을 오픈스트리트맵 경로 서버에 물어 지도에 선으로 긋는다.
+  // 키(route.js의 ors)가 있으면 OpenRouteService, 없으면 FOSSGIS 서버. 걷는 시간은 1분에 70m로 센다(카카오맵과 비슷하게).
+  // 자동차, 버스는 판의 단추로 카카오맵(네이버지도) 길찾기를 연다.
+  var ROUTE = window.CAFE_ROUTE || {}, routeOn = false;
+  function extRoute(i) {
+    var pid = D.kid ? D.kid[i] : 0, lat = D.lat[i] / 1e5, lng = D.lng[i] / 1e5, nm = encodeURIComponent(D.name[i]);
+    var kakaoTo = 'https://map.kakao.com/link/to/' + (pid ? pid : encodeURIComponent(D.name[i].replace(/,/g, ' ')) + ',' + lat + ',' + lng);
+    var appTo = mobile.matches && S.nav === 'naver' ? 'nmap://route/public?dlat=' + lat + '&dlng=' + lng + '&dname=' + nm + '&appname=' + encodeURIComponent(location.hostname || 'cafemap') : '';
+    var a = el('a', 'btn ext'); a.href = appTo || kakaoTo;
+    if (appTo) a.addEventListener('click', function () { setTimeout(function () { if (!document.hidden) toast('네이버지도 앱이 열리지 않았어요. 메뉴의 환경설정에서 길찾기 앱을 바꿀 수 있어요.'); }, 1800); });
+    else { a.target = '_blank'; a.rel = 'noopener'; }
+    a.textContent = (appTo ? '네이버지도' : '카카오맵') + '에서 자동차, 대중교통 보기';
+    return a;
+  }
+  function clearRoute() {
+    routeOn = false;
+    if (map.getLayer && map.getLayer('walk')) { map.removeLayer('walk'); map.removeLayer('walk-edge'); }
+    if (map.getSource && map.getSource('walk')) map.removeSource('walk');
+  }
+  function drawRoute(coords) {
+    clearRoute();
+    var data = { type: 'Feature', geometry: { type: 'LineString', coordinates: coords } };
+    map.addSource('walk', { type: 'geojson', data: data });
+    map.addLayer({ id: 'walk-edge', type: 'line', source: 'walk', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 9 } });
+    map.addLayer({ id: 'walk', type: 'line', source: 'walk', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#6a5ae0', 'line-width': 5 } });
+    routeOn = true;
+  }
+  function walkFetch(from, to) {
+    if (ROUTE.ors) {
+      return fetch('https://api.openrouteservice.org/v2/directions/foot-walking?api_key=' + encodeURIComponent(ROUTE.ors) + '&start=' + from[0] + ',' + from[1] + '&end=' + to[0] + ',' + to[1])
+        .then(function (r) { if (!r.ok) throw new Error('route'); return r.json(); })
+        .then(function (j) { var f = j.features[0]; return { coords: f.geometry.coordinates, dist: f.properties.summary.distance }; });
+    }
+    return fetch('https://routing.openstreetmap.de/routed-foot/route/v1/driving/' + from[0] + ',' + from[1] + ';' + to[0] + ',' + to[1] + '?overview=full&geometries=geojson')
+      .then(function (r) { if (!r.ok) throw new Error('route'); return r.json(); })
+      .then(function (j) { if (!j.routes || !j.routes.length) throw new Error('route'); return { coords: j.routes[0].geometry.coordinates, dist: j.routes[0].distance }; });
+  }
+  var routeInfo = null;     // { i, dist, min } 판에 적을 것
+  function openRoute(i) {
+    if (!navigator.geolocation) { toast('이 브라우저에서는 위치를 가져올 수 없어요'); return; }
+    var go = function (p) {
+      lastFix = { p: p, t: Date.now() };
+      var ulat = p.coords.latitude, ulng = p.coords.longitude;
+      meMarker([ulng, ulat]); startWatch();
+      toast('걷는 길을 찾는 중');
+      // 카페 자리는 카카오의 매장 위치를 그때 물어 쓴다(건물 점보다 정확하다). 못 찾으면 건물 점.
+      kakaoSpot(i, ulat, ulng, function (spot) {
+        var to = spot ? [spot[1], spot[0]] : [D.lng[i] / 1e5, D.lat[i] / 1e5], from = [ulng, ulat];
+        walkFetch(from, to).then(function (rt) {
+          var c = rt.coords.slice(); c.unshift(from); c.push(to);
+          drawRoute(c);
+          routeInfo = { i: i, dist: Math.round(rt.dist), min: Math.max(1, Math.round(rt.dist / 70)) };
+          var x0 = 180, y0 = 90, x1 = -180, y1 = -90;
+          c.forEach(function (q) { if (q[0] < x0) x0 = q[0]; if (q[0] > x1) x1 = q[0]; if (q[1] < y0) y0 = q[1]; if (q[1] > y1) y1 = q[1]; });
+          setFollow(false);
+          var pad = mobile.matches ? { top: 130, bottom: Math.round(window.innerHeight * .36), left: 40, right: 40 } : { top: 96, bottom: 70, left: 420, right: 60 };
+          map.fitBounds([[x0, y0], [x1, y1]], { padding: pad, maxZoom: 17, duration: 600 });
+          P.cafe = i; sel = i; P.prev = 'detail';
+          openPanel('route');
+        }).catch(function () { toast('걷는 길을 찾지 못했어요. 카카오맵으로 열게요'); window.open(extRoute(i).href, '_blank'); });
+      });
+    };
+    if (lastFix && Date.now() - lastFix.t < 15000) go(lastFix.p);
+    else navigator.geolocation.getCurrentPosition(go, function () { toast('걷는 길을 보려면 위치 사용을 허락해 주세요'); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 });
+  }
+  function renderRoute() {
+    var r = routeInfo; if (!r) { closePanel(); return; }
+    var h = head(D.name[r.i] + '까지', null, function () { var k = r.i; clearRoute(); P.prev = null; sel = k; P.cafe = k; openPanel('detail'); requestDraw(); });
+    h.appendChild(closeBtn()); panel.appendChild(h);
+    var sc = el('div', 'scroll rtbody');
+    var big = el('div', 'rtbig'); big.appendChild(el('span', 'rtkind', '도보')); big.appendChild(el('b', null, r.min + '분'));
+    big.appendChild(el('small', null, r.dist >= 1000 ? (Math.round(r.dist / 100) / 10) + 'km' : r.dist + 'm'));
+    sc.appendChild(big);
+    sc.appendChild(extRoute(r.i));
+    panel.appendChild(sc);
+  }
   // ----- 카페 정보 -----
   function fullAddr(i) { var d = D.dongOf[i], g = dongSgg[d]; var sido = D.sido[sggSido[g]], sg = D.sgg[g][0]; return (sg === sido ? sido : sido + ' ' + sg) + ' ' + D.road[i]; }
   function selectCafe(i, pan, from) {
@@ -5181,18 +5269,9 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     function fact(k) { dl.appendChild(el('dt', null, k)); var dd = el('dd'); dl.appendChild(dd); return dd; }
     var f1 = fact('주소'); f1.appendChild(el('span', null, addr + (fl > 0 ? ' ' + fl + '층' : fl < 0 ? ' 지하' : '')));
     // 길찾기: 카카오맵의 길찾기 화면을 새 창(폰은 카카오맵 앱)으로 연다. 카카오 장소 번호가 있으면 그 가게로, 없으면 이름과 좌표로 찾는다.
-    var go = el('a', 'go'); go.target = '_blank'; go.rel = 'noopener';
+    var go = btn('go', null, function () { openRoute(i); });
     // 환경설정에서 고른 지도 앱으로 연다. 카카오맵은 앱이 없어도 웹으로 열리는 주소다.
     // 네이버지도는 앱을 바로 부르는 주소라서 폰에서만 쓰고, 앱이 없으면 아무 일도 일어나지 않으므로 잠시 뒤에 알려 준다. 컴퓨터에서는 카카오맵으로 연다.
-    var nm = encodeURIComponent(D.name[i]), kakaoTo = 'https://map.kakao.com/link/to/' + (pid ? pid : encodeURIComponent(D.name[i].replace(/,/g, ' ')) + ',' + lat + ',' + lng);
-    var appTo = mobile.matches && S.nav === 'naver' ? 'nmap://route/public?dlat=' + lat + '&dlng=' + lng + '&dname=' + nm + '&appname=' + encodeURIComponent(location.hostname || 'cafemap') : '';
-    go.href = appTo || kakaoTo;
-    if (appTo) {
-      go.removeAttribute('target');
-      go.addEventListener('click', function () {
-        setTimeout(function () { if (!document.hidden) toast('네이버지도 앱이 열리지 않았어요. 메뉴의 환경설정에서 길찾기 앱을 바꿀 수 있어요.'); }, 1800);
-      });
-    }
     go.appendChild(icon('route')); go.appendChild(document.createTextNode('길찾기'));
     f1.appendChild(go);
     var f2 = fact('넓이');
