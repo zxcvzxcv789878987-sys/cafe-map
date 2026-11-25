@@ -92,10 +92,9 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 .bsec .blab { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .bsec .blab .fxs { width: 26px; height: 26px; }
 .bsec .blab small { font-size: 12.5px; font-weight: 650; color: var(--ink-3); white-space: nowrap; }
-.bsec .bitem { display: flex; flex-direction: column; gap: 6px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.bsec .bitem { display: flex; flex-direction: column; gap: 6px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
 .bsec .bitem:last-child { border-bottom: 0; padding-bottom: 0; }
-.bsec .bsub { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; padding-left: 35px; }
-.bsec .bsub p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+.bsec .bsub { display: flex; padding-left: 35px; margin-top: -8px; }
 .bsec .bgot { flex: none; display: inline-flex; align-items: center; gap: 1px; padding: 0; background: none; color: #6a5ae0; font: inherit; font-size: 13px; font-weight: 650; white-space: nowrap; cursor: pointer; }
 .bsec .bgot svg { width: 14px; height: 14px; }
 .chip .dot { width: 9px; height: 9px; border-radius: 50%; }
@@ -1955,8 +1954,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       var lab = row.firstChild; lab.className = 'blab';
       lab.insertBefore(fxIcon(x[3]), lab.firstChild);
       lab.appendChild(el('small', null, '+' + fmt(x[4]) + ' XP'));
+      // 설명은 받은 곳 창에 나오므로 판에는 적지 않는다. 받은 곳 단추는 이름 바로 아래에 붙인다.
       var item = el('div', 'bitem'), sub = el('div', 'bsub');
-      sub.appendChild(el('p', null, XP_WHAT[x[5]]));
       var got = btn('bgot', '받은 곳 ' + xpLogCount(x[5]) + '곳', function () { openGotList(x[5]); });
       got.appendChild(icon('right')); sub.appendChild(got);
       item.appendChild(row); item.appendChild(sub); sec.appendChild(item);
