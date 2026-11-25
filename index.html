@@ -441,6 +441,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 #celeb.fresh { --c1: #2b8a3e; --c2: #69db7c; }
 #celeb.old { --c1: #1c7ed6; --c2: #74c0fc; }
 #celeb.brand { --c1: #d6336c; --c2: #faa2c1; }
+#celeb .cc .two { align-self: stretch; margin-top: 14px; }
+#celeb .cc .two .btn { margin-top: 0; }
 #celeb.out { opacity: 0; transition: opacity .2s ease; }
 #celeb .cc { position: relative; width: min(256px, 74vw); padding: 26px 20px 22px; border-radius: 22px; background: var(--surface); box-shadow: 0 12px 32px rgba(0, 0, 0, .16); display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; animation: ccPop .35s cubic-bezier(.2, .9, .3, 1.25); }
 #celeb .md { position: relative; width: 60px; height: 60px; border-radius: 18px; display: grid; place-items: center; color: var(--c1); background: color-mix(in srgb, var(--c1) 13%, var(--surface)); animation: mdPop .45s .05s cubic-bezier(.2, .9, .3, 1.5) both; }
@@ -3167,16 +3169,19 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     var tries = 0;
     (function show() {
       if ($('xinfo') || $('celeb') || $('lvup') || xpBusy) { if (++tries < 90) setTimeout(show, 1000); return; }
-      var o = el('div'), box = el('div', 'xbox nick done'), ti = el('div', 'dti'), two = el('div', 'two');
-      o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '브랜드 도감이 생겼어요');
-      ti.appendChild(fxArt('brands3')); box.appendChild(ti);
-      box.appendChild(el('h2', null, '브랜드 도감이 생겼어요'));
-      box.appendChild(el('p', 'xexp', '그동안 기록한 브랜드 ' + n + '개를 도감에 모았어요.'));
-      box.appendChild(el('div', 'dxgift', '+' + fmt(add) + ' 원두'));
+      // 다른 보너스 달성과 같은 축하 장면(보너스 달성, 이름, 받은 원두). 단추는 확인과 도감 보기(사용자 2026-11-26).
+      var o = el('div'), conf = el('div', 'cf'), card = el('div', 'cc'), medal = el('div', 'md lt'), two = el('div', 'two');
+      o.id = 'celeb'; o.className = 'brand'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '새 브랜드 ' + n + '개 달성');
+      var art = fxArt('brands3'); art.classList.add('keep'); medal.appendChild(art); card.appendChild(medal);
+      card.appendChild(el('div', 'ct', '보너스 달성'));
+      card.appendChild(el('div', 'cn', '새 브랜드 ' + n + '개 달성'));
+      card.appendChild(el('div', 'cx', '+' + fmt(add) + ' 원두'));
       var after = function () { var to = Math.floor(XP.xp / 1000); if (to > from) xpLevelUp(from, to, [[n * 500, '새 브랜드 ' + n + '개']].concat(lines)); };
-      two.appendChild(btn('btn', '확인', function () { o.remove(); after(); }));
-      two.appendChild(btn('btn pri', '도감 보기', function () { o.remove(); openDex(-1); after(); }));
-      box.appendChild(two); o.appendChild(box); document.body.appendChild(o);
+      var end = function (dex) { o.classList.add('out'); setTimeout(function () { o.remove(); if (dex) openDex(-1); after(); }, 220); };
+      two.appendChild(btn('btn', '확인', function () { end(false); }));
+      two.appendChild(btn('btn pri', '도감 보기', function () { end(true); }));
+      card.appendChild(two); o.appendChild(conf); o.appendChild(card); document.body.appendChild(o);
+      if (!REDUCE) playLottie(conf, 'confetti', true).catch(function () {});
     })();
   }
   // 카페 근처에서 기록한 적이 있는가. 있으면 기록을 지운 뒤에도 어디서든 다시 기록할 수 있다.
@@ -5564,7 +5569,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         ['원두 알림 넷', function () { xpGive([[500, '새 동네', '성수1가1동'], [500, '새로 연 카페', '시험 카페'], [1000, '콘센트 기록', '시험 카페'], [500, '오랜만의 기록', '시험 카페']]); }],
         ['새 브랜드 알림', function () { xpGive([[500, '새 브랜드', '스타벅스']]); }],
         ['새 브랜드 보너스 달성', function () { xpCelebrate([1000, '브랜드 3개 달성'], function () {}); }],
-        ['도감이 생겼어요 (예전 기록)', function () { brandWelcome(4, 3000, Math.floor(XP.xp / 1000), [[1000, '브랜드 3개 달성']]); }],
+        ['새 브랜드 보너스 달성 (예전 기록 담기)', function () { brandWelcome(4, 3000, Math.floor(XP.xp / 1000), [[1000, '브랜드 3개 달성']]); }],
         ['찜 알림', function () { fxToast('latte', '찜했어요'); }]
       ]],
       ['묻는 창, 확인 창', [
