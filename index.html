@@ -2355,24 +2355,39 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     for (k = 0; k < nm.length; k++) h = (h * 31 + nm.charCodeAt(k)) % 9973;
     return DEX_PAL[h % DEX_PAL.length];
   }
-  function dexSvg(j, on, spark) {
+  // 실제 브랜드 아이콘(브랜드 목록과 같은 공식 아이콘 주소)이 있으면 슬리브 위에 동그란 스티커로 붙인다. 컵 모양마다 붙는 자리 [가운데 x, y, 반지름].
+  //  아이콘이 없거나 불러오지 못하면 스티커를 빼서 아래의 첫 글자가 보이게 한다.
+  var DEX_BADGE = { P: [16, 22.1, 5.1], L: [16, 23.5, 4.9], D: [16, 24.7, 3.9] }, dexClip = 0;
+  function dexSvg(j, on, spark, withIcon) {
     var t = DEX_TPL[D.brands[j][1]] || DEX_TPL.P, c = dexColor(j);
     var ini = String(brandInitial[j] || '').replace(/[&<>"]/g, '');
     var inner = on ? t.on.replace(/\{C\}/g, c[0]).replace(/\{T\}/g, c[1]).replace('{I}', ini) : t.off;
+    var u = on && withIcon ? iconUrl(j) : '';
+    if (u) {
+      var bg = DEX_BADGE[D.brands[j][1]] || DEX_BADGE.P, id = 'dxk' + (++dexClip), full = /mzstatic/.test(u), r = bg[2], ir = full ? r - .45 : r * .72;
+      u = u.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+      inner += '<g class="dxb"><circle cx="' + bg[0] + '" cy="' + bg[1] + '" r="' + r + '" fill="#FFFFFF" stroke="' + c[0] + '" stroke-width=".9"/>'
+        + '<clipPath id="' + id + '"><circle cx="' + bg[0] + '" cy="' + bg[1] + '" r="' + (r - .45) + '"/></clipPath>'
+        + '<image href="' + u + '" x="' + (bg[0] - ir) + '" y="' + (bg[1] - ir) + '" width="' + (ir * 2) + '" height="' + (ir * 2) + '" clip-path="url(#' + id + ')" preserveAspectRatio="xMidYMid ' + (full ? 'slice' : 'meet') + '"/></g>';
+    }
     return '<svg viewBox="0 0 32 32"><g class="dc">' + inner + '</g>' + (spark ? DEX_SPARK : '') + '</svg>';
   }
   // mode: still 움직이지 않음(목록), pop 톡 나와 깡충(알림), keep 반짝이까지 남김(도감의 큰 그림)
-  function dexArt(j, on, mode) {
+  //  noIcon: 아주 작게 그릴 때(카드의 브랜드 줄)는 스티커가 안 보여서 첫 글자로
+  function dexArt(j, on, mode, noIcon) {
     var w = el('div', 'fx fxd fx-dexcup' + (mode === 'still' ? ' still' : mode === 'keep' ? ' keep' : ''));
     w.setAttribute('aria-hidden', 'true');
-    w.innerHTML = dexSvg(j, on, on && mode !== 'still');
+    w.innerHTML = dexSvg(j, on, on && mode !== 'still', !noIcon);
+    var im = w.querySelector('image');
+    if (im) im.addEventListener('error', function () { var g = im.parentNode; if (g && g.parentNode) g.parentNode.removeChild(g); });
     return w;
   }
   function dexNo(j) { return 'No.' + ('00' + (j + 1)).slice(-3); }
+  if (TEST) window.testDexArt = function (j) { return dexArt(j, true, 'still'); };
   // 카페 카드의 브랜드 줄에 붙는 표시: 도감에 있으면 번호, 없으면 새 브랜드 +500. 누르면 도감의 그 칸.
   function dexMark(j) {
     var got = dexGot(j), dm = btn('dexmark' + (got ? ' got' : ''), null, function () { openDex(j); }), dmi = el('span', 'dmi');
-    dmi.appendChild(dexArt(j, got, 'still')); dm.appendChild(dmi);
+    dmi.appendChild(dexArt(j, got, 'still', true)); dm.appendChild(dmi);
     dm.appendChild(document.createTextNode(got ? '도감 ' + dexNo(j) : '새 브랜드 +500 원두'));
     return dm;
   }
@@ -5009,9 +5024,10 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     return undefined;
   }
   // 시험용 도감: 브랜드 몇 개를 모은 것으로 둔다(새로고침하면 처음으로).
-  function testDex() {
+  function testDex(all) {
     var now = Date.now(), D1 = 86400000;
     XP.br = {};
+    if (all) { D.brands.forEach(function (b, j) { XP.br[b[0]] = now - (j + 1) * 3600000; }); XP.mb = D.brands.length; save('cafemap.dexSeen', now); return; }
     [['스타벅스', 9], ['메가MGC커피', 7], ['이디야', 6], ['컴포즈커피', 5], ['빽다방', 4], ['투썸플레이스', 3], ['더벤티', 3], ['공차', 2], ['설빙', 2], ['할리스', 1], ['요거프레소', 0], ['블루샥', 0], ['카페봄봄', 0]].forEach(function (x) {
       XP.br[x[0]] = x[1] ? now - x[1] * D1 : now - 60000;
     });
@@ -5065,6 +5081,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       ['내 기록', [
         ['원두 모으는 법', function () { P.prev = null; openPanel('menu'); if (window.testRewards) window.testRewards(); else toast('로그인한 뒤에 볼 수 있어요'); }],
         ['원두 기록', function () { openXpLog(); }],
+        ['브랜드 도감 (전부 모은 모양)', function () { testDex(true); dexTab = 'all'; openDex(-1); }],
         ['브랜드 도감 (여러 개 모은 모양)', function () { testDex(); openDex(-1); }],
         ['브랜드 도감 칸 (모은 브랜드)', function () { testDex(); openDex(brandIx['스타벅스']); }],
         ['브랜드 도감 칸 (아직인 브랜드)', function () { testDex(); openDex(brandIx['블루보틀']); }],
