@@ -1781,6 +1781,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   function xpToday() { var d = new Date(); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); }
   // 더 받는 경우가 무엇인지(목록 창 위에 적는다).
   var XP_WHAT = {
+    '콘센트 기록': '카페에서 콘센트 좌석이 있는지 기록하면 받아요.',
     '첫 콘센트 기록': '아직 아무도 기록하지 않은 카페에 처음으로 콘센트를 기록하면 받아요.',
     '새 동네': '동 단위로, 그 동에서 처음 콘센트를 기록하면 받아요. 동마다 한 번씩이에요.',
     '새로 연 카페': '문 연 지 1년이 안 된 카페에 콘센트를 기록하면 받아요.',
@@ -1806,7 +1807,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       .filter(function (e) { if (!e.c || !now[e.c] || seen[e.c]) return false; seen[e.c] = 1; return true; });
   }
   // 받은 곳 창: 설명과 그 XP를 받은 카페 목록(새 동네는 동 목록). back이 있으면 뒤로 단추.
-  var GOT_PIC = { '새 동네': 'town', '새로 연 카페': 'shop', '오랜만의 기록': 'cal', '첫 콘센트 기록': 'plug' };
+  var GOT_PIC = { '콘센트 기록': 'plug', '새 동네': 'town', '새로 연 카페': 'shop', '오랜만의 기록': 'cal', '첫 콘센트 기록': 'plug' };
   function openGotList(lab, back) {
     var old = $('xinfo'); if (old) old.remove();
     var o = el('div'), box = el('div', 'xbox'), hd = el('div', 'xhead'), bd = el('span', 'xbadge pic'), items = [];
@@ -3928,7 +3929,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
           title('보상 체계', 'pic:mi_rule');
           box.appendChild(el('p', null, '1,000 XP를 모을 때마다 레벨이 1 올라요.'));
           box.appendChild(el('div', 'xgrp', '기본'));
-          row('콘센트 기록', '', 1000, false);
+          tapRow('콘센트 기록', 1000);
           tapRow('첫 콘센트 기록', 2000);
           box.appendChild(el('div', 'xsep'));
           box.appendChild(el('div', 'xgrp', '더 받는 경우'));
