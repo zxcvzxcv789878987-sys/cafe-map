@@ -2513,7 +2513,10 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       pr.appendChild(l); pr.appendChild(r); box.appendChild(pr);
       var track = el('div', 'tr'); fill.style.width = Math.round(count / next * 100) + '%'; track.appendChild(fill); bar.appendChild(track); box.appendChild(bar);
       var g = el('div', 'xms');
-      (next > 50 ? MS.concat([next]) : MS).forEach(function (m) {
+      // 50곳 뒤: 지난 칸(10곳마다) 중 최근 셋과 다음 목표 칸을 덧붙인다. 지난 칸을 빼면 50곳에서 바로 다음 목표로 건너뛴 것처럼 보인다.
+      var past = [];
+      for (var pm = 60; pm < next; pm += 10) past.push(pm);
+      (next > 50 ? MS.concat(past.slice(-3), [next]) : MS).forEach(function (m) {
         var got = have >= m, isNext = !got && m === next, c = el('span', got ? 'got' : isNext ? 'next' : '');
         c.appendChild(icon(got ? 'check' : isNext ? 'gift' : 'lock'));
         c.appendChild(el('b', null, m + unit)); c.appendChild(document.createTextNode('+' + fmt(xpBonus(m))));
