@@ -5859,6 +5859,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         ['원두 기록', function () { openXpLog(); }],
         ['레벨 단계 창', function () { openTiers(); }],
         ['레벨 단계 창 (Lv.250 콜드브루)', function () { XP.xp = 250400; openTiers(); }],
+        ['레벨 단계 창 (Lv.1000 커피 마스터, 다 모은 모양)', function () { XP.xp = 1000000; openTiers(); }],
         ['보너스 표 (히든 전, 42곳)', function () { var v = {}; for (var q = 0; q < 42; q++) v['test' + q] = [1, 2, 1000]; XP.vote = v; XP.mv = 40; openRewards('vote'); }],
         ['보너스 표 (히든 열림, 73곳)', function () { var v = {}; for (var q = 0; q < 73; q++) v['test' + q] = [1, 2, 1000]; XP.vote = v; XP.mv = 70; openRewards('vote'); }],
         ['새 동네 지도 (수원 근처 20곳, 팔달구 완성)', function () { testDongs(); openDongMap(); }],
