@@ -850,6 +850,14 @@ button.xlink .xbadge.qna { --pri: #1c7ed6; --pri2: #74c0fc; }
 .xbox textarea { width: 100%; min-height: 150px; resize: vertical; margin-top: 8px; padding: 12px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); font: inherit; font-size: 16px; line-height: 1.5; }
 .xbox textarea:focus { outline: 2px solid var(--pri); outline-offset: -1px; border-color: transparent; }
 .xms span.next b { color: var(--ink); }
+/* 50곳 칸(받기 전): 숨은 보물 힌트. 금빛 테두리와 반짝임, 오른쪽 위 물음표 */
+.xms span.tre { position: relative; overflow: visible; background: linear-gradient(135deg, #fff8e1, #ffe39a); color: #a86b00; box-shadow: inset 0 0 0 1.5px #f0b429, 0 0 14px rgba(240, 180, 41, .45); }
+.xms span.tre b { color: #6b4500; }
+.xms span.tre svg.i { color: #d08a00; opacity: 1; }
+.xms span.tre::before { content: "?"; position: absolute; right: -5px; top: -6px; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; background: #f0b429; color: #fff; font-size: 11px; font-weight: 900; box-shadow: 0 1px 4px rgba(160, 100, 0, .35); }
+.xms span.tre::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, .75) 50%, transparent 65%); background-size: 250% 100%; animation: treShine 2.6s ease-in-out infinite; pointer-events: none; }
+@keyframes treShine { 0% { background-position: 130% 0; } 55%, 100% { background-position: -30% 0; } }
+.xrow.hdrow b { color: #b7791f; }
 .xhd { display: flex; align-items: center; gap: 5px; margin: 4px 2px -4px; font-size: 12px; font-weight: 800; color: #b7791f; }
 .xhd svg.i { width: 14px; height: 14px; }
 .xms span.hd { background: #221c45; color: rgba(255, 216, 107, .7); }
@@ -2528,18 +2536,22 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       for (var pm = 60; pm < next; pm += 10) past.push(pm);
       (next > 50 ? MS.concat(past.slice(-3), [next]) : MS).forEach(function (m) {
         // 50곳 뒤 칸은 히든 보너스: 묶음 이름을 한 줄 넣고, 어두운 바탕에 금색으로 다르게 그린다(사용자 2026-11-26).
-        var got = have >= m, isNext = !got && m === next, c = el('span', (got ? 'got' : isNext ? 'next' : '') + (m > 50 ? ' hd' : ''));
+        var got = have >= m, isNext = !got && m === next, c = el('span', (got ? 'got' : isNext ? 'next' : '') + (m > 50 ? ' hd' : '') + (m === 50 && !got ? ' tre' : ''));
         c.appendChild(icon(got ? 'check' : isNext ? 'gift' : 'lock'));
         c.appendChild(el('b', null, m + unit)); c.appendChild(document.createTextNode('+' + fmt(xpBonus(m))));
         c.setAttribute('aria-label', m + unit + ', ' + fmt(xpBonus(m)) + ' 원두, ' + (got ? '받음' : isNext ? '다음 목표' : '아직'));
         (m > 50 ? gh : g).appendChild(c);
       });
       box.appendChild(g);
-      if (gh.firstChild) { var hh = el('div', 'xhd'); hh.appendChild(icon('spark')); hh.appendChild(document.createTextNode('히든 보너스')); box.appendChild(hh); box.appendChild(gh); }
-      // 50곳 뒤의 규칙은 다른 줄들처럼 이름과 XP를 양쪽에 맞춰 두 줄로 적는다.
-      [['50' + unit + ' 뒤로 10' + unit + '마다', 10000], ['100' + unit + '마다', 20000]].forEach(function (x) {
-        var r = el('div', 'xrow'); r.appendChild(el('span', null, x[0])); r.appendChild(el('b', null, '+' + fmt(x[1]) + ' 원두')); box.appendChild(r);
-      });
+      // 히든 보너스: 50곳을 받기 전에는 칸도 규칙 글도 숨긴다(50곳 칸만 보물이 숨은 듯한 모양으로 힌트). 50곳을 받으면 같이 열린다(사용자 2026-11-26).
+      if (have >= 50) {
+        var hh = el('div', 'xhd'); hh.appendChild(icon('spark')); hh.appendChild(document.createTextNode('히든 보너스')); box.appendChild(hh);
+        if (gh.firstChild) box.appendChild(gh);
+        // 50곳 뒤의 규칙은 다른 줄들처럼 이름과 원두를 양쪽에 맞춰 두 줄로 적는다.
+        [['50' + unit + ' 뒤로 10' + unit + '마다', 10000], ['100' + unit + '마다', 20000]].forEach(function (x) {
+          var r = el('div', 'xrow hdrow'); r.appendChild(el('span', null, x[0])); r.appendChild(el('b', null, '+' + fmt(x[1]) + ' 원두')); box.appendChild(r);
+        });
+      }
     };
     if (view === 'newb' || view === 'oldb') {
       var lb = view === 'newb' ? '새로 연 카페' : '오랜만의 기록';
@@ -5641,7 +5653,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       ['내 기록', [
         ['원두 모으는 법', function () { P.prev = null; openPanel('menu'); if (window.testRewards) window.testRewards(); else toast('로그인한 뒤에 볼 수 있어요'); }],
         ['원두 기록', function () { openXpLog(); }],
-        ['보너스 표 (50곳 넘은 모양, 73곳)', function () { var v = {}; for (var q = 0; q < 73; q++) v['test' + q] = [1, 2, 1000]; XP.vote = v; XP.mv = 70; openRewards('vote'); }],
+        ['보너스 표 (히든 전, 42곳)', function () { var v = {}; for (var q = 0; q < 42; q++) v['test' + q] = [1, 2, 1000]; XP.vote = v; XP.mv = 40; openRewards('vote'); }],
+        ['보너스 표 (히든 열림, 73곳)', function () { var v = {}; for (var q = 0; q < 73; q++) v['test' + q] = [1, 2, 1000]; XP.vote = v; XP.mv = 70; openRewards('vote'); }],
         ['새 동네 지도 (수원 근처 20곳, 팔달구 완성)', function () { testDongs(); openDongMap(); }],
         ['새 동네 지도 (처음, 다녀온 곳 없음)', function () { XP.dong = {}; XP.md = 0; openDongMap(); }],
         ['브랜드 도감 (전부 모은 모양)', function () { testDex(true); dexTab = 'all'; openDex(-1); }],
