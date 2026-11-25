@@ -5626,6 +5626,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       ['내 기록', [
         ['원두 모으는 법', function () { P.prev = null; openPanel('menu'); if (window.testRewards) window.testRewards(); else toast('로그인한 뒤에 볼 수 있어요'); }],
         ['원두 기록', function () { openXpLog(); }],
+        ['보너스 표 (50곳 넘은 모양, 73곳)', function () { var v = {}; for (var q = 0; q < 73; q++) v['test' + q] = [1, 2, 1000]; XP.vote = v; XP.mv = 70; openRewards('vote'); }],
         ['새 동네 지도 (수원 근처 20곳, 팔달구 완성)', function () { testDongs(); openDongMap(); }],
         ['새 동네 지도 (처음, 다녀온 곳 없음)', function () { XP.dong = {}; XP.md = 0; openDongMap(); }],
         ['브랜드 도감 (전부 모은 모양)', function () { testDex(true); dexTab = 'all'; openDex(-1); }],
