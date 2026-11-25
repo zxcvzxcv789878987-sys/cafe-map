@@ -859,18 +859,31 @@ button.xlink .xbadge.qna { --pri: #1c7ed6; --pri2: #74c0fc; }
 @keyframes treShine { 0% { background-position: 130% 0; } 55%, 100% { background-position: -30% 0; } }
 .xrow.hdrow b { color: #b7791f; }
 /* 히든 보너스가 처음 열릴 때: 이름이 반짝 나타나고 칸이 차례로 뒤집히듯 나온다 */
-.hidopen .xhd { animation: hdIn .5s .15s cubic-bezier(.2, .9, .3, 1.4) both; }
-.hidopen .xhd svg.i { animation: hdSpin .9s .2s ease-out both; }
+.hidopen .xhd { animation: hdIn .5s calc(var(--hd0, .35s) - .2s) cubic-bezier(.2, .9, .3, 1.4) both; }
+.hidopen .xhd svg.i { animation: hdSpin .9s calc(var(--hd0, .35s) - .15s) ease-out both; }
 .hidopen .xms span.hd { animation: hdFlip .5s cubic-bezier(.2, .9, .3, 1.3) both; }
 .hidopen .xms span.hd:nth-child(1) { animation-delay: .35s; }
 .hidopen .xms span.hd:nth-child(2) { animation-delay: .5s; }
 .hidopen .xms span.hd:nth-child(3) { animation-delay: .65s; }
 .hidopen .xms span.hd:nth-child(4) { animation-delay: .8s; }
-.hidopen .xrow.hdrow { animation: hdIn .4s .9s ease-out both; }
+.hidopen .xrow.hdrow { animation: hdIn .4s calc(var(--hd0, .35s) + .55s) ease-out both; }
+.hidin { display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+.hidwrap.reveal { display: grid; grid-template-rows: 0fr; animation: hwOpen .55s 1.05s cubic-bezier(.2, .8, .3, 1) forwards; }
+.hidwrap.reveal .hidin { overflow: hidden; }
+@keyframes hwOpen { to { grid-template-rows: 1fr; } }
+.xms span.u50 { position: relative; overflow: visible; }
+.xms span.u50.tre { animation: u50Shake .75s .2s ease-in-out both; }
+.xms span.u50.opened { animation: u50Open .5s cubic-bezier(.2, .9, .3, 1.6) both; }
+.xms span.u50.opened::after { content: ""; position: absolute; inset: -4px; border-radius: 18px; border: 2.5px solid #ffd86b; pointer-events: none; animation: u50Ring .7s ease-out forwards; }
+@keyframes u50Shake { 0%, 100% { transform: none; } 15% { transform: rotate(-7deg) scale(1.05); } 30% { transform: rotate(7deg) scale(1.08); } 45% { transform: rotate(-6deg) scale(1.1); } 60% { transform: rotate(6deg) scale(1.12); } 80% { transform: scale(1.16); } }
+@keyframes u50Open { from { transform: scale(1.3); filter: brightness(1.7); } to { transform: none; filter: none; } }
+@keyframes u50Ring { from { opacity: 1; transform: scale(.85); } to { opacity: 0; transform: scale(1.35); } }
 @keyframes hdIn { from { opacity: 0; transform: translateY(6px) scale(.9); } to { opacity: 1; transform: none; } }
 @keyframes hdSpin { from { transform: rotate(-180deg) scale(.3); } to { transform: none; } }
 @keyframes hdFlip { from { opacity: 0; transform: perspective(300px) rotateY(90deg) scale(.8); } to { opacity: 1; transform: none; } }
 #celeb.hidden { --c1: #c27c00; --c2: #ffd86b; }
+#celeb .cs { margin-top: 6px; font-size: 13px; color: var(--ink-2); word-break: keep-all; }
+#celeb .cc .two .btn { white-space: nowrap; }
 .fx-chest .glow { opacity: 0; transform-origin: center; animation: chGlow .6s .75s ease-out forwards; }
 .fx-chest .body { transform-origin: center bottom; animation: fxPop .35s cubic-bezier(.2, .9, .3, 1.3) both, chShake .36s .35s ease-in-out; }
 .fx-chest .lid { transform-origin: 15% 100%; animation: fxPop .35s cubic-bezier(.2, .9, .3, 1.3) both, chLid .45s .72s cubic-bezier(.2, .9, .3, 1.4) forwards; }
@@ -2269,8 +2282,17 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     card.appendChild(el('div', 'ct', hidden ? '히든 보너스가 열렸어요' : goal ? '보너스 달성' : '처음이에요'));
     card.appendChild(el('div', 'cn', xpShow(it[1])));
     card.appendChild(el('div', 'cx', '+' + fmt(it[0]) + ' 원두'));
-    var close = function () { if (done) return; done = true; o.classList.add('out'); setTimeout(function () { o.remove(); next(); }, 220); };
-    var ok = btn('btn pri', '확인', close); card.appendChild(ok);
+    var close = function (then) { if (done) return; done = true; o.classList.add('out'); setTimeout(function () { o.remove(); if (typeof then === 'function') then(); next(); }, 220); };
+    var ok = btn('btn pri', '확인', close);
+    if (hidden) {
+      // 히든 보너스가 열린 표로 바로 가는 단추(사용자 2026-11-26)
+      var hv = /^동네/.test(it[1]) ? 'dong' : brand ? 'brand' : fresh ? 'newb' : old ? 'oldb' : 'vote';
+      card.appendChild(el('div', 'cs', '보너스 창에서 확인해 보세요'));
+      var two = el('div', 'two');
+      two.appendChild(btn('btn', '확인', close));
+      two.appendChild(btn('btn pri', '보너스 창', function () { close(function () { openRewards(hv); }); }));
+      card.appendChild(two); ok = two.lastChild;
+    } else card.appendChild(ok);
     o.appendChild(conf); o.appendChild(card); document.body.appendChild(o);
     if (!REDUCE) playLottie(conf, 'confetti', true).catch(function () {});
     setTimeout(function () { if (o.isConnected) ok.focus(); }, 50);
@@ -2532,7 +2554,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     // 히든 칸은 한 줄로 늘어놓고 옆으로 밀어서 본다. 넷보다 많으면 처음에는 끝(최근 칸)이 보이게 둔다(사용자 2026-11-26).
     var hidFold = function (grid) {
       var cs = [].slice.call(grid.children);
-      cs.slice(-4).forEach(function (c, i) { c.style.animationDelay = (.35 + i * .15) + 's'; });
+      cs.slice(-4).forEach(function (c, i) { c.style.animationDelay = 'calc(var(--hd0, .35s) + ' + (i * .15) + 's)'; });
       if (cs.length <= 4) return;
       grid.classList.add('hscroll');
       requestAnimationFrame(function () { grid.scrollLeft = grid.scrollWidth; });
@@ -2547,6 +2569,33 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       unit = unit || '곳';
       var next = count + 1;
       while (!xpBonus(next)) next++;
+      // 히든 보너스 묶음. 50곳을 받고 이 표를 처음 열면(시험 모드는 늘): 50곳 칸이 보물처럼 흔들리다가 열리고,
+      // 그 아래로 묶음이 펼쳐지며 칸이 하나씩 뒤집혀 나온다(사용자 2026-11-26).
+      var showHidden = function (c50, ghGrid) {
+        var key = 'cafemap.hid.' + what, fresh = TEST || !load(key);
+        if (fresh && !TEST) save(key, 1);
+        var hw = el('div', 'hidwrap'), inner = el('div', 'hidin'), hh = el('div', 'xhd');
+        hh.appendChild(icon('spark')); hh.appendChild(document.createTextNode('히든 보너스')); inner.appendChild(hh);
+        if (ghGrid.firstChild) inner.appendChild(ghGrid);
+        [['50' + unit + ' 뒤로 10' + unit + '마다', 10000], ['100' + unit + '마다', 20000]].forEach(function (x) {
+          var rw2 = el('div', 'xrow hdrow'); rw2.appendChild(el('span', null, x[0])); rw2.appendChild(el('b', null, '+' + fmt(x[1]) + ' 원두')); inner.appendChild(rw2);
+        });
+        hw.appendChild(inner); box.appendChild(hw);
+        if (ghGrid.firstChild) hidFold(ghGrid);
+        if (!fresh) return;
+        box.classList.add('hidopen'); box.style.setProperty('--hd0', '1.45s');
+        hw.classList.add('reveal');
+        if (c50) {
+          c50.classList.add('tre', 'u50');
+          setTimeout(function () { c50.classList.remove('tre'); c50.classList.add('opened'); }, 1000);
+        }
+        // 펼쳐진 묶음이 창 아래로 가려지면 창 안에서만 내려 준다(화면 전체가 밀리지 않게).
+        setTimeout(function () {
+          if (!hw.isConnected) return;
+          var over = hw.offsetTop + hw.offsetHeight + 12 - (box.scrollTop + box.clientHeight);
+          if (over > 0) box.scrollTo({ top: box.scrollTop + over, behavior: 'smooth' });
+        }, 1700);
+      };
       if (max && next > max) {
         var pd = el('div', 'xprog'), pl = el('div', 'l'), pr2 = el('div', 'r'), pn = el('b');
         pn.appendChild(document.createTextNode(String(count))); pn.appendChild(el('small', 'of', ' / ' + max + unit));
@@ -2554,27 +2603,21 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         pr2.appendChild(el('b', null, '다 모았어요'));
         pd.appendChild(pl); pd.appendChild(pr2); box.appendChild(pd);
         var bar2 = el('div', 'xpbar'), tr2 = el('div', 'tr'), f2 = el('i'); f2.style.width = '100%'; tr2.appendChild(f2); bar2.appendChild(tr2); box.appendChild(bar2);
-        var g2 = el('div', 'xms');
+        var g2 = el('div', 'xms'), c50b = null;
         MS.filter(function (m) { return m <= max; }).forEach(function (m) {
           var c2 = el('span', have >= m ? 'got' : ''); c2.appendChild(icon(have >= m ? 'check' : 'lock'));
           c2.appendChild(el('b', null, m + unit)); c2.appendChild(document.createTextNode('+' + fmt(xpBonus(m)))); g2.appendChild(c2);
+          if (m === 50) c50b = c2;
         });
         box.appendChild(g2);
         if (have >= 50) {
-          var hidKey2 = 'cafemap.hid.' + what, fresh2 = TEST || !load(hidKey2);
-          if (fresh2 && !TEST) save(hidKey2, 1);
-          if (fresh2) box.classList.add('hidopen');
-          var hh2 = el('div', 'xhd'); hh2.appendChild(icon('spark')); hh2.appendChild(document.createTextNode('히든 보너스')); box.appendChild(hh2);
           var past2 = [], gh2 = el('div', 'xms');
           for (var pm2 = 60; pm2 <= max; pm2 += 10) past2.push(pm2);
           past2.forEach(function (m) {
             var c3 = el('span', (have >= m ? 'got' : '') + ' hd'); c3.appendChild(icon(have >= m ? 'check' : 'lock'));
             c3.appendChild(el('b', null, m + unit)); c3.appendChild(document.createTextNode('+' + fmt(xpBonus(m)))); gh2.appendChild(c3);
           });
-          if (gh2.firstChild) { box.appendChild(gh2); hidFold(gh2); }
-          [['50' + unit + ' 뒤로 10' + unit + '마다', 10000], ['100' + unit + '마다', 20000]].forEach(function (x) {
-            var r = el('div', 'xrow hdrow'); r.appendChild(el('span', null, x[0])); r.appendChild(el('b', null, '+' + fmt(x[1]) + ' 원두')); box.appendChild(r);
-          });
+          showHidden(c50b, gh2);
         }
         return;
       }
@@ -2590,7 +2633,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       var track = el('div', 'tr'); fill.style.width = Math.round((count - prev) / (next - prev) * 100) + '%'; track.appendChild(fill); bar.appendChild(track); box.appendChild(bar);
       var g = el('div', 'xms');
       // 50곳 뒤: 지난 칸(10곳마다) 중 최근 셋과 다음 목표 칸을 덧붙인다. 지난 칸을 빼면 50곳에서 바로 다음 목표로 건너뛴 것처럼 보인다.
-      var past = [], gh = el('div', 'xms');
+      var past = [], gh = el('div', 'xms'), c50 = null;
       for (var pm = 60; pm < next; pm += 10) past.push(pm);
       (next > 50 ? MS.concat(past, [next]) : MS).forEach(function (m) {
         // 50곳 뒤 칸은 히든 보너스: 묶음 이름을 한 줄 넣고, 어두운 바탕에 금색으로 다르게 그린다(사용자 2026-11-26).
@@ -2599,21 +2642,11 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         c.appendChild(el('b', null, m + unit)); c.appendChild(document.createTextNode('+' + fmt(xpBonus(m))));
         c.setAttribute('aria-label', m + unit + ', ' + fmt(xpBonus(m)) + ' 원두, ' + (got ? '받음' : isNext ? '다음 목표' : '아직'));
         (m > 50 ? gh : g).appendChild(c);
+        if (m === 50) c50 = c;
       });
       box.appendChild(g);
       // 히든 보너스: 50곳을 받기 전에는 칸도 규칙 글도 숨긴다(50곳 칸만 보물이 숨은 듯한 모양으로 힌트). 50곳을 받으면 같이 열린다(사용자 2026-11-26).
-      if (have >= 50) {
-        // 이 표의 히든 칸을 처음 볼 때만 열리는 움직임(시험 모드는 늘)
-        var hidKey = 'cafemap.hid.' + what, fresh0 = TEST || !load(hidKey);
-        if (fresh0 && !TEST) save(hidKey, 1);
-        if (fresh0) box.classList.add('hidopen');
-        var hh = el('div', 'xhd'); hh.appendChild(icon('spark')); hh.appendChild(document.createTextNode('히든 보너스')); box.appendChild(hh);
-        if (gh.firstChild) { box.appendChild(gh); hidFold(gh); }
-        // 50곳 뒤의 규칙은 다른 줄들처럼 이름과 원두를 양쪽에 맞춰 두 줄로 적는다.
-        [['50' + unit + ' 뒤로 10' + unit + '마다', 10000], ['100' + unit + '마다', 20000]].forEach(function (x) {
-          var r = el('div', 'xrow hdrow'); r.appendChild(el('span', null, x[0])); r.appendChild(el('b', null, '+' + fmt(x[1]) + ' 원두')); box.appendChild(r);
-        });
-      }
+      if (have >= 50) showHidden(c50, gh);
     };
     if (view === 'newb' || view === 'oldb') {
       var lb = view === 'newb' ? '새로 연 카페' : '오랜만의 기록';
