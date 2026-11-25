@@ -2006,6 +2006,12 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     box.appendChild(btn('btn pri', '확인', done));
     o.appendChild(box); document.body.appendChild(o);
   }
+  // 첫 콘센트 기록을 받은 카페의 기록을 지울 때 묻는 창. others: 다른 사람 기록이 이미 있는가
+  function firstUndoBox(amt, others, go) {
+    askBox('plug', '기록을 지울까요?', '지우면 이 카페에서 받은 ' + fmt(amt) + ' XP가 빠져요. ' +
+      (others ? '이미 다른 사람이 기록해서 다시 기록해도 콘센트 기록 1,000 XP만 받아요.' : '다시 기록하기 전에 다른 사람이 기록하면 콘센트 기록 1,000 XP만 받아요.'),
+      '지우기', go);
+  }
   // 그림, 제목, 설명, 취소와 확인 단추가 있는 묻는 창
   function askBox(pic, title, text, okLabel, go) {
     var old = $('xinfo'); if (old) old.remove();
@@ -4695,45 +4701,64 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   function testMenu() {
     var close = function () { var x = $('xinfo'); if (x) x.remove(); };
     var myFbSetup = function () { save('cafemap.myfb', [{ id: '-TEST1', k: 'idea', m: '주차 되는 카페만 볼 수 있으면 좋겠어요.\n주말에 차로 다녀서요.', t: Date.now() - 2 * 86400000 }]); save('cafemap.fbseen', {}); };
+    var bigCafe = function () { for (var j = 0; j < N; j++) if (D.area[j] >= 400 && D.name[j].indexOf('스타벅스') === 0) return j; return 0; };
     var groups = [
-      ['보상 장면', [
+      ['축하와 알림', [
         ['첫 기록 한 번의 흐름', function () { XP.xp = 1000; XP.fo = 0; xpGive([[2000, '첫 콘센트 기록', '시험 카페'], [500, '새 동네', '성수1가1동'], [1000, '생애 첫 기록']]); }],
-        ['생애 첫 기록 축하', function () { xpCelebrate([1000, '생애 첫 기록'], function () {}); }],
+        ['생애 첫 기록', function () { xpCelebrate([1000, '생애 첫 기록'], function () {}); }],
         ['콘센트 보너스 달성', function () { xpCelebrate([1000, '기록한 카페 3곳 달성'], function () {}); }],
         ['새 동네 보너스 달성', function () { xpCelebrate([1000, '동네 3곳 달성'], function () {}); }],
         ['새로 연 카페 보너스 달성', function () { xpCelebrate([1000, '새로 연 카페 3곳 달성'], function () {}); }],
         ['오랜만의 기록 보너스 달성', function () { xpCelebrate([1000, '오랜만의 기록 3곳 달성'], function () {}); }],
         ['레벨 업', function () { xpLevelUp(6, 9, [[2000, '첫 콘센트 기록'], [500, '새로 연 카페'], [1000, '기록한 카페 5곳 달성']]); }],
-        ['XP 알림 그림 넷', function () { xpGive([[500, '새 동네', '성수1가1동'], [500, '새로 연 카페', '시험 카페'], [1000, '콘센트 기록', '시험 카페'], [500, '오랜만의 기록', '시험 카페']]); }],
-        ['찜 알림', function () { fxToast('latte', '찜했어요'); }],
-        ['문의 보냄 창', function () { fbSent(); }],
-        ['그림 시험 페이지', function () { location.href = 'test/fx.html'; }]
+        ['XP 알림 넷', function () { xpGive([[500, '새 동네', '성수1가1동'], [500, '새로 연 카페', '시험 카페'], [1000, '콘센트 기록', '시험 카페'], [500, '오랜만의 기록', '시험 카페']]); }],
+        ['찜 알림', function () { fxToast('latte', '찜했어요'); }]
+      ]],
+      ['묻는 창, 확인 창', [
+        ['첫 기록 지우기 (다른 기록 없음)', function () { firstUndoBox(2500, false, function () { toast('지웠어요 (시험)'); }); }],
+        ['첫 기록 지우기 (다른 기록 있음)', function () { firstUndoBox(2500, true, function () { toast('지웠어요 (시험)'); }); }],
+        ['폐업 신고', function () { confirmGone(function () { toast('신고했어요 (시험)'); }); }],
+        ['대형 기준', function () { openBigBox(bigCafe()); }],
+        ['문의 보냄', function () { fbSent(); }],
+        ['첫 로그인', function () { XP.nickOk = 0; doneBox('login', '로그인했어요', '로그인 보너스 +1,000 XP를 받았어요.', false, function () { openNickFirst(); }); }],
+        ['다시 로그인', function () { doneBox('login', '다시 오셨네요', (XP.nick || '시험 쿼카') + '님, 반가워요.', false); }]
       ]],
       ['닉네임', [
-        ['첫 로그인 (로그인 창 뒤 닉네임)', function () { XP.nickOk = 0; doneBox('login', '로그인했어요', '로그인 보너스 +1,000 XP를 받았어요.', false, function () { openNickFirst(); }); }],
-        ['다시 로그인', function () { doneBox('login', '다시 오셨네요', (XP.nick || '시험 쿼카') + '님, 반가워요.', false); }],
-        ['첫 로그인 닉네임 정하기', function () { XP.nickOk = 0; openNickFirst(); }],
-        ['닉네임 바꾸기', function () { XP.nickOk = 1; XP.nickT = 0; openNick(); }],
-        ['6개월 잠김', function () { XP.nickOk = 1; XP.nickT = Date.now(); openNick(); }]
+        ['처음 정하기 창', function () { XP.nickOk = 0; openNickFirst(); }],
+        ['바꾸기 창', function () { XP.nickOk = 1; XP.nickT = 0; openNick(); }],
+        ['6개월 잠김', function () { XP.nickOk = 1; XP.nickT = Date.now(); openNick(); }],
+        ['정했어요 창', function () { doneBox('cup', '닉네임을 정했어요', XP.nick || '시험 쿼카', true); }],
+        ['바꿨어요 창', function () { doneBox('cup', '닉네임을 바꿨어요', XP.nick || '시험 쿼카', true); }]
       ]],
-      ['랭킹', [
-        ['전체 랭킹', function () { openRank(); }]
+      ['지도', [
+        ['내 위치 캐릭터 (가짜 위치, 방향 돌기)', function () {
+          var c = map.getCenter(); meMarker([c.lng, c.lat]);
+          var d = 0, t = setInterval(function () { d += 30; onHeading({ webkitCompassHeading: d % 360 }); if (d >= 720) clearInterval(t); }, 250);
+        }],
+        ['걷는 길 판', function () { var j = bigCafe(); routeInfo = { i: j, dist: 690, min: 10 }; P.cafe = j; sel = j; P.prev = 'detail'; openPanel('route'); }]
       ]],
-      ['문의', [
-        ['내 문의 (답변 온 상태)', function () { myFbSetup(); openMyFb(); }],
-        ['새 답변 빨간 점', function () { myFbSetup(); fbCheck(); toast('왼쪽 위 메뉴 단추를 보세요'); }],
-        ['받은 문의 (운영자 화면)', function () { var u0 = who.u; who.u = SHARE.admin; openAdminFb(); who.u = u0; }]
+      ['내 기록', [
+        ['XP 기록', function () { openXpLog(); }],
+        ['받은 곳 목록 (새로 연 카페)', function () { openGotList('새로 연 카페'); }]
       ]],
-      ['폐업 신고', [
-        ['내 폐업 신고 (답이 온 상태)', function () { save('cafemap.goneseen', {}); goneNewCount(); openMyGone(); }],
-        ['새 결과 빨간 점', function () { save('cafemap.goneseen', {}); goneNewCount(); toast('왼쪽 위 메뉴 단추를 보세요'); }],
-        ['받은 폐업 신고 (운영자 화면)', function () { var u0 = who.u; who.u = SHARE.admin; openAdminGone(); who.u = u0; }]
+      ['사람', [
+        ['전체 랭킹', function () { openRank(); }],
+        ['기록한 사람', function () { var now = Date.now(); voters[0] = [{ u: SHARE.admin, o: 1, c: 'wn', t: now - 3600000, admin: true }, { u: 'p0', o: 1, c: 's', t: now - 86400000 }, { u: 'p5', o: -1, c: '', t: now - 2 * 86400000 }, { u: 'test-user', o: 1, c: 'w', t: now - 600000, me: true }]; openVoters(0); }]
+      ]],
+      ['문의, 폐업 신고', [
+        ['내 문의', function () { myFbSetup(); openMyFb(); }],
+        ['내 폐업 신고', function () { save('cafemap.goneseen', {}); goneNewCount(); openMyGone(); }],
+        ['새 답 빨간 점', function () { myFbSetup(); save('cafemap.goneseen', {}); fbCheck(); goneNewCount(); toast('왼쪽 위 메뉴 단추를 보세요'); }],
+        ['받은 문의 (운영자)', function () { var u0 = who.u; who.u = SHARE.admin; openAdminFb(); who.u = u0; }],
+        ['받은 폐업 신고 (운영자)', function () { var u0 = who.u; who.u = SHARE.admin; openAdminGone(); who.u = u0; }]
+      ]],
+      ['로그인 창', [
+        ['기록할 때', function () { openLogin(null, 'vote'); }],
+        ['찜할 때', function () { openLogin(null, 'want'); }],
+        ['폐업 신고할 때', function () { openLogin(null, 'gone'); }]
       ]],
       ['그 밖', [
-        ['기록한 사람 보기', function () { var now = Date.now(); voters[0] = [{ u: SHARE.admin, o: 1, c: 'wn', t: now - 3600000, admin: true }, { u: 'p0', o: 1, c: 's', t: now - 86400000 }, { u: 'p5', o: -1, c: '', t: now - 2 * 86400000 }, { u: 'test-user', o: 1, c: 'w', t: now - 600000, me: true }]; openVoters(0); }],
-        ['로그인 창: 기록', function () { openLogin(null, 'vote'); }],
-        ['로그인 창: 찜', function () { openLogin(null, 'want'); }],
-        ['로그인 창: 폐업 신고', function () { openLogin(null, 'gone'); }]
+        ['그림 모음 페이지 (예전 시안)', function () { location.href = 'test/fx.html'; }]
       ]]
     ];
     close();
@@ -5392,9 +5417,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         var nm0 = D.name[i];
         if (!(XP.log || []).some(function (e) { return e.c === nm0 && xpSame(e.r, '첫 콘센트 기록') && e.a > 0; })) return false;
         var others = (realVotes[i] || 0) > 0;
-        askBox('plug', '기록을 지울까요?', '지우면 이 카페에서 받은 ' + fmt(m[2] || 0) + ' XP가 빠져요. ' +
-          (others ? '이미 다른 사람이 기록해서 다시 기록해도 콘센트 기록 1,000 XP만 받아요.' : '다시 기록하기 전에 다른 사람이 기록하면 콘센트 기록 1,000 XP만 받아요.'),
-          '지우기', function () { apply(o, bit); });
+        firstUndoBox(m[2] || 0, others, function () { apply(o, bit); });
         return true;
       };
       var cast = function (o, bit) {
