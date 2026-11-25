@@ -749,6 +749,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
 .me .dot { position: absolute; left: 50%; top: 50%; width: 28px; height: 28px; margin: -14px 0 0 -14px; border-radius: 50%; background: #e5484d; border: 2.5px solid #fff; box-shadow: 0 0 0 6px rgba(229, 72, 77, .18), 0 2px 5px rgba(0, 0, 0, .3); display: grid; place-items: center; }
 .me .dot .fxs { width: 20px; height: 20px; margin-top: -1px; }
 .me .dot circle { transition: transform .25s ease-out; }
+.me .dot .eyes { transform-box: fill-box; transform-origin: center; transition: transform .07s ease-in-out; }
 
 @media (max-width: 760px) {
   #bar { top: calc(10px + env(safe-area-inset-top, 0px)); left: 0; right: 0; flex-direction: column; gap: 0; }
@@ -5584,11 +5585,28 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       d.innerHTML = '<svg class="cone" viewBox="0 0 84 84" aria-hidden="true"><path d="M42 42 L24 4 A40 40 0 0 1 60 4 Z"/></svg><i class="dot"></i>';
       d.querySelector('.dot').appendChild(fxIcon('char'));
       d.querySelectorAll('.dot circle').forEach(function (c) { c.setAttribute('r', '1.55'); });
+      // 두 눈을 한 묶음으로 감싼다. 눈동자가 보는 방향(눈마다 옮김)과 깜박임(묶음을 위아래로 접음)이 서로 덮어쓰지 않게.
+      var eyes = d.querySelectorAll('.dot circle'), eg = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      eg.setAttribute('class', 'eyes'); eyes[0].parentNode.insertBefore(eg, eyes[0]); eg.appendChild(eyes[0]); eg.appendChild(eyes[1]);
+      blinkLoop();
       me = new maplibregl.Marker({ element: d }).setLngLat(ll).addTo(map);
     } else me.setLngLat(ll);
   }
   // 따라가는 중인지는 단추에 표시하지 않는다(사용자: 보라로 남으면 안 끝난 느낌. 카카오, 네이버도 표시하지 않는다).
   function setFollow(on) { follow = on; }
+  // 가끔 눈을 깜박인다(사용자 요청 2026-11-26). 2.5초에서 6초 사이 아무 때나 한 번, 다섯 번에 한 번쯤은 두 번 연달아. 앱을 내려 두면 쉰다.
+  function blinkOnce() {
+    var g = me && me.getElement().querySelector('.eyes');
+    if (!g) return;
+    g.style.transform = 'scaleY(.12)';
+    setTimeout(function () { g.style.transform = ''; }, 110);
+  }
+  function blinkLoop() {
+    setTimeout(function () {
+      if (me && !document.hidden) { blinkOnce(); if (Math.random() < .2) setTimeout(blinkOnce, 260); }
+      blinkLoop();
+    }, 2500 + Math.random() * 3500);
+  }
   var lastFix = null;      // 실시간으로 받은 마지막 위치와 받은 때. 단추를 누르면 이것으로 바로 간다.
   function onFix(p) {
     lastFix = { p: p, t: Date.now() };
