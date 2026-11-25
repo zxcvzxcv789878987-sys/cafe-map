@@ -635,6 +635,11 @@ button.xlink .xbadge.rank, .xbox.rank { --pri: #6a5ae0; --pri2: #8b7bf2; }
 /* 랭킹에서 누른 사람 창 */
 .xbox.person .pstop { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .xbox.person .pstop h2 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.xbox.person .pslog { max-height: 34vh; overflow-y: auto; padding-right: 8px; }
+.xbox.person .pslog .rt b { font-size: 13px; color: var(--pri, #6a5ae0); }
+.xbox.person .pslog .rt b.minus { color: var(--ink-3); }
+.xbox.vote .xli.tap { cursor: pointer; }
+.xbox.vote .xli.tap .rs { text-decoration: underline; text-underline-offset: 2px; text-decoration-color: var(--line-2); }
 .xbox.person .psno { flex: none; font-size: 15px; font-weight: 800; color: #6a5ae0; }
 .xbox.person .rktag { flex: none; padding: 1px 7px; border-radius: 999px; background: #ecebfc; color: #6a5ae0; font-size: 11px; font-weight: 700; }
 .xbox.person .pslv { display: flex; align-items: baseline; justify-content: space-between; }
@@ -1520,7 +1525,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     seen: saved.seen === 'want' ? 'want' : 'all',   // 찜한 곳만 보기: all 전부, want 찜한 곳만
     outline: saved.outline !== false,   // 환경설정: 고른 지역의 경계선과 색칠을 보일지
     nav: saved.nav === 'naver' ? 'naver' : 'kakao',   // 환경설정: 길찾기에 쓸 지도 앱(티맵은 여는 주소를 확인할 수 없고 실제로 안 열려서 뺐다)
-    start: saved.start === 'korea' || saved.start === 'me' ? saved.start : 'last',   // 환경설정: 시작할 때 보여 줄 곳. last 마지막에 보던 곳, korea 전국, me 내 위치
+    start: saved.startSet && (saved.start === 'korea' || saved.start === 'last') ? saved.start : 'me',   // 환경설정: 시작할 때 보여 줄 곳. me 내 위치(기본), korea 전국, last 마지막에 보던 곳. 직접 고른 적이 없으면(startSet 없음) 내 위치
+    startSet: !!saved.startSet,
     // 보너스 카페 칩: XP를 더 받는 곳만 보기. 하나만 고른다. new 새로 연 카페(개업 1년 이내), old 오랜만의 기록을 기다리는 곳(마지막 기록 6개월 지남),
     //   first 첫 기록을 기다리는 곳(아직 아무도 기록 안 함). 예전의 새로 오픈 칩(fresh)과 필터의 6개월 스위치(stale)를 옮겨 받는다.
     bonus: /^(new|old|first)$/.test(saved.bonus) ? saved.bonus : saved.fresh ? 'new' : saved.stale ? 'old' : '',
@@ -1676,15 +1682,29 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   }
   function xpPush() {
     if (!loginOn || !signedIn()) return;
-    var body = { xp: XP.xp, vis: XP.vis, vote: XP.vote, near: XP.near || {}, dong: XP.dong, fv: XP.fv || 0, fo: XP.fo || 0, mv: XP.mv || 0, md: XP.md || 0, mo: XP.mo || 0, mr: XP.mr || 0, log: XP.log || [], t: { '.sv': 'timestamp' } };
+    var body = { xp: XP.xp, vis: XP.vis, vote: XP.vote, near: XP.near || {}, dong: XP.dong, fv: XP.fv || 0, fo: XP.fo || 0, mv: XP.mv || 0, md: XP.md || 0, mo: XP.mo || 0, mr: XP.mr || 0, log: XP.log || [], pub: XP.pub ? 1 : 0, t: { '.sv': 'timestamp' } };
     if (XP.nick) body.nick = XP.nick;
     if (XP.nickT) body.nickT = XP.nickT;
     if (XP.nickOk) body.nickOk = 1;
     if (XP.nickP) body.nickP = 1;
-    rankPush();
+    rankPush(); pubPush();
     token().then(function (t) {
       return fetch(SHARE.db + '/v2/xp/' + who.u + '.json?auth=' + encodeURIComponent(t), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     }).then(function (r) { if (!r.ok) throw new Error('db'); }).catch(function () { /* 다음에 바뀔 때 다시 올린다 */ });
+  }
+  // 내 XP 기록 공개본: 켠 사람만 올린다. 날짜까지만 적고 시각은 뺀다(언제 어디 있었는지가 드러나지 않게). 최근 100개.
+  function ymdKey(t) { if (!t) return ''; var d = new Date(t); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function pubPush() {
+    if (!loginOn || !signedIn() || !XP.pub || !XP.nick) return;
+    var log = (XP.log || []).slice(-100).map(function (e) { var x = { d: ymdKey(e.t), a: e.a || 0, r: xpName(e.r) }; if (e.c) x.c = e.c; return x; });
+    var body = { n: XP.nick, log: log, t: { '.sv': 'timestamp' } };
+    token().then(function (t) {
+      return fetch(SHARE.db + '/v2/pub/' + who.u + '.json?auth=' + encodeURIComponent(t), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    }).catch(function () { /* 다음에 바뀔 때 다시 올린다 */ });
+  }
+  function pubDelete() {
+    if (!loginOn || !signedIn()) return;
+    token().then(function (t) { return fetch(SHARE.db + '/v2/pub/' + who.u + '.json?auth=' + encodeURIComponent(t), { method: 'DELETE' }); }).catch(function () {});
   }
   // 랭킹 칸: 닉네임과 XP만 올린다. 누구나 읽을 수 있는 곳이라 다른 것은 넣지 않는다. 실패해도 다음에 바뀔 때 다시 올린다.
   // 고치기(PATCH)로 올려서 서버의 nt(닉네임 바꾼 때)를 지우지 않는다. 닉네임을 바꾼 뒤 처음 올릴 때만 nt를 서버 시각으로 보낸다(XP.nickP).
@@ -2254,7 +2274,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         for (u in all[k]) {
           var rec = all[k][u];
           if (!rec) continue;
-          if (j !== undefined && (rec.o === 1 || rec.o === -1)) (voters[j] || (voters[j] = [])).push({ o: rec.o, c: rec.c || '', t: rec.t || 0, admin: u === SHARE.admin, me: !!(who && u === who.u) });
+          if (j !== undefined && (rec.o === 1 || rec.o === -1)) (voters[j] || (voters[j] = [])).push({ u: u, o: rec.o, c: rec.c || '', t: rec.t || 0, admin: u === SHARE.admin, me: !!(who && u === who.u) });
           if (who && u === who.u) { srvMine[k] = rec; continue; }
           if (j === undefined) continue;
           if (u !== SHARE.admin && (rec.o === 1 || rec.o === -1)) realVotes[j] = (realVotes[j] || 0) + 1;
@@ -2462,6 +2482,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       for (k in goneMine) jobs.push(fetch(SHARE.db + '/v2/gone/' + k + '/' + who.u + '.json?auth=' + a, { method: 'DELETE' }));
       jobs.push(fetch(SHARE.db + '/v2/want/' + who.u + '.json?auth=' + a, { method: 'DELETE' }));
       jobs.push(fetch(SHARE.db + '/v2/xp/' + who.u + '.json?auth=' + a, { method: 'DELETE' }));
+      jobs.push(fetch(SHARE.db + '/v2/pub/' + who.u + '.json?auth=' + a, { method: 'DELETE' }));
       fetch(SHARE.db + '/v2/rank/' + who.u + '.json?auth=' + a, { method: 'DELETE' }).catch(function () {});
       if (xpKey()) { try { localStorage.removeItem(LSP + xpKey()); } catch (e) { /* 그냥 넘어간다 */ } }
       return Promise.all(jobs).then(function (rs) {
@@ -2492,7 +2513,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     save(STORE, {
       cats: Object.keys(S.cats).map(Number), brands: Object.keys(S.brands).map(function (j) { return D.brands[j][0]; }),
       reg: S.reg >= 0 ? regPath(S.reg) : null,
-      big: S.big, bigPy: S.bigPy, outlet: S.outlet, chairs: Object.keys(S.chairs), sort: S.sort, pins: Object.keys(S.pins), tab: S.tab, seen: S.seen, bonus: S.bonus, outline: S.outline, start: S.start, nav: S.nav,
+      big: S.big, bigPy: S.bigPy, outlet: S.outlet, chairs: Object.keys(S.chairs), sort: S.sort, pins: Object.keys(S.pins), tab: S.tab, seen: S.seen, bonus: S.bonus, outline: S.outline, start: S.start, startSet: S.startSet, nav: S.nav,
       view: [c.lat, c.lng, +map.getZoom().toFixed(2)]
     });
   }
@@ -3915,11 +3936,16 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     var st = el('div', 'mopt'), stTabs = el('div', 'sort');
     st.appendChild(el('span', null, '앱 시작 위치'));
     [['me', '내 위치'], ['korea', '전국'], ['last', '마지막 본 곳']].forEach(function (o) {
-      var bt = btn(null, o[1], function () { S.start = o[0]; persist(); renderPanel(); });
+      var bt = btn(null, o[1], function () { S.start = o[0]; S.startSet = true; persist(); renderPanel(); });
       bt.setAttribute('aria-pressed', String(S.start === o[0]));
       stTabs.appendChild(bt);
     });
     st.appendChild(stTabs); conf.appendChild(st);
+    // 내 XP 기록 공개: 켜면 랭킹과 기록한 사람 창에서 다른 사람이 내 닉네임과 XP 기록(날짜까지)을 볼 수 있다. 기본은 꺼짐.
+    if (loginOn && signedIn() && XP_ON) conf.appendChild(toggleRow('내 XP 기록 공개', !!XP.pub, function (v) {
+      XP.pub = v ? 1 : 0; xpSave();
+      if (v) toast('다른 사람이 내 XP 기록을 볼 수 있어요. 시각은 보이지 않아요'); else { pubDelete(); toast('내 XP 기록을 비공개로 바꿨어요'); }
+    }));
     sc.appendChild(conf);
     // 문의하기: 누르면 글을 쓰는 창이 뜬다. 종류는 창 안에서 고른다.
     var fb = el('div', 'fsec'), fr = btn('xrow xlink', null, function () { openFeedback(); }), fbd = el('span', 'xbadge pic mn');
@@ -3975,8 +4001,20 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     list.sort(function (a, b) { return (b.t || 0) - (a.t || 0); });
     var ll = el('div', 'xll'), names = { w: '벽면 소파', s: '바테이블 의자', n: '일반 의자' };
     list.forEach(function (x, n) {
-      var r = el('div', 'xli'), l = el('span'), rt = el('span', 'rt');
-      l.appendChild(el('span', 'rs', x.me ? '나' : x.admin ? '운영자' : '사용자 ' + (list.length - n)));
+      var r = el('div', 'xli'), l = el('span'), rt = el('span', 'rt'), nm = el('span', 'rs', x.me ? '나' : x.admin ? '운영자' : '사용자 ' + (list.length - n));
+      l.appendChild(nm);
+      // XP 기록을 공개한 사람이면 닉네임을 보이고, 누르면 그 사람의 레벨과 XP 기록 창(뒤로는 이 창으로).
+      if (x.u && SHARE.db) fetch(SHARE.db + '/v2/pub/' + x.u + '/n.json').then(function (q) { return q.ok ? q.json() : null; }, function () { return null; }).then(function (nick) {
+        if (!nick || !r.isConnected) return;
+        if (!x.me && !x.admin) nm.textContent = nick;
+        r.classList.add('tap'); r.setAttribute('role', 'button'); r.tabIndex = 0;
+        r.addEventListener('click', function () {
+          fetch(SHARE.db + '/v2/rank/' + x.u + '.json').then(function (q) { return q.ok ? q.json() : null; }, function () { return null; }).then(function (v) {
+            v = v || {};
+            openPerson(0, { u: x.u, n: v.n || nick, x: v.x || 0, v: v.v || 0, d: v.d || 0, o: v.o || 0, r: v.r || 0 }, function () { openVoters(i); });
+          });
+        });
+      });
       l.appendChild(el('small', null, x.o === -1 ? '없어요' : (x.c || '').split('').map(function (ch) { return names[ch]; }).filter(Boolean).join(', ') || '있어요'));
       if (x.admin) r.classList.add('admin');
       if (x.t) { var d = new Date(x.t); rt.appendChild(el('small', null, (d.getMonth() + 1) + '월 ' + d.getDate() + '일')); }
@@ -4057,13 +4095,13 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     o.appendChild(box); document.body.appendChild(o); fitVisible(o);
   }
   // 랭킹에서 누른 사람: 닉네임, 등수, 레벨과 XP, 네 칸. 뒤로를 누르면 랭킹으로 돌아간다.
-  function openPerson(no, x) {
+  function openPerson(no, x, back) {
     var old = $('xinfo'); if (old) old.remove();
     var o = el('div'), box = el('div', 'xbox nick person');
     o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', x.n || '사용자');
     o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
     var top = el('div', 'pstop');
-    top.appendChild(el('span', 'psno', no + '등'));
+    if (no) top.appendChild(el('span', 'psno', no + '등'));
     var nm = el('h2', null, x.n || '이름 없음'); top.appendChild(nm);
     if (x.u === SHARE.admin) top.appendChild(el('span', 'rktag', '운영자'));
     box.appendChild(top);
@@ -4074,8 +4112,25 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       c.appendChild(num); c.appendChild(el('span', null, y[0])); st.appendChild(c);
     });
     box.appendChild(st);
+    // XP 기록: 본인이 공개를 켠 사람만 보인다. 날짜까지만.
+    var lg = el('div', 'xll pslog'); lg.appendChild(el('p', 'xnone', '불러오는 중'));
+    box.appendChild(el('div', 'xgrp', 'XP 기록')); box.appendChild(lg);
+    var mine = signedIn() && x.u === who.u;
+    fetch(SHARE.db + '/v2/pub/' + x.u + '.json').then(function (r) { return r.ok ? r.json() : null; }, function () { return null; }).then(function (pb) {
+      lg.textContent = '';
+      if (!pb || !Array.isArray(pb.log)) { lg.appendChild(el('p', 'xnone', mine ? '비공개예요. 메뉴의 환경설정에서 공개할 수 있어요.' : '기록을 공개하지 않았어요')); return; }
+      var rows = pb.log.slice().reverse();
+      if (!rows.length) { lg.appendChild(el('p', 'xnone', '아직 없어요')); return; }
+      rows.forEach(function (e) {
+        var r = el('div', 'xli'), l = el('span'), rt = el('span', 'rt');
+        l.appendChild(el('span', 'rs', e.r || '')); if (e.c) l.appendChild(el('small', null, e.c));
+        rt.appendChild(el('b', e.a < 0 ? 'minus' : null, (e.a < 0 ? '−' : '+') + fmt(Math.abs(e.a || 0)) + ' XP'));
+        if (e.d) { var p = e.d.split('-'); rt.appendChild(el('small', null, (+p[1]) + '월 ' + (+p[2]) + '일')); }
+        r.appendChild(l); r.appendChild(rt); lg.appendChild(r);
+      });
+    });
     var two = el('div', 'two');
-    two.appendChild(btn('btn', '뒤로', function () { openRank(); }));
+    two.appendChild(btn('btn', '뒤로', function () { if (back) back(); else openRank(); }));
     two.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
     box.appendChild(two);
     o.appendChild(box); document.body.appendChild(o);
@@ -4539,6 +4594,15 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       }
       if (path === '/v2/fbreply.json') return testFb().replies;
       if (path === '/v2/gone.json') return testGone().all;
+      var mp = path.match(/^\/v2\/pub\/([^/]+)(\/n)?\.json$/);
+      if (mp) {
+        var pubs = { p0: '느긋한 판다', p2: '졸린 고양이' }, nk = pubs[mp[1]];
+        if (!nk) return null;
+        if (mp[2]) return nk;
+        return { n: nk, log: [{ d: '2026-11-20', a: 1000, r: '로그인' }, { d: '2026-11-21', a: 2000, r: '첫 콘센트 기록', c: '스타벅스 강남역점' }, { d: '2026-11-21', a: 500, r: '새 동네', c: '역삼1동' }, { d: '2026-11-24', a: 1000, r: '콘센트 기록', c: '투썸플레이스 역삼점' }, { d: '2026-11-24', a: 500, r: '새로 연 카페', c: '투썸플레이스 역삼점' }] };
+      }
+      var mr2 = path.match(/^\/v2\/rank\/([^/]+)\.json$/);
+      if (mr2) return { n: { p0: '느긋한 판다', p2: '졸린 고양이' }[mr2[1]] || '시험 사람', x: 21000, v: 14, d: 6, o: 0, r: 0 };
       if (path === '/v2/gonedec.json') return testGone().dec;
       var mr = path.match(/^\/v2\/fbreply\/([^/]+)\.json$/); if (mr) return testFb().replies[mr[1]] || null;
       if (path === '/v2/feedback.json') {
@@ -4593,7 +4657,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         ['받은 폐업 신고 (운영자 화면)', function () { var u0 = who.u; who.u = SHARE.admin; openAdminGone(); who.u = u0; }]
       ]],
       ['그 밖', [
-        ['기록한 사람 보기', function () { var now = Date.now(); voters[0] = [{ o: 1, c: 'wn', t: now - 3600000, admin: true }, { o: 1, c: 's', t: now - 86400000 }, { o: -1, c: '', t: now - 2 * 86400000 }, { o: 1, c: 'w', t: now - 600000, me: true }]; openVoters(0); }],
+        ['기록한 사람 보기', function () { var now = Date.now(); voters[0] = [{ u: SHARE.admin, o: 1, c: 'wn', t: now - 3600000, admin: true }, { u: 'p0', o: 1, c: 's', t: now - 86400000 }, { u: 'p5', o: -1, c: '', t: now - 2 * 86400000 }, { u: 'test-user', o: 1, c: 'w', t: now - 600000, me: true }]; openVoters(0); }],
         ['로그인 창: 기록', function () { openLogin(null, 'vote'); }],
         ['로그인 창: 찜', function () { openLogin(null, 'want'); }],
         ['로그인 창: 폐업 신고', function () { openLogin(null, 'gone'); }]

@@ -211,6 +211,42 @@
           }
         }
       },
+      "pub": {
+        ".read": true,
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'",
+          ".validate": "newData.hasChildren(['n', 'log', 't'])",
+          "n": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12"
+          },
+          "t": {
+            ".validate": "newData.val() === now"
+          },
+          "log": {
+            "$i": {
+              ".validate": "newData.hasChildren(['a', 'r'])",
+              "d": {
+                ".validate": "newData.isString() && newData.val().length <= 10"
+              },
+              "a": {
+                ".validate": "newData.isNumber()"
+              },
+              "r": {
+                ".validate": "newData.isString() && newData.val().length <= 40"
+              },
+              "c": {
+                ".validate": "newData.isString() && newData.val().length <= 80"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      },
       "xp": {
         "$uid": {
           ".read": "auth != null && auth.uid === $uid",
