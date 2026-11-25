@@ -298,6 +298,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .rec .opts.one .opt { flex: 1; min-width: 0; padding: 0 6px; white-space: nowrap; }
 .rec .opts.three .opt { font-size: 12.5px; }
 .rec .acts { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+/* 나만의 메모 단추가 있으면 찜 바로 오른쪽에 붙이고, 폐업 신고만 오른쪽 끝에 둔다 */
+.rec .acts .opt.memo { margin-right: auto; }
 .opt.quiet { border-color: transparent; color: var(--ink-3); padding: 0 8px; }
 .acts .opt { display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
 .acts .opt .fxs { width: 17px; height: 17px; vertical-align: 0; }
