@@ -223,7 +223,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .facts dd .k2 { color: var(--ink-3); font-size: 13px; margin-left: 8px; }
 .facts dd small.newmark { display: inline-flex; align-items: center; gap: 3px; color: #2b9a41; font-weight: 650; }
 .facts dd small.newmark svg.i { width: 13px; height: 13px; fill: currentColor; }
-/* 준비 중일 수 있어요: 새로 연 카페에요와 같은 모양의 분홍 글씨. 누르면 설명이 잠깐 뜬다. */
+/* 준비 중일 수 있어요: 새로 연 카페예요와 같은 모양의 분홍 글씨. 누르면 설명이 잠깐 뜬다. */
 .facts dd .omark { display: inline-flex; align-items: center; gap: 3px; padding: 0; background: none; color: #d6336c; font-size: 12.5px; font-weight: 650; }
 .facts dd .omark svg.i { width: 13px; height: 13px; }
 /* 카드 맨 아래에 붙어 있는 단추 줄(필터의 적용하기) */
@@ -5371,7 +5371,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     if (a > 0) { f2.appendChild(el('b', null, pyeong(a) + '평')); f2.appendChild(el('small', null, fmt(a) + '㎡')); if (a >= S.bigPy * PYEONG) { var bm = btn('bigmark', '대형 ' + S.bigPy + '평 이상', function () { openBigBox(i); }); bm.appendChild(icon('right')); f2.appendChild(bm); } } else f2.appendChild(el('small', null, '자료 없음'));
     // 문 연 달. 넓이 아랫줄에 적는다. 인허가 자료에서 같은 가게를 찾은 카페만 안다. 모르면 적지 않는다.
     var ym = D.since ? D.since[i] : 0;
-    if (ym) { var f3 = fact('개업'), ago = monthsAgo(i); f3.appendChild(el('b', null, Math.floor(ym / 100) + '년 ' + (ym % 100) + '월')); if (ago < 3) { var om = btn('omark', null, function () { toast('인허가를 받은 달이에요. 아직 문을 열기 전일 수 있어요'); }); om.appendChild(fxIcon('mi_clock')); om.appendChild(document.createTextNode('준비 중일 수 있어요')); f3.appendChild(om); } else if (ago < 12) { var nw = el('small', 'newmark'); nw.appendChild(fxIcon('shop')); nw.appendChild(document.createTextNode('새로 연 카페에요')); f3.appendChild(nw); } }
+    if (ym) { var f3 = fact('개업'), ago = monthsAgo(i); f3.appendChild(el('b', null, Math.floor(ym / 100) + '년 ' + (ym % 100) + '월')); if (ago < 3) { var om = btn('omark', null, function () { toast('인허가를 받은 달이에요. 아직 문을 열기 전일 수 있어요'); }); om.appendChild(fxIcon('mi_clock')); om.appendChild(document.createTextNode('준비 중일 수 있어요')); f3.appendChild(om); } else if (ago < 12) { var nw = el('small', 'newmark'); nw.appendChild(fxIcon('shop')); nw.appendChild(document.createTextNode('새로 연 카페예요')); f3.appendChild(nw); } }
     // 투표 칸. 콘센트 좌석 하나만 묻는다. 제목 오른쪽에 몇 명이 투표했는지 적는다.
     // 단추 안의 숫자는 그렇게 기록한 사람 수다(아무도 없으면 적지 않는다). 눌린 단추가 내 기록이다.
     var rec = el('div', 'rec'), r1 = el('div', 'opts one'), r2 = el('div', 'opts one three');
