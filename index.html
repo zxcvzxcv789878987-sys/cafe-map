@@ -4035,7 +4035,16 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     // 환경설정
     var conf = el('div', 'fsec');
     conf.appendChild(el('div', 'ftitle', '환경설정'));
-    conf.appendChild(toggleRow('지역 경계', S.outline, function (v) { S.outline = v; refilter(); draw(); renderChips(); persist(); }));
+    // 순서(2026-11-26): 고르는 줄 둘(앱 시작 위치, 길찾기 앱)을 먼저, 켜고 끄는 줄 둘(지역 경계, 내 원두 기록 공개)을 뒤에.
+    // 앱 시작 위치: 다음에 열 때부터 적용된다.
+    var st = el('div', 'mopt'), stTabs = el('div', 'sort');
+    st.appendChild(el('span', null, '앱 시작 위치'));
+    [['me', '내 위치'], ['korea', '전국'], ['last', '마지막 본 곳']].forEach(function (o) {
+      var bt = btn(null, o[1], function () { S.start = o[0]; S.startSet = true; persist(); renderPanel(); });
+      bt.setAttribute('aria-pressed', String(S.start === o[0]));
+      stTabs.appendChild(bt);
+    });
+    st.appendChild(stTabs); conf.appendChild(st);
     // 길찾기 앱: 카페 카드의 길찾기를 눌렀을 때 열 지도 앱.
     var nv = el('div', 'mopt'), nvTabs = el('div', 'sort');
     nv.appendChild(el('span', null, '길찾기 앱'));
@@ -4046,15 +4055,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       nvTabs.appendChild(bt);
     });
     nv.appendChild(nvTabs); conf.appendChild(nv);
-    // 앱 시작 위치: 다음에 열 때부터 적용된다.
-    var st = el('div', 'mopt'), stTabs = el('div', 'sort');
-    st.appendChild(el('span', null, '앱 시작 위치'));
-    [['me', '내 위치'], ['korea', '전국'], ['last', '마지막 본 곳']].forEach(function (o) {
-      var bt = btn(null, o[1], function () { S.start = o[0]; S.startSet = true; persist(); renderPanel(); });
-      bt.setAttribute('aria-pressed', String(S.start === o[0]));
-      stTabs.appendChild(bt);
-    });
-    st.appendChild(stTabs); conf.appendChild(st);
+    conf.appendChild(toggleRow('지역 경계', S.outline, function (v) { S.outline = v; refilter(); draw(); renderChips(); persist(); }));
     // 내 XP 기록 공개: 켜면 랭킹과 기록한 사람 창에서 다른 사람이 내 닉네임과 XP 기록(날짜까지)을 볼 수 있다. 기본은 꺼짐.
     if (loginOn && signedIn() && XP_ON) conf.appendChild(toggleRow('내 원두 기록 공개', !!XP.pub, function (v) {
       XP.pub = v ? 1 : 0; xpSave();
