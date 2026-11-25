@@ -5506,6 +5506,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     };
   }
   // 문의를 보낸 뒤: 확인 단추를 눌러 닫는 창
+  // 폐업 신고를 보낸 뒤: 문의 보냄과 같은 종이비행기 창에 글만 바꿔서(사용자 2026-11-26)
+  function goneSent() { doneBox('plane', '폐업 신고를 보냈어요', '운영자가 확인하면 메뉴 단추에 빨간 점이 떠요. 메뉴의 문의하기에서 볼 수 있어요.'); }
   function fbSent() { doneBox('plane', '문의를 보냈어요', '답변이 오면 메뉴 단추에 빨간 점이 떠요. 메뉴의 내 문의에서 볼 수 있어요.'); }
   function openFeedback() {
     var old = $('xinfo'); if (old) old.remove();
@@ -5705,6 +5707,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         ['첫 기록 지우기 (다른 기록 있음)', function () { firstUndoBox(2000, true, function () { toast('지웠어요 (시험)'); }); }],
         ['폐업 신고', function () { confirmGone(function () { toast('신고했어요 (시험)'); }); }],
         ['대형 기준', function () { openBigBox(bigCafe()); }],
+        ['폐업 신고 보냄', function () { goneSent(); }],
         ['문의 보냄', function () { fbSent(); }],
         ['첫 로그인', function () { XP.nickOk = 0; doneBox('login', '로그인했어요', '로그인 보너스 +1,000 원두를 받았어요.', false, function () { openNickFirst(); }); }],
         ['다시 로그인', function () { doneBox('login', '다시 오셨네요', (XP.nick || '시험 쿼카') + '님, 반가워요.', false); }]
@@ -6383,7 +6386,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     var bGone = voteBtn('폐업 신고', function () {
       var go = function (on) { setGone(i, on); sync(); refilter(); requestDraw(); };
       if (myGone[i]) { go(false); return; }
-      confirmGone(function () { go(true); });
+      confirmGone(function () { go(true); goneSent(); });
     }, 'gone');
     bGone[0].classList.add('quiet'); bGone[0].insertBefore(fxIcon('mi_flag'), bGone[0].firstChild);
     bGone[0].title = '가 보니 이 카페가 없을 때 눌러 주세요';
