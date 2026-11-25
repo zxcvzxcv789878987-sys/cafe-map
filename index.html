@@ -2529,7 +2529,9 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       l.appendChild(el('small', null, what)); l.appendChild(num);
       r.appendChild(el('small', null, next + unit + ' 보너스')); r.appendChild(el('b', null, '+' + fmt(xpBonus(next)) + ' 원두'));
       pr.appendChild(l); pr.appendChild(r); box.appendChild(pr);
-      var track = el('div', 'tr'); fill.style.width = Math.round(count / next * 100) + '%'; track.appendChild(fill); bar.appendChild(track); box.appendChild(bar);
+      // 막대는 지난 칸부터 다음 칸까지만 잰다. 칸을 받을 때마다 비었다가 다시 찬다(50곳 뒤로는 10곳마다, 사용자 2026-11-26).
+      var prev = next - 1; while (prev > 0 && !xpBonus(prev)) prev--;
+      var track = el('div', 'tr'); fill.style.width = Math.round((count - prev) / (next - prev) * 100) + '%'; track.appendChild(fill); bar.appendChild(track); box.appendChild(bar);
       var g = el('div', 'xms');
       // 50곳 뒤: 지난 칸(10곳마다) 중 최근 셋과 다음 목표 칸을 덧붙인다. 지난 칸을 빼면 50곳에서 바로 다음 목표로 건너뛴 것처럼 보인다.
       var past = [], gh = el('div', 'xms');
