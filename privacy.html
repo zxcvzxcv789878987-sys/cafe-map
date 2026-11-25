@@ -18,7 +18,7 @@
   th { background: #f6f7f9; font-weight: 650; white-space: nowrap; }
   a { color: var(--pri); }
   .back { display: inline-block; margin-bottom: 18px; font-size: 14px; text-decoration: none; }
-  /* 맨 끝 문장의 마침표 자리에 둔 작은 원두(이스터 에그). 누르는 자리만 조금 넓다. */
+  /* 6번 문단 끝 마침표 자리에 둔 작은 원두(이스터 에그). 끝까지 내렸을 때 화면에 안 보이는 곳이라 내리다가 같이 눌리지 않는다. 누르는 자리만 조금 넓다. */
   .bdot { position: relative; display: inline-block; margin-left: 1px; line-height: 0; }
   .bdot::after { content: ""; position: absolute; inset: -7px; }
 </style>
@@ -69,7 +69,7 @@
   </table>
 
   <h2>6. 다른 회사의 화면과 자료</h2>
-  <p>서비스를 쓰는 동안 아래 회사의 서버에 기기가 직접 접속합니다. 이때 접속 주소(IP) 같은 정보는 각 회사가 자기 방침에 따라 다룹니다.</p>
+  <p>서비스를 쓰는 동안 아래 회사의 서버에 기기가 직접 접속합니다. 이때 접속 주소(IP) 같은 정보는 각 회사가 자기 방침에 따라 다룹니다<span class="bdot" aria-hidden="true"><svg viewBox="0 0 10 8" width="6" height="5"><ellipse cx="5" cy="4" rx="4.4" ry="3.2" fill="#8B5E3C" transform="rotate(-25 5 4)"/><path d="M2.6 4.5Q5 2.8 7.4 4.5" stroke="#5C3A22" stroke-width="1" fill="none" stroke-linecap="round"/></svg></span></p>
   <ul>
     <li>GitHub (서비스 화면을 내려받는 곳)</li>
     <li>OpenFreeMap (배경 지도)</li>
@@ -92,7 +92,7 @@
   </ul>
 
   <h2>10. 바뀔 때</h2>
-  <p>이 방침이 바뀌면 이 페이지에 새 시행일과 함께 올립니다<span class="bdot" aria-hidden="true"><svg viewBox="0 0 10 8" width="6" height="5"><ellipse cx="5" cy="4" rx="4.4" ry="3.2" fill="#8B5E3C" transform="rotate(-25 5 4)"/><path d="M2.6 4.5Q5 2.8 7.4 4.5" stroke="#5C3A22" stroke-width="1" fill="none" stroke-linecap="round"/></svg></span></p>
+  <p>이 방침이 바뀌면 이 페이지에 새 시행일과 함께 올립니다.</p>
 </main>
 <script>
 // 이스터 에그(2026-11-26): 끝까지 내려 읽으면 이 기기에 표시를 남긴다. 지도 앱이 이 표시를 보고 기록한다.
@@ -106,7 +106,7 @@
       try { if (!localStorage.getItem('cafemap.egg.privacy')) localStorage.setItem('cafemap.egg.privacy', String(Date.now())); } catch (e) { /* 저장을 못 하면 넘어간다 */ }
     }
   }, { passive: true });
-  // 맨 끝 문장의 마침표(작은 원두)를 누르면 따로 표시를 남긴다. 지도 앱이 이 표시를 보고 기록한다.
+  // 6번 문단 끝의 마침표(작은 원두)를 누르면 따로 표시를 남긴다. 지도 앱이 이 표시를 보고 기록한다.
   var b = document.querySelector('.bdot');
   if (b) b.addEventListener('click', function () {
     try { if (!localStorage.getItem('cafemap.egg.privacy2')) localStorage.setItem('cafemap.egg.privacy2', String(Date.now())); } catch (e) { /* 저장을 못 하면 넘어간다 */ }
