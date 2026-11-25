@@ -734,8 +734,16 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
 .maplibregl-ctrl-attrib { background: color-mix(in srgb, var(--surface) 85%, transparent) !important; color: var(--ink-3); font-size: 11px; }
 .maplibregl-ctrl-attrib a { color: var(--ink-3); }
 /* 내 위치: 카페 점(파랑, 주황, 갈색)과 헷갈리지 않게 빨간 바탕에 사람 모양을 넣는다. */
-.me { width: 28px; height: 28px; border-radius: 50%; background: #e5484d; border: 3px solid #fff; box-shadow: 0 0 0 7px rgba(229, 72, 77, .2), 0 2px 6px rgba(0, 0, 0, .3); display: grid; place-items: center; }
-.me svg { width: 15px; height: 15px; fill: #fff; }
+/* 내 위치: 빨간 동그라미 안에 우리 캐릭터 컵, 보는 방향 부채꼴(나침반을 쓸 수 있을 때만). 빨강은 앱의 보라와 겹치지 않아 눈에 띈다. */
+.me { position: relative; width: 84px; height: 84px; pointer-events: none; }
+.me .cone { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity .3s; }
+.me.has-dir .cone { opacity: 1; }
+.me .cone path { fill: rgba(229, 72, 77, .26); }
+.me .dot { position: absolute; left: 50%; top: 50%; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; background: #e5484d; border: 3px solid #fff; box-shadow: 0 0 0 7px rgba(229, 72, 77, .18), 0 2px 6px rgba(0, 0, 0, .3); display: grid; place-items: center; }
+.me .dot .fxs { width: 24px; height: 24px; margin-top: -1px; }
+.me .dot circle { transition: transform .25s ease-out; }
+#locate[aria-pressed=true] { background: #6a5ae0; color: #fff; }
+#locate[aria-pressed=true] svg { fill: #fff; stroke: #fff; }
 
 @media (max-width: 760px) {
   #bar { top: calc(10px + env(safe-area-inset-top, 0px)); left: 0; right: 0; flex-direction: column; gap: 0; }
@@ -5406,17 +5414,78 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   }
 
   // ----- 지도 단추 -----
-  var me = null;
-  $('locate').addEventListener('click', function () { locateMe(); });
+  // ----- 내 위치: 카카오맵처럼 -----
+  // 위치를 한 번 허락받으면 점이 늘 실시간으로 움직인다(watchPosition). 앱을 내려 두면 멈추고, 다시 보면 이어서 받는다.
+  // 따라가기(follow): 내 위치 단추를 누르거나 앱 시작 위치가 내 위치이면 켜진다. 움직일 때마다 지도가 나를 가운데로 옮긴다.
+  //   손으로 지도를 밀면 따라가기만 꺼진다(점은 계속 움직인다). 단추가 보라색이면 따라가는 중.
+  // 보는 방향: 폰의 나침반으로 점에 부채꼴을 붙인다. 아이폰은 단추를 누를 때 한 번 허락을 묻는다. 나침반이 없으면 부채꼴을 숨긴다.
+  var me = null, meWatch = null, follow = false, flying = false, headingOn = false;
+  function meMarker(ll) {
+    if (!me) {
+      var d = el('div', 'me'); d.setAttribute('aria-label', '내 위치');
+      d.innerHTML = '<svg class="cone" viewBox="0 0 84 84" aria-hidden="true"><path d="M42 42 L24 4 A40 40 0 0 1 60 4 Z"/></svg><i class="dot"></i>';
+      d.querySelector('.dot').appendChild(fxIcon('char'));
+      me = new maplibregl.Marker({ element: d }).setLngLat(ll).addTo(map);
+    } else me.setLngLat(ll);
+  }
+  function setFollow(on) { follow = on; $('locate').setAttribute('aria-pressed', String(on)); }
+  function onFix(p) {
+    var ll = [p.coords.longitude, p.coords.latitude];
+    meMarker(ll);
+    myLoc = { x: (ll[0] + 180) / 360, y: mercY(ll[1]) };
+    if (!follow || flying) return;
+    map.easeTo({ center: ll, duration: 600 });
+    // 동 하나를 골라 둔 채로 걸어서 옆 동으로 가면, 고른 동도 따라 바꾼다(안 그러면 옆 동 카페가 지도에서 빠진다).
+    if (S.reg >= 0 && rLeaf[S.reg]) {
+      var here = leafAt(myLoc.x, myLoc.y);
+      if (here >= 0 && here !== S.reg) { S.reg = here; S.showAll = false; hoverPill = -1; refilter(); renderChips(); persist(); }
+    }
+  }
+  function startWatch() {
+    if (meWatch !== null || !navigator.geolocation || document.hidden) return;
+    meWatch = navigator.geolocation.watchPosition(onFix, function () {}, { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 });
+  }
+  function stopWatch() { if (meWatch !== null) { navigator.geolocation.clearWatch(meWatch); meWatch = null; } }
+  document.addEventListener('visibilitychange', function () { if (document.hidden) stopWatch(); else if (me) startWatch(); });
+  // 나침반: 아이폰은 webkitCompassHeading, 안드로이드는 deviceorientationabsolute의 alpha(북쪽 기준, 반시계)로 방향을 얻는다.
+  var headRaf = 0, headDeg = null;
+  function onHeading(e) {
+    var h = typeof e.webkitCompassHeading === 'number' ? e.webkitCompassHeading : (e.absolute || e.type === 'deviceorientationabsolute') && typeof e.alpha === 'number' ? 360 - e.alpha : null;
+    if (h === null || isNaN(h)) return;
+    var turn = (screen.orientation && typeof screen.orientation.angle === 'number') ? screen.orientation.angle : (window.orientation || 0);
+    headDeg = (h + turn + 360) % 360;
+    if (headRaf) return;
+    headRaf = requestAnimationFrame(function () {
+      headRaf = 0;
+      if (!me) return;
+      var el2 = me.getElement(); el2.classList.add('has-dir');
+      el2.querySelector('.cone').style.transform = 'rotate(' + Math.round(headDeg) + 'deg)';
+      // 캐릭터 눈도 보는 방향으로 살짝 옮긴다(위가 북쪽인 지도라 방향 그대로).
+      var r = headDeg * Math.PI / 180, ex = (Math.sin(r) * .8).toFixed(2), ey = (-Math.cos(r) * .7).toFixed(2);
+      el2.querySelectorAll('.dot circle').forEach(function (c) { c.style.transform = 'translate(' + ex + 'px,' + ey + 'px)'; });
+    });
+  }
+  function startHeading() {
+    if (headingOn) return;
+    var go = function () {
+      headingOn = true;
+      if ('ondeviceorientationabsolute' in window) window.addEventListener('deviceorientationabsolute', onHeading);
+      else window.addEventListener('deviceorientation', onHeading);
+    };
+    // 아이폰: 누른 그때 허락을 물어야 한다.
+    if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      // 허락을 못 받아도 듣기는 켜 둔다(신호가 오지 않으면 부채꼴이 안 보일 뿐이다. 허락을 묻지 않아도 되는 브라우저도 이 함수가 있을 수 있다).
+      DeviceOrientationEvent.requestPermission().then(go, go);
+    } else go();
+  }
+  // 손으로 지도를 밀면 따라가기를 끈다(확대, 축소는 따라가기를 그대로 둔다).
+  map.on('dragstart', function () { if (follow) setFollow(false); });
+  $('locate').addEventListener('click', function () { startHeading(); setFollow(true); locateMe(); });
   function locateMe(done) {
     if (!navigator.geolocation) { toast('이 브라우저에서는 위치를 가져올 수 없어요.'); return; }
     navigator.geolocation.getCurrentPosition(function (p) {
       var ll = [p.coords.longitude, p.coords.latitude];
-      if (!me) {
-        var d = el('div', 'me'); d.title = '내 위치'; d.setAttribute('aria-label', '내 위치');
-        d.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7.5" r="4.2"/><path d="M3.5 21.5c0-4.7 3.8-8.2 8.5-8.2s8.500 3.500 8.500 8.200z"/></svg>';
-        me = new maplibregl.Marker({ element: d }).setLngLat(ll).addTo(map);
-      } else me.setLngLat(ll);
+      meMarker(ll); startWatch();
       myLoc = { x: (ll[0] + 180) / 360, y: mercY(ll[1]) };
       // 내 위치로는 휙 넘어가지 않고 천천히 옮긴다(멀수록 더 오래, 길어도 3.5초). 갑자기 화면이 바뀌어 놀란다는 말을 들었다.
       if (done) { done(); return; }
@@ -5440,8 +5509,9 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         map.on('moveend', arrive);
         setTimeout(function () { map.off('moveend', arrive); }, 8000);
       }
+      flying = true; setTimeout(function () { flying = false; }, dur + 100);
       map.flyTo({ center: ll, zoom: zTo, duration: dur, curve: 1.2, essential: true });
-    }, function () { toast('위치를 가져오지 못했어요. 브라우저에서 위치 권한을 허용해 주세요.'); }, { enableHighAccuracy: true, timeout: 10000 });
+    }, function () { setFollow(false); toast('위치를 가져오지 못했어요. 브라우저에서 위치 권한을 허용해 주세요.'); }, { enableHighAccuracy: true, timeout: 10000 });
   }
   // 누르면 동전처럼 뒤집히면서 "OO 전체 보기"(흰색)와 "동별로 보기"(기본색)가 바뀐다. 글자와 색은 뒤집히는 중간에 바꾼다.
   $('navAll').addEventListener('click', function () {
@@ -5461,7 +5531,11 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
 
   refilter(); draw(); renderChips();
   // 환경설정에서 "내 위치"에서 시작하기로 했으면 열자마자 내 위치로 간다(위치 허용을 묻는다).
-  if (S.start === 'me') locateMe();
+  if (S.start === 'me') { setFollow(true); startHeading(); locateMe(); }
+  // 위치를 이미 허락해 둔 사람은 시작 위치와 상관없이 내 위치 점을 실시간으로 보여 준다(지도는 옮기지 않는다).
+  else if (navigator.permissions && navigator.permissions.query) navigator.permissions.query({ name: 'geolocation' }).then(function (st) {
+    if (st.state === 'granted') { startWatch(); startHeading(); }
+  }).catch(function () {});
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { FONT = getComputedStyle(document.body).fontFamily; layoutCache = {}; draw(); renderChips(); });
 })();
 </script>
