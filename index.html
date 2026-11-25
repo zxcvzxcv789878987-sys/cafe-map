@@ -5189,11 +5189,18 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     routeOn = true;
   }
   function walkFetch(from, to) {
-    if (ROUTE.ors) {
-      return fetch('https://api.openrouteservice.org/v2/directions/foot-walking?api_key=' + encodeURIComponent(ROUTE.ors) + '&start=' + from[0] + ',' + from[1] + '&end=' + to[0] + ',' + to[1])
+    if (ROUTE.ors) return walkOrs(from, to).catch(function () { return walkFree(from, to); });
+    return walkFree(from, to);
+  }
+  function walkOrs(from, to) {
+    {
+      // 키는 주소에 붙이지 않고 머리말(Authorization)로 보낸다. 새로 받는 키(eyJ로 시작)도 이 방식으로 된다.
+      return fetch('https://api.openrouteservice.org/v2/directions/foot-walking?start=' + from[0] + ',' + from[1] + '&end=' + to[0] + ',' + to[1], { headers: { Authorization: ROUTE.ors } })
         .then(function (r) { if (!r.ok) throw new Error('route'); return r.json(); })
         .then(function (j) { var f = j.features[0]; return { coords: f.geometry.coordinates, dist: f.properties.summary.distance }; });
     }
+  }
+  function walkFree(from, to) {
     return fetch('https://routing.openstreetmap.de/routed-foot/route/v1/driving/' + from[0] + ',' + from[1] + ';' + to[0] + ',' + to[1] + '?overview=full&geometries=geojson')
       .then(function (r) { if (!r.ok) throw new Error('route'); return r.json(); })
       .then(function (j) { if (!j.routes || !j.routes.length) throw new Error('route'); return { coords: j.routes[0].geometry.coordinates, dist: j.routes[0].distance }; });
