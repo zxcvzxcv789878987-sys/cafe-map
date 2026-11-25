@@ -126,7 +126,19 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 .row .meta { font-size: 12.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .row .meta > span + span { margin-left: 9px; }
 .fsec output .onote { display: block; margin-top: 2px; font-size: 12px; font-weight: 500; color: var(--ink-3); }
-.facts dd small.bigmark { color: #6a5ae0; font-weight: 650; }
+.facts dd .bigmark { display: inline-flex; align-items: center; gap: 1px; padding: 1px 6px 1px 8px; border: 1px solid #c9c2f7; border-radius: 999px; background: none; color: #6a5ae0; font: inherit; font-size: 12.5px; font-weight: 650; cursor: pointer; }
+.facts dd .bigmark svg { width: 13px; height: 13px; }
+/* 보너스 카페 고르기 창, 대형 기준 창 */
+.xbox .bopt { width: 100%; background: none; border-radius: 0; color: inherit; font: inherit; text-align: left; padding: 12px 2px; }
+.xbox .bopt .bol { flex-direction: row; align-items: center; gap: 9px; }
+.xbox .bopt .bol .fxs { width: 26px; height: 26px; }
+.xbox .bopt .bxp { flex: none; font-size: 13px; font-weight: 650; color: var(--ink-3); }
+.xbox .bopt[aria-pressed="true"] .rs { color: #6a5ae0; }
+.xbox .bopt[aria-pressed="true"] .bxp { color: #6a5ae0; }
+.bigbox .bgrow { display: flex; align-items: center; gap: 12px; margin: 4px 0 6px; }
+.bigbox .bgrow b { flex: none; min-width: 74px; text-align: right; font-size: 15px; }
+.bigbox .switch { margin: 6px 0 2px; }
+.bigbox .bgme { margin: 0; font-size: 13px; color: var(--ink-3); }
 .row .tag { flex: none; color: var(--ok); display: grid; }
 .row .tag svg.i { width: 16px; height: 16px; }
 .sec { padding: 12px 16px 4px; font-size: 12px; font-weight: 650; color: var(--ink-3); letter-spacing: .03em; }
@@ -1077,6 +1089,8 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
 .fxs .sp { display: none; }
 .fx.still * { animation-duration: .001s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; }
 .chip .fxs { width: 18px; height: 18px; }
+/* 폰: 칩 넷(지역, 필터, 보너스 카페, 찜)이 한 줄에 들어가게 조금 좁힌다 */
+@media (max-width: 420px) { #chips { gap: 6px; } #chips .chip { padding: 0 9px; gap: 5px; } }
 .pin .fxs { width: 24px; height: 24px; }
 .nknote .fxs { width: 17px; height: 17px; margin-top: 1px; }
 .facts .fxs { width: 15px; height: 15px; vertical-align: -2px; }
@@ -1490,14 +1504,15 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     reg: -1,             // 고른 지역 칸. -1이면 전국.
     big: !!saved.big, bigPy: saved.bigPy || 100,
     outlet: !!saved.outlet,   // 콘센트 좌석이 있다고 기록한 곳만 보기
-    stale: !!saved.stale,     // 마지막 기록이 6개월 지난 곳만 보기(다시 기록하면 오랜만의 기록)
     chairs: {},               // 그 자리 의자 종류로 더 좁히기. n 일반 의자, w 벽면 고정 의자, s 스탠드형 의자
     sort: saved.sort === 'size' ? 'size' : 'near',
     seen: saved.seen === 'want' ? 'want' : 'all',   // 찜한 곳만 보기: all 전부, want 찜한 곳만
     outline: saved.outline !== false,   // 환경설정: 고른 지역의 경계선과 색칠을 보일지
     nav: saved.nav === 'naver' ? 'naver' : 'kakao',   // 환경설정: 길찾기에 쓸 지도 앱(티맵은 여는 주소를 확인할 수 없고 실제로 안 열려서 뺐다)
     start: saved.start === 'korea' || saved.start === 'me' ? saved.start : 'last',   // 환경설정: 시작할 때 보여 줄 곳. last 마지막에 보던 곳, korea 전국, me 내 위치
-    fresh: saved.fresh ? 12 : 0,   // 새로 연 카페만 보기: 0 전부, 12 개업 1년 이내(기간을 고르게 했다가 선택지가 많다는 말을 듣고 하나로 줄였다)
+    // 보너스 카페 칩: XP를 더 받는 곳만 보기. 하나만 고른다. new 새로 연 카페(개업 1년 이내), old 오랜만의 기록을 기다리는 곳(마지막 기록 6개월 지남),
+    //   first 첫 기록을 기다리는 곳(아직 아무도 기록 안 함). 예전의 새로 오픈 칩(fresh)과 필터의 6개월 스위치(stale)를 옮겨 받는다.
+    bonus: /^(new|old|first)$/.test(saved.bonus) ? saved.bonus : saved.fresh ? 'new' : saved.stale ? 'old' : '',
     showAll: false,      // 구 전체 보기를 켰는가. 지역을 바꾸면 꺼진다.
     pins: {},            // 압정으로 목록 맨 위에 고정해 둔 브랜드 이름
     tab: saved.tab === 'low' ? 'low' : 'all'   // 브랜드 목록: all 전체, low 저가커피만
@@ -1868,6 +1883,47 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     void x.offsetWidth; x.hidden = false; toastTimer = setTimeout(function () { toastOut(x); }, 2000);
   }
   // 폐업 신고 확인 창: 가볍게 눌리지 않게 한 번 묻고, 신고 뒤에 어떻게 되는지 알린다.
+  // 보너스 카페 고르기: 셋 중 하나. 고른 줄을 다시 누르면 푼다.
+  function openBonusPick() {
+    var old = $('xinfo'); if (old) old.remove();
+    var o = el('div'), box = el('div', 'xbox bpick'), hd = el('div', 'xhead'), bd = el('span', 'xbadge pic');
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '보너스 카페');
+    o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
+    bd.appendChild(fxStill('mi_gift')); hd.appendChild(bd); hd.appendChild(el('h2', null, '보너스 카페')); box.appendChild(hd);
+    var ll = el('div', 'xll');
+    BONUS_OPT.forEach(function (x) {
+      var r = btn('xli bopt', null, function () {
+        S.bonus = S.bonus === x[0] ? '' : x[0]; S.showAll = false;
+        o.remove(); changed();
+      });
+      r.setAttribute('aria-pressed', String(S.bonus === x[0]));
+      var l = el('span', 'bol'); l.appendChild(fxIcon(x[3])); l.appendChild(el('span', 'rs', x[1]));
+      r.appendChild(l); r.appendChild(el('span', 'bxp', '+' + fmt(x[4]) + ' XP'));
+      ll.appendChild(r);
+    });
+    box.appendChild(ll);
+    box.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
+    o.appendChild(box); document.body.appendChild(o);
+  }
+  // 카드의 "대형 N평 이상"을 누르면: 대형 기준 막대와 대형카페만 보기. 필터의 대형카페와 같은 값을 쓴다.
+  function openBigBox(i) {
+    var old = $('xinfo'); if (old) old.remove();
+    var o = el('div'), box = el('div', 'xbox bigbox'), hd = el('div', 'xhead');
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '대형 기준');
+    var done = function () { o.remove(); if (P.kind === 'detail') renderPanel(); };
+    o.addEventListener('click', function (e) { if (e.target === o) done(); });
+    hd.appendChild(el('h2', null, '대형 기준')); box.appendChild(hd);
+    var rw = el('div', 'bgrow'), rg = el('input'), out = el('b');
+    rg.type = 'range'; rg.min = 30; rg.max = 300; rg.step = 10; rg.value = S.bigPy; rg.setAttribute('aria-label', '대형카페 기준 평수');
+    var me = el('p', 'bgme');
+    var lab = function () { out.textContent = S.bigPy + '평 이상'; me.textContent = '이 카페는 ' + (D.area[i] >= S.bigPy * PYEONG ? '대형이에요' : '대형이 아니에요'); };
+    rg.addEventListener('input', function () { S.bigPy = +rg.value; lab(); if (S.big) { refilter(); draw(); } renderChips(); persist(); });
+    rw.appendChild(rg); rw.appendChild(out); box.appendChild(rw);
+    box.appendChild(toggleRow('대형카페만 보기', S.big, function (v) { S.big = v; refilter(); draw(); renderChips(); persist(); }));
+    box.appendChild(me); lab();
+    box.appendChild(btn('btn pri', '확인', done));
+    o.appendChild(box); document.body.appendChild(o);
+  }
   function confirmGone(go) {
     var old = $('xinfo'); if (old) old.remove();
     var o = el('div'), box = el('div', 'xbox nick done'), ti = el('div', 'dti'), two = el('div', 'two');
@@ -2178,7 +2234,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         for (k in mine) if (!srvMine[k] || srvMine[k].o !== mine[k].o || (srvMine[k].c || '') !== (mine[k].c || '')) { j = ix[k]; if (j !== undefined) push(j, true); }
         for (k in srvMine) if (!mine[k]) { j = ix[k]; if (j !== undefined) push(j, true); }
       }
-      if (S.outlet || S.stale) refilter();
+      if (S.outlet || S.bonus === 'old' || S.bonus === 'first') refilter();
       requestDraw();
       if (P.kind === 'filter') renderPanel();
     }).catch(function () { /* 서버에 닿지 못하면 이 기기의 기록만으로 보여 준다 */ });
@@ -2395,7 +2451,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     save(STORE, {
       cats: Object.keys(S.cats).map(Number), brands: Object.keys(S.brands).map(function (j) { return D.brands[j][0]; }),
       reg: S.reg >= 0 ? regPath(S.reg) : null,
-      big: S.big, bigPy: S.bigPy, outlet: S.outlet, stale: S.stale, chairs: Object.keys(S.chairs), sort: S.sort, pins: Object.keys(S.pins), tab: S.tab, seen: S.seen, fresh: S.fresh, outline: S.outline, start: S.start, nav: S.nav,
+      big: S.big, bigPy: S.bigPy, outlet: S.outlet, chairs: Object.keys(S.chairs), sort: S.sort, pins: Object.keys(S.pins), tab: S.tab, seen: S.seen, bonus: S.bonus, outline: S.outline, start: S.start, nav: S.nav,
       view: [c.lat, c.lng, +map.getZoom().toFixed(2)]
     });
   }
@@ -2404,6 +2460,19 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   // 문 연 달(D.since, YYYYMM, 행정안전부 인허가일자 기준)이 이번 달부터 몇 달 전인가. 이번 달이면 0, 모르면 -1.
   var NOW_M = (function () { var d = new Date(); return d.getFullYear() * 12 + d.getMonth(); })();
   function monthsAgo(i) { var y = D.since ? D.since[i] : 0; return y ? Math.max(0, NOW_M - (Math.floor(y / 100) * 12 + y % 100 - 1)) : -1; }
+  // 보너스 카페 칩의 조건
+  function bonusOk(i) {
+    if (S.bonus === 'new') { var ma = monthsAgo(i); return ma >= 0 && ma < 12; }
+    if (S.bonus === 'old') return staleCafe(i);
+    if (S.bonus === 'first') return !myO[i] && !(voters[i] && voters[i].length);
+    return true;
+  }
+  var BONUS_OPT = [
+    ['new', '새로 연 카페', '새로 연 카페', 'shop', 500],
+    ['old', '오랜만의 기록을 기다리는 곳', '오랜만의 기록', 'cal', 500],
+    ['first', '첫 기록을 기다리는 곳', '첫 기록', 'plug', 2000]
+  ];
+  function bonusOpt() { for (var n = 0; n < BONUS_OPT.length; n++) if (BONUS_OPT[n][0] === S.bonus) return BONUS_OPT[n]; return null; }
   var regMask = new Uint8Array(D.dong.length), totalPass = 0;
   function refilter() {
     var k, i, r;
@@ -2419,9 +2488,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       var ok = !dabang[i] && (!anySel || S.cats[grp[i]] === true || (b >= 0 && S.brands[b] === true));
       if (ok && S.big && D.area[i] < minArea) ok = false;
       if (ok && S.outlet) ok = outlet[i] === 1 && (!wantChair || (chair[i] & wantChair) !== 0);
-      if (ok && S.stale) ok = staleCafe(i);
       if (ok && S.seen === 'want') ok = want[i] === 1;
-      if (ok && S.fresh) { var ma = monthsAgo(i); ok = ma >= 0 && ma < S.fresh; }
+      if (ok && S.bonus) ok = bonusOk(i);
       // 없어진 카페: 운영자가 확인하고 지우기로 한 곳만 뺀다. 신고만 된 곳은 그대로 둔다.
       if (ok && removed[i] === 1) ok = false;
       if (ok) { r = dongReg[D.dongOf[i]]; rCnt[r]++; rSx[r] += mx[i]; rSy[r] += my[i]; }
@@ -4532,7 +4600,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   $('menuBtn').addEventListener('click', function () { if (P.kind === 'menu') closePanel(); else { P.prev = null; openPanel('menu'); } });
 
   // ----- 필터 칩 -----
-  function anyFilter() { return nKeys(S.brands) || S.big || S.outlet || S.stale; }
+  function anyFilter() { return nKeys(S.brands) || S.big || S.outlet; }
   function chip(label, on, act, opt) {
     opt = opt || {};
     var c = el('button', 'chip' + (opt.cls ? ' ' + opt.cls : '')); c.type = 'button'; c.dataset.act = act;
@@ -4565,12 +4633,11 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     if (bl) parts.push(bl);
     if (S.big) parts.push(S.bigPy + '평 이상');
     if (S.outlet) parts.push('콘센트');
-    if (S.stale) parts.push('기록 6개월 넘음');
     return parts.join(', ');
   }
-  function resetFilter() { S.cats = {}; S.brands = {}; S.tab = 'all'; S.big = false; S.outlet = false; S.stale = false; S.chairs = {}; }
-  // 필터 카드의 조건에 더해 찜, 새로 연 카페 칩까지 모두 푼다.
-  function resetAll() { resetFilter(); S.seen = 'all'; S.fresh = 0; }
+  function resetFilter() { S.cats = {}; S.brands = {}; S.tab = 'all'; S.big = false; S.outlet = false; S.chairs = {}; }
+  // 필터 카드의 조건에 더해 찜, 보너스 카페 칩까지 모두 푼다.
+  function resetAll() { resetFilter(); S.seen = 'all'; S.bonus = ''; }
   function regionChip() {
     if (S.reg < 0) return chip('지역', false, 'region', { pic: 'mi_pin', caret: true });
     // 폰에서는 들어와 있는 가장 작은 단위 하나만 적는다(경로를 다 적으면 필터 칩이 화면 밖으로 밀린다). 누르면 지역 카드가 열리고 거기서 위 단계로 간다.
@@ -4595,15 +4662,16 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     box.appendChild(regionChip());
     // 걸러 보기와 설정은 필터 칩 하나에 다 들어 있다. 칩 이름은 늘 "필터"다. 켜 둔 조건이 있으면 칩이 진해지고, 옆의 x로 한 번에 푼다.
     box.appendChild(chip('필터', !!fl, 'filter', { icon: 'filter', caret: true, sub: fl ? ['reset', 'x', '필터 모두 풀기'] : null }));
-    // 새로 오픈(개업 1년 이하)은 필터와 같이 쓰는 조건이라 필터 칩 바로 옆에 둔다. 누르면 바로 켜지고 꺼진다.
-    if (D.since) { var nc = chip('새로 오픈', !!S.fresh, 'fresh', { pic: 'shop', aria: '오픈한 지 1년 이하인 카페만 보기' }); nc.title = '오픈한 지 1년 이하인 카페만 보기'; box.appendChild(nc); }
+    // 보너스 카페: XP를 더 받는 곳만 본다(필터와 같이 쓴다). 누르면 셋 중 하나를 고르는 창. 고르면 칩 이름과 그림이 고른 것으로 바뀌고, 옆의 x로 푼다.
+    var bo = bonusOpt();
+    box.appendChild(chip(bo ? bo[2] : '보너스 카페', !!bo, 'bonus', { pic: bo ? bo[3] : 'mi_gift', sub: bo ? ['bonus-off', 'x', '보너스 카페 풀기'] : null, aria: '보너스 카페 고르기' }));
     // 찜은 "내 목록 보기"라서 혼자 쓴다. 켜면 필터와 새로 오픈이 초기화되고, 찜을 켠 채로 필터나 새로 오픈을 누르면 찜이 꺼진다.
     box.appendChild(chip('찜', S.seen === 'want', 'want', { pic: 'mi_heart', aria: '찜한 곳만 보기' }));
     // 지역을 골라 들어간 동안에만 오른쪽 아래에 뒤로, 처음부터 단추를 보여 준다.
     $('nav').hidden = S.reg < 0;
     // 구(또는 구가 없는 시, 군)를 골랐을 때만 "전체 보기" 단추를 보여 준다. 누르면 동을 고르지 않고도 그 구의 카페가 전부 점으로 나온다.
     // 새로 오픈만 볼 때는 카페가 적어서 이미 하나씩 보이므로 이 단추를 두지 않는다.
-    var all = $('navAll'), can = canShowAll() && !S.fresh;
+    var all = $('navAll'), can = canShowAll() && S.bonus !== 'new' && S.bonus !== 'old';
     all.hidden = !can;
     if (can) { all.textContent = S.showAll ? '동별로 보기' : rName[S.reg] + ' 전체 보기'; all.setAttribute('aria-pressed', String(S.showAll)); }
   }
@@ -4614,7 +4682,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     var act = t.dataset.act;
     if (act === 'region') { if (P.kind !== 'region') regBrowse = S.reg >= 0 && rLeaf[S.reg] ? rParent[S.reg] : S.reg; toggleMenu('region', 'region'); return; }
     // 찜을 켠 채로 필터나 새로 오픈을 누르면 찜을 끈다(찜은 다른 조건과 같이 쓰지 않는다).
-    if ((act === 'filter' || act === 'fresh') && S.seen === 'want') { S.seen = 'all'; if (P.kind === 'list') closePanel(); refilter(); draw(); renderChips(); persist(); }
+    if ((act === 'filter' || act === 'bonus') && S.seen === 'want') { S.seen = 'all'; if (P.kind === 'list') closePanel(); refilter(); draw(); renderChips(); persist(); }
     if (act === 'filter') { brandQ = ''; toggleMenu('filter', 'filter'); return; }
     if (act.indexOf('reg-go-') === 0) {
       // 앞 단계로 되돌아간다.
@@ -4627,8 +4695,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       else needLogin(function () { resetAll(); S.seen = 'want'; if (P.kind) closePanel(); showWanted(); }, 'want');
       return;
     }
-    // 새로 오픈을 켤 때 기준(1년)을 잠깐 알려 준다.
-    if (act === 'fresh') { S.showAll = false; S.fresh = S.fresh ? 0 : 12; if (S.fresh) toast('오픈 1년 이하 카페만 보여요', 'new'); }
+    if (act === 'bonus') { if (P.kind === 'region' || P.kind === 'filter') closePanel(); openBonusPick(); return; }
+    if (act === 'bonus-off') S.bonus = '';
     if (act === 'reset') resetFilter();
     if (P.kind === 'region' || P.kind === 'filter') closePanel();
     changed();
@@ -4657,7 +4725,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     r.appendChild(pinEl(i));
     body.appendChild(el('span', 'name', D.name[i]));
     var bits = [];
-    if (S.fresh && D.since && D.since[i]) bits.push(Math.floor(D.since[i] / 100) % 100 + '년 ' + (D.since[i] % 100) + '월 개업');
+    if (S.bonus === 'new' && D.since && D.since[i]) bits.push(Math.floor(D.since[i] / 100) % 100 + '년 ' + (D.since[i] % 100) + '월 개업');
     if (D.area[i] > 0) bits.push(pyeong(D.area[i]) + '평');
     bits.push(withRegion ? regPath(dongReg[D.dongOf[i]]) : D.dong[D.dongOf[i]][0]);
     var dt = distText(i); if (dt) bits.push(dt);
@@ -4673,7 +4741,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   var askNear = false;     // 위치를 모르는 채로 가까운 순을 눌렀는가
   function renderList() {
     var wantOnly = S.seen === 'want';
-    var h = head(wantOnly ? '찜한 곳' : S.reg >= 0 ? rName[S.reg] : '이 화면', (S.fresh ? '새로 연 카페 ' : '') + fmt(vc) + '곳'), sc = el('div', 'scroll'), k;
+    var h = head(wantOnly ? '찜한 곳' : S.reg >= 0 ? rName[S.reg] : '이 화면', (bonusOpt() ? bonusOpt()[2] + ' ' : '') + fmt(vc) + '곳'), sc = el('div', 'scroll'), k;
     if (vc) {
       var sort = el('div', 'sort');
       // 가까운 순은 내 위치를 알아야 쓸 수 있다. 위치를 모르면 넓은 순으로 보여 주고, 가까운 순을 누르면 위치를 허용해 달라고 알린다.
@@ -4690,7 +4758,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       var e = el('div', 'empty');
       e.appendChild(el('b', null, wantOnly && !totalPass ? '아직 찜한 곳이 없어요' : '이 화면에는 조건에 맞는 카페가 없어요'));
       e.appendChild(el('span', null, totalPass ? '지도를 옮기거나 축소해 보세요. 조건에 맞는 카페는 모두 ' + fmt(totalPass) + '곳이에요.' : '조건을 줄여 보세요.'));
-      if (anyFilter() || S.seen !== 'all' || S.fresh) e.appendChild(btn('btn sm', '필터 초기화', function () { resetAll(); changed(); }));
+      if (anyFilter() || S.seen !== 'all' || S.bonus) e.appendChild(btn('btn sm', '필터 초기화', function () { resetAll(); changed(); }));
       sc.appendChild(e); return;
     }
     if (askNear && !myLoc) {
@@ -4860,9 +4928,6 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         b.appendChild(el('p', null, '지금까지 기록된 곳 ' + fmt(seatCount()) + '곳'));
         lap.appendChild(b);
       }
-      // 기록: 마지막 기록이 6개월 지난 곳. 켜면 무엇인지 잠깐 알린다.
-      lap.appendChild(el('div', 'ftitle', '기록'));
-      lap.appendChild(toggleRow('기록이 6개월 넘은 곳', S.stale, function (v) { S.stale = v; apply(); fillLap(); if (v) toast('마지막 기록이 6개월 지난 카페예요. 기록하면 오랜만의 기록 XP를 받아요'); }));
     }
 
     // 2. 브랜드: 전체 목록에서 고른다. "저가커피만"을 켜면 저가커피 브랜드만 목록에 나오고 전부 고른 채로 시작한다(하나씩 뺄 수 있다).
@@ -4975,7 +5040,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     go.appendChild(icon('route')); go.appendChild(document.createTextNode('길찾기'));
     f1.appendChild(go);
     var f2 = fact('넓이');
-    if (a > 0) { f2.appendChild(el('b', null, pyeong(a) + '평')); f2.appendChild(el('small', null, fmt(a) + '㎡')); if (a >= S.bigPy * PYEONG) f2.appendChild(el('small', 'bigmark', '대형')); } else f2.appendChild(el('small', null, '자료 없음'));
+    if (a > 0) { f2.appendChild(el('b', null, pyeong(a) + '평')); f2.appendChild(el('small', null, fmt(a) + '㎡')); if (a >= S.bigPy * PYEONG) { var bm = btn('bigmark', '대형 ' + S.bigPy + '평 이상', function () { openBigBox(i); }); bm.appendChild(icon('right')); f2.appendChild(bm); } } else f2.appendChild(el('small', null, '자료 없음'));
     // 문 연 달. 넓이 아랫줄에 적는다. 인허가 자료에서 같은 가게를 찾은 카페만 안다. 모르면 적지 않는다.
     var ym = D.since ? D.since[i] : 0;
     if (ym) { var f3 = fact('개업'), ago = monthsAgo(i); f3.appendChild(el('b', null, Math.floor(ym / 100) + '년 ' + (ym % 100) + '월')); if (ago < 3) { var om = btn('omark', null, function () { toast('인허가를 받은 달이에요. 아직 문을 열기 전일 수 있어요'); }); om.appendChild(fxIcon('mi_clock')); om.appendChild(document.createTextNode('준비 중일 수 있어요')); f3.appendChild(om); } else if (ago < 12) { var nw = el('small', 'newmark'); nw.appendChild(fxIcon('shop')); nw.appendChild(document.createTextNode('새로 열었어요')); f3.appendChild(nw); } }
