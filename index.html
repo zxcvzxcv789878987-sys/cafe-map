@@ -3313,8 +3313,10 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         hits.push({ x: x, y: y, r: Math.max(r + 3, 9), i: i });
         if (wantLabel) labels.push([i, x, y, r, 1]);
       };
+      var hold = liveHold > Date.now() && D.kid;
       for (pass2 = 0; pass2 < 2; pass2++) for (k = 0; k < vc; k++) {
         i = viewIdx[k];
+        if (hold && D.kid[i] && !live[i]) continue;
         if (pileOf[i] >= 0 && !(live && live[i])) { if (pass2 === 0) (piles[pileOf[i]] = piles[pileOf[i]] || []).push(i); continue; }
         if ((grp[i] !== 2) !== (pass2 === 1) || i === sel) continue;
         one(i);
@@ -3455,7 +3457,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   // 장소 번호(D.kid)가 같은 카페를 받은 좌표로 옮겨 찍는다. 받은 좌표는 기억해 두지 않는다(새로 열면 다시 묻는다).
   // 이 컴퓨터용 자료(cafes.local.js)를 쓸 때는 이미 카카오 좌표라서 하지 않는다.
   var live = new Uint8Array(N), liveKey = (window.CAFE_KAKAO || {}).js || '', liveOn = !!liveKey && !D.kakao && !!D.kid;
-  var LIVE_ZOOM = 15.5, kidIndex = null, liveTiles = {}, liveQueue = [], liveBusy = false, liveCalls = 0, liveSdk = 0, livePlaces = null;
+  // 2026-11-26: 15.5에서 14.5로 낮췄다. 점이 작을 때 미리 옮겨 두면 움직임이 몇 픽셀이라 거의 안 보인다(사용자: 확대하면 점이 갑자기 움직인다).
+  var LIVE_ZOOM = 14.5, liveHold = 0, kidIndex = null, liveTiles = {}, liveQueue = [], liveBusy = false, liveCalls = 0, liveSdk = 0, livePlaces = null;
   function liveSdkLoad(done) {
     if (liveSdk === 2) return done();
     if (liveSdk === 1 || liveSdk === 3) return;
@@ -3523,18 +3526,33 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     var t = liveQueue.shift(), got = [];
     liveAsk(t[0], t[1], t[2], t[3], 0, got, function () {
       liveBusy = false;
-      if (got.length) { liveSpread(got); liveGlide(got); }
+      if (got.length) { liveSpread(got); if (liveHold > Date.now()) { got.forEach(function (i) { liveFrom.delete(i); }); requestDraw(); } else liveGlide(got); }
+      if (!liveQueue.length && liveHold) { liveHold = 0; requestDraw(); }
       liveNext();
     });
   }
   // 화면에 보이는 구역을 고정된 칸(약 600m)으로 나눠서, 아직 묻지 않은 칸만 묻는다.
   function liveFetch() {
     if (!liveOn || liveSdk === 3 || map.getZoom() < LIVE_ZOOM) return;
+    var b = map.getBounds();
+    liveFetchBox((b.getWest() + 180) / 360, mercY(b.getNorth()), (b.getEast() + 180) / 360, mercY(b.getSouth()));
+  }
+  // 앞으로 보일 화면(가운데 경도, 위도와 배율)의 칸을 미리 받는다. 내 위치로 날아갈 때 쓴다.
+  function liveFetchAt(lng, lat, z) {
+    if (!liveOn || liveSdk === 3 || z < LIVE_ZOOM) return;
+    var box = map.getContainer(), wf = box.clientWidth / (512 * Math.pow(2, z)) / 2, hf = box.clientHeight / (512 * Math.pow(2, z)) / 2;
+    var cx = (lng + 180) / 360, cy = mercY(lat);
+    liveFetchBox(cx - wf, cy - hf, cx + wf, cy + hf);
+  }
+  // 자리 잡기 전에는 그리지 않기: 크게 확대된 화면이 바로 뜰 때(앱을 열 때, 내 위치로 갈 때) 위치를 받기 전까지 카카오 장소 번호가 있는 점은 그리지 않는다.
+  //  다 받으면(또는 1.5초가 지나면) 제자리에 그린다. 그래서 미끄러지는 움직임이 보이지 않는다.
+  function liveHoldOn(ms) { if (!liveOn || liveSdk === 3) return; ms = ms || 1500; liveHold = Date.now() + ms; setTimeout(function () { if (liveHold && liveHold <= Date.now()) { liveHold = 0; requestDraw(); } }, ms + 50); }
+  function liveFetchBox(fx0, fy0, fx1, fy1) {
     liveSdkLoad(function () {
       if (!kidIndex) { kidIndex = new Map(); for (var i = 0; i < N; i++) if (D.kid[i]) kidIndex.set(D.kid[i], i); }
-      var b = map.getBounds(), T = 1 / 65536;
-      var x0 = Math.floor((b.getWest() + 180) / 360 / T), x1 = Math.floor((b.getEast() + 180) / 360 / T);
-      var y0 = Math.floor(mercY(b.getNorth()) / T), y1 = Math.floor(mercY(b.getSouth()) / T);
+      var T = 1 / 65536;
+      var x0 = Math.floor(fx0 / T), x1 = Math.floor(fx1 / T);
+      var y0 = Math.floor(fy0 / T), y1 = Math.floor(fy1 / T);
       if ((x1 - x0 + 1) * (y1 - y0 + 1) > 40) return;
       for (var x = x0; x <= x1; x++) for (var y = y0; y <= y1; y++) {
         var key = x + ',' + y;
@@ -5734,6 +5752,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         setTimeout(function () { map.off('moveend', arrive); }, 8000);
       }
       flying = true; setTimeout(function () { flying = false; }, dur + 100);
+      if (zTo >= LIVE_ZOOM) { liveHoldOn(dur + 1500); liveFetchAt(ll[0], ll[1], zTo); }
       map.flyTo({ center: ll, zoom: zTo, duration: dur, curve: 1.2, essential: true });
     }
   }
@@ -5755,6 +5774,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
 
   refilter(); draw(); renderChips();
   // 환경설정에서 "내 위치"에서 시작하기로 했으면 열자마자 내 위치로 간다(위치 허용을 묻는다).
+  if (map.getZoom() >= LIVE_ZOOM) { liveHoldOn(); liveFetch(); }
   if (S.start === 'me') { setFollow(true); startHeading(false); locateMe(); }
   // 위치를 이미 허락해 둔 사람은 시작 위치와 상관없이 내 위치 점을 실시간으로 보여 준다(지도는 옮기지 않는다).
   else if (navigator.permissions && navigator.permissions.query) navigator.permissions.query({ name: 'geolocation' }).then(function (st) {
