@@ -850,6 +850,16 @@ button.xlink .xbadge.qna { --pri: #1c7ed6; --pri2: #74c0fc; }
 .xbox textarea { width: 100%; min-height: 150px; resize: vertical; margin-top: 8px; padding: 12px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); font: inherit; font-size: 16px; line-height: 1.5; }
 .xbox textarea:focus { outline: 2px solid var(--pri); outline-offset: -1px; border-color: transparent; }
 .xms span.next b { color: var(--ink); }
+.xhd { display: flex; align-items: center; gap: 5px; margin: 4px 2px -4px; font-size: 12px; font-weight: 800; color: #b7791f; }
+.xhd svg.i { width: 14px; height: 14px; }
+.xms span.hd { background: #221c45; color: rgba(255, 216, 107, .7); }
+.xms span.hd b { color: #ffe08a; }
+.xms span.hd svg.i { color: #ffd86b; opacity: .8; }
+.xms span.hd.got { background: linear-gradient(135deg, #2b2360, #4a3aa6); color: rgba(255, 224, 138, .85); }
+.xms span.hd.got svg.i { opacity: 1; }
+.xms span.hd.next { background: #fff8e1; color: #b7791f; box-shadow: inset 0 0 0 1.5px #f0b429; }
+.xms span.hd.next b { color: #5f3b00; }
+.xms span.hd.next svg.i { color: #e09b00; }
 .xms span.next svg.i { opacity: 1; }
 /* 표 위: 지금 몇 곳인지, 다음 보너스가 얼마인지, 거기까지 얼마나 왔는지(칸 하나가 카페 한 곳). */
 .xprog .of { display: inline; font-size: 15px; font-weight: 700; color: var(--ink-3); }
@@ -2514,16 +2524,18 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       var track = el('div', 'tr'); fill.style.width = Math.round(count / next * 100) + '%'; track.appendChild(fill); bar.appendChild(track); box.appendChild(bar);
       var g = el('div', 'xms');
       // 50곳 뒤: 지난 칸(10곳마다) 중 최근 셋과 다음 목표 칸을 덧붙인다. 지난 칸을 빼면 50곳에서 바로 다음 목표로 건너뛴 것처럼 보인다.
-      var past = [];
+      var past = [], gh = el('div', 'xms');
       for (var pm = 60; pm < next; pm += 10) past.push(pm);
       (next > 50 ? MS.concat(past.slice(-3), [next]) : MS).forEach(function (m) {
-        var got = have >= m, isNext = !got && m === next, c = el('span', got ? 'got' : isNext ? 'next' : '');
+        // 50곳 뒤 칸은 히든 보너스: 묶음 이름을 한 줄 넣고, 어두운 바탕에 금색으로 다르게 그린다(사용자 2026-11-26).
+        var got = have >= m, isNext = !got && m === next, c = el('span', (got ? 'got' : isNext ? 'next' : '') + (m > 50 ? ' hd' : ''));
         c.appendChild(icon(got ? 'check' : isNext ? 'gift' : 'lock'));
         c.appendChild(el('b', null, m + unit)); c.appendChild(document.createTextNode('+' + fmt(xpBonus(m))));
         c.setAttribute('aria-label', m + unit + ', ' + fmt(xpBonus(m)) + ' 원두, ' + (got ? '받음' : isNext ? '다음 목표' : '아직'));
-        g.appendChild(c);
+        (m > 50 ? gh : g).appendChild(c);
       });
       box.appendChild(g);
+      if (gh.firstChild) { var hh = el('div', 'xhd'); hh.appendChild(icon('spark')); hh.appendChild(document.createTextNode('히든 보너스')); box.appendChild(hh); box.appendChild(gh); }
       // 50곳 뒤의 규칙은 다른 줄들처럼 이름과 XP를 양쪽에 맞춰 두 줄로 적는다.
       [['50' + unit + ' 뒤로 10' + unit + '마다', 10000], ['100' + unit + '마다', 20000]].forEach(function (x) {
         var r = el('div', 'xrow'); r.appendChild(el('span', null, x[0])); r.appendChild(el('b', null, '+' + fmt(x[1]) + ' 원두')); box.appendChild(r);
