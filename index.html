@@ -92,6 +92,12 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 .bsec .blab { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .bsec .blab .fxs { width: 26px; height: 26px; }
 .bsec .blab small { font-size: 12.5px; font-weight: 650; color: var(--ink-3); white-space: nowrap; }
+.bsec .bitem { display: flex; flex-direction: column; gap: 6px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.bsec .bitem:last-child { border-bottom: 0; padding-bottom: 0; }
+.bsec .bsub { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; padding-left: 35px; }
+.bsec .bsub p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+.bsec .bgot { flex: none; display: inline-flex; align-items: center; gap: 1px; padding: 0; background: none; color: #6a5ae0; font: inherit; font-size: 13px; font-weight: 650; white-space: nowrap; cursor: pointer; }
+.bsec .bgot svg { width: 14px; height: 14px; }
 .chip .dot { width: 9px; height: 9px; border-radius: 50%; }
 .chip svg.i { width: 16px; height: 16px; }
 .chip[data-act=want][aria-pressed=true] svg.i { fill: currentColor; }
@@ -1754,6 +1760,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   function xpToday() { var d = new Date(); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); }
   // 더 받는 경우가 무엇인지(목록 창 위에 적는다).
   var XP_WHAT = {
+    '첫 콘센트 기록': '아직 아무도 기록하지 않은 카페에 처음으로 콘센트를 기록하면 받아요.',
     '새 동네': '동 단위로, 그 동에서 처음 콘센트를 기록하면 받아요. 동마다 한 번씩이에요.',
     '새로 연 카페': '문 연 지 1년이 안 된 카페에 콘센트를 기록하면 받아요.',
     '오랜만의 기록': '6개월 넘게 아무도 기록하지 않은 카페에 콘센트를 기록하면 받아요.'
@@ -1772,6 +1779,36 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     return o;
   }
   function xpLogCount(label) { return xpCount(xpLogNames(label, true)); }
+  function xpGotList(label) {
+    var now = xpNowNames(), seen = {};
+    return (XP.log || []).filter(function (e) { return xpSame(e.r, label) && e.a > 0; }).slice().reverse()
+      .filter(function (e) { if (!e.c || !now[e.c] || seen[e.c]) return false; seen[e.c] = 1; return true; });
+  }
+  // 받은 곳 창: 설명과 그 XP를 받은 카페 목록(새 동네는 동 목록). back이 있으면 뒤로 단추.
+  var GOT_PIC = { '새 동네': 'town', '새로 연 카페': 'shop', '오랜만의 기록': 'cal', '첫 콘센트 기록': 'plug' };
+  function openGotList(lab, back) {
+    var old = $('xinfo'); if (old) old.remove();
+    var o = el('div'), box = el('div', 'xbox'), hd = el('div', 'xhead'), bd = el('span', 'xbadge pic'), items = [];
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', lab);
+    o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
+    if (GOT_PIC[lab]) bd.appendChild(fxStill(GOT_PIC[lab])); else { bd.className = 'xbadge'; bd.appendChild(icon('list')); }
+    hd.appendChild(bd); hd.appendChild(el('h2', null, lab)); box.appendChild(hd);
+    box.appendChild(el('p', 'xexp', XP_WHAT[lab] || ''));
+    if (lab === '새 동네') Object.keys(XP.dong).forEach(function (k) { items.push({ c: k.split(' ').slice(1).join(' '), t: 0 }); });
+    else xpGotList(lab).forEach(function (e) { items.push({ c: e.c || '', t: e.t }); });
+    var ll = el('div', 'xll');
+    if (!items.length) ll.appendChild(el('p', 'xnone', '아직 없어요'));
+    items.forEach(function (e) {
+      var r = el('div', 'xli'), rt = el('span', 'rt');
+      r.appendChild(el('span', 'rs', e.c));
+      if (e.t) { var d = new Date(e.t); rt.appendChild(el('small', null, (d.getMonth() + 1) + '월 ' + d.getDate() + '일')); }
+      r.appendChild(rt); ll.appendChild(r);
+    });
+    box.appendChild(ll);
+    if (back) { var two = el('div', 'two'); two.appendChild(btn('btn', '뒤로', function () { o.remove(); back(); })); two.appendChild(btn('btn pri', '닫기', function () { o.remove(); })); box.appendChild(two); }
+    else box.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
+    o.appendChild(box); document.body.appendChild(o);
+  }
   // 같은 카페를 여러 번 세어서 더 받은 달성 보너스를 없던 일로 돌린다. 한 번이라도 받은 적이 있는 서로 다른 카페 수까지만 인정한다.
   // 잘못 받은 "N곳 달성" 줄은 XP 기록에서 지우고 그만큼 XP를 뺀다(레벨도 따라 내려간다).
   function xpDropSeat() {
@@ -1898,7 +1935,11 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       var lab = row.firstChild; lab.className = 'blab';
       lab.insertBefore(fxIcon(x[3]), lab.firstChild);
       lab.appendChild(el('small', null, '+' + fmt(x[4]) + ' XP'));
-      sec.appendChild(row);
+      var item = el('div', 'bitem'), sub = el('div', 'bsub');
+      sub.appendChild(el('p', null, XP_WHAT[x[5]]));
+      var got = btn('bgot', '받은 곳 ' + xpLogCount(x[5]) + '곳', function () { openGotList(x[5]); });
+      got.appendChild(icon('right')); sub.appendChild(got);
+      item.appendChild(row); item.appendChild(sub); sec.appendChild(item);
     });
     sc.appendChild(sec);
     var foot = el('div', 'pfoot'), okBtn = btn('btn pri', null, closePanel);
@@ -2474,9 +2515,9 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     return w;
   }
   var BONUS_OPT = [
-    ['new', '새로 연 카페만', '새로 연 카페', 'shop', 500],
-    ['old', '오랜만의 기록을 기다리는 카페만', '오랜만의 기록', 'cal', 500],
-    ['first', '첫 기록을 기다리는 카페만', '첫 기록', 'plug', 2000]
+    ['new', '새로 연 카페만', '새로 연 카페', 'shop', 500, '새로 연 카페'],
+    ['old', '오랜만의 기록을 기다리는 카페만', '오랜만의 기록', 'cal', 500, '오랜만의 기록'],
+    ['first', '첫 기록을 기다리는 카페만', '첫 기록', 'plug', 2000, '첫 콘센트 기록']
   ];
   function bonusOpt() { for (var n = 0; n < BONUS_OPT.length; n++) if (BONUS_OPT[n][0] === S.bonus) return BONUS_OPT[n]; return null; }
   var regMask = new Uint8Array(D.dong.length), totalPass = 0;
@@ -3693,6 +3734,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       // 보상 체계는 메뉴에 적지 않고, 줄을 누르면 위에 뜨는 창에서 본다.
       // 창 안의 달성 보너스 두 줄(방문 인증 보너스, 투표 보너스)을 누르면 같은 창이 그 표로 바뀌고, 뒤로를 누르면 돌아온다.
       var openRewards = function (view, back) {
+        if (view && view.indexOf('list:') === 0) { openGotList(view.slice(5), function () { openRewards(); }); return; }
         xnv = xpCount(XP.vis); xno2 = xpCount(XP.vote);
         var old = $('xinfo'); if (old) old.remove();
         // 보너스 표 넷은 색을 따로 두지 않고 앱 기본 보라로(보너스는 붙은 그림으로 구분한다).
@@ -3709,11 +3751,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         };
         o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
         // 받은 곳 목록: XP 기록에서 그 이름으로 받은 것을 모은다(최근 것부터).
-        var listOf = function (label) {
-          var now = xpNowNames(), seen = {};
-          return (XP.log || []).filter(function (e) { return xpSame(e.r, label) && e.a > 0; }).slice().reverse()
-            .filter(function (e) { if (!e.c || !now[e.c] || seen[e.c]) return false; seen[e.c] = 1; return true; });
-        };
+        var listOf = xpGotList;
         // 줄 이름 앞의 작은 그림. 그림이 없는 줄도 같은 너비를 비워 글자 줄을 맞춘다.
         var ROW_PIC = { '콘센트 기록': 'plug', '첫 콘센트 기록': 'plug', '새 동네': 'town', '새로 연 카페': 'shop', '오랜만의 기록': 'cal', '로그인': 'login', '생애 첫 기록': 'stamp' };
         // 그림 오른쪽 아래에 붙이는 작은 표시: 첫 콘센트 기록은 "1st"
@@ -3763,27 +3801,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
             var r = el('div', 'xrow'); r.appendChild(el('span', null, x[0])); r.appendChild(el('b', null, '+' + fmt(x[1]) + ' XP')); box.appendChild(r);
           });
         };
-        if (view && view.indexOf('list:') === 0) {
-          var lab = view.slice(5), items2 = [];
-          var LIST_PIC = { '새 동네': 'town', '새로 연 카페': 'shop', '오랜만의 기록': 'cal' };
-          title(lab, LIST_PIC[lab] ? 'pic:' + LIST_PIC[lab] : 'list');
-          box.appendChild(el('p', 'xexp', XP_WHAT[lab] || ''));
-          if (lab === '새 동네') Object.keys(XP.dong).forEach(function (k) { var p = k.split(' '); items2.push({ c: p.slice(1).join(' '), t: 0 }); });
-          else listOf(lab).forEach(function (e) { items2.push({ c: e.c || '', t: e.t }); });
-          var ll2 = el('div', 'xll');
-          if (!items2.length) ll2.appendChild(el('p', 'xnone', '아직 없어요'));
-          items2.forEach(function (e) {
-            var r2 = el('div', 'xli'), rt2 = el('span', 'rt');
-            r2.appendChild(el('span', 'rs', e.c));
-            if (e.t) { var d2 = new Date(e.t); rt2.appendChild(el('small', null, (d2.getMonth() + 1) + '월 ' + d2.getDate() + '일')); }
-            r2.appendChild(rt2); ll2.appendChild(r2);
-          });
-          box.appendChild(ll2);
-          var two2 = el('div', 'two');
-          two2.appendChild(btn('btn', '뒤로', function () { openRewards(); }));
-          two2.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
-          box.appendChild(two2);
-        } else if (view === 'all') {
+        if (view === 'all') {
           // 기록 보너스: 보너스 넷을 모은 창. 누르면 그 표로 가고, 표의 뒤로를 누르면 여기로 돌아온다.
           title('기록 보너스', 'pic:mi_gift');
           box.querySelector('.xhead .xbadge').classList.add('orange');
@@ -3853,7 +3871,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
           box.appendChild(el('p', null, '1,000 XP를 모을 때마다 레벨이 1 올라요.'));
           box.appendChild(el('div', 'xgrp', '기본'));
           row('콘센트 기록', '', 1000, false);
-          row('첫 콘센트 기록', '', 2000, false);
+          tapRow('첫 콘센트 기록', 2000);
           box.appendChild(el('div', 'xsep'));
           box.appendChild(el('div', 'xgrp', '더 받는 경우'));
           tapRow('새 동네', 500);
