@@ -743,7 +743,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
 .me .dot .fxs { width: 24px; height: 24px; margin-top: -1px; }
 .me .dot circle { transition: transform .25s ease-out; }
 #locate[aria-pressed=true] { background: #6a5ae0; color: #fff; }
-#locate[aria-pressed=true] svg { fill: #fff; stroke: #fff; }
+#locate[aria-pressed=true] svg { stroke: #fff; }
 
 @media (max-width: 760px) {
   #bar { top: calc(10px + env(safe-area-inset-top, 0px)); left: 0; right: 0; flex-direction: column; gap: 0; }
@@ -5419,7 +5419,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   // 따라가기(follow): 내 위치 단추를 누르거나 앱 시작 위치가 내 위치이면 켜진다. 움직일 때마다 지도가 나를 가운데로 옮긴다.
   //   손으로 지도를 밀면 따라가기만 꺼진다(점은 계속 움직인다). 단추가 보라색이면 따라가는 중.
   // 보는 방향: 폰의 나침반으로 점에 부채꼴을 붙인다. 아이폰은 단추를 누를 때 한 번 허락을 묻는다. 나침반이 없으면 부채꼴을 숨긴다.
-  var me = null, meWatch = null, follow = false, flying = false, headingOn = false;
+  var me = null, meWatch = null, follow = false, flying = false;
   function meMarker(ll) {
     if (!me) {
       var d = el('div', 'me'); d.setAttribute('aria-label', '내 위치');
@@ -5434,7 +5434,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     meMarker(ll);
     myLoc = { x: (ll[0] + 180) / 360, y: mercY(ll[1]) };
     if (!follow || flying) return;
-    map.easeTo({ center: ll, duration: 600 });
+    var pc = map.project(ll), box2 = map.getContainer();
+    if (Math.hypot(pc.x - box2.clientWidth / 2, pc.y - box2.clientHeight / 2) > 12) map.easeTo({ center: ll, duration: 600 });
     // 동 하나를 골라 둔 채로 걸어서 옆 동으로 가면, 고른 동도 따라 바꾼다(안 그러면 옆 동 카페가 지도에서 빠진다).
     if (S.reg >= 0 && rLeaf[S.reg]) {
       var here = leafAt(myLoc.x, myLoc.y);
@@ -5465,22 +5466,25 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       el2.querySelectorAll('.dot circle').forEach(function (c) { c.style.transform = 'translate(' + ex + 'px,' + ey + 'px)'; });
     });
   }
-  function startHeading() {
-    if (headingOn) return;
-    var go = function () {
-      headingOn = true;
+  // 방향 듣기는 앱을 열 때부터 켜 둔다(안드로이드는 허락 없이 온다). 아이폰은 사람이 단추를 누른 그 순간에만 허락을 물을 수 있어서,
+  // 내 위치 단추를 누를 때(gesture) 아직 허락받지 않았으면 묻는다. 열 때 저절로는 묻지 않는다(물으면 실패하고 다시 묻지 못했다).
+  var headListen = false, headAsked = false;
+  function startHeading(gesture) {
+    if (!headListen) {
+      headListen = true;
       if ('ondeviceorientationabsolute' in window) window.addEventListener('deviceorientationabsolute', onHeading);
       else window.addEventListener('deviceorientation', onHeading);
-    };
-    // 아이폰: 누른 그때 허락을 물어야 한다.
-    if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
-      // 허락을 못 받아도 듣기는 켜 둔다(신호가 오지 않으면 부채꼴이 안 보일 뿐이다. 허락을 묻지 않아도 되는 브라우저도 이 함수가 있을 수 있다).
-      DeviceOrientationEvent.requestPermission().then(go, go);
-    } else go();
+    }
+    var ask = window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function';
+    if (!ask || !gesture || headAsked || headDeg !== null) return;
+    headAsked = true;
+    DeviceOrientationEvent.requestPermission().then(function (st) {
+      if (st !== 'granted') { headAsked = false; toast('보는 방향을 보려면 동작 및 방향 접근을 허용해 주세요'); }
+    }).catch(function () { headAsked = false; });
   }
   // 손으로 지도를 밀면 따라가기를 끈다(확대, 축소는 따라가기를 그대로 둔다).
   map.on('dragstart', function () { if (follow) setFollow(false); });
-  $('locate').addEventListener('click', function () { startHeading(); setFollow(true); locateMe(); });
+  $('locate').addEventListener('click', function () { startHeading(true); setFollow(true); locateMe(); });
   function locateMe(done) {
     if (!navigator.geolocation) { toast('이 브라우저에서는 위치를 가져올 수 없어요.'); return; }
     navigator.geolocation.getCurrentPosition(function (p) {
@@ -5531,10 +5535,10 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
 
   refilter(); draw(); renderChips();
   // 환경설정에서 "내 위치"에서 시작하기로 했으면 열자마자 내 위치로 간다(위치 허용을 묻는다).
-  if (S.start === 'me') { setFollow(true); startHeading(); locateMe(); }
+  if (S.start === 'me') { setFollow(true); startHeading(false); locateMe(); }
   // 위치를 이미 허락해 둔 사람은 시작 위치와 상관없이 내 위치 점을 실시간으로 보여 준다(지도는 옮기지 않는다).
   else if (navigator.permissions && navigator.permissions.query) navigator.permissions.query({ name: 'geolocation' }).then(function (st) {
-    if (st.state === 'granted') { startWatch(); startHeading(); }
+    if (st.state === 'granted') { startWatch(); startHeading(false); }
   }).catch(function () {});
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { FONT = getComputedStyle(document.body).fontFamily; layoutCache = {}; draw(); renderChips(); });
 })();
