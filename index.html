@@ -2001,6 +2001,18 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     box.appendChild(btn('btn pri', '확인', done));
     o.appendChild(box); document.body.appendChild(o);
   }
+  // 그림, 제목, 설명, 취소와 확인 단추가 있는 묻는 창
+  function askBox(pic, title, text, okLabel, go) {
+    var old = $('xinfo'); if (old) old.remove();
+    var o = el('div'), box = el('div', 'xbox nick done'), ti = el('div', 'dti'), two = el('div', 'two');
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', title);
+    ti.appendChild(fxArt(pic)); box.appendChild(ti);
+    box.appendChild(el('h2', null, title));
+    box.appendChild(el('p', 'xexp', text));
+    two.appendChild(btn('btn', '취소', function () { o.remove(); }));
+    two.appendChild(btn('btn pri', okLabel, function () { o.remove(); go(); }));
+    box.appendChild(two); o.appendChild(box); document.body.appendChild(o);
+  }
   function confirmGone(go) {
     var old = $('xinfo'); if (old) old.remove();
     var o = el('div'), box = el('div', 'xbox nick done'), ti = el('div', 'dti'), two = el('div', 'two');
@@ -5365,11 +5377,27 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         myO[i] = m[0]; myC[i] = m[0] === 1 ? m[1] : 0;
         store();
       };
+      // 첫 콘센트 기록을 받은 카페의 기록을 지우려 하면 먼저 묻는다(사용자 요청 2026-11-25). 지우면 그 카페에서 받은 XP가 빠지고,
+      // 다시 기록할 때 이미 다른 사람이 기록했으면(또는 그사이 기록하면) 첫 콘센트 기록 대신 콘센트 기록만 받는다.
+      var firstUndo = function (o, bit) {
+        var m = XP.vote[xk];
+        if (!m || !m[0]) return false;
+        var undo = o === -1 ? m[0] === -1 : m[0] === 1 && (m[1] ^ bit) === 0;
+        if (!undo) return false;
+        var nm0 = D.name[i];
+        if (!(XP.log || []).some(function (e) { return e.c === nm0 && xpSame(e.r, '첫 콘센트 기록') && e.a > 0; })) return false;
+        var others = (realVotes[i] || 0) > 0;
+        askBox('plug', '기록을 지울까요?', '지우면 이 카페에서 받은 ' + fmt(m[2] || 0) + ' XP가 빠져요. ' +
+          (others ? '이미 다른 사람이 기록해서 다시 기록해도 콘센트 기록 1,000 XP만 받아요.' : '다시 기록하기 전에 다른 사람이 기록하면 콘센트 기록 1,000 XP만 받아요.'),
+          '지우기', function () { apply(o, bit); });
+        return true;
+      };
       var cast = function (o, bit) {
         if (locating) return;
         needLogin(function () {
           if (canRevote(i)) { checkNear(i, function () { apply(o, bit, true); }, function (on) { locating = on; xr.classList.toggle('busy', on); if (on) toast('위치 확인 중'); }); return; }
-          if (myO[i] || beenNear(i)) { markNear(i); apply(o, bit); return; }
+          if (myO[i]) { markNear(i); if (!firstUndo(o, bit)) apply(o, bit); return; }
+          if (beenNear(i)) { markNear(i); apply(o, bit); return; }
           if (devOwner(xk) && devOwner(xk) !== who.u) { toast('이 폰에서는 이 카페에 다른 계정으로 이미 기록했어요'); return; }
           checkNear(i, function () { devClaim(xk); markNear(i); apply(o, bit); }, function (on) { locating = on; xr.classList.toggle('busy', on); if (on) toast('위치 확인 중'); });
         }, 'vote');
