@@ -4836,7 +4836,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       // 찜을 켜고 끈다. 끌 때 찜 목록이 열려 있으면 닫는다.
       if (S.seen === 'want') { S.seen = 'all'; if (P.kind === 'list') closePanel(); changed(); }
       // 다른 필터처럼 보던 화면 그대로 찜한 곳만 남긴다(지도를 옮기지 않는다. 사용자 요청 2026-11-26).
-      else needLogin(function () { resetAll(); S.seen = 'want'; if (P.kind && P.kind !== 'detail') closePanel(); changed(); }, 'want');
+      // 지도는 옮기지 않고, 필터 판처럼 아래에서 찜한 카페 목록이 올라온다.
+      else needLogin(function () { resetAll(); S.seen = 'want'; changed(); P.prev = null; openPanel('list'); }, 'want');
       return;
     }
     if (act === 'bonus') { toggleMenu('bonus', 'bonus'); return; }
@@ -4885,8 +4886,12 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   var askNear = false;     // 위치를 모르는 채로 가까운 순을 눌렀는가
   function renderList() {
     var wantOnly = S.seen === 'want';
-    var h = head(wantOnly ? '찜한 곳' : S.reg >= 0 ? rName[S.reg] : '이 화면', (bonusOpt() ? bonusOpt()[2] + ' ' : '') + fmt(vc) + '곳'), sc = el('div', 'scroll'), k;
-    if (vc) {
+    // 찜 목록은 보는 화면이나 지역과 상관없이 찜한 카페를 모두 보여 준다(폐업으로 지운 곳은 뺀다).
+    var wl = null;
+    if (wantOnly) { wl = []; for (var w0 = 0; w0 < N; w0++) if (want[w0] === 1 && removed[w0] !== 1) wl.push(w0); }
+    var cnt = wl ? wl.length : vc;
+    var h = head(wantOnly ? '찜한 곳' : S.reg >= 0 ? rName[S.reg] : '이 화면', (bonusOpt() && !wantOnly ? bonusOpt()[2] + ' ' : '') + fmt(cnt) + '곳'), sc = el('div', 'scroll'), k;
+    if (cnt) {
       var sort = el('div', 'sort');
       // 가까운 순은 내 위치를 알아야 쓸 수 있다. 위치를 모르면 넓은 순으로 보여 주고, 가까운 순을 누르면 위치를 허용해 달라고 알린다.
       var sortNow = S.sort === 'near' && myLoc ? 'near' : 'size';
@@ -4898,7 +4903,11 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     }
     h.appendChild(closeBtn());
     panel.appendChild(h); panel.appendChild(sc);
-    if (!vc) {
+    if (wantOnly && !cnt) {
+      var e0 = el('div', 'empty'); e0.appendChild(el('b', null, '아직 찜한 곳이 없어요')); e0.appendChild(el('span', null, '카페 카드의 찜을 누르면 여기에 모여요.'));
+      sc.appendChild(e0); return;
+    }
+    if (!cnt) {
       var e = el('div', 'empty');
       e.appendChild(el('b', null, wantOnly && !totalPass ? '아직 찜한 곳이 없어요' : '이 화면에는 조건에 맞는 카페가 없어요'));
       e.appendChild(el('span', null, totalPass ? '지도를 옮기거나 축소해 보세요. 조건에 맞는 카페는 모두 ' + fmt(totalPass) + '곳이에요.' : '조건을 줄여 보세요.'));
@@ -4912,11 +4921,11 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       sc.appendChild(ask);
     }
     var cx = myLoc ? myLoc.x : 0, cy = myLoc ? myLoc.y : 0, arr = [];
-    for (k = 0; k < vc; k++) arr.push(viewIdx[k]);
+    if (wl) arr = wl; else for (k = 0; k < vc; k++) arr.push(viewIdx[k]);
     if (sortNow === 'size') arr.sort(function (p, q) { return D.area[q] - D.area[p]; });
     else arr.sort(function (p, q) { return (mx[p] - cx) * (mx[p] - cx) + (my[p] - cy) * (my[p] - cy) - (mx[q] - cx) * (mx[q] - cx) - (my[q] - cy) * (my[q] - cy); });
-    arr.slice(0, 60).forEach(function (i) { sc.appendChild(cafeRow(i, wantOnly, 'list')); });
-    if (arr.length > 60) sc.appendChild(el('p', 'note', (sortNow === 'size' ? '넓은' : '내 위치에서 가까운') + ' 60곳이에요. 지도를 확대하면 더 좁혀져요.'));
+    arr.slice(0, wl ? arr.length : 60).forEach(function (i) { sc.appendChild(cafeRow(i, wantOnly, 'list')); });
+    if (!wl && arr.length > 60) sc.appendChild(el('p', 'note', (sortNow === 'size' ? '넓은' : '내 위치에서 가까운') + ' 60곳이에요. 지도를 확대하면 더 좁혀져요.'));
   }
 
   // ----- 검색 -----
