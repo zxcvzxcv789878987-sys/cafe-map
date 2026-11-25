@@ -2380,14 +2380,24 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     o.appendChild(el('div', 'ring'));
     var lconf = el('div', 'cf'); o.appendChild(lconf);
     // 맨 위 그림: 커피 컵이 계단을 깡충깡충 올라가 맨 위 칸이 노랗게 빛난다.
-    // 단계가 오르면(예: 커피꽃 → 커피 열매) 지난 단계 그림이 흔들리며 빛나다가 번쩍하고 새 단계 그림이 나온다.
-    var t0 = tierOf(from), t1 = tierOf(to), lart = el('div', 'lart');
+    // 단계가 오르면(예: 커피꽃 → 초록 열매) 지난 단계 그림이 흔들리며 빛나다가 번쩍하고 새 단계 그림이 나온다.
+    // 한 번에 여러 단계를 건너뛰면 단계마다 차례로 변신한다(사용자 2026-11-26). 중간 단계는 잠깐 보였다가 다시 흔들리며 빛나고,
+    // 단계가 많을수록 한 단계를 빨리 지나가서 전체가 3초 남짓에 끝난다. 마지막 단계만 움직이는 그림으로 남는다.
+    var t0 = tierOf(from), t1 = tierOf(to), lart = el('div', 'lart'), tierAt = 0;
     if (t1 > t0) {
-      var oldArt = fxArt(tierPic(t0)); oldArt.classList.add('still'); lart.classList.add('tup'); lart.appendChild(oldArt);
-      setTimeout(function () {
-        if (!o.isConnected) return;
-        lart.textContent = ''; var na = fxArt(tierPic(t1)); na.classList.add('keep'); lart.appendChild(na); lart.classList.add('morph');
-      }, 950);
+      lart.classList.add('tup');
+      var stepArt = function (k, ms) { lart.textContent = ''; var a = fxArt(tierPic(k)); a.classList.add('still'); a.style.animationDuration = ms + 'ms'; lart.appendChild(a); };
+      var nSteps = t1 - t0, per = nSteps === 1 ? 0 : Math.max(260, Math.min(900, 2600 / nSteps));
+      stepArt(t0, 950);
+      for (var tk = t0 + 1; tk <= t1; tk++) (function (k, when) {
+        setTimeout(function () {
+          if (!o.isConnected) return;
+          lart.classList.remove('morph'); void lart.offsetWidth; lart.classList.add('morph');
+          if (k < t1) stepArt(k, per);
+          else { lart.textContent = ''; var na = fxArt(tierPic(t1)); na.classList.add('keep'); lart.appendChild(na); }
+        }, when);
+      })(tk, 950 + (tk - t0 - 1) * per);
+      tierAt = 950 + (nSteps - 1) * per;
     } else lart.appendChild(fxArt('lvstairs'));
     box.appendChild(lart);
     box.appendChild(el('div', 'cap', 'LEVEL UP'));
@@ -2406,7 +2416,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       }, 650);
     }
     box.appendChild(el('div', 'from', 'Lv.' + from + ' → Lv.' + to));
-    if (t1 > t0) box.appendChild(el('div', 'tierup', TIERS[t1][1] + iga(TIERS[t1][1]) + ' 되었어요'));
+    if (t1 > t0) { var tu = el('div', 'tierup', TIERS[t1][1] + iga(TIERS[t1][1]) + ' 되었어요'); tu.style.animationDelay = (tierAt + 200) / 1000 + 's'; box.appendChild(tu); }
     // 이번에 무엇으로 올랐는지
     if (items && items.length) {
       var got = el('div', 'got');
@@ -5832,6 +5842,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         ['오랜만의 기록 보너스 달성', function () { xpCelebrate([1000, '오랜만의 기록 3곳 달성'], function () {}); }],
         ['레벨 업', function () { xpLevelUp(6, 9, [[2000, '첫 콘센트 기록'], [500, '새로 연 카페'], [1000, '기록한 카페 5곳 달성']]); }],
         ['레벨 업, 단계 오름 (열매 바구니 → 생두)', function () { xpLevelUp(57, 61, [[2000, '첫 콘센트 기록'], [500, '새 동네'], [2000, '기록한 카페 5곳 달성']]); }],
+        ['레벨 업, 세 단계 차례로 (씨앗 → 새싹)', function () { xpLevelUp(1, 9, [[2000, '첫 콘센트 기록'], [500, '새 동네'], [1000, '새 브랜드'], [1000, '기록한 카페 3곳 달성'], [3000, '로그인']]); }],
+        ['레벨 업, 열한 단계 차례로 (씨앗 → 열매 바구니)', function () { xpLevelUp(1, 52, [[2000, '첫 콘센트 기록'], [500, '새 동네'], [1000, '새 브랜드'], [3000, '기록한 카페 10곳 달성'], [44000, '콘센트 기록']]); }],
         ['원두 알림 넷', function () { xpGive([[500, '새 동네', '성수1가1동'], [500, '새로 연 카페', '시험 카페'], [1000, '콘센트 기록', '시험 카페'], [500, '오랜만의 기록', '시험 카페']]); }],
         ['새 브랜드 알림', function () { xpGive([[500, '새 브랜드', '스타벅스']]); }],
         ['새 브랜드 보너스 달성', function () { xpCelebrate([1000, '브랜드 3개 달성'], function () {}); }],
