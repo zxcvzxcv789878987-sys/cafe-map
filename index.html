@@ -879,6 +879,9 @@ button.xlink .xbadge.qna { --pri: #1c7ed6; --pri2: #74c0fc; }
 @keyframes chShake { 25% { transform: rotate(-5deg); } 75% { transform: rotate(5deg); } }
 @keyframes chLid { from { transform: none; } to { transform: translate(-1px, -5px) rotate(-24deg); } }
 @keyframes chCoin { from { opacity: 0; transform: translateY(7px) scale(.4); } to { opacity: 1; transform: none; } }
+.xms.hscroll { display: flex; overflow-x: auto; cursor: grab; user-select: none; scroll-snap-type: x mandatory; scrollbar-width: none; padding-bottom: 2px; -webkit-overflow-scrolling: touch; mask-image: linear-gradient(90deg, transparent, #000 18px); }
+.xms.hscroll::-webkit-scrollbar { display: none; }
+.xms.hscroll span { flex: 0 0 calc((100% - 27px) / 4); scroll-snap-align: end; }
 .xhd { display: flex; align-items: center; gap: 5px; margin: 4px 2px -4px; font-size: 12px; font-weight: 800; color: #b7791f; }
 .xhd svg.i { width: 14px; height: 14px; }
 .xms span.hd { background: #221c45; color: rgba(255, 216, 107, .7); }
@@ -2526,6 +2529,19 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     // 50곳 뒤로는 10곳마다 똑같으니 칸으로 그리지 않고 한 줄로 적는다. 다음 목표가 50곳을 넘으면 그 칸 하나만 덧붙인다.
     var MS = [3, 5, 10, 15, 20, 30, 40, 50];
     // have: 보너스를 받은 데까지의 수, count: 지금 실제 수, what: "방문 인증한 카페" 같은 이름
+    // 히든 칸은 한 줄로 늘어놓고 옆으로 밀어서 본다. 넷보다 많으면 처음에는 끝(최근 칸)이 보이게 둔다(사용자 2026-11-26).
+    var hidFold = function (grid) {
+      var cs = [].slice.call(grid.children);
+      cs.slice(-4).forEach(function (c, i) { c.style.animationDelay = (.35 + i * .15) + 's'; });
+      if (cs.length <= 4) return;
+      grid.classList.add('hscroll');
+      requestAnimationFrame(function () { grid.scrollLeft = grid.scrollWidth; });
+      // 컴퓨터에서는 마우스로 끌어서 민다(폰은 손가락으로 그냥 밀린다).
+      var dx = null;
+      grid.addEventListener('pointerdown', function (e) { if (e.pointerType === 'mouse') { dx = [e.clientX, grid.scrollLeft]; grid.style.scrollSnapType = 'none'; } });
+      window.addEventListener('pointermove', function (e) { if (dx) grid.scrollLeft = dx[1] - (e.clientX - dx[0]); });
+      window.addEventListener('pointerup', function () { if (dx) { dx = null; grid.style.scrollSnapType = ''; } });
+    };
     // max: 끝이 있는 것(브랜드는 199개). 다 모으면 다음 목표 대신 다 모았다고 적는다.
     var ladder = function (have, count, what, unit, max) {
       unit = unit || '곳';
@@ -2551,11 +2567,11 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
           var hh2 = el('div', 'xhd'); hh2.appendChild(icon('spark')); hh2.appendChild(document.createTextNode('히든 보너스')); box.appendChild(hh2);
           var past2 = [], gh2 = el('div', 'xms');
           for (var pm2 = 60; pm2 <= max; pm2 += 10) past2.push(pm2);
-          past2.slice(-4).forEach(function (m) {
+          past2.forEach(function (m) {
             var c3 = el('span', (have >= m ? 'got' : '') + ' hd'); c3.appendChild(icon(have >= m ? 'check' : 'lock'));
             c3.appendChild(el('b', null, m + unit)); c3.appendChild(document.createTextNode('+' + fmt(xpBonus(m)))); gh2.appendChild(c3);
           });
-          if (gh2.firstChild) box.appendChild(gh2);
+          if (gh2.firstChild) { box.appendChild(gh2); hidFold(gh2); }
           [['50' + unit + ' 뒤로 10' + unit + '마다', 10000], ['100' + unit + '마다', 20000]].forEach(function (x) {
             var r = el('div', 'xrow hdrow'); r.appendChild(el('span', null, x[0])); r.appendChild(el('b', null, '+' + fmt(x[1]) + ' 원두')); box.appendChild(r);
           });
@@ -2576,7 +2592,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       // 50곳 뒤: 지난 칸(10곳마다) 중 최근 셋과 다음 목표 칸을 덧붙인다. 지난 칸을 빼면 50곳에서 바로 다음 목표로 건너뛴 것처럼 보인다.
       var past = [], gh = el('div', 'xms');
       for (var pm = 60; pm < next; pm += 10) past.push(pm);
-      (next > 50 ? MS.concat(past.slice(-3), [next]) : MS).forEach(function (m) {
+      (next > 50 ? MS.concat(past, [next]) : MS).forEach(function (m) {
         // 50곳 뒤 칸은 히든 보너스: 묶음 이름을 한 줄 넣고, 어두운 바탕에 금색으로 다르게 그린다(사용자 2026-11-26).
         var got = have >= m, isNext = !got && m === next, c = el('span', (got ? 'got' : isNext ? 'next' : '') + (m > 50 ? ' hd' : '') + (m === 50 && !got ? ' tre' : ''));
         c.appendChild(icon(got ? 'check' : isNext ? 'gift' : 'lock'));
@@ -2592,7 +2608,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         if (fresh0 && !TEST) save(hidKey, 1);
         if (fresh0) box.classList.add('hidopen');
         var hh = el('div', 'xhd'); hh.appendChild(icon('spark')); hh.appendChild(document.createTextNode('히든 보너스')); box.appendChild(hh);
-        if (gh.firstChild) box.appendChild(gh);
+        if (gh.firstChild) { box.appendChild(gh); hidFold(gh); }
         // 50곳 뒤의 규칙은 다른 줄들처럼 이름과 원두를 양쪽에 맞춰 두 줄로 적는다.
         [['50' + unit + ' 뒤로 10' + unit + '마다', 10000], ['100' + unit + '마다', 20000]].forEach(function (x) {
           var r = el('div', 'xrow hdrow'); r.appendChild(el('span', null, x[0])); r.appendChild(el('b', null, '+' + fmt(x[1]) + ' 원두')); box.appendChild(r);
