@@ -3304,34 +3304,13 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     }
     var names = Object.keys(got);
     if (!names.length) { if (fixed) xpSave(); return; }
-    var from = Math.floor(XP.xp / 1000), now = Date.now(), add = 0, lines = [], n, b;
-    names.forEach(function (x) { XP.br[x] = got[x] || now; XP.log.push({ t: now, a: 500, r: '새 브랜드', c: x }); add += 500; });
+    // 쓰는 사람이 아직 몇 명뿐이라 따로 창을 두지 않고, 평소 기록할 때와 같은 알림 풍선과 달성 축하로 준다(사용자 2026-11-26).
+    var now = Date.now(), items = [], n, b;
+    names.forEach(function (x) { XP.br[x] = got[x] || now; items.push([500, '새 브랜드', x]); });
     n = xpCount(XP.br);
-    for (m = (XP.mb || 0) + 1; m <= n; m++) { b = xpBonus(m); if (b) { XP.log.push({ t: now, a: b, r: '브랜드 ' + m + '개 달성' }); add += b; lines.push([b, '브랜드 ' + m + '개 달성']); } }
+    for (m = (XP.mb || 0) + 1; m <= n; m++) { b = xpBonus(m); if (b) items.push([b, '브랜드 ' + m + '개 달성']); }
     if (n > (XP.mb || 0)) XP.mb = n;
-    if (XP.log.length > 300) XP.log = XP.log.slice(-300);
-    XP.xp += add; xpSave();
-    brandWelcome(names.length, add, from, lines);
-  }
-  // 도감이 생겼다는 창. 다른 창이 떠 있으면 닫힐 때까지 기다렸다가 띄운다.
-  function brandWelcome(n, add, from, lines) {
-    var tries = 0;
-    (function show() {
-      if ($('xinfo') || $('celeb') || $('lvup') || xpBusy) { if (++tries < 90) setTimeout(show, 1000); return; }
-      // 다른 보너스 달성과 같은 축하 장면(보너스 달성, 이름, 받은 원두). 단추는 확인과 도감 보기(사용자 2026-11-26).
-      var o = el('div'), conf = el('div', 'cf'), card = el('div', 'cc'), medal = el('div', 'md lt'), two = el('div', 'two');
-      o.id = 'celeb'; o.className = 'brand'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '새 브랜드 ' + n + '개 달성');
-      var art = fxArt('brands3'); art.classList.add('keep'); medal.appendChild(art); card.appendChild(medal);
-      card.appendChild(el('div', 'ct', '보너스 달성'));
-      card.appendChild(el('div', 'cn', '새 브랜드 ' + n + '개 달성'));
-      card.appendChild(el('div', 'cx', '+' + fmt(add) + ' 원두'));
-      var after = function () { var to = Math.floor(XP.xp / 1000); if (to > from) xpLevelUp(from, to, [[n * 500, '새 브랜드 ' + n + '개']].concat(lines)); };
-      var end = function (dex) { o.classList.add('out'); setTimeout(function () { o.remove(); if (dex) openDex(-1); after(); }, 220); };
-      two.appendChild(btn('btn', '확인', function () { end(false); }));
-      two.appendChild(btn('btn pri', '도감 보기', function () { end(true); }));
-      card.appendChild(two); o.appendChild(conf); o.appendChild(card); document.body.appendChild(o);
-      if (!REDUCE) playLottie(conf, 'confetti', true).catch(function () {});
-    })();
+    setTimeout(function () { xpGive(items); }, 1200);
   }
   // 카페 근처에서 기록한 적이 있는가. 있으면 기록을 지운 뒤에도 어디서든 다시 기록할 수 있다.
   function beenNear(i) {
@@ -5719,7 +5698,6 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         ['새 브랜드 알림', function () { xpGive([[500, '새 브랜드', '스타벅스']]); }],
         ['새 브랜드 보너스 달성', function () { xpCelebrate([1000, '브랜드 3개 달성'], function () {}); }],
         ['히든 보너스 열림 (50곳 달성 축하)', function () { xpCelebrate([10000, '기록한 카페 50곳 달성'], function () {}); }],
-        ['새 브랜드 보너스 달성 (예전 기록 담기)', function () { brandWelcome(4, 3000, Math.floor(XP.xp / 1000), [[1000, '브랜드 3개 달성']]); }],
         ['찜 알림', function () { fxToast('latte', '찜했어요'); }]
       ]],
       ['묻는 창, 확인 창', [
