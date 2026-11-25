@@ -5162,7 +5162,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   }
   // ----- 걷는 길 -----
   // 걷기는 앱 안에서: 내 위치에서 카페까지 걷는 길을 오픈스트리트맵 경로 서버에 물어 지도에 선으로 긋는다.
-  // 키(route.js의 ors)가 있으면 OpenRouteService, 없으면 FOSSGIS 서버. 걷는 시간은 1분에 70m로 센다(카카오맵과 비슷하게).
+  // route.js에 키가 있으면 Geoapify, OpenRouteService 순으로 묻고, 없거나 실패하면 FOSSGIS 서버. 걷는 시간은 1분에 70m로 센다(카카오맵과 비슷하게).
   // 자동차, 버스는 판의 단추로 카카오맵(네이버지도) 길찾기를 연다.
   var ROUTE = window.CAFE_ROUTE || {}, routeOn = false;
   function extRoute(i) {
@@ -5188,9 +5188,24 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     map.addLayer({ id: 'walk', type: 'line', source: 'walk', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#6a5ae0', 'line-width': 5 } });
     routeOn = true;
   }
+  // 키가 있는 곳부터 묻고, 실패하면 다음 곳, 마지막은 키 없는 FOSSGIS 서버.
   function walkFetch(from, to) {
-    if (ROUTE.ors) return walkOrs(from, to).catch(function () { return walkFree(from, to); });
-    return walkFree(from, to);
+    var tries = [];
+    if (ROUTE.geoapify) tries.push(walkGeoapify);
+    if (ROUTE.ors) tries.push(walkOrs);
+    tries.push(walkFree);
+    var n = 0, next = function () { var f = tries[n++]; return f(from, to).catch(function (e) { if (n < tries.length) return next(); throw e; }); };
+    return next();
+  }
+  // Geoapify: 무료로 하루 3,000번. 걷기(mode=walk) 경로를 GeoJSON으로 준다(여러 줄 선이라 이어 붙인다).
+  function walkGeoapify(from, to) {
+    return fetch('https://api.geoapify.com/v1/routing?waypoints=' + from[1] + ',' + from[0] + '|' + to[1] + ',' + to[0] + '&mode=walk&apiKey=' + encodeURIComponent(ROUTE.geoapify))
+      .then(function (r) { if (!r.ok) throw new Error('route'); return r.json(); })
+      .then(function (j) {
+        var f = j.features && j.features[0]; if (!f) throw new Error('route');
+        var g = f.geometry, c = g.type === 'MultiLineString' ? [].concat.apply([], g.coordinates) : g.coordinates;
+        return { coords: c, dist: f.properties.distance };
+      });
   }
   function walkOrs(from, to) {
     {
