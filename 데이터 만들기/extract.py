@@ -1,4 +1,5 @@
 # 상가정보 zip에서 카페만 뽑아 cafes_raw.csv로 저장하고, 상호명 빈도를 top_names.txt로 남긴다.
+# 업종이 빵/도넛인 가게는 bread_raw.csv로 따로 저장한다. build.py가 그중 카카오맵이 카페로 분류한 곳만 카페로 더한다.
 # 그리고 모든 업종의 가게에서 건물마다 한 줄씩(도로명주소, 시도, 시군구, 행정동, 좌표) 뽑아 buildings.csv로 저장한다.
 # 인허가 자료에는 행정동과 위경도가 없어서, 최근 문 연 카페를 인허가 자료에서 더할 때 이 표에서 같은 건물을 찾아 붙인다.
 import zipfile, sys, io, csv, collections
@@ -14,9 +15,11 @@ cat = collections.Counter()
 total = 0
 bkeep = ['도로명주소', '시도명', '시군구명', '행정동명', '경도', '위도']
 seen = set()
-with open(f'{outdir}/cafes_raw.csv', 'w', encoding='utf-8', newline='') as out, open(f'{outdir}/buildings.csv', 'w', encoding='utf-8', newline='') as bout:
+with open(f'{outdir}/cafes_raw.csv', 'w', encoding='utf-8', newline='') as out, open(f'{outdir}/buildings.csv', 'w', encoding='utf-8', newline='') as bout, open(f'{outdir}/bread_raw.csv', 'w', encoding='utf-8', newline='') as brout:
     w = csv.writer(out)
     w.writerow(keep)
+    brw = csv.writer(brout)
+    brw.writerow(keep)
     bw = csv.writer(bout)
     bw.writerow(bkeep)
     for n in z.namelist():
@@ -35,6 +38,9 @@ with open(f'{outdir}/cafes_raw.csv', 'w', encoding='utf-8', newline='') as out, 
                 bw.writerow([row[i].strip() for i in bidx])
             if row[i_mid].strip() == '비알코올' or '카페' in row[idx['상권업종소분류명']]:
                 cat[(row[i_mid].strip(), row[idx['상권업종소분류명']].strip())] += 1
+            if row[idx['상권업종소분류명']].strip() == '빵/도넛':
+                brw.writerow([row[idx[k]].strip() for k in keep])
+                continue
             if row[idx['상권업종소분류명']].strip() != '카페':
                 continue
             total += 1

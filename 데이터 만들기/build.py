@@ -130,6 +130,13 @@ print('인허가 영업 중', lic_rows, '주소', len(lic))
 # 2. 카페마다 브랜드를 정하고, 같은 주소의 인허가 자료에서 이름이 가장 비슷한 곳의 면적을 가져온다.
 CAFE_TYPES = ('커피숍', '다방', '기타 휴게음식점', '제과점영업', '까페', '전통찻집')
 rows = list(csv.DictReader(open(os.path.join(workdir, 'cafes_raw.csv'), encoding='utf-8')))
+# 업종이 빵/도넛인 가게도 넣어 보고, 카카오맵이 카페로 분류한 곳만 남긴다(3번 뒤). 대부분은 빵만 파는 빵집이라 빠진다(사용자 결정 2026-11-26).
+bread_path = os.path.join(workdir, 'bread_raw.csv')
+bread_rows = list(csv.DictReader(open(bread_path, encoding='utf-8'))) if os.path.exists(bread_path) else []
+for r in bread_rows:
+    r['_bread'] = 1
+rows += bread_rows
+bread = set()      # 빵/도넛에서 온 줄의 번호
 names, lats, lngs, bidx, areas, dongs, roads, floors = [], [], [], [], [], [], [], []
 closed = []      # 인허가 자료에서 같은 주소, 비슷한 이름이 폐업으로만 나오는 카페
 since = []       # 문 연 달(인허가일자의 연월, YYYYMM). 인허가 자료에서 같은 주소, 같은 이름을 찾은 카페만. 모르면 0.
@@ -196,7 +203,8 @@ for r in rows:
                 bj, bs = j, s
         if bs >= 0.6:
             ym = lic_all[k][bj][2]
-            used.add((k, bj))
+            if not r.get('_bread'):
+                used.add((k, bj))      # 빵/도넛 줄은 인허가 줄을 차지하지 않는다(최근 개업 카페를 더할 때 막지 않게)
             # 오래된 가게가 새 카페로 나오지 않게 한다. 주인이나 법인이 바뀌면 허가를 새로 받아서 인허가일자가 최근으로 찍힌다.
             # (1) 같은 주소에 같은 이름(브랜드 매장은 같은 브랜드)의 폐업한 인허가가 있으면 그 가게가 이어진 것이다. 가장 이른 날짜를 문 연 달로 쓴다.
             for cn, cb, cy in closed_all.get(k, ()):
@@ -209,7 +217,7 @@ for r in rows:
             if ym and reg and (ym // 100 * 12 + ym % 100) - (reg // 100 * 12 + reg % 100) > 3:
                 ym = 0
                 stat['허가보다 먼저 등록된 가게(문 연 달 비움)'] += 1
-    if k:
+    if k and not r.get('_bread'):
         at_addr[k].append(bs >= 0.6 if k in lic_all else False)
     since.append(ym)
     disp = raw if not branch or branch in raw else raw + ' ' + branch
@@ -222,6 +230,8 @@ for r in rows:
     if road.startswith(pre):
         road = road[len(pre):]
     fl = r['층정보']
+    if r.get('_bread'):
+        bread.add(len(names))
     names.append(disp)
     ltypes.append(ltype)
     lats.append(round(float(r['위도']) * 1e5))
@@ -314,7 +324,24 @@ drop = set()
 if os.path.exists(places_path):
     import kakao_match
     places = json.load(open(places_path, encoding='utf-8'))['places']
-    out, dups, kstat, addr_matched = kakao_match.match(names, lats, lngs, bidx, roads, places)
+    # 카페 줄이 먼저 카카오 장소와 짝을 짓는다. 빵/도넛 줄은 그다음, 아무 카페 줄과도 짝지어지지 않은 카카오 장소하고만 짝을 짓는다.
+    # (빵/도넛 줄이 카페 줄의 짝을 빼앗아 멀쩡한 카페가 빠지거나 이름이 바뀌던 것을 막는다. 같은 가게가 두 업종으로 올라 있으면 빵/도넛 줄은 짝이 없어 빠진다.)
+    cafe_ix = [i for i in range(len(names)) if i not in bread]
+    pick = lambda arr, ix: [arr[i] for i in ix]
+    o1, d1, kstat, a1 = kakao_match.match(pick(names, cafe_ix), pick(lats, cafe_ix), pick(lngs, cafe_ix), pick(bidx, cafe_ix), pick(roads, cafe_ix), places)
+    out = {cafe_ix[i]: pid for i, pid in o1.items()}
+    dups = {cafe_ix[i]: cafe_ix[j] for i, j in d1.items()}
+    addr_matched = set(cafe_ix[i] for i in a1)
+    bread_ix = sorted(bread)
+    if bread_ix:
+        taken0 = set(out.values())
+        rest = {pid: v for pid, v in places.items() if pid not in taken0}
+        o2, d2, _s2, a2 = kakao_match.match(pick(names, bread_ix), pick(lats, bread_ix), pick(lngs, bread_ix), pick(bidx, bread_ix), pick(roads, bread_ix), rest)
+        for i, pid in o2.items():
+            out[bread_ix[i]] = pid
+        for i, j in d2.items():
+            dups[bread_ix[i]] = bread_ix[j]
+        addr_matched |= set(bread_ix[i] for i in a2)
     new_xy = {i: (places[pid][4], places[pid][3]) for i, pid in out.items()}
     for i, pid in out.items():
         kid[i] = int(pid)
@@ -326,6 +353,8 @@ if os.path.exists(places_path):
     for i in range(len(names)):
         if i in out or i in dups:
             continue
+        if i in bread:
+            continue      # 빵/도넛 가게는 카카오의 전국 카페 목록에 있을 때만 쓴다. 이름으로 따로 묻지 않는다.
         docs = kw.get('%s@%d,%d' % (names[i], lats[i], lngs[i]))
         if docs is None:
             left.append([names[i], lats[i], lngs[i]])
@@ -355,6 +384,15 @@ if os.path.exists(places_path):
             drop.add(i)
             gone_n += 1
     print('카카오에 없고 폐업 신고된 카페(뺌)', gone_n)
+    # 빵/도넛 가게: 카카오맵이 카페(음식점 > 카페 ...)로 분류하고 이름까지 맞는 곳만 남긴다. 나머지는 뺀다.
+    bread_keep = 0
+    for i in bread:
+        k = kcat[i]
+        if i not in drop and k and k.startswith('음식점 > 카페') and i not in addr_matched and not re.search(r'사주카페|라이브카페|보드카페|만화방', k):
+            bread_keep += 1
+        else:
+            drop.add(i)
+    print('빵/도넛 가게', len(bread), '그중 카카오가 카페로 보는 곳(넣음)', bread_keep)
     # 카페가 아닌데 카페로 들어와 있는 곳을 뺀다. 공공데이터의 업종 분류가 틀린 경우다.
     #  1) 카카오에 있는 곳은 카카오의 분류를 믿는다. 카페(커피, 디저트, 찻집 등), 제과점, 간식 가게만 남긴다.
     #     키즈카페, 보드카페, 만화카페, 사주카페, 라이브카페처럼 이름만 카페인 곳과 한식, 술집, 꽃집 같은 곳은 뺀다.
