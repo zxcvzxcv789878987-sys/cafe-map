@@ -263,6 +263,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .bhead { position: sticky; top: 0; z-index: 1; background: var(--surface); padding: 0 14px 8px; display: flex; flex-direction: column; gap: 8px; }
 .bhead .ftitle { padding-left: 2px; }
 .bhead .switch { padding: 0 2px; }
+/* 브랜드 목록: 고정한 브랜드와 나머지 사이의 얇은 회색 선 */
+.pinsep { height: 1px; margin: 6px 14px; background: var(--line); }
 /* 제목 없이 스위치만 있는 칸은 위쪽을 조금 띄운다. */
 .fsec.plain { padding-top: 12px; }
 .bhead .sort { display: grid; grid-template-columns: repeat(3, 1fr); border-radius: 11px; padding: 3px; }
@@ -5061,13 +5063,16 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       // 압정으로 고정한 브랜드가 늘 맨 위, 그다음은 매장이 많은 순.
       var isPin = function (j) { return S.pins[D.brands[j][0]] ? 1 : 0; };
       rows.sort(function (a, b) { return isPin(b) - isPin(a) || brandCount[b] - brandCount[a]; });
+      // 고정한 브랜드는 묶음 이름 바로 아래에 모으고, 얇은 회색 선으로 나머지와 나눈다(사용자 요청 2026-11-26).
+      var pinSep = function () { list.appendChild(el('div', 'pinsep')); };
       if (S.tab === 'all' && !q) {
-        rows.filter(isPin).forEach(function (j) { list.appendChild(brandRow(j)); });
-        // 전체에서는 프랜차이즈와 저가커피를 나눠서 보여 준다(고정한 브랜드는 위에 이미 있으므로 뺀다).
+        // 전체에서는 프랜차이즈와 저가커피를 나눠서 보여 준다. 묶음마다 고정한 브랜드가 맨 위.
         [0, 1].forEach(function (g) {
+          var pins = rows.filter(function (j) { return brandGroup[j] === g && isPin(j); });
           var part = rows.filter(function (j) { return brandGroup[j] === g && !isPin(j); });
-          if (!part.length) return;
+          if (!part.length && !pins.length) return;
           list.appendChild(el('div', 'sec', GROUPS[g].label));
+          if (pins.length) { pins.forEach(function (j) { list.appendChild(brandRow(j)); }); if (part.length) pinSep(); }
           // 매장이 많은 순으로 20개만 먼저 보여 주고, 나머지는 "더 보기"를 눌러야 나온다. 고른 브랜드는 늘 보인다.
           var first = part.filter(function (j, n) { return n < 20 || moreOpen[g] || S.brands[j] === true; });
           first.forEach(function (j) { list.appendChild(brandRow(j)); });
@@ -5077,7 +5082,10 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
             list.appendChild(more);
           }
         });
-      } else rows.forEach(function (j) { list.appendChild(brandRow(j)); });
+      } else {
+        var np = q ? 0 : rows.filter(isPin).length;
+        rows.forEach(function (j, n) { if (np && n === np && n < rows.length) pinSep(); list.appendChild(brandRow(j)); });
+      }
       if (!rows.length) list.appendChild(el('p', 'note', '그런 이름의 브랜드가 없어요.'));
     }
     inp.addEventListener('input', function () { brandQ = inp.value; fill(); });
