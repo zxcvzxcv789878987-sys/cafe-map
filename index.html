@@ -1916,7 +1916,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     // 생애 첫 인증, 생애 첫 투표, 달성 보너스는 작은 풍선 대신 축하 장면을 띄운다.
     if (/^생애 첫|달성$/.test(it[1])) { x.hidden = true; xpCelebrate(it, xpPump); return; }
     toastSeq++; x.hidden = true; x.textContent = ''; x.className = 'xp' + (it[0] < 0 ? ' minus' : '');
-    x.appendChild(el('b', null, (it[0] >= 0 ? '+' : '−') + fmt(Math.abs(it[0])) + ' XP'));
+    x.appendChild(el('b', null, (it[0] >= 0 ? '+' : '−') + fmt(Math.abs(it[0])) + ' 원두'));
     x.appendChild(el('span', null, xpShow(it[1])));
     var pic = it[0] > 0 && XP_PIC[xpName(it[1])];
     if (pic) { var ti = el('div', 'ti'); ti.appendChild(fxArt(pic)); x.insertBefore(ti, x.firstChild); x.classList.add('art'); }
@@ -1989,7 +1989,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       var row = toggleRow(x[1], S.bonus === x[0], function (v) { S.bonus = v ? x[0] : ''; S.showAll = false; changed(); });
       var lab = row.firstChild; lab.className = 'blab';
       lab.insertBefore(fxIcon(x[3]), lab.firstChild);
-      lab.appendChild(el('small', null, '+' + fmt(x[4]) + ' XP'));
+      lab.appendChild(el('small', null, '+' + fmt(x[4]) + ' 원두'));
       // 설명은 받은 곳 창에 나오므로 판에는 적지 않는다. 받은 곳 단추는 이름 바로 아래에 붙인다.
       var item = el('div', 'bitem'), sub = el('div', 'bsub');
       var got = btn('bgot', '받은 곳 ' + xpLogCount(x[5]) + '곳', function () { openGotList(x[5]); });
@@ -2074,7 +2074,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     var art = fxArt(pic); art.classList.add('keep'); medal.appendChild(art); card.appendChild(medal);
     card.appendChild(el('div', 'ct', goal ? '보너스 달성' : '처음이에요'));
     card.appendChild(el('div', 'cn', xpShow(it[1])));
-    card.appendChild(el('div', 'cx', '+' + fmt(it[0]) + ' XP'));
+    card.appendChild(el('div', 'cx', '+' + fmt(it[0]) + ' 원두'));
     var close = function () { if (done) return; done = true; o.classList.add('out'); setTimeout(function () { o.remove(); next(); }, 220); };
     var ok = btn('btn pri', '확인', close); card.appendChild(ok);
     o.appendChild(conf); o.appendChild(card); document.body.appendChild(o);
@@ -2110,7 +2110,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       var got = el('div', 'got');
       items.forEach(function (it) {
         var r = el('div', 'gr');
-        r.appendChild(el('span', null, xpShow(it[1]))); r.appendChild(el('b', null, (it[0] >= 0 ? '+' : '−') + fmt(Math.abs(it[0])) + ' XP'));
+        r.appendChild(el('span', null, xpShow(it[1]))); r.appendChild(el('b', null, (it[0] >= 0 ? '+' : '−') + fmt(Math.abs(it[0])) + ' 원두'));
         got.appendChild(r);
       });
       box.appendChild(got);
@@ -2557,7 +2557,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         if (P.kind === 'menu') renderPanel();
         if (!XP_ON) { toast('로그인했어요'); if (then) then(); return; }
         var first = xpFirst; xpFirst = false;
-        doneBox('login', first ? '로그인했어요' : '다시 오셨네요', first ? '로그인 보너스 +1,000 XP를 받았어요.' : (XP.nick ? XP.nick + '님, 반가워요.' : ''), false, function () {
+        doneBox('login', first ? '로그인했어요' : '다시 오셨네요', first ? '로그인 보너스 +1,000 원두를 받았어요.' : (XP.nick ? XP.nick + '님, 반가워요.' : ''), false, function () {
           if (then) then();
           if (!XP.nickOk) setTimeout(openNickFirst, 200);
         });
@@ -3834,9 +3834,9 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         // 레벨 칸 전체가 단추다. 누르면 XP 기록이 뜬다.
         xl = btn('xlv xlvbtn', null, function () { openXpLog(); });
         var xinfo = el('span', 'xlvtxt');
-        xtop.appendChild(el('b', null, 'Lv.' + lvNow)); xtop.appendChild(el('span', null, '총 ' + fmt(XP.xp) + ' XP'));
+        xtop.appendChild(el('b', null, 'Lv.' + lvNow)); xtop.appendChild(el('span', null, '총 ' + fmt(XP.xp) + ' 원두'));
         xinfo.appendChild(xtop);
-        xinfo.appendChild(el('p', null, '다음 레벨까지 ' + fmt(1000 - XP.xp % 1000) + ' XP'));
+        xinfo.appendChild(el('p', null, '다음 레벨까지 ' + fmt(1000 - XP.xp % 1000) + ' 원두'));
         xl.appendChild(xinfo); xl.appendChild(icon('right'));
       } else xl.appendChild(el('p', null, '로그인하면 기록으로 레벨을 쌓을 수 있어요'));
       xsec.appendChild(xl);
@@ -3875,7 +3875,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         var bonusV = view === 'vote' || view === 'dong' || view === 'newb' || view === 'oldb';
         var o = el('div'), box = el('div', 'xbox' + (bonusV ? ' bonus' : view ? ' ' + view : ''));
         var title = function (text, ic) { var hd = el('div', 'xhead'), bd = el('span', 'xbadge'); if (ic.indexOf('pic:') === 0) { bd.className = 'xbadge pic'; bd.appendChild(fxStill(ic.slice(4))); } else bd.appendChild(icon(ic)); hd.appendChild(bd); hd.appendChild(el('h2', null, text)); box.appendChild(hd); };
-        o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', 'XP 받는 법');
+        o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '원두 모으는 법');
         var endBtns = function () {
           if (!back) { box.appendChild(btn('btn pri', '닫기', function () { o.remove(); })); return; }
           var tw = el('div', 'two');
@@ -3900,12 +3900,12 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
           var n = label === '새 동네' ? xpCount(XP.dong) : listOf(label).length;
           var r = btn('xrow xlink', null, function () { openRewards('list:' + label); }), l = rowLabel(label);
           if (n) l.appendChild(el('small', null, n + '곳'));
-          r.appendChild(l); r.appendChild(el('b', null, '+' + fmt(xp) + ' XP')); r.appendChild(icon('right')); box.appendChild(r);
+          r.appendChild(l); r.appendChild(el('b', null, '+' + fmt(xp) + ' 원두')); r.appendChild(icon('right')); box.appendChild(r);
         };
         var row = function (label, sub, xp, got) {
           var r = el('div', 'xrow' + (got ? ' got' : '')), l = rowLabel(label);
           if (sub) l.appendChild(el('small', null, sub));
-          r.appendChild(l); r.appendChild(el('b', null, '+' + fmt(xp) + ' XP')); box.appendChild(r);
+          r.appendChild(l); r.appendChild(el('b', null, '+' + fmt(xp) + ' 원두')); box.appendChild(r);
         };
         // 50곳 뒤로는 10곳마다 똑같으니 칸으로 그리지 않고 한 줄로 적는다. 다음 목표가 50곳을 넘으면 그 칸 하나만 덧붙인다.
         var MS = [3, 5, 10, 15, 20, 30, 40, 50];
@@ -3918,7 +3918,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
           num.appendChild(document.createTextNode(String(count)));
           num.appendChild(el('small', 'of', ' / ' + next + '곳'));
           l.appendChild(el('small', null, what)); l.appendChild(num);
-          r.appendChild(el('small', null, next + '곳 보너스')); r.appendChild(el('b', null, '+' + fmt(xpBonus(next)) + ' XP'));
+          r.appendChild(el('small', null, next + '곳 보너스')); r.appendChild(el('b', null, '+' + fmt(xpBonus(next)) + ' 원두'));
           pr.appendChild(l); pr.appendChild(r); box.appendChild(pr);
           var track = el('div', 'tr'); fill.style.width = Math.round(count / next * 100) + '%'; track.appendChild(fill); bar.appendChild(track); box.appendChild(bar);
           var g = el('div', 'xms');
@@ -3926,13 +3926,13 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
             var got = have >= m, isNext = !got && m === next, c = el('span', got ? 'got' : isNext ? 'next' : '');
             c.appendChild(icon(got ? 'check' : isNext ? 'gift' : 'lock'));
             c.appendChild(el('b', null, m + '곳')); c.appendChild(document.createTextNode('+' + fmt(xpBonus(m))));
-            c.setAttribute('aria-label', m + '곳, ' + fmt(xpBonus(m)) + ' XP, ' + (got ? '받음' : isNext ? '다음 목표' : '아직'));
+            c.setAttribute('aria-label', m + '곳, ' + fmt(xpBonus(m)) + ' 원두, ' + (got ? '받음' : isNext ? '다음 목표' : '아직'));
             g.appendChild(c);
           });
           box.appendChild(g);
           // 50곳 뒤의 규칙은 다른 줄들처럼 이름과 XP를 양쪽에 맞춰 두 줄로 적는다.
           [['50곳 뒤로 10곳마다', 10000], ['100곳마다', 20000]].forEach(function (x) {
-            var r = el('div', 'xrow'); r.appendChild(el('span', null, x[0])); r.appendChild(el('b', null, '+' + fmt(x[1]) + ' XP')); box.appendChild(r);
+            var r = el('div', 'xrow'); r.appendChild(el('span', null, x[0])); r.appendChild(el('b', null, '+' + fmt(x[1]) + ' 원두')); box.appendChild(r);
           });
         };
         if (view === 'newb' || view === 'oldb') {
@@ -3992,15 +3992,15 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
           // 한 창(예전 XP 받는 법과 도전 과제를 합침, 2026-11-26): 받는 일은 모두 콘센트 기록이다.
           //  콘센트 기록 줄 아래에 들여 쓴 묶음으로, 그 기록이 첫 기록이거나 새 동네, 새로 연 카페, 오랜만의 기록이면 더 받는 것을 둔다.
           //  "N/M곳"은 다음 모으기 보너스까지의 수. 누르면 그 표(받은 곳 목록이 같이 있다)로 가고, 뒤로를 누르면 여기로 온다.
-          title('XP 받는 법', 'pic:mi_rule');
+          title('원두 모으는 법', 'pic:mi_rule');
           box.classList.add('roomy');
-          box.appendChild(el('p', null, '1,000 XP를 모을 때마다 레벨이 1 올라요.'));
+          box.appendChild(el('p', null, '원두 1,000개를 모을 때마다 레벨이 1 올라요.'));
           box.appendChild(el('div', 'xgrp', '콘센트를 기록하면'));
           var nextOf = function (c) { var m = c + 1; while (!xpBonus(m)) m++; return m; };
           var goRow = function (into, key, text, xp, pill, go) {
             var r = btn('xrow xlink', null, go), l = rowLabel(key, text);
             if (pill) l.appendChild(el('small', null, pill));
-            r.appendChild(l); r.appendChild(el('b', null, '+' + fmt(xp) + ' XP')); r.appendChild(icon('right')); into.appendChild(r);
+            r.appendChild(l); r.appendChild(el('b', null, '+' + fmt(xp) + ' 원두')); r.appendChild(icon('right')); into.appendChild(r);
           };
           goRow(box, '콘센트 기록', '콘센트 기록', 1000, xno2 + '/' + nextOf(xno2) + '곳', function () { openRewards('vote', true); });
           var nest = el('div', 'xnest');
@@ -4022,7 +4022,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       };
       if (TEST) window.testRewards = openRewards;
       // 메뉴에는 XP 받는 법 한 줄(예전 도전 과제는 이 창에 합쳤다, 2026-11-26).
-      [['XP 받는 법', null]].forEach(function (x) {
+      [['원두 모으는 법', null]].forEach(function (x) {
         var rw = btn('xrow xlink', null, function () { openRewards(x[1]); });
         var bd = el('span', 'xbadge pic mn'); bd.appendChild(fxStill('mi_rule')); rw.appendChild(bd);
         rw.appendChild(el('span', null, x[0])); rw.appendChild(icon('right'));
@@ -4056,9 +4056,9 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     });
     st.appendChild(stTabs); conf.appendChild(st);
     // 내 XP 기록 공개: 켜면 랭킹과 기록한 사람 창에서 다른 사람이 내 닉네임과 XP 기록(날짜까지)을 볼 수 있다. 기본은 꺼짐.
-    if (loginOn && signedIn() && XP_ON) conf.appendChild(toggleRow('내 XP 기록 공개', !!XP.pub, function (v) {
+    if (loginOn && signedIn() && XP_ON) conf.appendChild(toggleRow('내 원두 기록 공개', !!XP.pub, function (v) {
       XP.pub = v ? 1 : 0; xpSave();
-      if (v) toast('다른 사람이 내 XP 기록을 볼 수 있어요. 시각은 보이지 않아요'); else { pubDelete(); toast('내 XP 기록을 비공개로 바꿨어요'); }
+      if (v) toast('다른 사람이 내 원두 기록을 볼 수 있어요. 시각은 보이지 않아요'); else { pubDelete(); toast('내 원두 기록을 비공개로 바꿨어요'); }
     }));
     sc.appendChild(conf);
     // 문의하기: 누르면 글을 쓰는 창이 뜬다. 종류는 창 안에서 고른다.
@@ -4135,7 +4135,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       r.appendChild(l); r.appendChild(rt); ll.appendChild(r);
     });
     box.appendChild(ll);
-    if (list.some(function (x) { return x.admin; })) box.appendChild(el('p', 'xadm', '운영자 기록은 첫 콘센트 기록에 영향이 없어요. 운영자만 기록한 카페는 다음 사람이 첫 콘센트 기록 XP를 받아요.'));
+    if (list.some(function (x) { return x.admin; })) box.appendChild(el('p', 'xadm', '운영자 기록은 첫 콘센트 기록에 영향이 없어요. 운영자만 기록한 카페는 다음 사람이 첫 콘센트 기록 원두를 받아요.'));
     box.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
     o.appendChild(box); document.body.appendChild(o);
   }
@@ -4219,7 +4219,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     var nm = el('h2', null, x.n || '이름 없음'); top.appendChild(nm);
     if (x.u === SHARE.admin) top.appendChild(el('span', 'rktag', '운영자'));
     box.appendChild(top);
-    var lv = el('div', 'pslv'); lv.appendChild(el('b', null, 'Lv.' + Math.floor(x.x / 1000))); lv.appendChild(el('span', null, '총 ' + fmt(x.x) + ' XP')); box.appendChild(lv);
+    var lv = el('div', 'pslv'); lv.appendChild(el('b', null, 'Lv.' + Math.floor(x.x / 1000))); lv.appendChild(el('span', null, '총 ' + fmt(x.x) + ' 원두')); box.appendChild(lv);
     // 메뉴의 레벨 밑 칸과 같은 모양: 왼쪽 콘센트 기록한 카페, 오른쪽에 "N곳 중"과 새 동네, 새로 연 카페, 오랜만의 기록. 누를 수는 없다.
     var st = el('div', 'xstat x4b ro'), vb = btn('g vote', null, null), vn = el('b', null, String(x.v || 0));
     vn.appendChild(el('small', null, '곳')); vb.appendChild(vn); vb.appendChild(el('span', null, '콘센트 기록한 카페')); vb.tabIndex = -1; st.appendChild(vb);
@@ -4233,7 +4233,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     box.appendChild(st);
     // XP 기록: 본인이 공개를 켠 사람만 보인다. 날짜까지만.
     var lg = el('div', 'xll pslog'); lg.appendChild(el('p', 'xnone', '불러오는 중'));
-    box.appendChild(el('div', 'xgrp', 'XP 기록')); box.appendChild(lg);
+    box.appendChild(el('div', 'xgrp', '원두 기록')); box.appendChild(lg);
     var mine = signedIn() && x.u === who.u;
     fetch(SHARE.db + '/v2/pub/' + x.u + '.json').then(function (r) { return r.ok ? r.json() : null; }, function () { return null; }).then(function (pb) {
       lg.textContent = '';
@@ -4243,7 +4243,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       rows.forEach(function (e) {
         var r = el('div', 'xli'), l = el('span'), rt = el('span', 'rt');
         l.appendChild(el('span', 'rs', e.r || '')); if (e.c) l.appendChild(el('small', null, e.c));
-        rt.appendChild(el('b', e.a < 0 ? 'minus' : null, (e.a < 0 ? '−' : '+') + fmt(Math.abs(e.a || 0)) + ' XP'));
+        rt.appendChild(el('b', e.a < 0 ? 'minus' : null, (e.a < 0 ? '−' : '+') + fmt(Math.abs(e.a || 0)) + ' 원두'));
         if (e.d) { var p = e.d.split('-'); rt.appendChild(el('small', null, (+p[1]) + '월 ' + (+p[2]) + '일')); }
         r.appendChild(l); r.appendChild(rt); lg.appendChild(r);
       });
@@ -4272,7 +4272,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       if (x.u === SHARE.admin) l.appendChild(el('span', 'rktag', '운영자'));
       if (x.u === me) l.appendChild(el('span', 'rktag', '나'));
       rt.appendChild(el('b', null, 'Lv.' + Math.floor(x.x / 1000)));
-      rt.appendChild(el('small', null, fmt(x.x) + ' XP'));
+      rt.appendChild(el('small', null, fmt(x.x) + ' 원두'));
       r.appendChild(l); r.appendChild(rt); return r;
     };
     var fail = function () { ll.textContent = ''; ll.appendChild(el('p', 'xnone', '랭킹을 불러오지 못했어요')); };
@@ -4302,12 +4302,12 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     var old = $('xinfo'); if (old) old.remove();
     if (!Array.isArray(XP.log)) { XP.log = xpRebuild(); xpSave(); }
     var o = el('div'), box = el('div', 'xbox xlog'), hd = el('div', 'xhead'), bd = el('span', 'xbadge');
-    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', 'XP 기록');
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '원두 기록');
     o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
-    bd.className = 'xbadge pic'; bd.appendChild(fxStill('mi_log')); hd.appendChild(bd); hd.appendChild(el('h2', null, 'XP 기록')); box.appendChild(hd);
+    bd.className = 'xbadge pic'; bd.appendChild(fxStill('mi_log')); hd.appendChild(bd); hd.appendChild(el('h2', null, '원두 기록')); box.appendChild(hd);
     var sum = el('div', 'xlsum');
     sum.appendChild(el('b', null, 'Lv.' + Math.floor(XP.xp / 1000)));
-    sum.appendChild(el('span', null, '총 ' + fmt(XP.xp) + ' XP'));
+    sum.appendChild(el('span', null, '총 ' + fmt(XP.xp) + ' 원두'));
     box.appendChild(sum);
     var list = el('div', 'xll');
     var when = function (t) {
@@ -4319,7 +4319,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       var r = el('div', 'xli' + (e.a < 0 ? ' minus' : '')), l = el('span'), rt = el('span', 'rt');
       l.appendChild(el('span', 'rs', xpShow(e.r)));
       if (e.c) l.appendChild(el('small', null, e.c));
-      rt.appendChild(el('b', null, (e.a >= 0 ? '+' : '−') + fmt(Math.abs(e.a)) + ' XP'));
+      rt.appendChild(el('b', null, (e.a >= 0 ? '+' : '−') + fmt(Math.abs(e.a)) + ' 원두'));
       rt.appendChild(el('small', null, when(e.t)));
       r.appendChild(l); r.appendChild(rt);
       list.appendChild(r);
@@ -4751,7 +4751,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         ['새로 연 카페 보너스 달성', function () { xpCelebrate([1000, '새로 연 카페 3곳 달성'], function () {}); }],
         ['오랜만의 기록 보너스 달성', function () { xpCelebrate([1000, '오랜만의 기록 3곳 달성'], function () {}); }],
         ['레벨 업', function () { xpLevelUp(6, 9, [[2000, '첫 콘센트 기록'], [500, '새로 연 카페'], [1000, '기록한 카페 5곳 달성']]); }],
-        ['XP 알림 넷', function () { xpGive([[500, '새 동네', '성수1가1동'], [500, '새로 연 카페', '시험 카페'], [1000, '콘센트 기록', '시험 카페'], [500, '오랜만의 기록', '시험 카페']]); }],
+        ['원두 알림 넷', function () { xpGive([[500, '새 동네', '성수1가1동'], [500, '새로 연 카페', '시험 카페'], [1000, '콘센트 기록', '시험 카페'], [500, '오랜만의 기록', '시험 카페']]); }],
         ['찜 알림', function () { fxToast('latte', '찜했어요'); }]
       ]],
       ['묻는 창, 확인 창', [
@@ -4760,7 +4760,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         ['폐업 신고', function () { confirmGone(function () { toast('신고했어요 (시험)'); }); }],
         ['대형 기준', function () { openBigBox(bigCafe()); }],
         ['문의 보냄', function () { fbSent(); }],
-        ['첫 로그인', function () { XP.nickOk = 0; doneBox('login', '로그인했어요', '로그인 보너스 +1,000 XP를 받았어요.', false, function () { openNickFirst(); }); }],
+        ['첫 로그인', function () { XP.nickOk = 0; doneBox('login', '로그인했어요', '로그인 보너스 +1,000 원두를 받았어요.', false, function () { openNickFirst(); }); }],
         ['다시 로그인', function () { doneBox('login', '다시 오셨네요', (XP.nick || '시험 쿼카') + '님, 반가워요.', false); }]
       ]],
       ['닉네임', [
@@ -4779,8 +4779,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         ['걷는 길 판', function () { var j = bigCafe(); routeInfo = { i: j, dist: 690, min: 10 }; P.cafe = j; sel = j; P.prev = 'detail'; openPanel('route'); }]
       ]],
       ['내 기록', [
-        ['XP 받는 법', function () { P.prev = null; openPanel('menu'); if (window.testRewards) window.testRewards(); else toast('로그인한 뒤에 볼 수 있어요'); }],
-        ['XP 기록', function () { openXpLog(); }],
+        ['원두 모으는 법', function () { P.prev = null; openPanel('menu'); if (window.testRewards) window.testRewards(); else toast('로그인한 뒤에 볼 수 있어요'); }],
+        ['원두 기록', function () { openXpLog(); }],
         ['받은 곳 목록 (새로 연 카페)', function () { openGotList('새로 연 카페'); }]
       ]],
       ['사람', [
@@ -5482,7 +5482,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         xb.forEach(function (cb) { var on = mine[0] === 1 && (mine[1] & cb[1][2]) !== 0; setBtn(cb[0], on, v[cb[1][3]] + (on ? 1 : 0)); });
         setBtn(xno, mine[0] === -1, v[1] + (mine[0] === -1 ? 1 : 0));
         total.textContent = people(v[0] + v[1] + (myO[i] ? 1 : 0));
-        xhint.textContent = re ? '내 기록이 6개월 지났어요. 다시 기록하면 오랜만의 기록 XP를 받아요.' : '';
+        xhint.textContent = re ? '내 기록이 6개월 지났어요. 다시 기록하면 오랜만의 기록 원두를 받아요.' : '';
       };
     }
     function sync() {
