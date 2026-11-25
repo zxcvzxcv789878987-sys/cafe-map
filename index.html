@@ -655,6 +655,15 @@ button.xlink.xrow b { margin-right: 6px; }
 .dmcard .cx { align-self: flex-start; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; flex: none; }
 .dmcard .cx svg.i { width: 17px; height: 17px; }
 .dmcard .btn { height: 42px; border-radius: 12px; font-size: 14px; }
+.dmcard .dmcl { display: flex; flex-direction: column; margin-top: -4px; border-top: 1px solid var(--line); }
+.dmcard .dmci { display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 2px; border-bottom: 1px solid var(--line); text-align: left; font-size: 13.5px; font-weight: 650; color: var(--ink); }
+.dmcard .dmci .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dmcard .dmci small { flex: none; font-size: 11.5px; font-weight: 750; color: var(--dmc2); }
+.dmcard .dmci .dmsx { width: 15px; height: 15px; }
+.dmcard .dmci .dmcd { flex: none; width: 15px; height: 15px; display: grid; place-items: center; }
+.dmcard .dmci .dmcd::after { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--line-2); }
+.dmcard .dmci svg.i { width: 14px; height: 14px; opacity: .45; flex: none; }
+.dmcard .dmmore { padding: 7px 2px 0; font-size: 12px; color: var(--ink-3); }
 .dmcard .btn small { margin-left: 6px; font-weight: 650; opacity: .8; }
 @media (prefers-reduced-motion: reduce) {
   .dmpill, .dmstamp.hit, .dmcard, .dmwhere.done { animation: none; }
@@ -2561,7 +2570,14 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       if (view === 'dong' && xpCount(XP.dong)) {
         box.appendChild(el('div', 'xsep')); box.appendChild(el('div', 'xgrp', '기록한 동네'));
         var dl2 = el('div', 'xll');
-        Object.keys(XP.dong).forEach(function (k) { var r3 = el('div', 'xli'); r3.appendChild(el('span', 'rs', k.split(' ').slice(1).join(' '))); dl2.appendChild(r3); });
+        var dIx = dongIndexMap();
+        Object.keys(XP.dong).forEach(function (k) {
+          var r3 = el('div', 'xli'), l3 = el('span'), kk = dIx[k], cf = kk !== undefined ? dongCafesOf(kk) : [];
+          l3.appendChild(el('span', 'rs', k.split(' ').slice(1).join(' ')));
+          // 도장 받은 카페(그 동에서 처음 기록한 카페)
+          if (cf.length && cf[0].first) l3.appendChild(el('small', null, D.name[cf[0].i]));
+          r3.appendChild(l3); dl2.appendChild(r3);
+        });
         box.appendChild(dl2);
       }
       endBtns();
@@ -2650,6 +2666,32 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   function dongCafeCount(k) {
     if (!dongCafes) { dongCafes = new Int32Array(D.dong.length); for (var i = 0; i < N; i++) if (!dabang[i] && !removed[i]) dongCafes[D.dongOf[i]]++; }
     return dongCafes[k];
+  }
+  // 동마다 카페 번호 목록(한 번만 만든다)
+  var dongCafeList = null;
+  function dongCafeIdx() {
+    if (!dongCafeList) { dongCafeList = D.dong.map(function () { return []; }); for (var i = 0; i < N; i++) dongCafeList[D.dongOf[i]].push(i); }
+    return dongCafeList;
+  }
+  // 이 동에서 기록한 카페. 도장을 받게 한 카페(새 동네와 같은 때 받은 콘센트 기록)를 맨 앞에 first로, 그다음 지금 기록이 남아 있는 카페.
+  function dongCafesOf(k) {
+    var nm = D.dong[k][0], out = [], seen = {}, log = XP.log || [], byName = {}, i, j, m, e, e2, r2, key;
+    dongCafeIdx()[k].forEach(function (q) { if (byName[D.name[q]] === undefined) byName[D.name[q]] = q; });
+    for (j = 0; j < log.length && !out.length; j++) {
+      e = log[j];
+      if (!e.t || e.c !== nm || !xpSame(e.r, '새 동네')) continue;
+      for (m = Math.max(0, j - 6); m < Math.min(log.length, j + 6); m++) {
+        e2 = log[m]; r2 = xpName(e2.r);
+        if (e2.t === e.t && e2.a > 0 && e2.c && (r2 === '콘센트 기록' || r2 === '첫 콘센트 기록') && byName[e2.c] !== undefined) { i = byName[e2.c]; out.push({ i: i, first: true }); seen[i] = 1; break; }
+      }
+    }
+    var ix = cidIndex();
+    for (key in XP.vote) {
+      if (!XP.vote[key] || !XP.vote[key][0]) continue;
+      i = ix[key];
+      if (i !== undefined && D.dongOf[i] === k && !seen[i]) { seen[i] = 1; out.push({ i: i, first: false }); }
+    }
+    return out;
   }
   function dmLeafLevel(r) { var kids = regChildren(r); return r >= 0 && kids.length > 0 && rLeaf[kids[0]] === 1; }
   var DM_STAR = '<svg viewBox="-1.15 -1.15 2.3 2.3" aria-hidden="true"><path d="M0 -1L.29 -.4L.95 -.31L.47 .15L.59 .81L0 .5L-.59 .81L-.47 .15L-.95 -.31L-.29 -.4Z" fill="#FFC83D" stroke="#FFFFFF" stroke-width=".22" stroke-linejoin="round"/></svg>';
@@ -2880,6 +2922,21 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       var cx = btn('cx', null, hideCard); cx.setAttribute('aria-label', '닫기'); cx.appendChild(icon('x'));
       rw.appendChild(mini); rw.appendChild(tx); rw.appendChild(cx);
       card = el('div', 'dmcard'); card.appendChild(rw);
+      // 어느 카페로 다녀왔는지: 도장 받은 곳(별)을 맨 위에, 그 동에서 기록한 다른 카페는 그 아래. 누르면 그 카페로 간다. 세 곳까지만 보이고 나머지는 수로.
+      var cfs = on ? dongCafesOf(kk) : [];
+      if (cfs.length) {
+        var cl = el('div', 'dmcl');
+        cfs.slice(0, 3).forEach(function (c) {
+          var ci = btn('dmci', null, function () { close(); closePanel(); selectCafe(c.i, true); });
+          ci.appendChild(c.first ? dmStar() : el('span', 'dmcd'));
+          ci.appendChild(el('span', 'nm', D.name[c.i]));
+          if (c.first) ci.appendChild(el('small', null, '도장 받은 곳'));
+          ci.appendChild(icon('right'));
+          cl.appendChild(ci);
+        });
+        if (cfs.length > 3) cl.appendChild(el('div', 'dmmore', '기록한 카페 ' + (cfs.length - 3) + '곳 더'));
+        card.appendChild(cl);
+      }
       var go2 = btn('btn pri', null, function () { var rr2 = dongReg[kk]; close(); closePanel(); goRegion(rr2); });
       go2.appendChild(document.createTextNode('이 동 카페 보기')); go2.appendChild(el('small', null, fmt(dongCafeCount(kk)) + '곳'));
       card.appendChild(go2);
@@ -5410,9 +5467,9 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     if (m === 'GET') {
       if (/^\/v2\/xp\//.test(path)) {
         // 시험 모드에서는 브랜드 도감을 다 모은 상태, 새 동네는 수원 근처 20곳(팔달구 완성)을 다녀온 상태로 시작한다(사용자 요청 2026-11-26).
-        var brAll = {}, t0 = Date.now() - 2 * 86400000, dg = testDongMap();
+        var brAll = {}, t0 = Date.now() - 2 * 86400000, td = testDongData();
         D.brands.forEach(function (b, j) { brAll[b[0]] = t0 - j * 3600000; });
-        return { xp: 6300, nick: '시험 쿼카', nickOk: 1, vis: {}, vote: {}, dong: dg, br: brAll, fv: 0, fo: 1, mv: 0, md: xpCount(dg), mb: D.brands.length, log: [{ t: Date.now() - 86400000, a: 1000, r: '로그인' }] };
+        return { xp: 6300, nick: '시험 쿼카', nickOk: 1, vis: {}, vote: td.vote, dong: td.dong, br: brAll, fv: 0, fo: 1, mv: 0, md: xpCount(td.dong), mb: D.brands.length, log: [{ t: Date.now() - 90 * 86400000, a: 1000, r: '로그인' }].concat(td.log) };
       }
       if (path === '/v2/rank.json') {
         var nm = ['느긋한 판다', '다정한 나무늘보', '졸린 고양이', '씩씩한 수달', '수줍은 오리', '포근한 알파카', '재빠른 다람쥐', '조용한 부엉이'], o = {};
@@ -5448,19 +5505,36 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     return undefined;
   }
   // 시험용 새 동네: 수원 근처 20곳. 팔달구는 10곳을 다 다녀온 것으로 둬서 "완성" 모양을 본다(사용자 2026-11-26).
-  function testDongs() { XP.dong = testDongMap(); XP.md = xpCount(XP.dong); }
-  function testDongMap() {
-    var now = Date.now(), D1 = 86400000, n = 0, out = {};
+  function testDongs() {
+    var t = testDongData();
+    XP.dong = t.dong; XP.md = xpCount(XP.dong);
+    XP.vote = Object.assign({}, XP.vote, t.vote); XP.log = (XP.log || []).concat(t.log);
+  }
+  function testDongMap() { return testDongData().dong; }
+  function testDongData() {
+    var now = Date.now(), D1 = 86400000, n = 0, out = {}, vote = {}, log = [], lists = dongCafeIdx();
+    // 그 동의 카페 하나(브랜드 카페를 먼저)를 골라 콘센트 기록과 새 동네를 같은 때 받은 것으로 적는다.
+    var rec = function (k, t, nth) {
+      var cs = lists[k].filter(function (i) { return !dabang[i]; }).sort(function (a, b) { return (D.brand[b] >= 0) - (D.brand[a] >= 0); });
+      var i = cs[nth || 0]; if (i === undefined) return;
+      vote[cidOf(i)] = [1, 2, 1000];
+      log.push({ t: t, a: 1000, r: '콘센트 기록', c: D.name[i] });
+      if (!nth) log.push({ t: t, a: 500, r: '새 동네', c: D.dong[k][0] });
+    };
     [['경기도', '수원시 팔달구', 99], ['경기도', '수원시 영통구', 4], ['경기도', '수원시 장안구', 3], ['경기도', '수원시 권선구', 3]].forEach(function (x) {
       var got = 0;
       for (var k = 0; k < D.dong.length && got < x[2]; k++) {
         var d = D.dong[k], g = D.sgg[d[1]];
         if (D.sido[g[1]] !== x[0] || g[0] !== x[1]) continue;
-        out[(D.sido[g[1]] + ' ' + g[0] + ' ' + d[0]).replace(/[.$#\[\]\/]/g, '_')] = now - (n++) * 2.5 * D1;
+        var tt = now - (n++) * 2.5 * D1;
+        out[(D.sido[g[1]] + ' ' + g[0] + ' ' + d[0]).replace(/[.$#\[\]\/]/g, '_')] = tt;
+        rec(k, tt);
+        if (d[0] === '인계동') { rec(k, tt + 3600000, 1); rec(k, tt + 7200000, 2); }
         got++;
       }
     });
-    return out;
+    log.sort(function (a, b) { return a.t - b.t; });
+    return { dong: out, vote: vote, log: log };
   }
   // 시험용 도감: 브랜드 몇 개를 모은 것으로 둔다(새로고침하면 처음으로).
   function testDex(all) {
