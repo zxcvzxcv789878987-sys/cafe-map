@@ -937,6 +937,16 @@ button.xlink .xbadge.qna { --pri: #1c7ed6; --pri2: #74c0fc; }
 #coach .cbtns .btn { height: 36px; min-width: 60px; }
 #coach .cbtns .btn.pri { min-width: 80px; }
 @media (prefers-reduced-motion: reduce) { #coach .ctip { transition: none; } }
+/* 말풍선 안의 칸(보너스 카페 셋)과 차례(콘센트 기록) */
+#coach .clist { display: flex; flex-direction: column; gap: 6px; margin: 0 0 10px; }
+#coach .clitem { padding: 8px 10px; border-radius: 10px; background: var(--surface-2); }
+#coach .clt { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+#coach .clt b { font-size: 14px; font-weight: 700; }
+#coach .cla { flex: none; font-size: 12.5px; font-weight: 700; color: #8B5A3C; }
+#coach .cld { display: block; margin-top: 1px; font-size: 13px; color: var(--ink-2); }
+#coach .csteps { margin: 0 0 10px; padding: 0; list-style: none; counter-reset: cs; display: flex; flex-direction: column; gap: 6px; }
+#coach .csteps li { counter-increment: cs; display: flex; align-items: flex-start; gap: 8px; font-size: 14px; line-height: 1.45; color: var(--ink); }
+#coach .csteps li::before { content: counter(cs); flex: none; width: 20px; height: 20px; border-radius: 50%; background: var(--pri); color: #fff; font-size: 12px; font-weight: 750; display: grid; place-items: center; margin-top: 1px; }
 /* 지도 점 보는 법(첫 사용 안내, 사용법 창) */
 .clegend { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; margin: 2px 0 12px; }
 .clrow { display: flex; align-items: center; gap: 6px; font-size: 13px; line-height: 1.35; color: var(--ink-2); }
@@ -8491,9 +8501,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     return P.kind === kind;
   }
   // 보여 줄 카페: 지금 지도 가운데에서 가장 가까운, 카카오맵 가게 화면이 있는 카페(그래야 카드 머리줄에 콘센트 기록 단추가 있다).
+  var COACH_CAFE = '스타벅스 스탈릿성수N';   // 스토어 그림(성수역)과 같은 카페로 늘 같은 곳을 보여 준다(사용자 2026-11-27)
   function coachPickCafe() {
     if (!D.kid) return -1;
-    if (coachCafe >= 0 && pass[coachCafe] && D.kid[coachCafe]) return coachCafe;
+    if (coachCafe >= 0 && D.kid[coachCafe]) return coachCafe;
+    for (var q = 0; q < N; q++) if (D.name[q] === COACH_CAFE && D.kid[q] && !removed[q]) return (coachCafe = q);
     var c = map.getCenter(), cx = (c.lng + 180) / 360, cy = mercY(c.lat), best = -1, bd = Infinity;
     // 전국이나 도를 보고 있으면 지도 가운데가 한적한 곳이라 점이 몇 개 없다. 카페가 가장 많은 시군구의 가운데에서 고른다.
     if (map.getZoom() < 9) { var top = -1; sggReg.forEach(function (r) { if (top < 0 || rAll[r] > rAll[top]) top = r; }); if (top >= 0 && rAll[top]) { cx = rCx[top]; cy = rCy[top]; } }
@@ -8539,25 +8551,33 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 단계(2026-11-27 사용자: 너무 많다 → 아홉에서 여섯으로). enter 그 화면을 만든다(못 만들면 false, 건너뜀). at 가리킬 곳.
   // chip 같이 밝힐 칩(이 칩을 누르면 열린다는 것을 보이려고). extra 같이 밝힐 단추.
   var COACH = [
-    { enter: function () { return coachOpen('region'); }, chip: 'region', clip: true, side: coachSideBelow,
-      at: function () { var c = panel.querySelectorAll('.grid .cell'); return [panel.querySelector('.ph'), c[0], c[1], c[2], c[3], c[4]]; },
-      t: '지역', m: '시도, 시군구, 동 순서로 눌러 들어가면 지도가 그 동네로 가고, 그 동네 카페만 남아요. 지도 위의 지역 이름을 눌러도 돼요.' },
-    { enter: function () { return coachOpen('filter'); }, chip: 'filter', side: coachSideAbove,
-      at: function () { return [panel]; },
-      t: '필터', m: '대형카페, 콘센트 좌석 있는 곳, 원하는 브랜드만 골라 볼 수 있어요. 고르는 대로 지도에 그 카페만 남아요.' },
+    // 1, 2: 판은 열지 않고 칩(과 검색창)만 밝힌다(사용자 2026-11-27).
+    { enter: function () { if (P.kind) closePanel(true); return true; },
+      at: function () { return [$('chips').querySelector('[data-act="region"]')]; },
+      extra: function () { return [$('q').closest('.search')]; },
+      t: '지역과 검색', m: '지역을 고르거나 검색해서 보고 싶은 곳만 볼 수 있어요.' },
+    { enter: function () { if (P.kind) closePanel(true); return true; },
+      at: function () { return [$('chips').querySelector('[data-act="filter"]')]; },
+      t: '필터', m: '대형카페, 콘센트 좌석 있는 곳, 원하는 브랜드만 골라 볼 수 있어요.' },
+    // 3: 보너스 카페 세 가지는 줄글 대신 칸으로(이름, 받는 원두, 어떤 곳)
     { enter: function () { return coachOpen('bonus'); }, chip: 'bonus', side: coachSideAbove,
       at: function () { return [panel.querySelector('.bsec')]; },
-      t: '보너스 카페', m: '하나를 켜면 그 카페만 지도에 남고, 그 카페에 기록하면 원두를 더 받아요. 새로 연 카페는 문 연 지 1년이 안 된 곳, 오랜만의 기록은 6개월 넘게 아무도 기록하지 않은 곳, 첫 기록은 아직 아무도 기록하지 않은 곳이에요.' },
+      t: '보너스 카페', m: '켜면 그 카페만 지도에 남고, 기록하면 원두를 더 받아요.',
+      list: function () {
+        var what = { 'new': '문 연 지 1년이 안 된 곳', old: '6개월 넘게 아무도 기록하지 않은 곳', first: '아직 아무도 기록하지 않은 곳' };
+        return BONUS_OPT.map(function (x) { return [x[2], what[x[0]], '+' + fmt(x[4]) + ' 원두']; });
+      } },
     { enter: function () { if (P.kind) closePanel(true); return coachZoom(); }, clear: true, legend: true,
       t: '지도의 점', m: '점 색은 카페 종류예요. 가까이 보면 브랜드 카페는 점 안에 로고가 보여요.' },
     { enter: function () { return coachCard(true); }, side: coachSideAbove,
       at: function () { return [panel.querySelector('.dpop .opts.four') || panel.querySelector('.dpop .opts.one')]; },
       extra: function () { return [panel.querySelector('.dh .sum')]; },
-      t: '콘센트 기록', m: '지도에서 카페를 누르면 이 카드가 나와요. 그 카페에 있을 때 콘센트 기록을 누르고, 콘센트가 있는 자리를 모두 골라요. 없으면 없어요를 눌러요. 로그인하고 기록하면 원두를 받아요.' },
+      t: '콘센트 기록', m: '그 카페에 있을 때 기록할 수 있어요.',
+      steps: ['콘센트 기록을 눌러요', '콘센트가 있는 자리를 모두 골라요 (없으면 없어요)', '기록하면 원두를 받아요 (로그인 필요)'] },
+    // 마지막: 메뉴 설명은 하지 않고 사용법 줄만 밝힌다(사용자: 메뉴를 말하는지 사용법을 말하는지 헷갈린다).
     { enter: function () { if (P.kind !== 'menu') { if (P.kind) closePanel(true); $('menuBtn').click(); } return P.kind === 'menu'; }, side: coachSideBelow,
       at: function () { var rows = panel.querySelectorAll('.xrow'); for (var k = 0; k < rows.length; k++) if (rows[k].textContent.trim() === '사용법') return [rows[k]]; return [$('menuBtn')]; },
-      extra: function () { return [$('menuBtn')]; },
-      t: '메뉴', m: '로그인, 내 레벨, 원두 모으는 법, 브랜드 도감, 새 동네 지도, 전체 랭킹은 왼쪽 위 메뉴에 있어요. 이 안내는 메뉴의 사용법에서 다시 볼 수 있어요.' }
+      t: '사용법', m: '이 안내는 사용법에서 다시 볼 수 있어요.' }
   ];
   // 메모 사용법(메모 단추 이스터 에그를 연 사람만). 연 직후에 한 번 보여 주고, 사용법에서 처음 안내를 다시 보면 콘센트 기록 다음에 나온다.
   // 지도의 메모 단추는 지역을 골랐을 때만 보여서, 지역을 고르지 않았으면 안내하는 동안만 그 카페의 동을 골라 두고 끝나면 되돌린다.
@@ -8575,10 +8595,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   var COACH_MEMO = [
     { memo: true, enter: function () { return coachCard(true); }, side: coachSideAbove,
       at: function () { return [panel.querySelector('.dpop .acts .memo')]; },
-      t: '나만의 메모', m: '카페 카드의 메모를 누르면 그 카페에 나만 보는 메모를 80자까지 남길 수 있어요. 다른 사람에게는 보이지 않아요. 남긴 메모는 찜 아래에 한 줄로 보이고, 누르면 고칠 수 있어요.' },
+      t: '나만의 메모', m: '카페마다 나만 보는 메모를 80자까지 남겨요.' },
     { memo: true, enter: function () { if (P.kind) closePanel(true); return coachMemoBtn(); },
       at: function () { return [$('navFav')]; },
-      t: '내 메모 모아 보기', m: '메모를 남긴 카페는 이 메모 단추를 눌러 모아 봐요. 지역을 고르면 지도 오른쪽 아래에 생기고, 메뉴의 환경설정에서 숨길 수도 있어요.' }
+      t: '내 메모 모아 보기', m: '메모한 카페를 모아 봐요. 지역을 고르면 지도에 생겨요.' }
   ];
   // 처음 안내의 단계: 메모 단추를 연 사람은 콘센트 기록 다음에 메모 사용법이 더 나온다.
   function coachList() { return favOn() ? COACH.slice(0, 5).concat(COACH_MEMO, COACH.slice(5)) : COACH; }
@@ -8702,6 +8722,16 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       hd.appendChild(el('b', null, s.t)); hd.appendChild(el('span', 'ccnt', (step + 1) + ' / ' + L.length));
       tip.appendChild(hd);
       tip.appendChild(el('p', null, s.m));
+      if (s.list) {
+        var cl = el('div', 'clist');
+        s.list().forEach(function (x) { var r = el('div', 'clitem'), top = el('div', 'clt'); top.appendChild(el('b', null, x[0])); if (x[2]) top.appendChild(el('span', 'cla', x[2])); r.appendChild(top); r.appendChild(el('span', 'cld', x[1])); cl.appendChild(r); });
+        tip.appendChild(cl);
+      }
+      if (s.steps) {
+        var cs = el('ol', 'csteps');
+        s.steps.forEach(function (x) { cs.appendChild(el('li', null, x)); });
+        tip.appendChild(cs);
+      }
       if (s.legend) tip.appendChild(coachLegend());
       var row = el('div', 'crow'), right = el('span', 'cbtns');
       row.appendChild(btn('link', '건너뛰기', function (e) { e.stopPropagation(); done(); }));
