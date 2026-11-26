@@ -2,67 +2,7 @@
   "rules": {
     ".read": false,
     ".write": false,
-    "gone": {
-      ".read": true,
-      "$cafe": {
-        ".validate": "$cafe.matches(/^[0-9a-z]+$/) && $cafe.length <= 12",
-        "$uid": {
-          ".write": "auth != null && auth.uid === $uid",
-          ".validate": "newData.hasChildren(['t'])",
-          "t": {
-            ".validate": "newData.val() === now"
-          },
-          "$other": {
-            ".validate": false
-          }
-        }
-      }
-    },
-    "seats": {
-      ".read": true,
-      "$cafe": {
-        ".validate": "$cafe.matches(/^[0-9a-z]+$/) && $cafe.length <= 12",
-        "$uid": {
-          ".write": "auth != null && auth.uid === $uid",
-          ".validate": "newData.hasChildren(['o', 'c', 't'])",
-          "o": {
-            ".validate": "newData.val() === 1 || newData.val() === -1"
-          },
-          "c": {
-            ".validate": "newData.isString() && newData.val().length <= 3 && newData.val().matches(/^[nws]*$/)"
-          },
-          "t": {
-            ".validate": "newData.val() === now"
-          },
-          "$other": {
-            ".validate": false
-          }
-        }
-      }
-    },
     "v2": {
-      "tags": {
-        ".read": true,
-        "$cafe": {
-          ".validate": "$cafe.matches(/^[0-9a-z]+$/) && $cafe.length <= 12",
-          "$uid": {
-            ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'",
-            ".validate": "newData.hasChildren(['t'])",
-            "h": {
-              ".validate": "newData.val() === 1"
-            },
-            "p": {
-              ".validate": "newData.val() === 1"
-            },
-            "t": {
-              ".validate": "newData.val() === now"
-            },
-            "$other": {
-              ".validate": false
-            }
-          }
-        }
-      },
       "want": {
         "$uid": {
           ".read": "auth != null && auth.uid === $uid",
@@ -77,7 +17,7 @@
         "$cafe": {
           ".validate": "$cafe.matches(/^[0-9a-z]+$/) && $cafe.length <= 12",
           "$uid": {
-            ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'",
+            ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && root.child('v2/anon/' + auth.uid).val() === $uid",
             ".validate": "newData.hasChildren(['t'])",
             "t": {
               ".validate": "newData.val() === now"
@@ -112,7 +52,7 @@
         "$cafe": {
           ".validate": "$cafe.matches(/^[0-9a-z]+$/) && $cafe.length <= 12",
           "$uid": {
-            ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'",
+            ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && root.child('v2/anon/' + auth.uid).val() === $uid",
             ".validate": "newData.hasChildren(['o', 'c', 't'])",
             "o": {
               ".validate": "newData.val() === 1 || newData.val() === -1"
@@ -216,11 +156,17 @@
       },
       "pub": {
         ".read": true,
+        ".indexOn": [
+          "a"
+        ],
         "$uid": {
           ".write": "auth != null && ((auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous') || auth.uid === 'YJZkK7gP9xYP2fBjh2KWnJHDOsl1')",
           ".validate": "newData.hasChildren(['n', 'log', 't'])",
           "n": {
             ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12"
+          },
+          "a": {
+            ".validate": "newData.isString() && newData.val() === root.child('v2/anon/' + $uid).val()"
           },
           "t": {
             ".validate": "newData.val() === now"
@@ -248,6 +194,13 @@
           "$other": {
             ".validate": false
           }
+        }
+      },
+      "anon": {
+        "$uid": {
+          ".read": "auth != null && (auth.uid === $uid || auth.uid === 'YJZkK7gP9xYP2fBjh2KWnJHDOsl1')",
+          ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous' && !data.exists() && newData.exists()",
+          ".validate": "newData.isString() && newData.val().matches(/^[0-9a-z]{12}$/)"
         }
       },
       "ban": {

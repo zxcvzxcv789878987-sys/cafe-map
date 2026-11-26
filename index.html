@@ -2375,6 +2375,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (!loginOn || !signedIn() || !XP.pub || !XP.nick) return;
     var log = (XP.log || []).slice(-100).map(function (e) { var x = { d: ymdKey(e.t), a: e.a || 0, r: xpShow(e.r) }; if (e.c) x.c = e.c; return x; });
     var body = { n: XP.nick, log: log, t: { '.sv': 'timestamp' } };
+    if (loginOn && myA()) body.a = myA();   // 기록한 사람 창에서 이 사람(공개를 켠 사람)의 닉네임을 찾을 수 있게
     token().then(function (t) {
       return fetch(SHARE.db + '/v2/pub/' + who.u + '.json?auth=' + encodeURIComponent(t), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     }).catch(function () { /* 다음에 바뀔 때 다시 올린다 */ });
@@ -4479,10 +4480,30 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     save('cafemap.seat2', mine); save('cafemap.gone', goneMine); save('cafemap.auth', null); save('cafemap.v2', 1);
     applyMine();
   }
-  if (TEST) who = { u: 'test-user', r: 'test', p: 'google', n: '시험 사용자', e: '시험 모드' };
+  if (TEST) who = { u: 'test-user', r: 'test', p: 'google', n: '시험 사용자', e: '시험 모드', a: 'test-user' };
   function postJson(url, body, form) {
     return fetch(url, { method: 'POST', headers: { 'Content-Type': form ? 'application/x-www-form-urlencoded' : 'application/json' }, body: form ? body : JSON.stringify(body) })
       .then(function (r) { if (!r.ok) { var e = new Error('auth'); e.status = r.status; throw e; } return r.json(); });
+  }
+  // 기록과 폐업 신고는 계정 번호 대신 계정마다 하나인 무작위 번호(v2/anon/<계정>, 본인과 운영자만 읽음)로 서버에 적는다.
+  // 누구나 읽는 기록을 랭킹(계정 번호와 닉네임)과 이어 볼 수 없게 하려는 것이다(2026-11-27). 번호는 처음 한 번 만들고 바꾸지 않는다.
+  function myA() { return who && who.a ? who.a : (!loginOn && who ? who.u : null); }
+  function isAdminKey(u) { return !!u && (u === SHARE.admin || (!!SHARE.adminA && u === SHARE.adminA)); }
+  function ensureAnon(t) {
+    if (!loginOn) return Promise.resolve(who.u);
+    if (who && who.a) return Promise.resolve(who.a);
+    var u0 = who.u, url = SHARE.db + '/v2/anon/' + u0 + '.json?auth=' + encodeURIComponent(t);
+    var keep = function (a) { if (who && who.u === u0) { who.a = a; save('cafemap.auth', who); } return a; };
+    var read = function () { return fetch(url).then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); }); };
+    return read().then(function (a) {
+      if (typeof a === 'string' && a) return keep(a);
+      var b = new Uint8Array(12), id = '';
+      crypto.getRandomValues(b); for (var k = 0; k < 12; k++) id += (b[k] % 36).toString(36);
+      return fetch(url, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(id) }).then(function (r) {
+        if (r.ok) return keep(id);
+        return read().then(function (a2) { if (typeof a2 === 'string' && a2) return keep(a2); throw new Error('anon'); });   // 다른 기기가 먼저 만들었으면 그것
+      });
+    });
   }
   function token() {
     if (TEST) return Promise.resolve('test');
@@ -4498,7 +4519,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     }
     if (!who || !who.r) return fresh();
     return postJson((SHARE.tokenUrl || 'https://securetoken.googleapis.com/v1/token') + '?key=' + SHARE.key, 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(who.r), true)
-      .then(function (d) { var old = who || {}; who = { u: d.user_id, r: d.refresh_token }; ['p', 'e', 'n'].forEach(function (f) { if (old[f]) who[f] = old[f]; }); save('cafemap.auth', who); idToken = d.id_token; idUntil = Date.now() + (+d.expires_in - 60) * 1000; return idToken; },
+      .then(function (d) { var old = who || {}; who = { u: d.user_id, r: d.refresh_token }; ['p', 'e', 'n'].forEach(function (f) { if (old[f]) who[f] = old[f]; }); if (old.a && old.u === who.u) who.a = old.a; save('cafemap.auth', who); idToken = d.id_token; idUntil = Date.now() + (+d.expires_in - 60) * 1000; return idToken; },
         // 계정이 없어졌을 때(400)만 새로 만든다. 인터넷이 잠깐 끊긴 것이면 다음에 다시 한다.
         function (e) { if (e && e.status === 400) return fresh(); throw e; });
   }
@@ -4510,8 +4531,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var k = cidOf(i), rec = mine[k];
     seatPend[k] = 1; save('cafemap.seatPend', seatPend);
     token().then(function (t) {
-      var url = SHARE.db + ROOT + '/seats/' + k + '/' + who.u + '.json?auth=' + encodeURIComponent(t);
-      return fetch(url, rec ? { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ o: rec.o, c: rec.c, t: { '.sv': 'timestamp' } }) } : { method: 'DELETE' });
+      return ensureAnon(t).then(function (a) {
+        var url = SHARE.db + ROOT + '/seats/' + k + '/' + a + '.json?auth=' + encodeURIComponent(t);
+        return fetch(url, rec ? { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ o: rec.o, c: rec.c, t: { '.sv': 'timestamp' } }) } : { method: 'DELETE' });
+      });
     }).then(function (r) {
       if (!r.ok) throw new Error('db');
       if (rec) srvMine[k] = rec; else delete srvMine[k];
@@ -4533,10 +4556,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         for (u in all[k]) {
           var rec = all[k][u];
           if (!rec) continue;
-          if (j !== undefined && (rec.o === 1 || rec.o === -1)) (voters[j] || (voters[j] = [])).push({ u: u, o: rec.o, c: rec.c || '', t: rec.t || 0, admin: u === SHARE.admin, me: !!(who && u === who.u) });
-          if (who && u === who.u) { srvMine[k] = rec; continue; }
+          if (j !== undefined && (rec.o === 1 || rec.o === -1)) (voters[j] || (voters[j] = [])).push({ u: u, o: rec.o, c: rec.c || '', t: rec.t || 0, admin: isAdminKey(u), me: !!(myA() && u === myA()) });
+          if (myA() && u === myA()) { srvMine[k] = rec; continue; }
           if (j === undefined) continue;
-          if (u !== SHARE.admin && (rec.o === 1 || rec.o === -1)) realVotes[j] = (realVotes[j] || 0) + 1;
+          if (!isAdminKey(u) && (rec.o === 1 || rec.o === -1)) realVotes[j] = (realVotes[j] || 0) + 1;
           var v = votes[j] || (votes[j] = [0, 0, 0, 0, 0]);
           if (rec.o === 1) { v[0]++; var bits = chairBits(rec.c); if (bits & 1) v[2]++; if (bits & 2) v[3]++; if (bits & 4) v[4]++; }
           else if (rec.o === -1) v[1]++;
@@ -4544,7 +4567,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         if (j !== undefined) touched.push(j);
       }
       touched.forEach(tally);
-      if (loginOn) {
+      // 로그인했는데 아직 내 무작위 번호를 모르면 이 기기의 내 기록은 그대로 두고, 번호를 받아 온 뒤 다시 받는다.
+      if (loginOn && signedIn() && !myA()) token().then(ensureAnon).then(function () { pull(); pullGone(); }).catch(function () { /* 다음에 열 때 */ });
+      else if (loginOn) {
         // 로그인 방식: 서버에 있는 내 계정의 투표가 기준이다. 이 기기의 내 기록을 그것으로 바꾼다(로그인하지 않았으면 비운다).
         // 다만 올리지 못한 기록(seatPend)은 이 기기 것을 지키고 다시 올린다.
         var keep = {};
@@ -4572,8 +4597,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (!shareOn) return;
     var k = cidOf(i), on = myGone[i] === 1;
     token().then(function (t) {
-      var url = SHARE.db + ROOT + '/gone/' + k + '/' + who.u + '.json?auth=' + encodeURIComponent(t);
-      return fetch(url, on ? { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ t: { '.sv': 'timestamp' } }) } : { method: 'DELETE' });
+      return ensureAnon(t).then(function (a) {
+        var url = SHARE.db + ROOT + '/gone/' + k + '/' + a + '.json?auth=' + encodeURIComponent(t);
+        return fetch(url, on ? { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ t: { '.sv': 'timestamp' } }) } : { method: 'DELETE' });
+      });
     }).then(function (r) { if (!r.ok) throw new Error('db'); }).catch(function () { /* 다음에 열 때 다시 올린다 */ });
   }
   // 운영자가 확인한 결과: v2/gonedec/<카페> = { d: 1 지움, 0 남김, t: 정한 때, m: 덧붙인 말 }. 누구나 읽고 운영자만 쓴다.
@@ -4589,7 +4616,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       j = ix[k];
       dt = goneDec[k] && goneDec[k].d === 0 ? goneDec[k].t || 0 : 0;
       for (u in goneAll[k]) {
-        if (who && u === who.u) { mineOnServer[k] = 1; continue; }
+        if (myA() && u === myA()) { mineOnServer[k] = 1; continue; }
         if (j !== undefined && ((goneAll[k][u] || {}).t || 0) > dt) goneVotes[j] = (goneVotes[j] || 0) + 1;
       }
     }
@@ -4603,7 +4630,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var ix = cidIndex(), out = [], k, j, t, dec;
     for (k in goneMine) {
       j = ix[k]; if (j === undefined) continue;
-      t = ((goneAll[k] || {})[who && who.u] || {}).t || Date.now();
+      t = ((goneAll[k] || {})[myA()] || {}).t || Date.now();
       dec = goneDec[k] && (goneDec[k].t || 0) >= t ? goneDec[k] : null;
       out.push({ k: k, j: j, t: t, dec: dec });
     }
@@ -4625,7 +4652,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var ix = cidIndex(), k, j, mineOnServer = recountGone();
       if (loginOn) {
         // 로그인 방식: 서버의 내 계정 것이 기준이다.
-        goneMine = signedIn() ? mineOnServer : {};
+        goneMine = signedIn() ? (myA() ? mineOnServer : goneMine) : {};
         save('cafemap.gone', goneMine); applyMine(); goneNewCount();
       } else {
         // 이 기기의 내 표시와 서버가 다르면 이 기기 것으로 맞춘다.
@@ -4766,8 +4793,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var seats = {}, gones = {};
       for (k in mine) seats[k] = 1; for (k in srvMine) seats[k] = 1;
       for (k in goneMine) gones[k] = 1;
-      for (k in seats) jobs.push(del('seats/' + k + '/' + who.u));
-      for (k in gones) jobs.push(del('gone/' + k + '/' + who.u));
+      var aid = myA();   // 무작위 번호가 없으면 서버에 적은 기록도 없다
+      if (aid) { for (k in seats) jobs.push(del('seats/' + k + '/' + aid)); for (k in gones) jobs.push(del('gone/' + k + '/' + aid)); }
       ['want', 'xp', 'pub', 'rank', 'nickreset'].forEach(function (p) { jobs.push(del(p + '/' + who.u)); });
       // 보낸 문의와 그 답: 답을 먼저 지운다(답을 지울 수 있는지는 문의의 주인으로 본다).
       jobs.push(fetch(base + 'feedback.json?orderBy=%22u%22&equalTo=' + encodeURIComponent(JSON.stringify(who.u)) + '&auth=' + a)
@@ -6243,8 +6270,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var r = el('div', 'xli'), l = el('span'), rt = el('span', 'rt'), nm = el('span', 'rs', x.me ? '나' : x.admin ? '운영자' : '사용자 ' + (list.length - n));
       l.appendChild(nm);
       // XP 기록을 공개한 사람이면 닉네임을 보이고, 누르면 그 사람의 레벨과 XP 기록 창(뒤로는 이 창으로).
-      if (x.u && SHARE.db) fetch(SHARE.db + '/v2/pub/' + x.u + '/n.json').then(function (q) { return q.ok ? q.json() : null; }, function () { return null; }).then(function (nick) {
+      if (x.u && SHARE.db) fetch(SHARE.db + '/v2/pub.json?orderBy=%22a%22&equalTo=' + encodeURIComponent(JSON.stringify(x.u))).then(function (q) { return q.ok ? q.json() : null; }, function () { return null; }).then(function (pm) {
+        var uid = pm && Object.keys(pm)[0], nick = uid && pm[uid] && pm[uid].n;
         if (!nick || !r.isConnected) return;
+        x = { u: uid, o: x.o, c: x.c, t: x.t, admin: x.admin, me: x.me };
         if (!x.me && !x.admin) nm.textContent = isHid(x.u) ? '숨긴 사용자' : nick;
         r.classList.add('tap'); r.setAttribute('role', 'button'); r.tabIndex = 0;
         r.addEventListener('click', function () {
