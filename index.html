@@ -230,6 +230,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 /* 걷는 길 판 */
 .rtbody { padding: 6px 18px calc(18px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 14px; }
 .rtbig { display: flex; align-items: baseline; gap: 8px; }
+.rtsrc { margin: -4px 0 0; text-align: center; font-size: 11.5px; color: var(--ink-3); }
+.rtsrc a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .rtbig .rtkind { font-size: 13px; font-weight: 700; color: #6a5ae0; }
 .rtbig b { font-size: 30px; font-weight: 800; letter-spacing: -.02em; }
 .rtbig small { font-size: 15px; color: var(--ink-3); font-weight: 600; }
@@ -7373,7 +7375,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       .then(function (j) {
         var f = j.features && j.features[0]; if (!f) throw new Error('route');
         var g = f.geometry, c = g.type === 'MultiLineString' ? [].concat.apply([], g.coordinates) : g.coordinates;
-        return { coords: c, dist: f.properties.distance };
+        return { coords: c, dist: f.properties.distance, src: 'geoapify' };
       });
   }
   function walkOrs(from, to) {
@@ -7381,13 +7383,13 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       // 키는 주소에 붙이지 않고 머리말(Authorization)로 보낸다. 새로 받는 키(eyJ로 시작)도 이 방식으로 된다.
       return fetch('https://api.openrouteservice.org/v2/directions/foot-walking?start=' + from[0] + ',' + from[1] + '&end=' + to[0] + ',' + to[1], { headers: { Authorization: ROUTE.ors } })
         .then(function (r) { if (!r.ok) throw new Error('route'); return r.json(); })
-        .then(function (j) { var f = j.features[0]; return { coords: f.geometry.coordinates, dist: f.properties.summary.distance }; });
+        .then(function (j) { var f = j.features[0]; return { coords: f.geometry.coordinates, dist: f.properties.summary.distance, src: 'ors' }; });
     }
   }
   function walkFree(from, to) {
     return fetch('https://routing.openstreetmap.de/routed-foot/route/v1/driving/' + from[0] + ',' + from[1] + ';' + to[0] + ',' + to[1] + '?overview=full&geometries=geojson')
       .then(function (r) { if (!r.ok) throw new Error('route'); return r.json(); })
-      .then(function (j) { if (!j.routes || !j.routes.length) throw new Error('route'); return { coords: j.routes[0].geometry.coordinates, dist: j.routes[0].distance }; });
+      .then(function (j) { if (!j.routes || !j.routes.length) throw new Error('route'); return { coords: j.routes[0].geometry.coordinates, dist: j.routes[0].distance, src: 'fossgis' }; });
   }
   var routeInfo = null;     // { i, dist, min } 판에 적을 것
   function openRoute(i) {
@@ -7403,7 +7405,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         walkFetch(from, to).then(function (rt) {
           var c = rt.coords.slice(); c.unshift(from); c.push(to);
           drawRoute(c);
-          routeInfo = { i: i, dist: Math.round(rt.dist), min: Math.max(1, Math.round(rt.dist / 70)) };
+          routeInfo = { i: i, dist: Math.round(rt.dist), min: Math.max(1, Math.round(rt.dist / 70)), src: rt.src };
           var x0 = 180, y0 = 90, x1 = -180, y1 = -90;
           c.forEach(function (q) { if (q[0] < x0) x0 = q[0]; if (q[0] > x1) x1 = q[0]; if (q[1] < y0) y0 = q[1]; if (q[1] > y1) y1 = q[1]; });
           setFollow(false);
@@ -7426,7 +7428,18 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     big.appendChild(el('small', null, r.dist >= 1000 ? (Math.round(r.dist / 100) / 10) + 'km' : r.dist + 'm'));
     sc.appendChild(big);
     sc.appendChild(extRoute(r.i));
+    sc.appendChild(routeCredit(r.src || 'geoapify'));
     panel.appendChild(sc);
+  }
+  // 걷는 길을 준 곳의 출처(무료로 쓰는 조건). 글씨는 작게, 링크는 새 창.
+  function routeCredit(src) {
+    var p = el('p', 'rtsrc');
+    var link = function (t, u) { var a = el('a', null, t); a.href = u; a.target = '_blank'; a.rel = 'noopener'; return a; };
+    var osm = function () { p.appendChild(document.createTextNode('© ')); p.appendChild(link('OpenStreetMap', 'https://www.openstreetmap.org/copyright')); p.appendChild(document.createTextNode(' 기여자')); };
+    if (src === 'ors') { p.appendChild(document.createTextNode('길 안내 © ')); p.appendChild(link('openrouteservice.org', 'https://openrouteservice.org/')); p.appendChild(document.createTextNode(' by HeiGIT, ')); osm(); }
+    else if (src === 'fossgis') { p.appendChild(document.createTextNode('길 안내 ')); p.appendChild(link('FOSSGIS', 'https://routing.openstreetmap.de/')); p.appendChild(document.createTextNode(', ')); osm(); }
+    else { p.appendChild(document.createTextNode('Powered by ')); p.appendChild(link('Geoapify', 'https://www.geoapify.com/')); p.appendChild(document.createTextNode(', ')); osm(); }
+    return p;
   }
   // ----- 카페 정보 -----
   function fullAddr(i) { var d = D.dongOf[i], g = dongSgg[d]; var sido = D.sido[sggSido[g]], sg = D.sgg[g][0]; return (sg === sido ? sido : sido + ' ' + sg) + ' ' + D.road[i]; }
