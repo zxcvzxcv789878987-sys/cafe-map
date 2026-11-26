@@ -7,7 +7,10 @@
 # 사용법: python -X utf8 build_legal.py <AL_D001_..._YYYYMMDD.zip> <출력 legal.js>
 import sys, io, os, math, json, zipfile, tempfile
 import shapefile
-from shapely.geometry import shape
+from shapely.geometry import shape, Polygon
+
+TOL_M = 12        # 경계선 단순화 허용 오차(m). 동 단위로 보기에 충분하고 파일이 작다.
+MIN_M2 = 2000     # 이보다 작은 섬과 구멍은 버린다(m²)
 
 A, F = 6378137.0, 1 / 298.257222101
 LAT0, LON0, K0, FE, FN = math.radians(38), math.radians(127.0), 1.0, 200000.0, 600000.0
@@ -70,14 +73,41 @@ def main(src, out):
         sido = SIDO_CODE.get(a['A1'][:2]) or SIDO_SHORT.get(parts[0], parts[0])
         # 앱의 지역 단계와 같게: 세종은 "세종 > 세종특별자치시 > 동"이다.
         sig[a['A1']] = '세종 세종특별자치시' if sido == '세종' else ' '.join([sido] + parts[1:])
-    groups, gidx = [], {}
-    rows, emd_row = [], {}
+    groups, gidx, gcode = [], {}, []
+    rows, emd_row, rings_all = [], {}, []
+
+    def rings_of(g):
+        # 경계선: 미터 좌표에서 먼저 단순하게 한 뒤(점 수가 줄어 변환이 빠르다) 경위도로 바꿔 정수 차이값으로 줄인다.
+        g = g.simplify(TOL_M, preserve_topology=True)
+        parts = list(g.geoms) if g.geom_type == 'MultiPolygon' else [g]
+        parts = [p for p in parts if p.geom_type == 'Polygon' and not p.is_empty]
+        if not parts:
+            return []
+        big = max(p.area for p in parts)
+        out = []
+        for p in parts:
+            if p.area < MIN_M2 and p.area < big * 0.2:
+                continue
+            for ring in [p.exterior] + [h for h in p.interiors if Polygon(h).area >= MIN_M2]:
+                flat, px, py = [], 0, 0
+                for x, y in ring.coords:
+                    lo, la = to_lonlat(x, y)
+                    ix, iy = round(lo * 1e5), round(la * 1e5)
+                    if flat and ix == px and iy == py:
+                        continue
+                    flat += [ix - px, iy - py]
+                    px, py = ix, iy
+                out.append(flat)
+        return out
 
     def add(sr, code5, up):
         a = sr.record.as_dict()
         g = shape(sr.shape.__geo_interface__)
         if g.is_empty:
             return None
+        if not g.is_valid:
+            g = g.buffer(0)
+        rings_all.append(rings_of(g))
         p = g.representative_point()
         cx, cy = to_lonlat(p.x, p.y)
         x0, y0, x1, y1 = g.bounds
@@ -86,6 +116,7 @@ def main(src, out):
         if path not in gidx:
             gidx[path] = len(groups)
             groups.append(path)
+            gcode.append(code5)
         rows.append([a['A2'], gidx[path], up, round(cx * 1e5), round(cy * 1e5),
                      round(min(xs) * 1e5), round(min(ys) * 1e5), round(max(xs) * 1e5), round(max(ys) * 1e5)])
         return len(rows) - 1
@@ -102,13 +133,28 @@ def main(src, out):
         if add(sr, a['A1'][:5], emd_row.get(a['A1'][:8], -1)) is not None:
             nli += 1
     # 작게 담기: 이름은 | 로 이은 글자 하나, 숫자는 칸마다 한 줄씩. 네모 범위는 안쪽 점에서 떨어진 거리로 적는다.
-    pack = {'src': os.path.basename(src), 'g': groups, 'n': '|'.join(r[0] for r in rows),
+    pack = {'src': os.path.basename(src), 'g': groups, 'gc': gcode, 'n': '|'.join(r[0] for r in rows),
             'gi': [r[1] for r in rows], 'up': [r[2] for r in rows],
             'c': [v for r in rows for v in (r[3], r[4])],
             'b': [v for r in rows for v in (r[3] - r[5], r[4] - r[6], r[7] - r[3], r[8] - r[4])]}
     js = 'window.LEGAL=' + json.dumps(pack, ensure_ascii=False, separators=(',', ':')) + ';\n'
     open(out, 'w', encoding='utf-8').write(js)
     print('시군구', len(groups), '읍면동', len(emd_row), '리', nli, '크기', len(js.encode()) // 1024, 'KB')
+    # 경계선은 전국을 다 담으면 17MB라서 시군구마다 나눠 legal/<시군구 코드>.json으로 둔다. 그 시군구를 볼 때만 받는다.
+    # 파일 안의 i는 legal.js 안의 순서 번호다. src(자료 날짜)가 legal.js와 다르면 앱이 쓰지 않는다.
+    sdir = os.path.join(os.path.dirname(os.path.abspath(out)), 'legal')
+    os.makedirs(sdir, exist_ok=True)
+    for f in os.listdir(sdir):
+        if f.endswith('.json'):
+            os.remove(os.path.join(sdir, f))
+    by_g, total = {}, 0
+    for k, r in enumerate(rows):
+        by_g.setdefault(r[1], []).append(k)
+    for gi_, ks in by_g.items():
+        body = json.dumps({'src': os.path.basename(src), 'i': ks, 'r': [rings_all[k] for k in ks]}, separators=(',', ':'))
+        open(os.path.join(sdir, gcode[gi_] + '.json'), 'w', encoding='utf-8').write(body)
+        total += len(body)
+    print('경계선 파일', len(by_g), '개, 합계', total // 1024, 'KB')
 
 
 if __name__ == '__main__':

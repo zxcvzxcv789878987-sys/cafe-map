@@ -4913,9 +4913,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     return (shapeCache[r] = out);
   }
   // 고른 지역(시도, 시, 구, 동 어느 단계든)의 땅 전체를 옅게 칠하고 경계선을 두른다.
-  function drawOutline(r, scale, ox, oy) {
-    var sh = shapeOf(r);
-    if (!sh) return;
+  function drawOutline(r, scale, ox, oy) { var sh = shapeOf(r); if (sh) drawRings(sh, scale, ox, oy); }
+  function drawRings(sh, scale, ox, oy) {
     ctx.beginPath();
     for (var k = 0; k < sh.rings.length; k++) {
       var a = sh.rings[k];
@@ -5302,7 +5301,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     // 조건을 좁혀서 화면 안에 150곳 이하로 남았을 때는 멀리서도 하나씩 보여 준다.
     indiv = (S.reg >= 0 && rLeaf[S.reg] === 1) || (S.showAll && canShowAll()) || z >= POINT_ZOOM || vc <= 150;
     hits = [];
-    if (S.reg >= 0 && S.outline && !routing()) drawOutline(S.reg, scale, ox, oy);   // 걷는 길을 보는 동안은 경계를 그리지 않는다(길이 또렷하게)
+    if (legalSel >= 0 && S.outline && !routing() && legalShape(legalSel)) drawRings(legalShape(legalSel), scale, ox, oy);
+    else if (S.reg >= 0 && S.outline && !routing()) drawOutline(S.reg, scale, ox, oy);   // 걷는 길을 보는 동안은 경계를 그리지 않는다(길이 또렷하게)
 
     if (!indiv) {
       // 멀리서 볼 때: 지역 이름표에 개수만 적는다.
@@ -7147,6 +7147,30 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     }
     return out;
   }
+  // 경계선: 시군구마다 나눈 legal/<코드>.json을 그 동네로 갈 때 받는다. 자료 날짜(src)가 legal.js와 다르면 쓰지 않는다.
+  var legalSel = -1, lgRaw = {}, lgFile = {}, lgShape = {};
+  function legalShapesFor(i, done) {
+    var code = LG.gc && LG.gc[LG.gi[i]];
+    if (!code) return;
+    if (lgFile[code] === 2) return done();
+    if (lgFile[code] === 1) return;
+    lgFile[code] = 1;
+    fetch('legal/' + code + '.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      if (!j || j.src !== LG.src) { lgFile[code] = 0; return; }
+      j.i.forEach(function (k, n) { lgRaw[k] = j.r[n]; });
+      lgFile[code] = 2; done();
+    }).catch(function () { lgFile[code] = 0; });
+  }
+  function legalShape(k) {
+    if (lgShape[k] !== undefined) return lgShape[k];
+    var raw = lgRaw[k];
+    if (!raw) return null;
+    return (lgShape[k] = { rings: raw.map(function (fl) {
+      var a = new Float64Array(fl.length), x = 0, y = 0;
+      for (var n = 0; n < fl.length; n += 2) { x += fl[n]; y += fl[n + 1]; a[n] = (x / 1e5 + 180) / 360; a[n + 1] = mercY(y / 1e5); }
+      return a;
+    }) });
+  }
   function legalPath(i) { return LG.g[LG.gi[i]] + (LG.up[i] >= 0 ? ' ' + lgText[LG.up[i]] : '') + ' ' + lgText[i]; }
   function legalRow(i) {
     var row = btn('row'), body = el('span', 'body'), pin = el('span', 'pin'); pin.style.setProperty('--c', 'var(--surface-2)'); pin.style.setProperty('--t', 'var(--ink-2)'); pin.appendChild(icon('pin'));
@@ -7159,6 +7183,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     $('q').value = ''; $('qClear').hidden = true; closePanel();
     var r = lgPath[LG.g[LG.gi[i]]];
     setRegion(r === undefined ? -1 : r, false);
+    legalSel = i; legalShapesFor(i, requestDraw);
     var cx = LG.c[2 * i] / 1e5, cy = LG.c[2 * i + 1] / 1e5, b = LG.b.slice(4 * i, 4 * i + 4);
     map.fitBounds([[cx - b[0] / 1e5, cy - b[1] / 1e5], [cx + b[2] / 1e5, cy + b[3] / 1e5]], { padding: fitPad(), maxZoom: 16, duration: 600 });
   }
@@ -7228,6 +7253,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   // ----- 지역 고르기 -----
   var regBrowse = -1;
   function setRegion(r, fly) {
+    legalSel = -1;
     S.reg = r; hoverPill = -1; S.showAll = false; sel = -1;
     changed();
     if (fly && r >= 0) zoomToRegion(r);
