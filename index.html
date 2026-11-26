@@ -8504,15 +8504,17 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       map.flyTo({ center: ll, zoom: zTo, duration: dur, curve: 1.2, essential: true });
     }
   }
-  // 누르면 제자리에서 뒤집히면서 "OO 전체 보기"(흰색)와 "동별로 보기"(기본색)가 바뀐다. 글자와 색(너비도)은 옆으로 누워 안 보일 때 바꾼다.
+  // 누르면 제자리에서 뒤집히면서 "OO 전체 보기"(흰색)와 "동별로 보기"(기본색)가 바뀐다.
+  // 지도(점과 동 이름표)는 누른 순간 바로 바꾸고(사용자 2026-11-27), 단추의 글자와 색(너비도)은 옆으로 누워 안 보일 때 바꾼다.
   var navFlipT = 0;
   $('navAll').addEventListener('click', function () {
-    var b = this, swap = function () { S.showAll = !S.showAll; closePanel(); draw(); renderChips(); };
+    var b = this;
     if (navFlipT) return;   // 뒤집히는 중에 또 눌러도 한 번만
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { swap(); return; }
+    S.showAll = !S.showAll; closePanel(); draw();
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { renderChips(); return; }
     b.classList.remove('flipB'); b.classList.add('flipA');
     navFlipT = setTimeout(function () {
-      swap();
+      renderChips();
       b.classList.remove('flipA'); void b.offsetWidth; b.classList.add('flipB');
       navFlipT = setTimeout(function () { b.classList.remove('flipB'); navFlipT = 0; }, 220);
     }, 150);
