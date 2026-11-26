@@ -2143,6 +2143,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     seen: saved.seen === 'want' ? 'want' : 'all',   // 찜한 곳만 보기: all 전부, want 찜한 곳만
     outline: saved.outline !== false,   // 환경설정: 고른 지역의 경계선과 색칠을 보일지
     nav: saved.nav === 'naver' ? 'naver' : 'kakao',
+    routeOnly: saved.routeOnly !== false,   // 걷는 길 판: 길을 보는 동안 다른 카페 숨기기(기본 켬)
     favHide: !!saved.favHide,   // 환경설정: 내 메모 단추 숨김(투명 단추 에그를 연 사람만 보임)   // 환경설정: 길찾기에 쓸 지도 앱(티맵은 여는 주소를 확인할 수 없고 실제로 안 열려서 뺐다)
     start: saved.startSet && (saved.start === 'korea' || saved.start === 'last') ? saved.start : 'me',   // 환경설정: 시작할 때 보여 줄 곳. me 내 위치(기본), korea 전국, last 마지막에 보던 곳. 직접 고른 적이 없으면(startSet 없음) 내 위치
     startSet: !!saved.startSet,
@@ -4620,7 +4621,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     save(STORE, {
       cats: Object.keys(S.cats).map(Number), brands: Object.keys(S.brands).map(function (j) { return D.brands[j][0]; }),
       reg: S.reg >= 0 ? regPath(S.reg) : null,
-      big: S.big, bigPy: S.bigPy, outlet: S.outlet, chairs: Object.keys(S.chairs), sort: S.sort, pins: Object.keys(S.pins), tab: S.tab, seen: S.seen, bonus: S.bonus, outline: S.outline, start: S.start, startSet: S.startSet, nav: S.nav, favHide: S.favHide ? 1 : 0,
+      big: S.big, bigPy: S.bigPy, outlet: S.outlet, chairs: Object.keys(S.chairs), sort: S.sort, pins: Object.keys(S.pins), tab: S.tab, seen: S.seen, bonus: S.bonus, outline: S.outline, start: S.start, startSet: S.startSet, nav: S.nav, favHide: S.favHide ? 1 : 0, routeOnly: S.routeOnly,
       view: [c.lat, c.lng, +map.getZoom().toFixed(2)]
     });
   }
@@ -5293,7 +5294,10 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     var pad = 14 / scale, x0 = ox / scale - pad, x1 = (ox + W) / scale + pad, y0 = oy / scale - pad, y1 = (oy + H) / scale + pad;
     var i, k, j, px, py;
     vc = 0;
-    for (i = 0; i < N; i++) if (pass[i] && mx[i] >= x0 && mx[i] < x1 && my[i] >= y0 && my[i] < y1) viewIdx[vc++] = i;
+    // 걷는 길 판에서 "다른 카페 숨기기"를 켰으면 도착 카페 하나만 그린다.
+    var only = routeOnlyIdx();
+    if (only >= 0) { if (mx[only] >= x0 && mx[only] < x1 && my[only] >= y0 && my[only] < y1) viewIdx[vc++] = only; }
+    else for (i = 0; i < N; i++) if (pass[i] && mx[i] >= x0 && mx[i] < x1 && my[i] >= y0 && my[i] < y1) viewIdx[vc++] = i;
     // 카페 점은 동까지 골랐거나, 동네가 보일 만큼 확대했을 때만 찍는다.
     // 조건을 좁혀서 화면 안에 150곳 이하로 남았을 때는 멀리서도 하나씩 보여 준다.
     indiv = (S.reg >= 0 && rLeaf[S.reg] === 1) || (S.showAll && canShowAll()) || z >= POINT_ZOOM || vc <= 150;
@@ -7419,6 +7423,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     if (lastFix && Date.now() - lastFix.t < 15000) go(lastFix.p);
     else navigator.geolocation.getCurrentPosition(go, function () { toast('걷는 길을 보려면 위치 사용을 허락해 주세요'); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 });
   }
+  // 걷는 길 판이 열려 있고 "다른 카페 숨기기"가 켜져 있으면 그 도착 카페 번호, 아니면 -1
+  function routeOnlyIdx() { return S.routeOnly && P.kind === 'route' && routeInfo ? routeInfo.i : -1; }
   function renderRoute() {
     var r = routeInfo; if (!r) { closePanel(); return; }
     var h = head(D.name[r.i] + '까지', null, function () { var k = r.i; clearRoute(); P.prev = null; sel = k; P.cafe = k; openPanel('detail'); requestDraw(); });
@@ -7427,6 +7433,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     var big = el('div', 'rtbig'); big.appendChild(el('span', 'rtkind', '도보')); big.appendChild(el('b', null, r.min + '분'));
     big.appendChild(el('small', null, r.dist >= 1000 ? (Math.round(r.dist / 100) / 10) + 'km' : r.dist + 'm'));
     sc.appendChild(big);
+    sc.appendChild(toggleRow('다른 카페 숨기기', S.routeOnly, function (v) { S.routeOnly = v; persist(); requestDraw(); }));
     sc.appendChild(extRoute(r.i));
     sc.appendChild(routeCredit(r.src || 'geoapify'));
     panel.appendChild(sc);
