@@ -2302,7 +2302,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   }
   function xpPush() {
     if (!loginOn || !signedIn()) return;
-    var body = { xp: XP.xp, vis: XP.vis, vote: XP.vote, near: XP.near || {}, dong: XP.dong, fv: XP.fv || 0, fo: XP.fo || 0, mv: XP.mv || 0, md: XP.md || 0, mo: XP.mo || 0, mr: XP.mr || 0, br: XP.br || {}, mb: XP.mb || 0, log: XP.log || [], pub: XP.pub ? 1 : 0, egg: XP.egg || {}, ega: XP.ega || {}, egs: XP.egs || {}, sp: XP.sp || 0, spl: XP.spl || [], memo: XP.memo || {}, t: { '.sv': 'timestamp' } };
+    var body = { xp: XP.xp, vis: XP.vis, vote: XP.vote, near: XP.near || {}, dong: XP.dong, dv: XP.dv || 0, fv: XP.fv || 0, fo: XP.fo || 0, mv: XP.mv || 0, md: XP.md || 0, mo: XP.mo || 0, mr: XP.mr || 0, br: XP.br || {}, mb: XP.mb || 0, log: XP.log || [], pub: XP.pub ? 1 : 0, egg: XP.egg || {}, ega: XP.ega || {}, egs: XP.egs || {}, sp: XP.sp || 0, spl: XP.spl || [], memo: XP.memo || {}, t: { '.sv': 'timestamp' } };
     if (XP.nick) body.nick = XP.nick;
     if (XP.nickT) body.nickT = XP.nickT;
     if (XP.nickOk) body.nickOk = 1;
@@ -2382,11 +2382,12 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     if (!loginOn || !signedIn()) { XP = xpFresh(); return Promise.resolve(); }
     var local = load(xpKey());
     XP = xpNorm(local);
+    if (xpLegalFix()) save(xpKey(), XP);
     return token().then(function (t) { return fetch(SHARE.db + '/v2/xp/' + who.u + '.json?auth=' + encodeURIComponent(t)); })
       .then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); })
       .then(function (srv) {
         if (srv && typeof srv.xp === 'number') {
-          delete srv.t; XP = xpNorm(srv); save(xpKey(), XP); xpHeal(); xpFixMore(); xpDropSeat(); xpBrandCatchUp();
+          delete srv.t; XP = xpNorm(srv); save(xpKey(), XP); xpHeal(); xpFixMore(); xpDropSeat(); xpBrandCatchUp(); if (xpLegalFix()) xpSave();
           if (eggMerge(local || {}) | eggSpendSync()) xpSave();
           favRender();
           if (!XP.nick) { XP.nick = randomNick(); xpSave(); } else rankPush();
@@ -3380,9 +3381,37 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   }
   // o: 1 자리 단추(bit가 그 자리), -1 없어요. 처음 답을 고를 때 XP를 받고, 답을 다 지우면 그 XP를 돌려놓는다.
   // 동네 이름표: 시군구와 행정동 이름(자료를 새로 만들어도 바뀌지 않게 번호 대신 이름을 쓴다). 서버 칸 이름에 못 쓰는 글자는 바꾼다.
-  function dongKey(i) {
+  // 2026-11-27부터 법정동(D.ldk, ld). 법정동 자료가 없는 옛 카페 파일이면 행정동.
+  function dongKeyAdm(i) {
     var d = D.dong[D.dongOf[i]], g = D.sgg[d[1]];
     return (D.sido[g[1]] + ' ' + g[0] + ' ' + d[0]).replace(/[.$#\[\]\/]/g, '_');
+  }
+  function ldKeyOf(k) { return D.ldk[k].replace(/[.$#\[\]\/]/g, '_'); }
+  function dongKey(i) { return D.ldk ? ldKeyOf(D.ld[i]) : dongKeyAdm(i); }
+  // 새 동네의 칸: 법정동이면 D.ldk의 번호, 아니면 D.dong의 번호
+  function unitN() { return D.ldk ? D.ldk.length : D.dong.length; }
+  function unitOf(i) { return D.ldk ? D.ld[i] : D.dongOf[i]; }
+  function unitName(k) { return D.ldk ? D.ldk[k].split(' ').pop() : D.dong[k][0]; }
+  // 칸이 속한 지역: 법정동은 그 동의 카페가 속한 시군구(동 단계는 행정동이라 쓰지 않는다)
+  var unitRegArr = null;
+  function unitReg(k) {
+    if (!D.ldk) return dongReg[k];
+    if (!unitRegArr) { unitRegArr = new Int32Array(D.ldk.length).fill(-1); for (var i = 0; i < N; i++) if (unitRegArr[D.ld[i]] < 0) unitRegArr[D.ld[i]] = rParent[dongReg[D.dongOf[i]]]; }
+    return unitRegArr[k];
+  }
+  // 행정동으로 세던 새 동네 기록을 법정동으로 옮긴다. 기록한 카페마다 그 카페의 법정동을 다녀온 것으로 하고,
+  // 다녀온 때는 그 카페의 옛 동네(행정동)의 때를 쓴다. 원두는 다시 주거나 빼지 않는다.
+  function xpLegalFix() {
+    if (!D.ldk || XP.dv === 2) return false;
+    var nd = {}, ix = cidIndex(), key, i, lk, t;
+    for (key in XP.vote) {
+      if (!XP.vote[key] || !XP.vote[key][0]) continue;
+      i = ix[key]; if (i === undefined) continue;
+      lk = dongKey(i); t = XP.dong[dongKeyAdm(i)] || 1;
+      if (!nd[lk] || (t > 1 && (nd[lk] === 1 || t < nd[lk]))) nd[lk] = t;
+    }
+    XP.dong = nd; XP.dv = 2;
+    return true;
   }
   // 이 카페에 다른 사람이 마지막으로 투표한 때(운영자 투표도 넣는다). 투표가 없으면 0.
   function lastOtherVote(i) { var t = 0; (voters[i] || []).forEach(function (x) { if (!x.me && x.t > t) t = x.t; }); return t; }
@@ -3430,7 +3459,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       amt = items.reduce(function (a, it) { return a + it[0]; }, 0); cur[2] = amt;
       XP.vote[k] = cur;
       if (!XP.dong[dk]) {
-        XP.dong[dk] = Date.now(); items.push([500, '새 동네', D.dong[D.dongOf[i]][0]]);
+        XP.dong[dk] = Date.now(); items.push([500, '새 동네', unitName(unitOf(i))]);
         n = xpCount(XP.dong); b = n > (XP.md || 0) ? xpBonus(n) : 0;
         if (b) { XP.md = n; items.push([b, '동네 ' + n + '곳 달성']); }
       }
@@ -3754,6 +3783,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   function dongIndexMap() {
     if (dongIxOfKey) return dongIxOfKey;
     dongIxOfKey = {};
+    if (D.ldk) { for (var q = 0; q < D.ldk.length; q++) dongIxOfKey[ldKeyOf(q)] = q; return dongIxOfKey; }
     for (var k = 0; k < D.dong.length; k++) { var d = D.dong[k], g = D.sgg[d[1]]; dongIxOfKey[(D.sido[g[1]] + ' ' + g[0] + ' ' + d[0]).replace(/[.$#\[\]\/]/g, '_')] = k; }
     return dongIxOfKey;
   }
@@ -3779,7 +3809,16 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   function dmGeoBuild() {
     if (dmGeo) return dmGeo;
     var dong = [], lab = [], sgg = [], sido = [], byK = {};
-    for (var k = 0; k < D.dong.length; k++) {
+    if (D.ldk) {
+      var rows = ldRows(), lists = dongCafeIdx();
+      for (var u = 0; u < D.ldk.length; u++) {
+        var ro = rows[u], pt;
+        if (ro >= 0) pt = [LG.c[2 * ro] / 1e5, LG.c[2 * ro + 1] / 1e5];
+        else { var sx = 0, sy = 0; lists[u].forEach(function (i) { sx += D.lng[i]; sy += D.lat[i]; }); pt = [sx / Math.max(1, lists[u].length) / 1e5, sy / Math.max(1, lists[u].length) / 1e5]; }
+        var lu = { type: 'Feature', properties: { k: u, v: 0, n: unitName(u) }, geometry: { type: 'Point', coordinates: pt } };
+        lab.push(lu); byK[u] = lu;
+      }
+    } else for (var k = 0; k < D.dong.length; k++) {
       var v = SHAPES[regPath(dongReg[k])]; if (!v) continue;
       var f = dmPoly(v, { k: k, v: 0 }); if (!f) continue;
       dong.push(f);
@@ -3788,26 +3827,37 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     }
     sggReg.forEach(function (r) { var v = SHAPES[regPath(r)], f = v && dmPoly(v, { r: r, d: 0 }); if (f) sgg.push(f); });
     rootKids.forEach(function (r) { var v = SHAPES[regPath(r)], f = v && dmPoly(v, {}); if (f) sido.push(f); });
-    return (dmGeo = { dong: dong, lab: lab, sgg: sgg, sido: sido, byK: byK });
+    return (dmGeo = { dong: dong, lab: lab, sgg: sgg, sido: sido, byK: byK, files: {} });
+  }
+  // 법정동 칸 번호 -> legal.js 줄 번호, 그 거꾸로
+  var ldRowArr = null, ldUnitRow = null;
+  function ldRows() {
+    if (ldRowArr) return ldRowArr;
+    if (!lgText) { lgText = LG.n.split('|'); lgPath = {}; for (var r = 0; r < NR; r++) lgPath[regPath(r)] = r; }
+    var m = {}, i, k;
+    for (i = 0; i < lgText.length; i++) if (LG.up[i] < 0) m[(LG.g[LG.gi[i]] + ' ' + lgText[i]).replace(/[.$#\[\]\/]/g, '_')] = i;
+    ldRowArr = new Int32Array(D.ldk.length); ldUnitRow = {};
+    for (k = 0; k < D.ldk.length; k++) { var v = m[ldKeyOf(k)]; ldRowArr[k] = v === undefined ? -1 : v; if (v !== undefined) ldUnitRow[v] = k; }
+    return ldRowArr;
   }
   // 지역마다 동이 몇 개인가(다 다녀왔는지 볼 때 쓴다)
   function dmLeafCount() {
-    if (!dmLeafN) { dmLeafN = new Int32Array(NR); for (var k = 0; k < D.dong.length; k++) for (var r = dongReg[k]; r >= 0; r = rParent[r]) dmLeafN[r]++; }
+    if (!dmLeafN) { dmLeafN = new Int32Array(NR); for (var k = 0; k < unitN(); k++) for (var r = unitReg(k); r >= 0; r = rParent[r]) dmLeafN[r]++; }
     return dmLeafN;
   }
   function dongCafeCount(k) {
-    if (!dongCafes) { dongCafes = new Int32Array(D.dong.length); for (var i = 0; i < N; i++) if (!dabang[i] && !removed[i]) dongCafes[D.dongOf[i]]++; }
+    if (!dongCafes) { dongCafes = new Int32Array(unitN()); for (var i = 0; i < N; i++) if (!dabang[i] && !removed[i]) dongCafes[unitOf(i)]++; }
     return dongCafes[k];
   }
   // 동마다 카페 번호 목록(한 번만 만든다)
   var dongCafeList = null;
   function dongCafeIdx() {
-    if (!dongCafeList) { dongCafeList = D.dong.map(function () { return []; }); for (var i = 0; i < N; i++) dongCafeList[D.dongOf[i]].push(i); }
+    if (!dongCafeList) { dongCafeList = []; for (var q = 0; q < unitN(); q++) dongCafeList.push([]); for (var i = 0; i < N; i++) dongCafeList[unitOf(i)].push(i); }
     return dongCafeList;
   }
   // 이 동에서 기록한 카페. 도장을 받게 한 카페(새 동네와 같은 때 받은 콘센트 기록)를 맨 앞에 first로, 그다음 지금 기록이 남아 있는 카페.
   function dongCafesOf(k) {
-    var nm = D.dong[k][0], out = [], seen = {}, log = XP.log || [], byName = {}, i, j, m, e, e2, r2, key;
+    var nm = unitName(k), out = [], seen = {}, log = XP.log || [], byName = {}, i, j, m, e, e2, r2, key;
     dongCafeIdx()[k].forEach(function (q) { if (byName[D.name[q]] === undefined) byName[D.name[q]] = q; });
     for (j = 0; j < log.length && !out.length; j++) {
       e = log[j];
@@ -3821,7 +3871,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     for (key in XP.vote) {
       if (!XP.vote[key] || !XP.vote[key][0]) continue;
       i = ix[key];
-      if (i !== undefined && D.dongOf[i] === k && !seen[i]) { seen[i] = 1; out.push({ i: i, first: false }); }
+      if (i !== undefined && unitOf(i) === k && !seen[i]) { seen[i] = 1; out.push({ i: i, first: false }); }
     }
     return out;
   }
@@ -3830,7 +3880,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   function dmStar() { var x = el('span', 'dmsx'); x.innerHTML = DM_STAR; return x; }
   // 도장 하나. 글자가 길면 작게 쓴다.
   function dmStampEl(k, t) {
-    var st = btn('dmstamp'), nm = D.dong[k][0], h = 0, q;
+    var st = btn('dmstamp'), nm = unitName(k), h = 0, q;
     for (q = 0; q < nm.length; q++) h = (h * 31 + nm.charCodeAt(q)) % 997;
     st.style.setProperty('--r', (h % 20 - 12) + 'deg');
     st.style.setProperty('--fs', (nm.length <= 3 ? 12.5 : nm.length === 4 ? 11.5 : nm.length === 5 ? 10 : nm.length === 6 ? 9 : 8) + 'px');
@@ -3879,6 +3929,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   var dmOpen = null;
   function openDongMap() {
     if (dmOpen) return;
+    if (D.ldk && !LG) { toast('새 동네 지도를 준비하고 있어요'); legalLoad(function () { if (LG) openDongMap(); }); return; }
     var old = $('xinfo'); if (old) old.remove();
     var o = el('div'), wbox = el('div', 'dmbox'), box = el('div', 'dmmap'), cv = el('div', 'dmcv');
     o.id = 'dmap'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '새 동네 지도');
@@ -3897,7 +3948,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       sidos[parts[0]] = 1; sggs[parts.slice(0, -1).join(' ')] = 1;
       k = ix[key]; if (k === undefined) continue;
       vis[k] = dongTime(key) || 1;
-      for (r = dongReg[k]; r >= 0; r = rParent[r]) regCnt[r]++;
+      for (r = unitReg(k); r >= 0; r = rParent[r]) regCnt[r]++;
     }
     var nDong = xpCount(XP.dong), leafN = dmLeafCount();
     var isDone = function (rr) { return rr >= 0 && !rLeaf[rr] && regCnt[rr] > 0 && regCnt[rr] >= leafN[rr]; };
@@ -3925,6 +3976,35 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     o.appendChild(wbox); document.body.appendChild(o);
     var pad = function () { return { top: 54, bottom: 52, left: 16, right: 16 }; };
     var geo = dmGeoBuild();
+    var gOfPath = null;
+    function gOf(path) { if (!gOfPath) { gOfPath = {}; LG.g.forEach(function (g, n) { gOfPath[g] = n; }); } return gOfPath[path]; }
+    function addSgg(gi) {
+      if (!D.ldk || gi === undefined || geo.files[gi]) return;
+      geo.files[gi] = 1;
+      var i0 = -1, i;
+      for (i = 0; i < LG.gi.length; i++) if (LG.gi[i] === gi && LG.up[i] < 0) { i0 = i; break; }
+      if (i0 < 0) return;
+      legalShapesFor(i0, function () {
+        ldRows();
+        for (var j = 0; j < LG.gi.length; j++) {
+          if (LG.gi[j] !== gi || LG.up[j] >= 0 || !lgRaw[j]) continue;
+          var kk = ldUnitRow[j] === undefined ? -1 : ldUnitRow[j], f = dmPoly({ r: lgRaw[j] }, { k: kk, v: kk >= 0 && vis[kk] ? 1 : 0 });
+          if (f) geo.dong.push(f);
+        }
+        var src = dmOpen && dmOpen.map === dm && dm.getSource('dm-dong'); if (src) src.setData({ type: 'FeatureCollection', features: geo.dong });
+      });
+    }
+    function addView() {
+      if (!D.ldk || !o.classList.contains('deep')) return;
+      var b = dm.getBounds(), n = 0;
+      sggReg.forEach(function (r) {
+        if (n > 8) return;
+        var bb = regBounds(r);
+        if (bb[1][0] < b.getWest() || bb[0][0] > b.getEast() || bb[1][1] < b.getSouth() || bb[0][1] > b.getNorth()) return;
+        var gi = gOf(regPath(r)); if (gi !== undefined && !geo.files[gi]) { n++; addSgg(gi); }
+      });
+    }
+    if (D.ldk) for (key in XP.dong) addSgg(gOf(key.split(' ').slice(0, -1).join(' ')));
     geo.dong.forEach(function (f) { f.properties.v = vis[f.properties.k] ? 1 : 0; });
     geo.lab.forEach(function (f) { f.properties.v = vis[f.properties.k] ? 1 : 0; });
     geo.sgg.forEach(function (f) { f.properties.d = isDone(f.properties.r) ? 1 : 0; });
@@ -4012,7 +4092,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     }
     var raf = 0;
     dm.on('move', function () { if (!raf) raf = requestAnimationFrame(function () { raf = 0; layoutPills(); }); });
-    dm.on('moveend', syncDeep);
+    dm.on('moveend', function () { syncDeep(); addView(); });
     dm.on('zoom', deepNow);
     function showWhere() {
       where.textContent = ''; where.classList.remove('done');
@@ -4029,14 +4109,16 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       if (dm.getLayer('dm-lab')) dm.setLayerZoomRange('dm-lab', dmLeafLevel(rk) ? Math.min(DM_DEEP, leafZ - .4) : DM_DEEP, 24);
       dm.fitBounds(bb, { padding: pad(), duration: 650, maxZoom: 14.5 });
       renderPills(); showWhere();
+      if (D.ldk && dmLeafLevel(rk)) addSgg(gOf(regPath(rk)));
     }
     // 지도를 누르면: 위 단계에서는 그 자리의 지역으로 들어가고, 구 안(또는 그만큼 확대)에서는 그 동의 카드를 띄운다.
     dm.on('click', function (e) {
       var fs = dm.getLayer('dm-hit') ? dm.queryRenderedFeatures(e.point, { layers: ['dm-hit'] }) : [];
       if (!fs.length) { hideCard(); return; }
       var kk = fs[0].properties.k;
+      if (kk < 0) { hideCard(); return; }
       if (o.classList.contains('deep')) { showCard(kk); return; }
-      for (var q = dongReg[kk]; q >= 0; q = rParent[q]) if (rParent[q] === cur) { go(q); return; }
+      for (var q = unitReg(kk); q >= 0; q = rParent[q]) if (rParent[q] === cur) { go(q); return; }
     });
     function hideCard() {
       if (card) { card.remove(); card = null; }
@@ -4048,8 +4130,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       hideCard(); where.hidden = true; nav.hidden = true;
       var on = !!vis[kk], t = vis[kk] > 1 ? vis[kk] : 0, rw = el('div', 'row'), mini = el('div', 'mini' + (on ? '' : ' no')), tx = el('div', 'tx');
       if (on) mini.appendChild(dmStampEl(kk, 0)); else mini.textContent = '?';
-      tx.appendChild(el('b', null, D.dong[kk][0]));
-      tx.appendChild(el('small', null, regPath(rParent[dongReg[kk]])));
+      tx.appendChild(el('b', null, unitName(kk)));
+      tx.appendChild(el('small', null, D.ldk ? regPath(unitReg(kk)) : regPath(rParent[dongReg[kk]])));
       tx.appendChild(el('span', on ? 'on' : '', on ? (t ? dexDay(t) + '에 다녀왔어요' : '다녀왔어요') : '아직 안 다녀왔어요'));
       var cx = btn('cx', null, hideCard); cx.setAttribute('aria-label', '닫기'); cx.appendChild(icon('x'));
       rw.appendChild(mini); rw.appendChild(tx); rw.appendChild(cx);
@@ -4069,7 +4151,11 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         if (cfs.length > 3) cl.appendChild(el('div', 'dmmore', '기록한 카페 ' + (cfs.length - 3) + '곳 더'));
         card.appendChild(cl);
       }
-      var go2 = btn('btn pri', null, function () { var rr2 = dongReg[kk]; close(); closePanel(); goRegion(rr2); });
+      var go2 = btn('btn pri', null, function () {
+        close(); closePanel();
+        if (D.ldk) { var ro = ldRows()[kk]; if (ro >= 0) legalGo(ro); else goRegion(unitReg(kk)); }
+        else goRegion(dongReg[kk]);
+      });
       go2.appendChild(document.createTextNode('이 동 카페 보기')); go2.appendChild(el('small', null, fmt(dongCafeCount(kk)) + '곳'));
       card.appendChild(go2);
       box.appendChild(card);
@@ -6664,7 +6750,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   // 시험용 새 동네: 수원 근처 20곳. 팔달구는 10곳을 다 다녀온 것으로 둬서 "완성" 모양을 본다(사용자 2026-11-26).
   function testDongs() {
     var t = testDongData();
-    XP.dong = t.dong; XP.md = xpCount(XP.dong);
+    XP.dong = t.dong; XP.md = xpCount(XP.dong); XP.dv = 2;
     XP.vote = Object.assign({}, XP.vote, t.vote); XP.log = (XP.log || []).concat(t.log);
   }
   function testDongMap() { return testDongData().dong; }
@@ -6676,17 +6762,17 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       var i = cs[nth || 0]; if (i === undefined) return;
       vote[cidOf(i)] = [1, 2, 1000];
       log.push({ t: t, a: 1000, r: '콘센트 기록', c: D.name[i] });
-      if (!nth) log.push({ t: t, a: 500, r: '새 동네', c: D.dong[k][0] });
+      if (!nth) log.push({ t: t, a: 500, r: '새 동네', c: unitName(k) });
     };
     [['경기도', '수원시 팔달구', 99], ['경기도', '수원시 영통구', 4], ['경기도', '수원시 장안구', 3], ['경기도', '수원시 권선구', 3]].forEach(function (x) {
-      var got = 0;
-      for (var k = 0; k < D.dong.length && got < x[2]; k++) {
-        var d = D.dong[k], g = D.sgg[d[1]];
-        if (D.sido[g[1]] !== x[0] || g[0] !== x[1]) continue;
+      var got = 0, pre = '경기 ' + x[1] + ' ';
+      for (var k = 0; k < unitN() && got < x[2]; k++) {
+        if (D.ldk) { if (D.ldk[k].indexOf(pre) !== 0) continue; }
+        else { var d = D.dong[k], g = D.sgg[d[1]]; if (D.sido[g[1]] !== x[0] || g[0] !== x[1]) continue; }
         var tt = now - (n++) * 2.5 * D1;
-        out[(D.sido[g[1]] + ' ' + g[0] + ' ' + d[0]).replace(/[.$#\[\]\/]/g, '_')] = tt;
+        out[D.ldk ? ldKeyOf(k) : (D.sido[g[1]] + ' ' + g[0] + ' ' + d[0]).replace(/[.$#\[\]\/]/g, '_')] = tt;
         rec(k, tt);
-        if (d[0] === '인계동') { rec(k, tt + 3600000, 1); rec(k, tt + 7200000, 2); }
+        if (unitName(k) === '인계동') { rec(k, tt + 3600000, 1); rec(k, tt + 7200000, 2); }
         got++;
       }
     });
@@ -7123,12 +7209,15 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   // 지도의 동은 행정동이라 "이목동"처럼 주소에 쓰는 법정동은 지역 목록에 없다. 검색할 때 legal.js(국토교통부 브이월드 법정구역정보)에서 따로 찾는다.
   // 1MB쯤 되어서 처음 검색창을 누를 때 받아 온다.
   var LG = null, lgText = null, lgPath = null, lgLoading = false;
-  function legalLoad() {
-    if (LG || lgLoading) return;
+  var lgCbs = [];
+  function legalLoad(cb) {
+    if (LG) { if (cb) cb(); return; }
+    if (cb) lgCbs.push(cb);
+    if (lgLoading) return;
     lgLoading = true;
     var sc = document.createElement('script'); sc.src = 'legal.js';
-    sc.onload = function () { LG = window.LEGAL || null; lgLoading = false; if (LG && P.kind === 'search') renderPanel(); };
-    sc.onerror = function () { lgLoading = false; };
+    sc.onload = function () { LG = window.LEGAL || null; lgLoading = false; var cs = lgCbs; lgCbs = []; cs.forEach(function (f) { f(); }); if (LG && P.kind === 'search') renderPanel(); };
+    sc.onerror = function () { lgLoading = false; lgCbs = []; };
     document.head.appendChild(sc);
   }
   // 낱말 하나가 이름의 앞부분과 맞아야 한다("수원"만 치면 수원의 동이 줄줄이 나오지 않게). 나머지 낱말은 시군구, 읍면까지 합친 글자에서 찾는다.
@@ -7148,18 +7237,20 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     return out;
   }
   // 경계선: 시군구마다 나눈 legal/<코드>.json을 그 동네로 갈 때 받는다. 자료 날짜(src)가 legal.js와 다르면 쓰지 않는다.
-  var legalSel = -1, lgRaw = {}, lgFile = {}, lgShape = {};
+  var legalSel = -1, lgRaw = {}, lgFile = {}, lgShape = {}, lgWait = {};
   function legalShapesFor(i, done) {
     var code = LG.gc && LG.gc[LG.gi[i]];
     if (!code) return;
     if (lgFile[code] === 2) return done();
+    (lgWait[code] = lgWait[code] || []).push(done);
     if (lgFile[code] === 1) return;
     lgFile[code] = 1;
+    var fin = function (ok) { var w = lgWait[code] || []; lgWait[code] = []; if (ok) w.forEach(function (f) { f(); }); };
     fetch('legal/' + code + '.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
-      if (!j || j.src !== LG.src) { lgFile[code] = 0; return; }
+      if (!j || j.src !== LG.src) { lgFile[code] = 0; fin(false); return; }
       j.i.forEach(function (k, n) { lgRaw[k] = j.r[n]; });
-      lgFile[code] = 2; done();
-    }).catch(function () { lgFile[code] = 0; });
+      lgFile[code] = 2; fin(true);
+    }).catch(function () { lgFile[code] = 0; fin(false); });
   }
   function legalShape(k) {
     if (lgShape[k] !== undefined) return lgShape[k];

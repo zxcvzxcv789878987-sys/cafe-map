@@ -129,6 +129,13 @@ if os.path.exists(os.path.join(HERE, 'kakao_key.txt')):
     say('   짝 없는 카페를 이름으로 다시 묻기')
     run('kakao_kw.py')
     run('build.py', WORK, out_js, *lic)
+# 카페마다 법정동 붙이기(새 동네가 법정동으로 센다). 브이월드 법정구역정보 zip은 작업/법정구역/에 사람이 받아 둔다.
+legal_dir = os.path.join(WORK, '법정구역')
+legal_zips = sorted(f for f in os.listdir(legal_dir) if f.startswith('AL_D001') and f.endswith('.zip')) if os.path.isdir(legal_dir) else []
+if not legal_zips:
+    stop('작업/법정구역/에 브이월드 법정구역정보 zip이 없다(새 동네가 법정동으로 센다).')
+say('   카페마다 법정동 붙이기', legal_zips[-1])
+run('legal_cafes.py', os.path.join(legal_dir, legal_zips[-1]), out_js, local_js)
 
 # 5. 점검
 after = count(out_js)

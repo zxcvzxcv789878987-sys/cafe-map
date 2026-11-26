@@ -6,6 +6,7 @@
 # 경계선은 올리지 않고, 이름, 시군구, 안쪽 한 점, 네모 범위만 올린다.
 # 사용법: python -X utf8 build_legal.py <AL_D001_..._YYYYMMDD.zip> <출력 legal.js>
 import sys, io, os, math, json, zipfile, tempfile
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '작업', 'pylib'))   # shapely, pyshp, numpy(갱신 프로그램이 -I로 돌려서 PYTHONPATH를 못 쓴다)
 import shapefile
 from shapely.geometry import shape, Polygon
 
