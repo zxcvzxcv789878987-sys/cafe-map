@@ -1268,7 +1268,10 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
 .egc.blank .egart .fxs { filter: grayscale(1); opacity: .25; }
 .egc.none { visibility: hidden; }
 /* 도감 칸: 크기를 모두 같게(설명은 세 줄까지, 누르면 카드로 다 보임) */
-.egrid .egc { height: 208px; overflow: hidden; }
+.egrid .egc { position: relative; height: 208px; overflow: hidden; }
+/* 칸 번호: 찾기 전, 열기 전, 연 뒤 모두 왼쪽 위에(카드의 No.와 같은 번호) */
+.egno { position: absolute; top: 8px; left: 10px; font-size: 11px; font-weight: 800; color: var(--ink-3); font-variant-numeric: tabular-nums; letter-spacing: .03em; }
+.egc.hard .egno { color: #8f84e8; }
 .egrid .egc p { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .egc.open { cursor: pointer; }
 .egc.soon { background: none; box-shadow: inset 0 0 0 1.5px var(--line); justify-content: center; gap: 8px; }
@@ -2809,6 +2812,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     box.appendChild(two); o.appendChild(box); document.body.appendChild(o);
   }
   // 도감에서 그 에그가 있는 줄(1부터). 어려운 짝은 짝인 일반 에그의 줄.
+  function eggNo(n) { return el('span', 'egno', 'No.' + ('0' + n).slice(-2)); }
   function eggRow(id) {
     var e = eggName(id), base = e && e[3] ? e[3] : id, k = 0, n = 0;
     EGGS.forEach(function (x) { if (!x[3]) { n++; if (x[0] === base) k = n; } });
@@ -2888,7 +2892,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     function card(id) {
       var e = eggName(id), hard = !!e[3], shut = hard ? 'egghard' : 'egg';
       var seen = !!(XP.egs || {})[id], c = el('div', 'egc' + (hard ? ' hard' : '') + (seen ? ' open' : '') + (justOpen === id ? ' pop' : '')), a = el('span', 'egart');
-      a.appendChild(seen ? fxIcon('egg_' + id) : fxIcon(shut)); c.appendChild(a);
+      a.appendChild(seen ? fxIcon('egg_' + id) : fxIcon(shut)); c.appendChild(eggNo(eggRow(id))); c.appendChild(a);
       // 연 알은 칸을 누르면 카드로 다시 본다. 닫힌 알은 그림을 누르면 흔들린다.
       if (seen) { c.setAttribute('role', 'button'); c.tabIndex = 0; c.addEventListener('click', function () { eggReveal(id); }); }
       else tapPlay(a, function () { return fxArt(shut); });
@@ -2930,13 +2934,13 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       var slot = function (id, hard) {
         if ((XP.ega || {})[id]) return card(id);
         var c = el('div', 'egc blank' + (hard ? ' hard' : '')), a = el('span', 'egart');
-        a.appendChild(fxIcon(hard ? 'egghard' : 'egg')); c.appendChild(a); return c;
+        c.appendChild(eggNo(eggRow(id))); a.appendChild(fxIcon(hard ? 'egghard' : 'egg')); c.appendChild(a); return c;
       };
       // 한 쪽에 다섯 줄(일반 다섯 칸, 어려움 다섯 칸). 나온 에그 바로 다음 줄은 Coming soon(사용자 2026-11-26).
       var rows = nN.map(function (n) { var h = null; nH.forEach(function (e) { if (e[3] === n[0]) h = e; }); return [n, h]; });
       rows.push('soon');
       var pages = Math.ceil(rows.length / 5); if (page >= pages) page = pages - 1;
-      var soon = function (hard) { var c = el('div', 'egc soon' + (hard ? ' hard' : '')), a = el('span', 'egart'); a.appendChild(fxIcon(hard ? 'egghard' : 'egg')); c.appendChild(a); c.appendChild(el('b', null, 'Coming soon')); return c; };
+      var soon = function (hard) { var c = el('div', 'egc soon' + (hard ? ' hard' : '')), a = el('span', 'egart'); c.appendChild(eggNo(rows.length)); a.appendChild(fxIcon(hard ? 'egghard' : 'egg')); c.appendChild(a); c.appendChild(el('b', null, 'Coming soon')); return c; };
       var g = el('div', 'egrid');
       rows.slice(page * 5, page * 5 + 5).forEach(function (r) {
         if (r === 'soon') { g.appendChild(soon(false)); g.appendChild(soon(true)); return; }
