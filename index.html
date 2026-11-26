@@ -1804,7 +1804,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       <button id="menuBtn" type="button" aria-label="메뉴"><svg class="i"><use href="#i-menu"/></svg></button>
       <label class="search">
         <svg class="i"><use href="#i-search"/></svg>
-        <input id="q" type="search" placeholder="카페 이름이나 동네 검색" autocomplete="off" enterkeyhint="search">
+        <!-- 아이폰 사파리는 글자에 '이름'이 있으면 연락처 칸으로 여겨 '자동 완성 연락처'를 띄운다. autocomplete=off로는 안 막혀서 '이'와 '름' 사이에 보이지 않는 글자를 넣었다. -->
+        <input id="q" type="search" placeholder="카페 이&#8203;름이나 동네 검색" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
         <button id="qClear" type="button" aria-label="검색어 지우기" hidden><svg class="i"><use href="#i-x"/></svg></button>
       </label>
     </div>
@@ -4193,7 +4194,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       box.appendChild(bon);
       var bar = el('div', 'dxbar'), sq = el('label', 'search inset dxq'), inp = el('input');
       sq.appendChild(icon('search'));
-      inp.type = 'search'; inp.placeholder = '브랜드 이름'; inp.value = dexQ; inp.autocomplete = 'off'; inp.setAttribute('aria-label', '브랜드 이름 찾기');
+      inp.type = 'search'; inp.placeholder = '브랜드 이​름'; inp.value = dexQ; inp.autocomplete = 'off'; inp.setAttribute('aria-label', '브랜드 이​름 찾기');
       sq.appendChild(inp); bar.appendChild(sq);
       var tabs = el('div', 'sort dxtabs');
       [['all', '전체'], ['P', '프랜차이즈'], ['L', '저가커피'], ['D', '디저트']].forEach(function (t) {
@@ -6055,7 +6056,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       return;
     }
     var inp = document.createElement('input'), field = el('label', 'nkfield');
-    inp.type = 'text'; inp.maxLength = 12; inp.value = XP.nick || ''; inp.placeholder = '닉네임'; inp.setAttribute('enterkeyhint', 'done'); inp.setAttribute('aria-label', '닉네임');
+    inp.type = 'text'; inp.maxLength = 12; inp.value = XP.nick || ''; inp.placeholder = '닉​네임'; inp.setAttribute('enterkeyhint', 'done'); inp.setAttribute('aria-label', '닉​네임'); inp.autocomplete = 'off';
     var again = btn('nkre', null, function (e) { e.preventDefault(); inp.value = randomNick(); });
     again.appendChild(fxIcon('mi_dice')); again.appendChild(el('span', null, '다른 이름'));
     field.appendChild(inp); field.appendChild(again);
@@ -6085,7 +6086,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     var o = el('div'), box = el('div', 'xbox nick'), inp = document.createElement('input'), field = el('label', 'nkfield');
     o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '닉네임 정하기');
     box.appendChild(el('h2', null, '닉네임 정하기'));
-    inp.type = 'text'; inp.maxLength = 12; inp.value = XP.nick || randomNick(); inp.placeholder = '닉네임'; inp.setAttribute('enterkeyhint', 'done'); inp.setAttribute('aria-label', '닉네임');
+    inp.type = 'text'; inp.maxLength = 12; inp.value = XP.nick || randomNick(); inp.placeholder = '닉​네임'; inp.setAttribute('enterkeyhint', 'done'); inp.setAttribute('aria-label', '닉​네임'); inp.autocomplete = 'off';
     var again = btn('nkre', null, function (e) { e.preventDefault(); inp.value = randomNick(); });
     again.appendChild(fxIcon('mi_dice')); again.appendChild(el('span', null, '다른 이름'));
     field.appendChild(inp); field.appendChild(again); box.appendChild(field);
@@ -7263,7 +7264,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     var bh = el('div', 'bhead'), tabs = el('div');
     bh.appendChild(el('div', 'ftitle', '브랜드'));
     var s = el('label', 'search inset'); s.appendChild(icon('search'));
-    var inp = el('input'); inp.type = 'search'; inp.placeholder = '브랜드 이름'; inp.value = brandQ; inp.id = 'brandQ'; inp.autocomplete = 'off';
+    var inp = el('input'); inp.type = 'search'; inp.placeholder = '브랜드 이​름'; inp.value = brandQ; inp.id = 'brandQ'; inp.autocomplete = 'off';
     s.appendChild(inp); bh.appendChild(s); bh.appendChild(tabs); sc.appendChild(bh);
     var list = el('div'); sc.appendChild(list);
     function fillTabs() {
