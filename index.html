@@ -2932,11 +2932,11 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         var c = el('div', 'egc blank' + (hard ? ' hard' : '')), a = el('span', 'egart');
         a.appendChild(fxIcon(hard ? 'egghard' : 'egg')); c.appendChild(a); return c;
       };
-      // 한 쪽에 다섯 줄(일반 다섯 칸, 어려움 다섯 칸). 나온 에그 바로 다음 줄은 커밍 순(사용자 2026-11-26).
+      // 한 쪽에 다섯 줄(일반 다섯 칸, 어려움 다섯 칸). 나온 에그 바로 다음 줄은 Coming soon(사용자 2026-11-26).
       var rows = nN.map(function (n) { var h = null; nH.forEach(function (e) { if (e[3] === n[0]) h = e; }); return [n, h]; });
       rows.push('soon');
       var pages = Math.ceil(rows.length / 5); if (page >= pages) page = pages - 1;
-      var soon = function (hard) { var c = el('div', 'egc soon' + (hard ? ' hard' : '')), a = el('span', 'egart'); a.appendChild(fxIcon(hard ? 'egghard' : 'egg')); c.appendChild(a); c.appendChild(el('b', null, '커밍 순')); return c; };
+      var soon = function (hard) { var c = el('div', 'egc soon' + (hard ? ' hard' : '')), a = el('span', 'egart'); a.appendChild(fxIcon(hard ? 'egghard' : 'egg')); c.appendChild(a); c.appendChild(el('b', null, 'Coming soon')); return c; };
       var g = el('div', 'egrid');
       rows.slice(page * 5, page * 5 + 5).forEach(function (r) {
         if (r === 'soon') { g.appendChild(soon(false)); g.appendChild(soon(true)); return; }
