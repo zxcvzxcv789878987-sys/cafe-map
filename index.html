@@ -2321,7 +2321,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       .then(function (srv) {
         if (srv && typeof srv.xp === 'number') {
           delete srv.t; XP = xpNorm(srv); save(xpKey(), XP); xpHeal(); xpFixMore(); xpDropSeat(); xpBrandCatchUp();
-          if (eggMerge(local || {}) | eggSpendHeal()) xpSave();
+          if (eggMerge(local || {}) | eggSpendSync()) xpSave();
           favRender();
           if (!XP.nick) { XP.nick = randomNick(); xpSave(); } else rankPush();
         }
@@ -2651,8 +2651,10 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     ['offroute2', '차 탄 산책', '걷는 길을 띄워 놓고 시속 20km 넘게 움직였어요(버스나 택시를 탔어요).', 'offroute'],
     ['qmark2', '투명 단추', '지도 오른쪽 아래 뒤로 단추 위의 보이지 않는 단추를 눌렀어요. 카페마다 나만 보는 메모를 남길 수 있게 돼요.', 'qmark']
   ];
-  // 여는 차례대로 값이 오른다(사용자 2026-11-26: 점점 비싸지게). 원두는 카페 1곳 기록에 3,000쯤 모이니 처음은 1곳어치, 스무째는 100곳어치.
-  var EGG_PRICES = [3000, 5000, 10000, 15000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000, 120000, 150000, 180000, 210000, 240000, 270000, 300000], EGG_WAIT = 60000, EGG_VIEW = TEST ? 'cafemap.eggviewT' : 'cafemap.eggview';
+  // 에그 값(사용자 2026-11-26 확정): 일반 알과 어려운 알을 따로 센다. 일반은 500, 어려운 알은 1,000부터 시작해서
+  // 같은 값이 처음엔 오래, 뒤로 갈수록 짧게(10, 8, 6, 5, 4, 3, 2, 2, 1개) 이어지다 한 칸씩 오르고, 일반 5,000, 어려운 알 10,000에서 멈춘다.
+  // 에그가 늘어도 이 규칙대로 이어진다. 지금 28개를 다 열면 27,000(카페 8곳쯤), 100개여도 346,500(Lv.347, 바리스타 즈음).
+  var EGG_STAIRS = [10, 8, 6, 5, 4, 3, 2, 2, 1], EGG_WAIT = 60000, EGG_VIEW = TEST ? 'cafemap.eggviewT' : 'cafemap.eggview';
   var DOKDO = [131.8686, 37.2413];
   // 백령도: 한국섬진흥원 2025 유인섬 경계(옹진군 백령도)의 가운데. 시험 단추로 가 볼 때 쓴다.
   var BAENG = [124.678, 37.94987];
@@ -2706,7 +2708,17 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   function eggHard(id) { var e = eggName(id); return !!(e && e[3]); }
   function eggCount() { return Object.keys(XP.ega || {}).length; }
   function eggSpendable() { return Math.max(0, XP.xp - (XP.sp || 0)); }
-  function eggPrice() { return EGG_PRICES[Math.min(Object.keys(XP.egs || {}).length, EGG_PRICES.length - 1)]; }
+  // 같은 종류(일반 또는 어려움)를 이미 k개 연 뒤 다음 알의 값
+  function eggPriceAt(hard, k) {
+    var lvl = 0, acc = 0;
+    while (lvl < EGG_STAIRS.length && k >= acc + EGG_STAIRS[lvl]) { acc += EGG_STAIRS[lvl]; lvl++; }
+    return (hard ? 1000 : 500) * (lvl + 1);
+  }
+  // 이 에그를 지금 열 때의 값
+  function eggPrice(id) {
+    var hard = eggHard(id), k = Object.keys(XP.egs || {}).filter(function (x) { return eggName(x) && eggHard(x) === hard; }).length;
+    return eggPriceAt(hard, k);
+  }
   function eggNew() { var v = load(EGG_VIEW) || 0, k; for (k in (XP.ega || {})) if (XP.ega[k] > v) return true; return false; }
   function eggFound(id, t) {
     if (!XP_ON || !signedIn() || !eggName(id)) return;
@@ -2745,7 +2757,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '이스터 에그');
     o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
     var buy = function (id) {
-      var price = eggPrice();
+      var price = eggPrice(id);
       if (eggSpendable() < price || (XP.egs || {})[id]) return;
       // 쓴 원두는 따로 센다(레벨, 총 원두, 랭킹은 그대로). 원두 기록에 남기려고 쓴 기록(XP.spl)도 둔다.
       XP.sp = (XP.sp || 0) + price; XP.egs = XP.egs || {}; XP.egs[id] = Date.now();
@@ -2765,7 +2777,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       var d = new Date(XP.egg[id] || XP.ega[id]), when = (d.getMonth() + 1) + '월 ' + d.getDate() + '일 ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + '에 찾음';
       if (seen) { c.appendChild(el('b', null, e[1])); c.appendChild(el('p', null, e[2])); c.appendChild(el('small', null, when)); return c; }
       c.appendChild(el('b', null, '???')); c.appendChild(el('small', null, when));
-      var price = eggPrice(), enough = eggSpendable() >= price, sure = false, tm = 0;
+      var price = eggPrice(id), enough = eggSpendable() >= price, sure = false, tm = 0;
       var label = function () { b.textContent = ''; b.appendChild(bean(el('span', null, fmt(price) + ' 원두'))); b.appendChild(document.createTextNode('로 열기')); };
       var b = btn('egbuy', null, function () {
         if (!sure) { sure = true; b.classList.add('sure'); b.textContent = '한 번 더 누르면 열려요'; clearTimeout(tm); tm = setTimeout(function () { sure = false; b.classList.remove('sure'); label(); }, 3000); return; }
@@ -2938,20 +2950,22 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     if (sp !== (XP.sp || 0)) { XP.sp = sp; ch = true; }
     return ch;
   }
-  // 쓴 기록(XP.spl)을 넣기 전에 연 에그: 쓴 원두(XP.sp)보다 쓴 기록이 모자라면 연 때와 그 차례의 값으로 채운다. 바뀐 것이 있으면 true.
-  function eggSpendHeal() {
-    if (!Array.isArray(XP.spl)) XP.spl = [];
-    var logged = XP.spl.reduce(function (s0, e) { return s0 + (e.a || 0); }, 0), miss = (XP.sp || 0) - logged;
-    if (miss <= 0) return false;
-    var have = {}; XP.spl.forEach(function (e) { have[e.t] = 1; });
-    Object.keys(XP.egs || {}).sort(function (a, b) { return XP.egs[a] - XP.egs[b]; }).forEach(function (id, q) {
-      if (miss <= 0 || have[XP.egs[id]]) return;
-      var a = Math.min(miss, EGG_PRICES[Math.min(q, EGG_PRICES.length - 1)]);
-      XP.spl.push({ t: XP.egs[id], a: a, r: '이스터 에그 열기' }); miss -= a;
-    });
-    if (miss > 0) XP.spl.push({ t: Date.now(), a: miss, r: '이스터 에그 열기' });
-    XP.spl.sort(function (x, y) { return x.t - y.t; });
-    return true;
+  // 쓴 원두 맞추기(사용자 2026-11-26): 연 에그(XP.egs)를 연 차례대로 지금 값으로 매겨 '이스터 에그 열기' 기록을 다시 만들고,
+  // 쓴 원두(XP.sp)를 그 합으로 맞춘다. 값이 바뀌었을 때나 다른 기기의 옛 기록과 합쳐졌을 때도 늘 같은 답이 된다. 바뀐 것이 있으면 true.
+  function eggSpendSync() {
+    var others = (Array.isArray(XP.spl) ? XP.spl : []).filter(function (e) { return e.r !== '이스터 에그 열기'; });
+    var cnt = { n: 0, h: 0 }, mine = [];
+    Object.keys(XP.egs || {}).filter(function (id) { return eggName(id); })
+      .sort(function (a, b) { return XP.egs[a] - XP.egs[b]; })
+      .forEach(function (id) {
+        var hard = eggHard(id), k = hard ? cnt.h++ : cnt.n++;
+        mine.push({ t: XP.egs[id], a: eggPriceAt(hard, k), r: '이스터 에그 열기' });
+      });
+    var spl = others.concat(mine).sort(function (x, y) { return x.t - y.t; });
+    var sp = spl.reduce(function (s0, e) { return s0 + (e.a || 0); }, 0);
+    var same = sp === (XP.sp || 0) && JSON.stringify(spl) === JSON.stringify(XP.spl || []);
+    XP.spl = spl; XP.sp = sp;
+    return !same;
   }
   // 보너스 표 50칸 구석의 거의 안 보이는 물음표
   function eggQ(cell) {
@@ -6539,8 +6553,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     function testEggs(n, k) {
       var now = Date.now(); XP.egg = {}; XP.ega = {}; XP.egs = {};
       EGGS.slice(0, n).forEach(function (e, q) { var t = now - (n - q) * 86400000; XP.egg[e[0]] = t; XP.ega[e[0]] = t + 60000; if (q < k) XP.egs[e[0]] = t + 120000; });
-      XP.sp = EGG_PRICES.slice(0, k).reduce(function (s0, v) { return s0 + v; }, 0);
-      XP.spl = EGGS.slice(0, k).map(function (e, q) { return { t: XP.egs[e[0]], a: EGG_PRICES[q], r: '이스터 에그 열기' }; });
+      XP.spl = []; eggSpendSync();
       favRender();
     }
     var groups = [
@@ -6630,8 +6643,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
           var now = Date.now(); XP.egg = {}; XP.ega = {}; XP.egs = {};
           ['offroute', 'qmark', 'corner2', 'drag', 'metap', 'hour2'].forEach(function (id, q) { var t = now - (6 - q) * 86400000; XP.egg[id] = t; XP.ega[id] = t + 60000; });
           XP.egs.offroute = now - 3 * 86400000; XP.egs.corner2 = now - 2 * 86400000;
-          XP.sp = EGG_PRICES[0] + EGG_PRICES[1];
-          XP.spl = [{ t: XP.egs.offroute, a: EGG_PRICES[0], r: '이스터 에그 열기' }, { t: XP.egs.corner2, a: EGG_PRICES[1], r: '이스터 에그 열기' }];
+          XP.spl = []; eggSpendSync();
           openEggs();
         }],
         ['왼쪽 아래 끝으로 가기', function () { closePanel(); map.jumpTo({ center: [121, 31], zoom: 8 }); }],
@@ -6639,7 +6651,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         ['끝까지 읽은 사람 (개인정보처리방침 끝까지 내린 셈)', function () { eggFound('privacy'); }],
         ['처음으로 되돌리기', function () { XP.egg = {}; XP.ega = {}; XP.egs = {}; XP.sp = 0; XP.spl = []; favRender(); toast('이스터 에그를 처음으로 되돌렸어요'); }],
         ['세상 끝의 끝 자리로 가기', function () { closePanel(); map.jumpTo({ center: [121.0003, 31.0002], zoom: 19 }); }],
-        ['쓴 기록 없이 연 에그 고치기 (예전에 연 모양)', function () { XP.egs = { metap: Date.now() - 3600000 }; XP.ega = Object.assign({}, XP.ega, XP.egs); XP.egg = Object.assign({}, XP.egg, XP.egs); XP.sp = 3000; XP.spl = []; eggSpendHeal(); openXpLog(); }]
+        ['옛 값(3,000)으로 연 에그를 새 값으로 맞추기', function () { XP.egs = { metap: Date.now() - 3600000 }; XP.ega = Object.assign({}, XP.ega, XP.egs); XP.egg = Object.assign({}, XP.egg, XP.egs); XP.sp = 3000; XP.spl = [{ t: XP.egs.metap, a: 3000, r: '이스터 에그 열기' }]; eggSpendSync(); openXpLog(); }]
       ]],
       // 에그 하나씩 찾기: 도감처럼 일반 에그를 왼쪽, 그 어려운 짝을 오른쪽에 둔다(넷째 칸은 단추에 보일 글).
       ['에그 하나씩 찾기', [].concat.apply([], EGGS.filter(function (e) { return !e[3]; }).map(function (n) {
