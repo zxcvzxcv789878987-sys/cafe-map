@@ -5653,15 +5653,15 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       // 이름은 보통 LABEL_SOME(14)부터 쓴다. 동 하나를 골라 들어왔거나 찜한 곳만 볼 때는 덜 확대된 상태여도 쓴다(넓은 동은 화면에 맞추면 14가 안 된다).
       var labels = [], pass2, piles = {}, inDong = S.reg >= 0 && rLeaf[S.reg] === 1, wantLabel = z >= LABEL_SOME || inDong || S.seen === 'want', r = dotR(0, z);
       var one = function (i) {
-        var x = mx[i] * scale - ox, y = my[i] * scale - oy;
-        stampDot(i, x, y, r);
+        var x = mx[i] * scale - ox, y = my[i] * scale - oy, fa = liveFade.get(i);
+        if (fa !== undefined) { ctx.globalAlpha = Math.max(0, Math.min(1, (performance.now() - fa) / LIVE_FADE)); stampDot(i, x, y, r); ctx.globalAlpha = 1; }
+        else stampDot(i, x, y, r);
         hits.push({ x: x, y: y, r: Math.max(r + 3, 9), i: i });
         if (wantLabel) labels.push([i, x, y, r, 1]);
       };
-      var hold = liveHold > Date.now() && D.kid;
       for (pass2 = 0; pass2 < 2; pass2++) for (k = 0; k < vc; k++) {
         i = viewIdx[k];
-        if (hold && D.kid[i] && !live[i]) continue;
+        if (liveWait(i)) continue;   // 카카오의 실제 자리를 받는 중: 건물 자리에 그렸다가 미끄러뜨리지 않고, 받으면 제자리에 그린다
         if (pileOf[i] >= 0 && !(live && live[i])) { if (pass2 === 0) (piles[pileOf[i]] = piles[pileOf[i]] || []).push(i); continue; }
         if ((grp[i] !== 2) !== (pass2 === 1) || i === sel) continue;
         one(i);
@@ -5853,7 +5853,28 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (!moved) break;
     }
   }
-  // 건물 자리에 찍혀 있던 점이 실제 자리로 툭 옮겨 가지 않고 0.35초 동안 미끄러져 가게 한다.
+  // 할 일 2번(사용자 2026-11-27: 앱을 열 때와 확대할 때 점들이 미끄러져 난리다): 예전에는 건물 자리에 찍어 두었다가 받은 자리로 0.35초 미끄러뜨렸다.
+  // 지금은 카카오 장소 번호가 있는 카페는 그 칸(약 600m)을 받는 동안 그리지 않고(길어야 LIVE_WAIT), 받으면 제자리에서 서서히 나타난다.
+  // 카카오에 없던 카페, 받기가 늦거나 실패한 칸, 덜 확대한 화면(점이 작다)은 건물 자리에 그대로 그린다.
+  var LIVE_WAIT = 2500, LIVE_FADE = 240, liveFade = new Map(), liveFadeRaf = 0;
+  function liveWait(i) {
+    if (!liveOn || liveSdk === 3 || !D.kid || !D.kid[i] || live[i]) return false;
+    if (liveHold > Date.now()) return true;
+    var t = liveTiles[Math.floor(mx[i] * 65536) + ',' + Math.floor(my[i] * 65536)];
+    return t > 0 && Date.now() - t < LIVE_WAIT;
+  }
+  function liveFadeIn(got) {
+    var now = performance.now();
+    got.forEach(function (i) { liveFade.set(i, now); liveFrom.delete(i); });
+    if (liveFadeRaf) return;
+    liveFadeRaf = requestAnimationFrame(function tick() {
+      var t = performance.now(), on = false;
+      liveFade.forEach(function (t0, i) { if (t - t0 >= LIVE_FADE) liveFade.delete(i); else on = true; });
+      draw();
+      liveFadeRaf = on ? requestAnimationFrame(tick) : 0;
+    });
+    setTimeout(function () { if (liveFade.size) { liveFade.clear(); requestDraw(); } }, LIVE_FADE + 400);   // 그리기가 멈춰 있어도 끝은 나게
+  }
   var liveFrom = new Map();
   function liveGlide(got) {
     var items = got.map(function (i) { var f = liveFrom.get(i) || [mx[i], my[i]]; liveFrom.delete(i); return [i, f[0], f[1], mx[i], my[i]]; });
@@ -5871,7 +5892,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var t = liveQueue.shift(), got = [];
     liveAsk(t[0], t[1], t[2], t[3], 0, got, function () {
       liveBusy = false;
-      if (got.length) { liveSpread(got); if (liveHold > Date.now()) { got.forEach(function (i) { liveFrom.delete(i); }); requestDraw(); } else liveGlide(got); }
+      liveTiles[t[4]] = -1;   // 이 칸은 다 받았다(못 받은 카페는 이제 건물 자리에 그린다)
+      if (got.length) { liveSpread(got); liveFadeIn(got); } else requestDraw();
       if (!liveQueue.length && liveHold) { liveHold = 0; requestDraw(); }
       liveNext();
     });
@@ -5902,9 +5924,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       for (var x = x0; x <= x1; x++) for (var y = y0; y <= y1; y++) {
         var key = x + ',' + y;
         if (liveTiles[key]) continue;
-        liveTiles[key] = 1;
-        liveQueue.push([x * T, y * T, (x + 1) * T, (y + 1) * T]);
+        liveTiles[key] = Date.now();   // 받는 중(이 칸의 카카오 카페는 받을 때까지 그리지 않는다)
+        liveQueue.push([x * T, y * T, (x + 1) * T, (y + 1) * T, key]);
       }
+      setTimeout(requestDraw, LIVE_WAIT + 60);   // 늦은 칸은 기다리기를 끝내고 건물 자리에 그린다
       liveNext();
     });
   }
@@ -8426,6 +8449,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 손으로 지도를 밀면 따라가기를 끈다(확대, 축소는 따라가기를 그대로 둔다).
   map.on('dragstart', function () { if (follow) setFollow(false); });
   $('locate').addEventListener('click', function () { startHeading(true); setFollow(true); locateMe(); });
+  // 날아가는 시간: 배율이 많이 바뀔수록, 멀수록 오래(1.6초에서 5.5초). 사용자 2026-11-27: 앱을 열 때, 내 위치 단추, 처음 안내가 끝날 때 너무 빠르다.
+  function flyMs(dz, far) { return Math.round(Math.max(1600, Math.min(5500, 1100 + 480 * Math.abs(dz) + 380 * Math.min(far || 0, 6)))); }
   function locateMe(done) {
     if (!navigator.geolocation) { toast('이 기기에서는 위치를 확인할 수 없어요'); return; }
     // 실시간으로 받아 둔 위치가 15초 안의 것이면 기다리지 않고 바로 간다(새로 받으면 2초쯤 걸린다).
@@ -8442,7 +8467,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       // (maxDuration을 쓰면 그보다 오래 걸릴 이동은 움직임 없이 바로 넘어가 버려서 쓰지 않는다.)
       var zTo = Math.max(map.getZoom(), 15), p0 = map.project(ll), box = map.getContainer();
       var far = Math.hypot(p0.x - box.clientWidth / 2, p0.y - box.clientHeight / 2) / Math.max(1, box.clientWidth);
-      var dur = Math.max(1000, Math.min(3500, 900 + 450 * Math.abs(zTo - map.getZoom()) + 350 * Math.min(far, 6)));
+      var dur = flyMs(zTo - map.getZoom(), far);
       // 도착하면 고른 지역을 내가 있는 동으로 바꾼다. (지도가 스스로 움직인 것이라 지역 따라가기가 돌지 않아서, 전국이나 도에 머물러 있었다.)
       var here = leafAt(myLoc.x, myLoc.y);
       userMove = false;
@@ -8564,7 +8589,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     return true;
   }
   function coachHome() {
-    if (coachCam) map.flyTo({ center: coachCam.c, zoom: coachCam.z, bearing: coachCam.b, pitch: coachCam.p, duration: 1000 });
+    if (!coachCam) return;
+    var p0 = map.project(coachCam.c), box = map.getContainer(), far = Math.hypot(p0.x - box.clientWidth / 2, p0.y - box.clientHeight / 2) / Math.max(1, box.clientWidth);
+    map.flyTo({ center: coachCam.c, zoom: coachCam.z, bearing: coachCam.b, pitch: coachCam.p, duration: flyMs(coachCam.z - map.getZoom(), far), curve: 1.2 });
   }
   // 말풍선 자리: 폰에서 판 안의 항목은 그 위(지도 쪽)나 아래, 컴퓨터에서는 판 오른쪽.
   function coachSideAbove() { return mobile.matches ? ['above', 'below'] : ['right', 'below', 'above']; }
