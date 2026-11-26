@@ -1,6 +1,6 @@
 // 폰 홈 화면에 추가해서 앱처럼 쓰기 위한 파일. 한 번 받은 자료를 폰에 넣어 두어서 두 번째부터 빨리 뜨게 한다.
 const V = 'cafe-map-v2';   // 자료에 새 칸이 생기면 숫자를 올린다(폰에 넣어 둔 옛 자료를 버린다).
-const BIG = /\/(cafes|regions|landmarks)\.js$/;
+const BIG = /\/(cafes|regions|landmarks|legal)\.js$/;
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(
   caches.keys().then(ks => Promise.all(ks.filter(k => k !== V).map(k => caches.delete(k)))).then(() => self.clients.claim())

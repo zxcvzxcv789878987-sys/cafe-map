@@ -5983,7 +5983,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     var info = el('div', 'fsec'), ul = el('ul', 'mlist');
     info.style.borderBottom = '0';
     info.appendChild(el('div', 'ftitle', '지도 자료'));
-    ['카페 ' + fmt(N) + '곳', '카페 목록: 소상공인시장진흥공단 상가정보', '넓이와 개업: 행정안전부 인허가 자료', '지역 경계: 통계청 SGIS (vuski/admdongkor)'].forEach(function (t) { ul.appendChild(el('li', null, t)); });
+    ['카페 ' + fmt(N) + '곳', '카페 목록: 소상공인시장진흥공단 상가정보', '넓이와 개업: 행정안전부 인허가 자료', '지역 경계: 통계청 SGIS (vuski/admdongkor)', '법정동 이름과 범위: 국토교통부 브이월드 법정구역정보'].forEach(function (t) { ul.appendChild(el('li', null, t)); });
     // 배경 지도의 출처 표시(예전에는 지도 구석의 i 단추에 있었다). 자료를 쓰는 조건이라 링크와 함께 남긴다.
     var li = el('li', null, '배경 지도: ');
     [['OpenFreeMap', 'https://openfreemap.org/'], ['© OpenMapTiles', 'https://www.openmaptiles.org/'], ['© OpenStreetMap contributors', 'https://www.openstreetmap.org/copyright']].forEach(function (x, n) {
@@ -7119,6 +7119,52 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     if (!wl && arr.length > 60) sc.appendChild(el('p', 'note', (sortNow === 'size' ? '넓은' : '내 위치에서 가까운') + ' 60곳이에요. 지도를 확대하면 더 좁혀져요.'));
   }
 
+  // ----- 법정동, 법정리 이름으로 찾기 -----
+  // 지도의 동은 행정동이라 "이목동"처럼 주소에 쓰는 법정동은 지역 목록에 없다. 검색할 때 legal.js(국토교통부 브이월드 법정구역정보)에서 따로 찾는다.
+  // 1MB쯤 되어서 처음 검색창을 누를 때 받아 온다.
+  var LG = null, lgText = null, lgPath = null, lgLoading = false;
+  function legalLoad() {
+    if (LG || lgLoading) return;
+    lgLoading = true;
+    var sc = document.createElement('script'); sc.src = 'legal.js';
+    sc.onload = function () { LG = window.LEGAL || null; lgLoading = false; if (LG && P.kind === 'search') renderPanel(); };
+    sc.onerror = function () { lgLoading = false; };
+    document.head.appendChild(sc);
+  }
+  // 낱말 하나가 이름의 앞부분과 맞아야 한다("수원"만 치면 수원의 동이 줄줄이 나오지 않게). 나머지 낱말은 시군구, 읍면까지 합친 글자에서 찾는다.
+  function legalFind(words) {
+    if (!LG) { legalLoad(); return []; }
+    if (!lgText) { lgText = LG.n.split('|'); lgPath = {}; for (var r = 0; r < NR; r++) lgPath[regPath(r)] = r; }
+    var out = [];
+    for (var i = 0; i < lgText.length && out.length < 60; i++) {
+      var nm = lgText[i], w, head = false;
+      for (w = 0; w < words.length; w++) if (nm.indexOf(words[w]) === 0) { head = true; break; }
+      if (!head) continue;
+      var full = legalPath(i).toLowerCase(), ok = true;
+      for (w = 0; w < words.length; w++) if (full.indexOf(words[w]) < 0) { ok = false; break; }
+      // 같은 이름의 행정동이 이미 지역 목록에 있으면 겹치니 뺀다(파장동처럼 법정동과 행정동 이름이 같은 곳).
+      if (ok && lgPath[LG.g[LG.gi[i]] + ' ' + nm] === undefined) out.push(i);
+    }
+    return out;
+  }
+  function legalPath(i) { return LG.g[LG.gi[i]] + (LG.up[i] >= 0 ? ' ' + lgText[LG.up[i]] : '') + ' ' + lgText[i]; }
+  function legalRow(i) {
+    var row = btn('row'), body = el('span', 'body'), pin = el('span', 'pin'); pin.style.setProperty('--c', 'var(--surface-2)'); pin.style.setProperty('--t', 'var(--ink-2)'); pin.appendChild(icon('pin'));
+    row.appendChild(pin); body.appendChild(el('span', 'name', legalPath(i))); body.appendChild(el('span', 'meta', '이 동네로 가기')); row.appendChild(body);
+    row.addEventListener('click', function () { legalGo(i); });
+    return row;
+  }
+  // 그 동네의 시군구를 고르고(동네가 여러 행정동에 걸쳐도 카페가 다 보이게), 지도는 그 동네의 범위로 옮긴다.
+  function legalGo(i) {
+    $('q').value = ''; $('qClear').hidden = true; closePanel();
+    var r = lgPath[LG.g[LG.gi[i]]];
+    setRegion(r === undefined ? -1 : r, false);
+    var cx = LG.c[2 * i] / 1e5, cy = LG.c[2 * i + 1] / 1e5, b = LG.b.slice(4 * i, 4 * i + 4);
+    map.fitBounds([[cx - b[0] / 1e5, cy - b[1] / 1e5], [cx + b[2] / 1e5, cy + b[3] / 1e5]], { padding: fitPad(), maxZoom: 16, duration: 600 });
+  }
+  window.cafeTest.legalMiss = function () { legalFind(['가']); return LG ? LG.g.filter(function (g) { return lgPath[g] === undefined; }) : 'not loaded'; };
+  window.cafeTest.legal = function (q) { return legalFind(q.toLowerCase().split(/\s+/).filter(Boolean)).map(legalPath); };
+
   // ----- 검색 -----
   var flat = null, qTimer = 0;
   function renderSearch() {
@@ -7134,7 +7180,9 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     }
     // 큰 지역을 먼저, 같은 크기면 카페가 많은 곳을 먼저 보여 준다.
     regs.sort(function (p, q) { return regChain(p).length - regChain(q).length || rCnt[q] - rCnt[p]; });
-    if (regs.length) {
+    var lg = joined.length >= 2 ? legalFind(words) : [];
+    lg.sort(function (p, q) { return (lgText[p] === joined ? 0 : 1) - (lgText[q] === joined ? 0 : 1); });
+    if (regs.length || lg.length) {
       sc.appendChild(el('div', 'sec', '지역'));
       regs.slice(0, 5).forEach(function (r) {
         var row = btn('row'), body = el('span', 'body'), pin = el('span', 'pin'); pin.style.setProperty('--c', 'var(--surface-2)'); pin.style.setProperty('--t', 'var(--ink-2)'); pin.appendChild(icon('pin'));
@@ -7142,6 +7190,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         row.addEventListener('click', function () { $('q').value = ''; $('qClear').hidden = true; closePanel(); setRegion(r, true); });
         sc.appendChild(row);
       });
+      lg.slice(0, regs.length ? 3 : 5).forEach(function (i) { sc.appendChild(legalRow(i)); });
     }
     var found = [];
     if (joined.length >= 2) {
@@ -7159,7 +7208,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       found.slice(0, 40).forEach(function (f) { sc.appendChild(cafeRow(f[1], true, 'search')); });
       if (found.length > 40) sc.appendChild(el('p', 'note', '지도 가운데에서 가까운 40곳이에요. 동네 이름을 함께 입력하면 더 좁혀져요.'));
     }
-    if (!regs.length && !found.length) {
+    if (!regs.length && !found.length && !lg.length) {
       var e = el('div', 'empty');
       e.appendChild(el('b', null, joined.length < 2 ? '두 글자 이상 입력해 주세요' : '찾는 곳이 없어요'));
       if (joined.length >= 2 && !eggWord) eggNoSearch(e);
@@ -7173,7 +7222,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     clearTimeout(qTimer);
     qTimer = setTimeout(function () { if (v) { if (P.kind === 'search') renderPanel(); else openPanel('search'); } else if (P.kind === 'search') closePanel(); }, 140);
   });
-  $('q').addEventListener('focus', function () { if (this.value.trim() && P.kind !== 'search') openPanel('search'); });
+  $('q').addEventListener('focus', function () { legalLoad(); if (this.value.trim() && P.kind !== 'search') openPanel('search'); });
   $('qClear').addEventListener('click', function () { $('q').value = ''; this.hidden = true; if (P.kind === 'search') closePanel(); $('q').focus(); });
 
   // ----- 지역 고르기 -----
