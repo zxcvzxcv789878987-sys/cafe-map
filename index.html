@@ -5302,7 +5302,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     // 조건을 좁혀서 화면 안에 150곳 이하로 남았을 때는 멀리서도 하나씩 보여 준다.
     indiv = (S.reg >= 0 && rLeaf[S.reg] === 1) || (S.showAll && canShowAll()) || z >= POINT_ZOOM || vc <= 150;
     hits = [];
-    if (S.reg >= 0 && S.outline) drawOutline(S.reg, scale, ox, oy);
+    if (S.reg >= 0 && S.outline && !routing()) drawOutline(S.reg, scale, ox, oy);   // 걷는 길을 보는 동안은 경계를 그리지 않는다(길이 또렷하게)
 
     if (!indiv) {
       // 멀리서 볼 때: 지역 이름표에 개수만 적는다.
@@ -5733,6 +5733,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     if (kind !== 'detail' && sel >= 0) { sel = -1; requestDraw(); }
     if (kind !== 'detail') panel.removeAttribute('data-embed');
     if (kind !== 'route' && routeOn) clearRoute();
+    if ((was === 'route') !== (kind === 'route')) requestDraw();   // 걷는 길 판을 열거나 떠나면 경계와 다른 카페를 다시 그린다
     panel.dataset.kind = kind; panel.hidden = false;
     // 카드는 아래에서 위로 올라오며 나타난다(이미 카드가 떠 있을 때 내용만 바뀌는 경우는 빼고).
     var fresh = kind === 'detail' ? was !== 'detail' : !was, keep = was === kind ? snap : 'half';
@@ -5766,7 +5767,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     sel = -1;
     if (wantReload) { panel.hidden = true; softReload(); return; }
     document.body.classList.remove('sheet-open');
-    if (was === 'detail') requestDraw();
+    if (was === 'detail' || was === 'route') requestDraw();
     if (routeOn) { clearRoute(); requestDraw(); }
     renderChips();
     // 카드를 치운다. 카드 안에 띄워 둔 카카오맵 화면도 같이 내린다.
@@ -7423,8 +7424,10 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     if (lastFix && Date.now() - lastFix.t < 15000) go(lastFix.p);
     else navigator.geolocation.getCurrentPosition(go, function () { toast('걷는 길을 보려면 위치 사용을 허락해 주세요'); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 });
   }
+  // 걷는 길 판이 열려 있는가. 이 동안은 환경설정과 상관없이 지역 경계를 그리지 않는다.
+  function routing() { return P.kind === 'route' && !!routeInfo; }
   // 걷는 길 판이 열려 있고 "다른 카페 숨기기"가 켜져 있으면 그 도착 카페 번호, 아니면 -1
-  function routeOnlyIdx() { return S.routeOnly && P.kind === 'route' && routeInfo ? routeInfo.i : -1; }
+  function routeOnlyIdx() { return S.routeOnly && routing() ? routeInfo.i : -1; }
   function renderRoute() {
     var r = routeInfo; if (!r) { closePanel(); return; }
     var h = head(D.name[r.i] + '까지', null, function () { var k = r.i; clearRoute(); P.prev = null; sel = k; P.cafe = k; openPanel('detail'); requestDraw(); });
