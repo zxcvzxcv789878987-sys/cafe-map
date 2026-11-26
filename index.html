@@ -5604,7 +5604,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     else for (i = 0; i < N; i++) if (pass[i] && mx[i] >= x0 && mx[i] < x1 && my[i] >= y0 && my[i] < y1) viewIdx[vc++] = i;
     // 카페 점은 동까지 골랐거나, 동네가 보일 만큼 확대했을 때만 찍는다.
     // 조건을 좁혀서 화면 안에 150곳 이하로 남았을 때는 멀리서도 하나씩 보여 준다.
-    indiv = (S.reg >= 0 && rLeaf[S.reg] === 1) || (S.showAll && canShowAll()) || z >= POINT_ZOOM || vc <= 150;
+    // 150곳 이하일 때 멀리서도 점으로 보여 주는 것은 필터, 찜, 보너스로 좁혔을 때만이다. 아무 조건 없이 구를 확대하다 화면 안이 150곳 아래가 되면
+    // 동 이름표 대신 점이 나와 버려서(사용자 2026-11-27, 장안구에서 93곳) 조건을 붙였다.
+    indiv = (S.reg >= 0 && rLeaf[S.reg] === 1) || (S.showAll && canShowAll()) || z >= POINT_ZOOM || (vc <= 150 && (anyFilter() || S.seen === 'want' || !!S.bonus));
     hits = [];
     if (legalSel >= 0 && S.outline && !routing() && legalShape(legalSel)) drawRings(legalShape(legalSel), scale, ox, oy);
     else if (S.reg >= 0 && S.outline && !routing()) drawOutline(S.reg, scale, ox, oy);   // 걷는 길을 보는 동안은 경계를 그리지 않는다(길이 또렷하게)
