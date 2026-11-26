@@ -953,6 +953,9 @@ button.xlink .xbadge.qna { --pri: #1c7ed6; --pri2: #74c0fc; }
 .clico { flex: none; width: 26px; height: 26px; }
 .clico svg { width: 100%; height: 100%; display: block; }
 .xbox.guide .clegend { margin-top: 4px; }
+.xbox.guide .greplay { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 46px; margin: 2px 0 4px; padding: 0 14px; border-radius: 12px; background: color-mix(in srgb, var(--pri) 10%, var(--surface)); color: var(--pri); font-size: 14.5px; font-weight: 700; text-align: left; }
+.xbox.guide .greplay svg.i { width: 18px; height: 18px; }
+.xbox.guide .gclose { width: 100%; margin-top: 10px; }
 @media (max-width: 360px) { .clegend { grid-template-columns: 1fr; } }
 /* 도감 아래 상표 안내 한 줄 */
 .dxtm { margin: 0 0 8px; font-size: 11.5px; line-height: 1.45; color: var(--ink-3); text-align: center; }
@@ -8834,11 +8837,13 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     box.appendChild(coachLegend());
     box.appendChild(el('div', 'xgrp', '콘센트 기록'));
     box.appendChild(el('p', 'xexp', '그 카페에 있을 때 카페 카드의 콘센트 기록 단추를 누르고, 콘센트가 있는 자리를 모두 골라요. 콘센트가 없으면 없어요를 눌러요. 기록하려면 로그인해야 해요.'));
-    var end = el('div', 'gend'); box.appendChild(end);   // 끝까지 읽었는지 보는 자리(맨 아래 글 바로 뒤)
-    var two = el('div', 'two');
-    two.appendChild(btn('btn', '처음 안내 다시 보기', function () { o.remove(); if (P.kind) closePanel(true); openCoach(null, { rewatch: true }); }));
-    two.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
-    box.appendChild(two);
+    // 처음 안내 다시 보기: 닫기와 나란히 두면 취소 단추처럼 보여서(사용자 2026-11-27) 내용 칸에 따로 두고, 맨 아래에는 닫기만.
+    box.appendChild(el('div', 'xgrp', '처음 안내'));
+    var rp = btn('greplay', null, function () { o.remove(); if (P.kind) closePanel(true); openCoach(null, { rewatch: true }); });
+    rp.appendChild(el('span', null, '처음 안내 다시 보기')); rp.appendChild(icon('right'));
+    box.appendChild(rp);
+    var end = el('div', 'gend'); box.appendChild(end);   // 끝까지 읽었는지 보는 자리(맨 아래 내용 바로 뒤)
+    box.appendChild(btn('btn pri gclose', '닫기', function () { o.remove(); }));
     o.appendChild(box); document.body.appendChild(o); fitVisible(o);
     if (fromMenu && load('cafemap.coach') && window.IntersectionObserver) {
       var tm = 0, io = new IntersectionObserver(function (es) {
