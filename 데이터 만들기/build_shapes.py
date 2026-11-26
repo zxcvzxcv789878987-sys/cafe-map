@@ -1,4 +1,4 @@
-# 행정동 경계(geojson)를 지도의 지역 단계(시도 > 시 > 구 > 동)에 맞춰 합치고 단순하게 만들어 regions.js로 저장한다.
+# 행정동 경계(geojson)를 지도의 지역 단계(시도 > 시 > 구)에 맞춰 합치고 단순하게 만들어 regions.js로 저장한다.
 # 경계 자료: 행정안전부 주소기반산업지원서비스의 "구역의 도형"(행정동 TL_SCCO_GEMD). juso_dong.py가 geojson으로 바꿔 준다.
 # (2026-11-24 전에는 github.com/vuski/admdongkor, 원자료 통계청 SGIS를 썼다.)
 # 사용법: python -X utf8 build_shapes.py <행정동 geojson> <cafes.js> <출력 regions.js>
@@ -101,7 +101,10 @@ for group, name in ((by_sgg, '시군구'), (by_city, '시')):
             out[path] = e
             stat[name] += 1
 
-for di, (dong, gi) in enumerate(D['dong']):
+# 동 단계 경계는 넣지 않는다(2026-11-27). 앱의 동은 법정동이고 그 경계는 legal/<시군구코드>.json(build_legal.py)에 있다.
+# 행정동 경계를 남겨 두면 같은 이름의 법정동에 다른 경계가 그려질 수 있다. 옛 행정동 경계가 다시 필요하면 WITH_DONG을 True로.
+WITH_DONG = False
+for di, (dong, gi) in enumerate(D['dong'] if WITH_DONG else []):
     sgg, si = D['sgg'][gi]
     sido = D['sido'][si]
     g = by_dong.get((sido, norm(sgg), norm(dong)))

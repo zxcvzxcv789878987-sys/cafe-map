@@ -2034,6 +2034,20 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   // 구가 있는 시도 다른 시와 같은 단계에 나오게 한다. 지역 하나하나가 번호(R)를 가진 칸이고, 부모 칸을 가리킨다.
   var SIDO_SHORT = { '서울특별시': '서울', '경기도': '경기', '인천광역시': '인천', '강원특별자치도': '강원', '대전광역시': '대전', '세종특별자치시': '세종', '충청북도': '충북', '충청남도': '충남', '전남광주통합특별시': '광주·전남', '광주광역시': '광주', '전라남도': '전남', '전북특별자치도': '전북', '부산광역시': '부산', '대구광역시': '대구', '울산광역시': '울산', '경상북도': '경북', '경상남도': '경남', '제주특별자치도': '제주' };
   var SIDO_ORDER = ['서울', '경기', '인천', '강원', '대전', '세종', '충북', '충남', '광주·전남', '광주', '전남', '전북', '부산', '대구', '울산', '경북', '경남', '제주'];
+  // 동 단계는 법정동(주소에 쓰는 동, 읍, 면)이다. 검색, 새 동네, 지역 목록, 이름표, 경계선이 모두 같은 동을 쓰게 한다.
+  // 카페 자료의 dong, dongOf는 행정동이라 옛 새 동네 기록을 옮길 때만 dongA, dongOfA로 남겨 두고, 그 자리를 법정동(ldk, ld)으로 바꾼다.
+  // 법정동의 시군구는 이름(예: "경기 수원시 장안구 파장동"의 앞부분)으로 정한다.
+  if (D.ldk && D.ld) (function () {
+    var sggOf = {};
+    D.sgg.forEach(function (g, k) { sggOf[(SIDO_SHORT[D.sido[g[1]]] || D.sido[g[1]]) + ' ' + g[0]] = k; });
+    var nd = D.ldk.map(function (key) {
+      var t = key.split(' ');
+      for (var cut = t.length - 1; cut >= 2; cut--) { var g = sggOf[t.slice(0, cut).join(' ')]; if (g !== undefined) return [t.slice(cut).join(' '), g]; }
+      return null;
+    });
+    if (nd.some(function (d) { return !d; })) return;   // 이름이 안 맞는 자료면 바꾸지 않는다.
+    D.dongA = D.dong; D.dongOfA = D.dongOf; D.dong = nd; D.dongOf = D.ld; D.legalDong = true;
+  })();
   var sggSido = D.sgg.map(function (g) { return g[1]; }), dongSgg = D.dong.map(function (d) { return d[1]; });
   var rName = [], rParent = [], rLeaf = [], rKids = [], rootKids = [];
   function addReg(name, parent, leaf) { rName.push(name); rParent.push(parent); rLeaf.push(leaf ? 1 : 0); rKids.push([]); var id = rName.length - 1; (parent < 0 ? rootKids : rKids[parent]).push(id); return id; }
@@ -2057,7 +2071,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   function inCity(r) { return r >= 0 && (rParent[r] >= 0 || CITY_SIDO[rName[r]] === 1); }
   rootKids.sort(function (p, q) { var a = SIDO_ORDER.indexOf(rName[p]), c = SIDO_ORDER.indexOf(rName[q]); return (a < 0 ? 99 : a) - (c < 0 ? 99 : c); });
   rKids.forEach(function (k) { k.sort(function (p, q) { return rName[p].localeCompare(rName[q], 'ko'); }); });
-  // 카페가 속한 동을 바로잡는다. 경계선은 통계청의 행정동 경계(vuski/admdongkor)이고 건드리지 않는다.
+  // 법정동 자료가 없는 옛 카페 파일(행정동)일 때만: 카페가 속한 동을 바로잡는다. 경계선은 통계청의 행정동 경계(vuski/admdongkor)이고 건드리지 않는다.
   // 카페 자료에 적힌 동(주소 기준)과 경계 파일이 크게 어긋나는 동이 전국에 30곳 있었다. 그 자리의 행정동을 다른 지도(카카오)에 물어서 어느 쪽이 맞는지 가렸다(2026-11).
   //  - STALE_DONG 16곳: 카페 자료의 동 이름이 옛것이다(동이 쪼개지거나 경계가 바뀜). 이 동으로 적힌 카페 중 경계 밖에 찍히는 곳은 그 자리를 품는 동으로 옮긴다.
   //  - 나머지 13곳(인천 남동구 구월3동, 경남 창원시 성산구 중앙동 등)은 경계 파일 쪽이 실제와 다르다. 카페 자료가 맞으므로 그대로 두고, 그 동들은 경계선 밖에 점이 찍힐 수 있다.
@@ -2093,6 +2107,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       }
       return -1;
     }
+    // 법정동은 카페마다 법정동 경계로 정해 둔 것(legal_cafes.py)이라 바로잡지 않는다.
+    if (D.legalDong) return;
     var stale = D.dong.map(function (d, k) { return STALE_DONG[regPath(dongReg[k])] === 1; });
     for (var i = 0; i < N; i++) {
       var d0 = D.dongOf[i];
@@ -3383,7 +3399,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   // 동네 이름표: 시군구와 행정동 이름(자료를 새로 만들어도 바뀌지 않게 번호 대신 이름을 쓴다). 서버 칸 이름에 못 쓰는 글자는 바꾼다.
   // 2026-11-27부터 법정동(D.ldk, ld). 법정동 자료가 없는 옛 카페 파일이면 행정동.
   function dongKeyAdm(i) {
-    var d = D.dong[D.dongOf[i]], g = D.sgg[d[1]];
+    var d = (D.dongA || D.dong)[(D.dongOfA || D.dongOf)[i]], g = D.sgg[d[1]];
     return (D.sido[g[1]] + ' ' + g[0] + ' ' + d[0]).replace(/[.$#\[\]\/]/g, '_');
   }
   function ldKeyOf(k) { return D.ldk[k].replace(/[.$#\[\]\/]/g, '_'); }
@@ -3392,7 +3408,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   function unitN() { return D.ldk ? D.ldk.length : D.dong.length; }
   function unitOf(i) { return D.ldk ? D.ld[i] : D.dongOf[i]; }
   function unitName(k) { return D.ldk ? D.ldk[k].split(' ').pop() : D.dong[k][0]; }
-  // 칸이 속한 지역: 법정동은 그 동의 카페가 속한 시군구(동 단계는 행정동이라 쓰지 않는다)
+  // 칸이 속한 지역: 그 법정동의 시군구
   var unitRegArr = null;
   function unitReg(k) {
     if (!D.ldk) return dongReg[k];
@@ -4153,8 +4169,9 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       }
       var go2 = btn('btn pri', null, function () {
         close(); closePanel();
-        if (D.ldk) { var ro = ldRows()[kk]; if (ro >= 0) legalGo(ro); else goRegion(unitReg(kk)); }
-        else goRegion(dongReg[kk]);
+        // 지역 목록의 동도 법정동이라 그 동을 그대로 고른다(카페 칸 번호와 동 번호가 같다).
+        if (D.legalDong || !D.ldk) goRegion(dongReg[kk]);
+        else { var ro = ldRows()[kk]; if (ro >= 0) legalGo(ro); else goRegion(unitReg(kk)); }
       });
       go2.appendChild(document.createTextNode('이 동 카페 보기')); go2.appendChild(el('small', null, fmt(dongCafeCount(kk)) + '곳'));
       card.appendChild(go2);
@@ -4979,8 +4996,40 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   var hits = [], sel = -1, hoverI = -1, hoverPill = -1, queued = false, myLoc = null;
   // 지역 경계 모양. regions.js에 "경기 수원시 영통구" 같은 이름으로 들어 있고, 처음 쓸 때 화면 좌표계로 풀어 둔다.
   var SHAPES = SHAPES || window.REGION_SHAPES || {}, shapeCache = shapeCache || {};   // 위에서 동을 바로잡을 때 먼저 채워 둔 것을 그대로 쓴다.
+  // 동(법정동, 읍, 면)의 경계는 regions.js(행정동)를 쓰지 않는다. legal.js와 legal/<시군구코드>.json에서 그 시군구 것을 받아 온다.
+  // 받는 동안에는 없는 것으로 그리고(카페가 있는 범위), 받으면 다시 그린다.
+  var lgOfReg = null, lgFail = {}, lgLoadFail = false;
+  function lgIndex() {
+    if (!lgText) lgText = LG.n.split('|');
+    if (!lgPath) { lgPath = {}; for (var r = 0; r < NR; r++) lgPath[regPath(r)] = r; }
+    if (!lgOfReg) {
+      lgOfReg = new Int32Array(NR).fill(-1);
+      for (var i = 0; i < lgText.length; i++) if (LG.up[i] < 0) { var r2 = lgPath[LG.g[LG.gi[i]] + ' ' + lgText[i]]; if (r2 !== undefined && rLeaf[r2]) lgOfReg[r2] = i; }
+    }
+  }
+  // undefined: 아직 받는 중, null: 경계가 없다
+  function legalLeafShape(r) {
+    if (!lgCbs) return undefined;   // 화면을 처음 짜는 중(아래쪽 법정동 칸이 아직 준비 전)
+    if (!LG) { if (lgLoadFail) return null; legalLoad(legalArrived); return undefined; }
+    lgIndex();
+    var i = lgOfReg[r]; if (i < 0) return null;
+    var code = LG.gc && LG.gc[LG.gi[i]];
+    if (!code || lgFail[code]) return null;
+    if (lgFile[code] !== 2) { legalShapesFor(i, legalArrived); return undefined; }
+    var sh = legalShape(i); if (!sh) return null;
+    var bb = [1, 1, 0, 0];
+    sh.rings.forEach(function (a) { for (var k = 0; k < a.length; k += 2) { if (a[k] < bb[0]) bb[0] = a[k]; if (a[k] > bb[2]) bb[2] = a[k]; if (a[k + 1] < bb[1]) bb[1] = a[k + 1]; if (a[k + 1] > bb[3]) bb[3] = a[k + 1]; } });
+    return { lx: (LG.c[2 * i] / 1e5 + 180) / 360, ly: mercY(LG.c[2 * i + 1] / 1e5), rings: sh.rings, bb: bb };
+  }
+  // 경계가 새로 왔다. 경계 없이 정해 둔 동 이름표 자리를 버리고 다시 그린다.
+  function legalArrived() {
+    for (var r = 0; r < NR; r++) if (rLeaf[r] && shapeCache[r] === undefined) delete anchorCache[r];
+    layoutCache = {};
+    requestDraw();
+  }
   function shapeOf(r) {
     if (shapeCache[r] !== undefined) return shapeCache[r];
+    if (D.legalDong && rLeaf[r]) { var ls = legalLeafShape(r); return ls === undefined ? null : (shapeCache[r] = ls); }
     var v = SHAPES[regPath(r)], out = null;
     if (v) out = {
       lx: (v.p[0] / 1e5 + 180) / 360, ly: mercY(v.p[1] / 1e5),
@@ -7206,8 +7255,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   }
 
   // ----- 법정동, 법정리 이름으로 찾기 -----
-  // 지도의 동은 행정동이라 "이목동"처럼 주소에 쓰는 법정동은 지역 목록에 없다. 검색할 때 legal.js(국토교통부 브이월드 법정구역정보)에서 따로 찾는다.
-  // 1MB쯤 되어서 처음 검색창을 누를 때 받아 온다.
+  // 지역 목록의 동은 카페가 있는 법정동뿐이다. 카페가 없는 동과 법정리는 legal.js(국토교통부 브이월드 법정구역정보)에서 따로 찾는다.
+  // legal.js는 1MB쯤이고 동 경계와 이름표 자리에도 쓰여서 앱을 켜면 바로 받아 둔다.
   var LG = null, lgText = null, lgPath = null, lgLoading = false;
   var lgCbs = [];
   function legalLoad(cb) {
@@ -7217,7 +7266,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     lgLoading = true;
     var sc = document.createElement('script'); sc.src = 'legal.js';
     sc.onload = function () { LG = window.LEGAL || null; lgLoading = false; var cs = lgCbs; lgCbs = []; cs.forEach(function (f) { f(); }); if (LG && P.kind === 'search') renderPanel(); };
-    sc.onerror = function () { lgLoading = false; lgCbs = []; };
+    sc.onerror = function () { lgLoading = false; lgLoadFail = true; lgCbs = []; };
     document.head.appendChild(sc);
   }
   // 낱말 하나가 이름의 앞부분과 맞아야 한다("수원"만 치면 수원의 동이 줄줄이 나오지 않게). 나머지 낱말은 시군구, 읍면까지 합친 글자에서 찾는다.
@@ -7231,7 +7280,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       if (!head) continue;
       var full = legalPath(i).toLowerCase(), ok = true;
       for (w = 0; w < words.length; w++) if (full.indexOf(words[w]) < 0) { ok = false; break; }
-      // 같은 이름의 행정동이 이미 지역 목록에 있으면 겹치니 뺀다(파장동처럼 법정동과 행정동 이름이 같은 곳).
+      // 카페가 있는 법정동은 지역 목록(위의 지역 결과)에 이미 나오니 뺀다. 여기에는 카페가 없는 동과 리만 남는다.
       if (ok && lgPath[LG.g[LG.gi[i]] + ' ' + nm] === undefined) out.push(i);
     }
     return out;
@@ -7247,10 +7296,10 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     lgFile[code] = 1;
     var fin = function (ok) { var w = lgWait[code] || []; lgWait[code] = []; if (ok) w.forEach(function (f) { f(); }); };
     fetch('legal/' + code + '.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
-      if (!j || j.src !== LG.src) { lgFile[code] = 0; fin(false); return; }
+      if (!j || j.src !== LG.src) { lgFile[code] = 0; lgFail[code] = 1; fin(false); return; }
       j.i.forEach(function (k, n) { lgRaw[k] = j.r[n]; });
       lgFile[code] = 2; fin(true);
-    }).catch(function () { lgFile[code] = 0; fin(false); });
+    }).catch(function () { lgFile[code] = 0; lgFail[code] = 1; fin(false); });
   }
   function legalShape(k) {
     if (lgShape[k] !== undefined) return lgShape[k];
@@ -7269,12 +7318,16 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     row.addEventListener('click', function () { legalGo(i); });
     return row;
   }
-  // 그 동네의 시군구를 고르고(동네가 여러 행정동에 걸쳐도 카페가 다 보이게), 지도는 그 동네의 범위로 옮긴다.
+  // 고르는 지역: 그 동(읍, 면)이 지역 목록에 있으면 그 동, 리면 그 리의 읍면. 카페가 없어 목록에 없는 동네는 시군구를 고르고 그 동네 경계만 칠한다.
+  // 지도는 그 동네의 범위로 옮긴다.
   function legalGo(i) {
     $('q').value = ''; $('qClear').hidden = true; closePanel();
-    var r = lgPath[LG.g[LG.gi[i]]];
+    lgIndex();
+    var top = LG.up[i] >= 0 ? LG.up[i] : i, leaf = -1;
+    for (var k = 0; k < NR && D.legalDong; k++) if (lgOfReg[k] === top) { leaf = k; break; }
+    var r = leaf >= 0 ? leaf : lgPath[LG.g[LG.gi[i]]];
     setRegion(r === undefined ? -1 : r, false);
-    legalSel = i; legalShapesFor(i, requestDraw);
+    if (leaf < 0 || top !== i) { legalSel = i; legalShapesFor(i, requestDraw); }
     var cx = LG.c[2 * i] / 1e5, cy = LG.c[2 * i + 1] / 1e5, b = LG.b.slice(4 * i, 4 * i + 4);
     map.fitBounds([[cx - b[0] / 1e5, cy - b[1] / 1e5], [cx + b[2] / 1e5, cy + b[3] / 1e5]], { padding: fitPad(), maxZoom: 16, duration: 600 });
   }
@@ -8115,6 +8168,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     if (st.state === 'granted') { startWatch(); startHeading(false); }
   }).catch(function () {});
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { FONT = getComputedStyle(document.body).fontFamily; layoutCache = {}; draw(); renderChips(); });
+  // 동 경계와 동 이름표 자리에 쓰는 법정동 자료(legal.js)를 미리 받아 둔다. 처음 그린 동 이름표는 자료가 오면 제자리로 옮긴다.
+  if (D.legalDong) legalLoad(legalArrived);
 })();
 </script>
 </body>
