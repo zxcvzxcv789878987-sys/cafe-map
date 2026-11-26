@@ -131,7 +131,7 @@
       },
       "feedback": {
         "$id": {
-          ".write": "!data.exists()",
+          ".write": "!data.exists() || (auth != null && !newData.exists() && data.child('u').val() === auth.uid)",
           ".validate": "newData.hasChildren(['k', 'm', 't'])",
           "k": {
             ".validate": "newData.isString() && newData.val().matches(/^(bug|idea|etc)$/)"
@@ -161,7 +161,7 @@
         ".read": "auth != null && auth.uid === 'YJZkK7gP9xYP2fBjh2KWnJHDOsl1'",
         "$id": {
           ".read": true,
-          ".write": "auth != null && auth.uid === 'YJZkK7gP9xYP2fBjh2KWnJHDOsl1'",
+          ".write": "auth != null && (auth.uid === 'YJZkK7gP9xYP2fBjh2KWnJHDOsl1' || (!newData.exists() && root.child('v2/feedback/' + $id + '/u').val() === auth.uid))",
           ".validate": "newData.hasChildren(['m', 't']) && root.child('v2/feedback/' + $id).exists()",
           "m": {
             ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 1500"
@@ -186,19 +186,19 @@
             ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12"
           },
           "x": {
-            ".validate": "newData.isNumber() && newData.val() >= 0"
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000 && newData.val() <= (data.exists() ? data.val() : 0) + 1000000"
           },
           "v": {
-            ".validate": "newData.isNumber() && newData.val() >= 0"
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 120000"
           },
           "d": {
-            ".validate": "newData.isNumber() && newData.val() >= 0"
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 25000"
           },
           "o": {
-            ".validate": "newData.isNumber() && newData.val() >= 0"
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 120000"
           },
           "r": {
-            ".validate": "newData.isNumber() && newData.val() >= 0"
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 120000"
           },
           "t": {
             ".validate": "newData.val() === now"

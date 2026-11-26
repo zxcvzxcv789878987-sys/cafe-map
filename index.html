@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>카페 지도</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ffffff">
@@ -11,11 +11,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <!-- 검색 사이트에 잡히지 않게 한다. 주소를 아는 사람만 연다. -->
 <meta name="robots" content="noindex, nofollow">
-<!-- 휴대폰 홈 화면에 추가하면 앱처럼 꽉 찬 화면으로 열린다. -->
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<!-- 휴대폰 홈 화면에 추가하면 앱처럼 꽉 찬 화면으로 열린다(위의 mobile-web-app-capable). -->
 <meta name="apple-mobile-web-app-title" content="카페 지도">
-<meta name="theme-color" content="#ffffff">
 <meta name="color-scheme" content="light">
 <link rel="icon" href="icon-192.png">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
@@ -399,7 +396,17 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .dpop { position: absolute; left: 0; right: 0; top: 0; z-index: 2; max-height: 100%; overflow-y: auto; background: var(--surface); padding: 12px 16px 12px; display: flex; flex-direction: column; gap: 10px; border-radius: 0 0 18px 18px; box-shadow: 0 12px 28px rgba(15, 20, 30, .22); transform: translateY(-102%); visibility: hidden; will-change: transform; transition: transform .46s cubic-bezier(.4, 0, .2, 1), visibility 0s .46s; }
 .dpop.on { transform: none; visibility: visible; transition: transform .46s cubic-bezier(.4, 0, .2, 1); }
 @media (prefers-reduced-motion: reduce) { .dscrim, .dscrim.on, .dpop, .dpop.on, .rec .more, .sum .i { transition: none; } }
-@media (min-width: 761px) { #panel[data-kind=detail][data-embed] { width: 440px !important; } }
+@media (min-width: 761px) {
+  #panel[data-kind=detail][data-embed] { width: 440px !important; }
+  /* 컴퓨터, 태블릿: 왼쪽 카드(오른쪽 끝 454px)가 열려 있으면 "이 화면 N곳" 단추를 카드 오른쪽으로 옮긴다.
+     오른쪽 아래 단추 줄(#nav, 오른쪽에서 약 340px까지)과도 겹치지 않게 그 사이에 둔다. */
+  .sheet-open #count { left: max(468px, min(calc(50% + 156px), calc(100% - 490px))); transform: none; }
+  /* 끌어 올리는 손잡이는 폰 카드에만 있다. */
+  .dh { cursor: default; }
+  .dh::before { display: none; }
+}
+/* 사이가 좁은 화면에서는 카드가 열린 동안 "이 화면 N곳" 단추를 숨긴다(카드와 단추 줄 사이에 자리가 없다). */
+@media (min-width: 761px) and (max-width: 1000px) { .sheet-open #count { display: none; } }
 
 /* 아래쪽: 개수 단추, 지도 단추 */
 #count { position: absolute; z-index: 15; left: 50%; bottom: 22px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 18px; border-radius: 999px; background: var(--pri); color: var(--on-pri); font-weight: 650; box-shadow: var(--sh-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -1829,7 +1836,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       <button class="cbtn" id="zout" type="button" aria-label="축소"><svg class="i"><use href="#i-minus"/></svg></button>
     </div>
   </div>
-  <div id="toast" hidden></div>
+  <div id="toast" role="status" aria-live="polite" hidden></div>
   <div id="loading" aria-label="지도를 불러오는 중"><div class="sk sk-bar"></div><div class="sk-row"><div class="sk sk-chip"></div><div class="sk sk-chip"></div></div><div class="sk-map"><i style="left:22%;top:30%"></i><i style="left:48%;top:22%"></i><i style="left:66%;top:41%"></i><i style="left:35%;top:55%"></i><i style="left:58%;top:63%"></i><i style="left:76%;top:28%"></i><i style="left:15%;top:68%"></i></div><div class="sk sk-count"></div></div>
 </div>
 
@@ -1844,6 +1851,22 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
 <script src="route.js"></script>
 <script src="regions.js"></script>
 <script src="landmarks.js"></script>
+<script>
+// 켜다가 막히면(인터넷이 약해 자료나 지도를 못 받았거나, 켜는 도중 오류) 로딩 화면 대신 안내와 다시 시도 단추를 보여 준다.
+window.cafeBootFail = function (msg) {
+  var ld = document.getElementById('loading');
+  if (!ld || ld.hidden || ld.dataset.fail) return;
+  ld.dataset.fail = '1'; ld.textContent = '';
+  var box = document.createElement('div'), p = document.createElement('p'), s = document.createElement('p'), b = document.createElement('button');
+  box.style.cssText = 'position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(300px,calc(100% - 48px));padding:24px 20px;border-radius:18px;background:#fff;box-shadow:0 6px 24px rgba(0,0,0,.12);text-align:center;font:15px/1.5 sans-serif;color:#222';
+  p.textContent = msg; p.style.cssText = 'margin:0 0 4px;font-weight:700';
+  s.textContent = '인터넷 연결을 확인하고 다시 시도해 주세요.'; s.style.cssText = 'margin:0 0 16px;color:#666;font-size:14px';
+  b.type = 'button'; b.textContent = '다시 시도'; b.style.cssText = 'height:44px;padding:0 22px;border:0;border-radius:12px;background:#6A5AE0;color:#fff;font:600 15px sans-serif;cursor:pointer';
+  b.onclick = function () { location.reload(); };
+  box.appendChild(p); box.appendChild(s); box.appendChild(b); ld.appendChild(box);
+};
+window.addEventListener('error', function () { window.cafeBootFail('앱을 여는 중에 문제가 생겼어요.'); });
+</script>
 <script>
 (function () {
   'use strict';
@@ -1865,11 +1888,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   })();
   var D = window.CAFES;
   var $ = function (id) { return document.getElementById(id); };
-  if (!D || !window.maplibregl) {
-    var t0 = $('toast'); t0.hidden = false;
-    t0.textContent = !D ? 'cafes.js 파일을 찾지 못했어요. index.html과 같은 폴더에 있어야 해요.' : '지도 라이브러리를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.';
-    return;
-  }
+  if (!D || !window.maplibregl) { window.cafeBootFail(!D ? '카페 자료를 불러오지 못했어요.' : '지도를 불러오지 못했어요.'); return; }
 
   // ================= 데이터 준비 =================
   var N = D.name.length;
@@ -2203,7 +2222,10 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   // 카페마다 바뀌지 않는 이름표. 좌표는 자료를 새로 만들 때마다 달라질 수 있어서 이름과 주소로 만든다.
   function cidOf(i) { return hash36(D.name[i] + '|' + fullAddr(i)); }
   var idxOfCid = null;
-  function cidIndex() { if (!idxOfCid) { idxOfCid = {}; for (var j = 0; j < N; j++) idxOfCid[cidOf(j)] = j; } return idxOfCid; }
+  function cidIndex() {
+    if (!idxOfCid) { idxOfCid = {}; for (var j = 0; j < N; j++) { var c = cidOf(j), o = idxOfCid[c]; if (o === undefined || !(D.kid && D.kid[o]) || (D.kid && D.kid[j])) idxOfCid[c] = j; } }
+    return idxOfCid;
+  }
   // 한 카페의 기록을 모은다. 있음이 없음보다 많거나 같으면 있음, 없음이 더 많으면 없음. 기록이 없으면 모름.
   function tally(i) {
     var v = votes[i], y = (v ? v[0] : 0) + (myO[i] === 1 ? 1 : 0), n = (v ? v[1] : 0) + (myO[i] === -1 ? 1 : 0);
@@ -2261,6 +2283,9 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   function setWant(i, on) { var k = cidOf(i); want[i] = on ? 1 : 0; if (on) wanted[k] = 1; else delete wanted[k]; save('cafemap.want', wanted); pushWantKey(k, on); }
   // 폐업 신고가 들어와서 운영자가 확인하고 지우기로 한 카페(removed.js의 이름표 목록). 다음 자료 갱신 전에도 바로 지도에서 빠진다.
   var removed = new Uint8Array(N);
+  // 공공데이터에 같은 카페(이름, 주소가 같음)가 두 번 들어 있는 곳이 있다(2026-11 기준 198쌍, 대부분 자리까지 같다).
+  // 이름표가 같아 기록과 찜이 한 칸을 같이 쓰므로 지도에는 하나만 둔다(cidIndex가 고른 쪽, 카카오 장소가 있는 쪽 먼저).
+  (function () { var ix = cidIndex(); for (var j = 0; j < N; j++) if (ix[cidOf(j)] !== j) removed[j] = 1; })();
   (function () {
     var list = window.CAFE_REMOVED || [];
     if (!list.length) return;
@@ -2312,7 +2337,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   var xpTimer = 0;
   function xpSave() {
     if (!xpKey()) return;
-    save(xpKey(), XP);
+    save(xpKey(), XP); save('cafemap.xpDirty', who.u);   // 서버에 올리기 전까지는 이 기기 것이 더 새것이다
     // 여러 번 연달아 바뀌어도 서버에는 한 번만 올린다.
     clearTimeout(xpTimer); xpTimer = setTimeout(xpPush, 600);
   }
@@ -2326,7 +2351,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     rankPush(); pubPush();
     token().then(function (t) {
       return fetch(SHARE.db + '/v2/xp/' + who.u + '.json?auth=' + encodeURIComponent(t), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    }).then(function (r) { if (!r.ok) throw new Error('db'); }).catch(function () { /* 다음에 바뀔 때 다시 올린다 */ });
+    }).then(function (r) { if (!r.ok) throw new Error('db'); if (load(xpKey()) && JSON.stringify(load(xpKey()).xp) === JSON.stringify(body.xp)) save('cafemap.xpDirty', null); }).catch(function () { /* 다음에 받아 올 때 이 기기 것을 다시 올린다 */ });
   }
   // 내 XP 기록 공개본: 켠 사람만 올린다. 날짜까지만 적고 시각은 뺀다(언제 어디 있었는지가 드러나지 않게). 최근 100개.
   function ymdKey(t) { if (!t) return ''; var d = new Date(t); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
@@ -2402,6 +2427,9 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     return token().then(function (t) { return fetch(SHARE.db + '/v2/xp/' + who.u + '.json?auth=' + encodeURIComponent(t)); })
       .then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); })
       .then(function (srv) {
+        // 지난번에 올리지 못한 이 기기의 기록이 있으면 서버 것 대신 그것을 쓰고 다시 올린다.
+        var dirty = load('cafemap.xpDirty') === who.u && local && typeof local.xp === 'number';
+        if (dirty && srv && typeof srv.xp === 'number') { srv = JSON.parse(JSON.stringify(local)); setTimeout(xpSave, 0); }
         if (srv && typeof srv.xp === 'number') {
           delete srv.t; XP = xpNorm(srv); save(xpKey(), XP); xpHeal(); xpFixMore(); xpDropSeat(); xpBrandCatchUp(); if (xpLegalFix()) xpSave();
           if (eggMerge(local || {}) | eggSpendSync()) xpSave();
@@ -3354,7 +3382,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   var visitBusy = false;
   function checkNear(i, ok, done) {
     if (TEST || (XP_DEV && load('cafemap.nofar') === 1)) { ok(); return; }
-    if (!navigator.geolocation) { toast('이 브라우저에서는 위치를 확인할 수 없어요'); return; }
+    if (!navigator.geolocation) { toast('이 기기에서는 위치를 확인할 수 없어요'); return; }
     if (visitBusy) return;
     visitBusy = true; if (done) done(true);
     navigator.geolocation.getCurrentPosition(function (p) {
@@ -3954,7 +3982,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       dmOpen = null; document.removeEventListener('keydown', onKey);
       o.classList.add('out'); setTimeout(function () { try { dm.remove(); } catch (e) { /* 이미 지움 */ } o.remove(); }, 180);
     };
-    var onKey = function (e) { if (e.key === 'Escape' && !$('xinfo')) { if (card) hideCard(); else close(); } };
+    var onKey = function () {};   // Esc와 뒤로 단추는 closeTop()이 dmOpen.top으로 처리한다.
     document.addEventListener('keydown', onKey);
     o.addEventListener('click', function (e) { if (e.target === o) close(); });
     // 다녀온 동과 지역마다 다녀온 동 수
@@ -4031,7 +4059,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       style: { version: 8, sources: {}, layers: [{ id: 'sea', type: 'background', paint: { 'background-color': '#A9DCF2' } }] },
       localIdeographFontFamily: '"Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
     });
-    dmOpen = { map: dm, close: close };
+    dmOpen = { map: dm, close: close, top: function () { if (card) hideCard(); else close(); } };
     var cur = -1, pills = [], stamps = [], card = null, styled = false;
     var reveal = function () {
       if (box.classList.contains('ready')) return;
@@ -4459,16 +4487,20 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         function (e) { if (e && e.status === 400) return fresh(); throw e; });
   }
   // 한 카페의 내 기록을 서버에 올린다(지웠으면 서버에서도 지운다).
+  // 올리지 못한 내 기록(카페 번호들). 다음에 서버 것을 받아 올 때 이것은 이 기기 것을 지키고 다시 올린다(로그인 방식에서 기록이 사라지지 않게).
+  var seatPend = load('cafemap.seatPend') || {};
   function push(i, quiet) {
     if (!shareOn) return;
     var k = cidOf(i), rec = mine[k];
+    seatPend[k] = 1; save('cafemap.seatPend', seatPend);
     token().then(function (t) {
       var url = SHARE.db + ROOT + '/seats/' + k + '/' + who.u + '.json?auth=' + encodeURIComponent(t);
       return fetch(url, rec ? { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ o: rec.o, c: rec.c, t: { '.sv': 'timestamp' } }) } : { method: 'DELETE' });
     }).then(function (r) {
       if (!r.ok) throw new Error('db');
       if (rec) srvMine[k] = rec; else delete srvMine[k];
-    }).catch(function () { if (!quiet) toast('기록은 이 기기에 저장했어요. 같이 보는 곳에는 다음에 다시 올릴게요.'); });
+      if (mine[k] === rec) { delete seatPend[k]; save('cafemap.seatPend', seatPend); }
+    }).catch(function () { if (!quiet) toast('기록은 이 기기에 저장했어요. 같이 보는 곳에는 다음에 다시 올릴게요'); });
   }
   // 모두의 기록을 받아 와서 카페별로 센다.
   // 운영자를 뺀 다른 사람의 투표 수(카페 번호 -> 수). "첫 콘센트 투표"인지 볼 때 쓴다. 운영자의 투표는 다른 사람의 첫 투표를 빼앗지 않는다.
@@ -4498,9 +4530,16 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       touched.forEach(tally);
       if (loginOn) {
         // 로그인 방식: 서버에 있는 내 계정의 투표가 기준이다. 이 기기의 내 기록을 그것으로 바꾼다(로그인하지 않았으면 비운다).
+        // 다만 올리지 못한 기록(seatPend)은 이 기기 것을 지키고 다시 올린다.
+        var keep = {};
+        for (k in seatPend) keep[k] = mine[k] || null;
         mine = {};
-        if (signedIn()) for (k in srvMine) mine[k] = { o: srvMine[k].o, c: srvMine[k].c || '' };
-        save('cafemap.seat2', mine); applyMine();
+        if (signedIn()) {
+          for (k in srvMine) mine[k] = { o: srvMine[k].o, c: srvMine[k].c || '' };
+          for (k in keep) { if (keep[k]) mine[k] = keep[k]; else delete mine[k]; }
+        } else seatPend = {};
+        save('cafemap.seat2', mine); save('cafemap.seatPend', seatPend); applyMine();
+        for (k in keep) { j = ix[k]; if (j !== undefined && signedIn()) push(j, true); else { delete seatPend[k]; save('cafemap.seatPend', seatPend); } }
       } else {
         // 이 기기의 내 기록과 서버에 있는 내 기록이 다르면 이 기기 것으로 맞춘다(올리다 실패한 것이 여기서 다시 올라간다).
         for (k in mine) if (!srvMine[k] || srvMine[k].o !== mine[k].o || (srvMine[k].c || '') !== (mine[k].c || '')) { j = ix[k]; if (j !== undefined) push(j, true); }
@@ -4684,27 +4723,54 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     }, function () { $('lmsg').textContent = '로그인하지 못했어요. 다시 해 주세요.'; });
   }
   // 계정 삭제: 서버에 있는 내 투표, 폐업 신고, 찜을 모두 지운 다음 계정을 없앤다. 되돌릴 수 없어서 한 번 더 묻는다.
+  // 계정 삭제 확인 창: 지워지는 것을 보여 주고 한 번 더 묻는다(브라우저 기본 확인 창 대신 앱의 창).
+  function confirmDelete(go) {
+    var old = $('xinfo'); if (old) old.remove();
+    var o = el('div'), box = el('div', 'xbox nick done'), two = el('div', 'two');
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '계정 삭제');
+    box.appendChild(el('h2', null, '계정을 삭제할까요?'));
+    box.appendChild(el('p', 'xexp', '내 기록, 찜, 폐업 신고, 원두와 레벨, 닉네임과 랭킹, 보낸 문의와 받은 답이 모두 지워지고 되돌릴 수 없어요.'));
+    two.appendChild(btn('btn', '취소', function () { o.remove(); }));
+    two.appendChild(btn('btn pri', '삭제하기', function () { o.remove(); go(); }));
+    box.appendChild(two); o.appendChild(box); document.body.appendChild(o);
+  }
   function deleteAccount() {
-    if (!signedIn() || !window.confirm('계정을 삭제하면 내 기록과 찜이 모두 지워지고 되돌릴 수 없어요. 삭제할까요?')) return;
+    if (!signedIn()) return;
+    confirmDelete(deleteAccountNow);
+  }
+  function deleteAccountNow() {
+    if (!signedIn()) return;
     var cleared = false;
+    clearTimeout(xpTimer);   // 곧 올라갈 원두 기록이 지운 뒤에 다시 생기지 않게
+    toast('계정을 지우는 중이에요');
     token().then(function (t) {
-      var a = encodeURIComponent(t), jobs = [], k;
-      for (k in mine) jobs.push(fetch(SHARE.db + '/v2/seats/' + k + '/' + who.u + '.json?auth=' + a, { method: 'DELETE' }));
-      for (k in goneMine) jobs.push(fetch(SHARE.db + '/v2/gone/' + k + '/' + who.u + '.json?auth=' + a, { method: 'DELETE' }));
-      jobs.push(fetch(SHARE.db + '/v2/want/' + who.u + '.json?auth=' + a, { method: 'DELETE' }));
-      jobs.push(fetch(SHARE.db + '/v2/xp/' + who.u + '.json?auth=' + a, { method: 'DELETE' }));
-      jobs.push(fetch(SHARE.db + '/v2/pub/' + who.u + '.json?auth=' + a, { method: 'DELETE' }));
-      fetch(SHARE.db + '/v2/rank/' + who.u + '.json?auth=' + a, { method: 'DELETE' }).catch(function () {});
-      if (xpKey()) { try { localStorage.removeItem(LSP + xpKey()); } catch (e) { /* 그냥 넘어간다 */ } }
+      var a = encodeURIComponent(t), base = SHARE.db + '/v2/', jobs = [], k, del = function (path) { return fetch(base + path + '.json?auth=' + a, { method: 'DELETE' }); };
+      // 기록과 신고: 이 기기에 있는 것과 서버에서 받아 둔 내 것을 모두 지운다(다른 기기에서 한 것까지).
+      var seats = {}, gones = {};
+      for (k in mine) seats[k] = 1; for (k in srvMine) seats[k] = 1;
+      for (k in goneMine) gones[k] = 1;
+      for (k in seats) jobs.push(del('seats/' + k + '/' + who.u));
+      for (k in gones) jobs.push(del('gone/' + k + '/' + who.u));
+      ['want', 'xp', 'pub', 'rank'].forEach(function (p) { jobs.push(del(p + '/' + who.u)); });
+      // 보낸 문의와 그 답: 답을 먼저 지운다(답을 지울 수 있는지는 문의의 주인으로 본다).
+      jobs.push(fetch(base + 'feedback.json?orderBy=%22u%22&equalTo=' + encodeURIComponent(JSON.stringify(who.u)) + '&auth=' + a)
+        .then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); })
+        .then(function (fb) {
+          return Promise.all(Object.keys(fb || {}).map(function (id) {
+            return del('fbreply/' + id).then(function (r) { if (!r.ok) throw new Error('db'); return del('feedback/' + id); });
+          }));
+        }).then(function (rs) { return { ok: (rs || []).every(function (r) { return r.ok; }) }; }));
       return Promise.all(jobs).then(function (rs) {
         if (rs.some(function (r) { return !r.ok; })) throw new Error('db');
         cleared = true;
+        if (xpKey()) { try { localStorage.removeItem(LSP + xpKey()); } catch (e) { /* 그냥 넘어간다 */ } }
+        save('cafemap.myfb', null); save('cafemap.seatPend', null); seatPend = {}; save('cafemap.xpDirty', null);
         return postJson('https://identitytoolkit.googleapis.com/v1/accounts:delete?key=' + SHARE.key, { idToken: t });
       });
     }).then(function () { logout(); toast('계정을 삭제했어요'); }, function () {
       // 로그인한 지 오래되면 계정 지우기가 거절될 수 있다. 기록은 이미 지워졌으니, 다시 로그인해서 한 번 더 누르게 한다.
-      if (cleared) { logout(); toast('기록과 찜은 지웠어요. 계정까지 지우려면 다시 로그인해서 한 번 더 눌러 주세요.'); }
-      else toast('삭제하지 못했어요. 잠시 뒤에 다시 해 주세요.');
+      if (cleared) { logout(); toast('기록과 찜은 지웠어요. 계정까지 지우려면 다시 로그인해서 한 번 더 눌러 주세요'); }
+      else toast('삭제하지 못했어요. 인터넷을 확인하고 다시 해 주세요');
     });
   }
   function logout() {
@@ -5928,7 +5994,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     if (menu && P.anchor) {
       var a = $('chips').querySelector('[data-act="' + P.anchor + '"]');
       if (a) { var r = a.getBoundingClientRect(); left = Math.max(14, Math.min(r.left, window.innerWidth - w - 14)); top = r.bottom + 8; }
-    } else top = Math.max(top, bar.top + 44 + 10);
+    } else top = Math.max(top, bar.top + 44 + 10, $('chips').getBoundingClientRect().bottom + 10);   // 좁은 태블릿에서 칩이 두 줄이 되면 그 아래로
     panel.style.left = left + 'px'; panel.style.top = top + 'px';
     panel.style.maxHeight = 'calc(100% - ' + (top + 20) + 'px)';
   }
@@ -7266,7 +7332,12 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     lgLoading = true;
     var sc = document.createElement('script'); sc.src = 'legal.js';
     sc.onload = function () { LG = window.LEGAL || null; lgLoading = false; var cs = lgCbs; lgCbs = []; cs.forEach(function (f) { f(); }); if (LG && P.kind === 'search') renderPanel(); };
-    sc.onerror = function () { lgLoading = false; lgLoadFail = true; lgCbs = []; };
+    sc.onerror = function () {
+      // 사람이 기다리는 중(검색, 새 동네 지도)이면 알린다. 켤 때 미리 받다가 실패한 것은 조용히 넘어간다.
+      var waiting = lgCbs.some(function (f) { return f !== legalArrived; }) || P.kind === 'search';
+      lgLoading = false; lgLoadFail = true; lgCbs = []; sc.remove();
+      if (waiting) toast('동네 자료를 받지 못했어요. 인터넷을 확인해 주세요');
+    };
     document.head.appendChild(sc);
   }
   // 낱말 하나가 이름의 앞부분과 맞아야 한다("수원"만 치면 수원의 동이 줄줄이 나오지 않게). 나머지 낱말은 시군구, 읍면까지 합친 글자에서 찾는다.
@@ -7565,7 +7636,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     var kakaoTo = 'https://map.kakao.com/link/to/' + (pid ? pid : encodeURIComponent(D.name[i].replace(/,/g, ' ')) + ',' + lat + ',' + lng);
     var appTo = mobile.matches && S.nav === 'naver' ? 'nmap://route/public?dlat=' + lat + '&dlng=' + lng + '&dname=' + nm + '&appname=' + encodeURIComponent(location.hostname || 'cafemap') : '';
     var a = el('a', 'btn ext'); a.href = appTo || kakaoTo;
-    if (appTo) a.addEventListener('click', function () { setTimeout(function () { if (!document.hidden) toast('네이버지도 앱이 열리지 않았어요. 메뉴의 환경설정에서 길찾기 앱을 바꿀 수 있어요.'); }, 1800); });
+    if (appTo) a.addEventListener('click', function () { setTimeout(function () { if (!document.hidden) toast('네이버지도 앱이 열리지 않았어요. 메뉴의 환경설정에서 길찾기 앱을 바꿀 수 있어요'); }, 1800); });
     else { a.target = '_blank'; a.rel = 'noopener'; }
     a.textContent = (appTo ? '네이버지도' : '카카오맵') + '에서 자동차, 대중교통 보기';
     return a;
@@ -7617,7 +7688,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   }
   var routeInfo = null;     // { i, dist, min } 판에 적을 것
   function openRoute(i) {
-    if (!navigator.geolocation) { toast('이 브라우저에서는 위치를 가져올 수 없어요'); return; }
+    if (!navigator.geolocation) { toast('이 기기에서는 위치를 확인할 수 없어요'); return; }
     var go = function (p) {
       lastFix = { p: p, t: Date.now() };
       var ulat = p.coords.latitude, ulng = p.coords.longitude;
@@ -7671,7 +7742,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     return p;
   }
   // ----- 카페 정보 -----
-  function fullAddr(i) { var d = D.dongOf[i], g = dongSgg[d]; var sido = D.sido[sggSido[g]], sg = D.sgg[g][0]; return (sg === sido ? sido : sido + ' ' + sg) + ' ' + D.road[i]; }
+  // 주소의 시군구는 카페 자료(주소 기준, 행정동 쪽)를 쓴다. 카페 이름표(cidOf)도 이것으로 만들어서, 동 기준이 바뀌어도 기록과 찜이 그대로 붙는다.
+  function fullAddr(i) { var d = (D.dongOfA || D.dongOf)[i], g = (D.dongA || D.dong)[d][1]; var sido = D.sido[sggSido[g]], sg = D.sgg[g][0]; return (sg === sido ? sido : sido + ' ' + sg) + ' ' + D.road[i]; }
   function selectCafe(i, pan, from) {
     sel = i; P.cafe = i; P.prev = from;
     if (pileAt) closePile();
@@ -7680,7 +7752,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     var z = map.getZoom(), pt = map.project([D.lng[i] / 1e5, D.lat[i] / 1e5]), box = map.getContainer(), W = box.clientWidth, H = box.clientHeight;
     // 카드에 가려지지 않는 자리로 옮긴다. PC는 카드가 왼쪽, 휴대폰은 아래.
     var off = mobile.matches ? [0, -H * .2] : [180, 0];
-    var hiddenByCard = mobile.matches ? pt.y > H * .42 : (pt.x < 400 && pt.y < H - 40);
+    var hiddenByCard = mobile.matches ? pt.y > H * .42 : (pt.x < 470 && pt.y < H - 40);   // 컴퓨터의 카드는 왼쪽 14px부터 440px 폭
     var outside = pt.x < 40 || pt.x > W - 40 || pt.y < (mobile.matches ? 130 : 90) || pt.y > H - 40;
     if (pan || outside || hiddenByCard || z < 13) map.easeTo({ center: [D.lng[i] / 1e5, D.lat[i] / 1e5], zoom: Math.max(z, pan ? 15.5 : 13.5), offset: off, duration: 500 });
     openPanel('detail'); requestDraw();
@@ -7911,7 +7983,11 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     });
     sh.setAttribute('aria-label', '이 카페 링크 공유'); sh.title = '링크 공유'; sh.appendChild(icon('share'));
     h.appendChild(sh);
-    if (back) { var bk = btn('ib back', null, back); bk.setAttribute('aria-label', '뒤로'); bk.appendChild(icon('back')); h.appendChild(bk); }
+    // 컴퓨터, 태블릿에서 지도에서 바로 연 카드는 닫기(x)로 보여 준다. 돌아갈 목록이 있거나 폰이면 뒤로(←).
+    if (back) {
+      var shut = !P.prev && !mobile.matches, bk = btn('ib back', null, back);
+      bk.setAttribute('aria-label', shut ? '닫기' : '뒤로'); bk.title = shut ? '닫기' : '뒤로'; bk.appendChild(icon(shut ? 'x' : 'back')); h.appendChild(bk);
+    }
     panel.appendChild(h);
     // 다른 사람 두 명 이상이 없어졌다고 알린 카페는 윗줄 아래에 한 줄로 알린다(지도에서 빼지는 않는다).
     if ((goneVotes[i] || 0) >= 2) panel.appendChild(el('div', 'gonebar', '폐업했다는 신고 ' + goneVotes[i] + '명'));
@@ -8098,10 +8174,10 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   map.on('dragstart', function () { if (follow) setFollow(false); });
   $('locate').addEventListener('click', function () { startHeading(true); setFollow(true); locateMe(); });
   function locateMe(done) {
-    if (!navigator.geolocation) { toast('이 브라우저에서는 위치를 가져올 수 없어요.'); return; }
+    if (!navigator.geolocation) { toast('이 기기에서는 위치를 확인할 수 없어요'); return; }
     // 실시간으로 받아 둔 위치가 15초 안의 것이면 기다리지 않고 바로 간다(새로 받으면 2초쯤 걸린다).
     if (lastFix && Date.now() - lastFix.t < 15000) { gotHere(lastFix.p); return; }
-    navigator.geolocation.getCurrentPosition(gotHere, function () { setFollow(false); toast('위치를 가져오지 못했어요. 브라우저에서 위치 권한을 허용해 주세요.'); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 });
+    navigator.geolocation.getCurrentPosition(gotHere, function () { setFollow(false); toast('위치를 확인하지 못했어요. 위치 권한을 허용해 주세요'); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 });
     function gotHere(p) {
       lastFix = { p: p, t: Date.now() };
       var ll = [p.coords.longitude, p.coords.latitude];
@@ -8155,7 +8231,48 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   $('navHome').addEventListener('click', function () { resetAll(); closePanel(); goRegion(-1); });
   $('zin').addEventListener('click', function () { userMove = true; map.zoomIn(); });
   $('zout').addEventListener('click', function () { userMove = true; map.zoomOut(); });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePanel(); });
+  // ----- Esc와 휴대폰의 뒤로 단추: 맨 위에 떠 있는 것 하나만 닫는다 -----
+  // 순서: 축하 창 → 작은 창(#xinfo) → 로그인 창 → 새 동네 지도(그 안의 동 카드 먼저) → 카드나 판(목록에서 들어온 카드는 목록으로).
+  function pressClose(o) {
+    var bs = o.querySelectorAll('button');
+    for (var k = 0; k < bs.length; k++) if (/^(확인|닫기|취소)$/.test(bs[k].textContent.trim())) { bs[k].click(); return true; }
+    return false;
+  }
+  function closeTop() {
+    var c = $('lvup') || $('celeb') || $('egrev');
+    if (c) { if (!pressClose(c)) c.remove(); return true; }
+    var x = $('xinfo');
+    if (x) {
+      x.click();   // 바깥(어두운 곳)을 누른 것과 같다
+      if (x.isConnected && !pressClose(x)) x.remove();
+      return true;
+    }
+    if (loginEl && !loginEl.hidden) { closeLogin(); return true; }
+    if (dmOpen) { dmOpen.top(); return true; }
+    if (P.kind === 'detail' && P.prev) { var k = P.prev; sel = -1; P.prev = null; openPanel(k); requestDraw(); return true; }
+    if (P.kind) { closePanel(); return true; }
+    return false;
+  }
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeTop(); });
+  // 무언가 떠 있는 동안에는 방문 기록을 한 칸 쌓아 둔다. 뒤로 단추를 누르면 앱이 꺼지지 않고 그 칸이 빠지면서 맨 위 것만 닫힌다.
+  // 다 닫히면 쌓아 둔 칸을 스스로 뺀다(그래야 다음 뒤로가 원래대로 앱을 끈다).
+  var histOn = false, histSkip = false, histHash = '', histQ = false;
+  function anyLayer() { return !!(P.kind || $('xinfo') || dmOpen || $('celeb') || $('lvup') || $('egrev') || (loginEl && !loginEl.hidden)); }
+  function syncHist() {
+    histQ = false;
+    var open = anyLayer();
+    if (open && !histOn) { try { history.pushState({ cmLayer: 1 }, ''); histOn = true; histHash = location.hash; } catch (e) { /* 막힌 환경이면 그냥 둔다 */ } }
+    else if (!open && histOn) { histOn = false; histSkip = true; history.back(); }
+  }
+  function queueHist() { if (!histQ) { histQ = true; setTimeout(syncHist, 0); } }
+  window.addEventListener('popstate', function () {
+    if (histSkip) { histSkip = false; return; }
+    if (location.hash !== histHash) return;   // 카페 링크(#c=...)로 옮겨 간 것이면 그쪽(hashchange)이 맡는다
+    histOn = false;
+    closeTop();
+    queueHist();   // 아직 떠 있는 것이 있으면 다시 한 칸 쌓는다
+  });
+  new MutationObserver(queueHist).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
   mobile.addEventListener('change', function () { if (P.kind) placePanel(); draw(); renderChips(); });
   window.addEventListener('resize', renderChips);
 
