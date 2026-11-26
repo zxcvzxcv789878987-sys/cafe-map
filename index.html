@@ -421,10 +421,12 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .nbtn[aria-pressed=true] { background: var(--pri); color: var(--on-pri); }
 /* 마우스를 올렸을 때의 색은 마우스가 있는 기기에서만. 폰에서는 손가락을 뗀 뒤에도 그 색이 남아서 눌린 것처럼 보인다. */
 @media (hover: hover) { .nbtn:hover { background: var(--pri); color: var(--on-pri); } }
-/* "OO 전체 보기"와 "동별로 보기"를 오갈 때 동전처럼 뒤집힌다. */
-@keyframes coin { 0% { scale: 1 1; } 50% { scale: 1 .04; } 100% { scale: 1 1; } }
-#navAll.flip { animation: coin .28s ease-in-out; }
-@media (prefers-reduced-motion: reduce) { #navAll.flip { animation: none; } }
+/* "OO 전체 보기"와 "동별로 보기"를 오갈 때 제자리에서 앞뒤로 뒤집힌다(사용자 2026-11-27: 납작하게 눌렸다 펴지는 모양이 이상하게 움직이는 것처럼 보인다).
+   앞면이 옆으로 누울 때까지 돌고(flipA), 그때 글자와 색을 바꾼 뒤, 뒷면이 반대쪽에서 돌아 나온다(flipB). 가운데 맞춤은 translate로 해서 transform과 겹치지 않는다. */
+@keyframes flipA { from { transform: perspective(260px) rotateX(0deg); } to { transform: perspective(260px) rotateX(90deg); } }
+@keyframes flipB { from { transform: perspective(260px) rotateX(-90deg); } to { transform: perspective(260px) rotateX(0deg); } }
+#navAll.flipA { animation: flipA .15s ease-in forwards; }
+#navAll.flipB { animation: flipB .2s cubic-bezier(.2, .8, .3, 1.15); }
 .cbtn { width: 42px; height: 42px; display: grid; place-items: center; background: var(--surface); border-radius: 12px; box-shadow: var(--sh-1); color: var(--ink); }
 .cbtn:hover { background: var(--surface-2); }
 .cgroup { display: flex; flex-direction: column; background: var(--surface); border-radius: 12px; box-shadow: var(--sh-1); overflow: hidden; }
@@ -1088,7 +1090,7 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   .npair .nbtn .t { display: none; }
   .npair .nbtn svg.i { width: 20px; height: 20px; }
   /* "OO구 전체 보기"는 개수 단추 바로 위 가운데. */
-  #navAll { position: absolute; z-index: 15; left: 50%; transform: translateX(-50%); bottom: calc(76px + env(safe-area-inset-bottom, 0px)); height: 40px; border-radius: 999px; }
+  #navAll { position: absolute; z-index: 15; left: 50%; translate: -50% 0; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); height: 40px; border-radius: 999px; }
   /* 지도 출처(i)는 왼쪽 아래 구석. */
   .maplibregl-ctrl-bottom-left { left: 12px; bottom: calc(32px + env(safe-area-inset-bottom, 0px)); }
   .maplibregl-ctrl-bottom-left .maplibregl-ctrl-attrib { margin: 0; }
@@ -8490,12 +8492,18 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       map.flyTo({ center: ll, zoom: zTo, duration: dur, curve: 1.2, essential: true });
     }
   }
-  // 누르면 동전처럼 뒤집히면서 "OO 전체 보기"(흰색)와 "동별로 보기"(기본색)가 바뀐다. 글자와 색은 뒤집히는 중간에 바꾼다.
+  // 누르면 제자리에서 뒤집히면서 "OO 전체 보기"(흰색)와 "동별로 보기"(기본색)가 바뀐다. 글자와 색(너비도)은 옆으로 누워 안 보일 때 바꾼다.
+  var navFlipT = 0;
   $('navAll').addEventListener('click', function () {
-    var b = this;
-    b.classList.remove('flip'); void b.offsetWidth; b.classList.add('flip');
-    setTimeout(function () { S.showAll = !S.showAll; closePanel(); draw(); renderChips(); }, 130);
-    setTimeout(function () { b.classList.remove('flip'); }, 300);
+    var b = this, swap = function () { S.showAll = !S.showAll; closePanel(); draw(); renderChips(); };
+    if (navFlipT) return;   // 뒤집히는 중에 또 눌러도 한 번만
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { swap(); return; }
+    b.classList.remove('flipB'); b.classList.add('flipA');
+    navFlipT = setTimeout(function () {
+      swap();
+      b.classList.remove('flipA'); void b.offsetWidth; b.classList.add('flipB');
+      navFlipT = setTimeout(function () { b.classList.remove('flipB'); navFlipT = 0; }, 220);
+    }, 150);
   });
   $('navBack').addEventListener('click', function () { if (S.reg >= 0) { closePanel(); goRegion(rParent[S.reg]); } });
   // 투명 단추(숨은 물음표의 어려운 짝, 사용자 2026-11-26): 뒤로 단추 바로 위, 같은 크기, 완전 투명. 누르면 조용히 기록한다.
