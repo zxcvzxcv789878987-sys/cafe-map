@@ -1267,6 +1267,65 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
 .egc.blank.hard { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--pri) 22%, var(--line)); }
 .egc.blank .egart .fxs { filter: grayscale(1); opacity: .25; }
 .egc.none { visibility: hidden; }
+/* 도감 칸: 크기를 모두 같게(설명은 세 줄까지, 누르면 카드로 다 보임) */
+.egrid .egc { height: 208px; overflow: hidden; }
+.egrid .egc p { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.egc.open { cursor: pointer; }
+.egc.soon { background: none; box-shadow: inset 0 0 0 1.5px var(--line); justify-content: center; gap: 8px; }
+.egc.soon .egart .fxs { filter: grayscale(1); opacity: .16; }
+.egc.soon b { font-size: 14px; font-weight: 800; color: var(--ink-3); }
+/* 쪽 넘기기: 한 쪽에 일반 다섯 줄과 어려움 다섯 줄 */
+.egpages { display: flex; justify-content: center; align-items: center; gap: 4px; margin: 12px 0 0; }
+.egpages button { min-width: 36px; height: 36px; padding: 0 6px; border-radius: 11px; display: grid; place-items: center; font-size: 14px; font-weight: 800; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.egpages button.on { background: var(--pri); color: #fff; }
+.egpages button:disabled { opacity: .28; cursor: default; }
+.egpages button svg.i { width: 18px; height: 18px; }
+/* 에그 카드를 얻는 전체 화면(사용자 2026-11-26): 알이 깨지고 카드가 떠올라 뒤집힌다 */
+#egrev { position: fixed; inset: 0; z-index: 95; display: grid; place-items: center; overflow-y: auto; padding: 20px 16px; background: rgba(30, 22, 80, .97); animation: lvFade .25s ease; -webkit-tap-highlight-color: transparent; }
+#egrev .cf { position: fixed; inset: 0; pointer-events: none; }
+#egrev .box { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; width: min(320px, 100%); color: #fff; text-align: center; }
+#egrev .cap { font-size: 13px; font-weight: 700; letter-spacing: .3em; opacity: .75; margin-bottom: 14px; animation: lvRise .5s .05s both; }
+#egrev .stage { width: 240px; height: 336px; display: grid; place-items: center; }
+#egrev .eggph { width: 168px; }
+#egrev .eggph .fx { width: 100%; }
+.ecard { width: 240px; height: 336px; perspective: 1000px; }
+.ecard.in { animation: ecRise .6s cubic-bezier(.2, .9, .3, 1.15) both; }
+.ecard .inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .75s cubic-bezier(.3, .7, .2, 1.05); }
+.ecard.flip .inner { transform: rotateY(180deg); }
+.ecard .face { position: absolute; inset: 0; border-radius: 20px; -webkit-backface-visibility: hidden; backface-visibility: hidden; overflow: hidden; }
+.ecard .back { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  background: radial-gradient(circle at 20% 15%, rgba(255, 255, 255, .14) 0 2px, transparent 3px) 0 0 / 22px 22px, linear-gradient(160deg, #7b6cf0, #4f41c9);
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .35), 0 14px 34px rgba(0, 0, 0, .35); }
+.ecard.hard .back { background: radial-gradient(circle at 20% 15%, rgba(255, 224, 102, .22) 0 2px, transparent 3px) 0 0 / 22px 22px, linear-gradient(160deg, #3b2f9e, #241b63);
+  box-shadow: inset 0 0 0 3px #ffd43b, 0 14px 34px rgba(0, 0, 0, .35); }
+.ecard .back .bem { width: 96px; height: 96px; display: grid; place-items: center; }
+.ecard .back .bem .fxs { width: 96px; height: 96px; }
+.ecard .back .blab { font-size: 12px; font-weight: 800; letter-spacing: .3em; color: rgba(255, 255, 255, .85); }
+.ecard .front { transform: rotateY(180deg); display: flex; flex-direction: column; align-items: center; padding: 12px 14px 14px; text-align: center; color: #14171c;
+  border: 3px solid #e4defe; background: #fff; box-shadow: 0 14px 34px rgba(0, 0, 0, .35); }
+.ecard.hard .front { border-color: transparent; background: linear-gradient(#fff, #fff) padding-box, linear-gradient(135deg, #ffe066, #f08c00 35%, #ffd43b 60%, #b197fc) border-box; }
+.ecard .ctop { align-self: stretch; display: flex; justify-content: space-between; align-items: center; }
+.ecard .cno { font-size: 12px; font-weight: 800; color: #8b93a1; font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+.ecard .crare { padding: 2px 9px; border-radius: 999px; background: #f0eefc; color: #5b4bd6; font-size: 11.5px; font-weight: 800; }
+.ecard.hard .crare { background: linear-gradient(135deg, #ffe066, #f6b100); color: #5a3d00; }
+.ecard .cart { width: 100%; height: 150px; margin: 8px 0 10px; border-radius: 14px; display: grid; place-items: center; background: linear-gradient(180deg, #f4f1ff, #fff6e5); }
+.ecard.hard .cart { background: linear-gradient(180deg, #ece6ff, #fff1cf); }
+.ecard .cart .fx { width: 126px; }
+.ecard .cname { font-size: 20px; font-weight: 900; letter-spacing: -.02em; line-height: 1.25; }
+.ecard .cdesc { margin-top: 6px; font-size: 13px; line-height: 1.5; color: #4b5462; word-break: keep-all; }
+.ecard .cdate { margin-top: auto; padding-top: 8px; font-size: 11.5px; font-weight: 600; color: #8b93a1; }
+.ecard .shine { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, .85) 50%, transparent 62%); transform: translateX(-130%); }
+.ecard.hard .shine { background: linear-gradient(105deg, transparent 36%, rgba(255, 236, 160, .9) 50%, transparent 64%); }
+.ecard.flip .shine { animation: ecShine 1.1s .75s ease-out forwards; }
+#egrev .late { display: flex; flex-direction: column; align-items: center; width: 100%; opacity: 0; pointer-events: none; }
+#egrev .late.on { opacity: 1; pointer-events: auto; animation: lvRise .45s both; }
+#egrev .rmeta { margin-top: 18px; width: min(260px, 100%); display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 16px; background: rgba(255, 255, 255, .12); }
+#egrev .rmeta .gr { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+#egrev .rmeta .gr b { font-weight: 800; color: #ffe066; white-space: nowrap; }
+#egrev button.ok { margin-top: 20px; height: 46px; padding: 0 44px; border-radius: 999px; background: #fff; color: #6a5ae0; font-size: 16px; font-weight: 800; }
+@keyframes ecRise { from { transform: translateY(46px) scale(.62); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes ecShine { from { transform: translateX(-130%); } to { transform: translateX(130%); } }
+@media (prefers-reduced-motion: reduce) { #egrev, #egrev *:not(.fx *) { animation: none !important; transition: none !important; } }
 /* 투명 단추(이스터 에그): 뒤로 단추 위, 같은 크기, 보이지 않음. 연 사람에게는 내 메모 단추가 된다. */
 .nbtn.favb { -webkit-tap-highlight-color: transparent; }
 .nbtn.favb.ghost { opacity: 0; box-shadow: none; }
@@ -2749,6 +2808,60 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     two.appendChild(btn('btn pri', '도감 보기', function () { o.remove(); openEggs(); }));
     box.appendChild(two); o.appendChild(box); document.body.appendChild(o);
   }
+  // 도감에서 그 에그가 있는 줄(1부터). 어려운 짝은 짝인 일반 에그의 줄.
+  function eggRow(id) {
+    var e = eggName(id), base = e && e[3] ? e[3] : id, k = 0, n = 0;
+    EGGS.forEach(function (x) { if (!x[3]) { n++; if (x[0] === base) k = n; } });
+    return k || 1;
+  }
+  // 에그 카드를 얻는 전체 화면(사용자 2026-11-26: 레벨 업처럼 보여 주고 확인을 누르게, 카드를 얻은 느낌으로).
+  // 원두로 열 때(spent): 알이 흔들리며 금 가고 깨진 뒤, 카드가 뒷면으로 떠올라 뒤집히며 앞면이 나온다. 아무 데나 누르면 끝 모양으로 건너뛴다.
+  // 연 알을 다시 볼 때(spent 없음): 앞면 카드가 바로 떠오른다.
+  function eggReveal(id, spent, done) {
+    var e = eggName(id); if (!e) return;
+    var old = $('egrev'); if (old) old.remove();
+    var hard = !!e[3], o = el('div'), box = el('div', 'box'), cf = el('div', 'cf'), stage = el('div', 'stage');
+    o.id = 'egrev'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', e[1] + ' 카드');
+    o.appendChild(cf); box.appendChild(el('div', 'cap', 'EASTER EGG')); box.appendChild(stage);
+    var card = el('div', 'ecard' + (hard ? ' hard' : '')), inner = el('div', 'inner'), back = el('div', 'face back'), front = el('div', 'face front');
+    var bem = el('span', 'bem'); bem.appendChild(fxIcon(hard ? 'egghard' : 'egg')); back.appendChild(bem); back.appendChild(el('span', 'blab', 'EASTER EGG'));
+    var top = el('div', 'ctop'); top.appendChild(el('span', 'cno', 'No.' + ('0' + eggRow(id)).slice(-2))); top.appendChild(el('span', 'crare', hard ? '어려움' : '일반'));
+    var art = el('div', 'cart'), d = new Date(XP.egg[id] || XP.ega[id] || Date.now());
+    front.appendChild(top); front.appendChild(art); front.appendChild(el('div', 'cname', e[1])); front.appendChild(el('div', 'cdesc', e[2]));
+    front.appendChild(el('div', 'cdate', (d.getMonth() + 1) + '월 ' + d.getDate() + '일 ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + '에 찾음'));
+    front.appendChild(el('div', 'shine'));
+    inner.appendChild(back); inner.appendChild(front); card.appendChild(inner);
+    var late = el('div', 'late');
+    if (spent) {
+      var meta = el('div', 'rmeta'), r1 = el('div', 'gr'), r2 = el('div', 'gr');
+      r1.appendChild(el('span', null, '쓴 원두')); r1.appendChild(bean(el('b', null, '−' + fmt(spent) + ' 원두')));
+      r2.appendChild(el('span', null, '남은 원두')); r2.appendChild(bean(el('b', null, fmt(eggSpendable()) + ' 원두')));
+      meta.appendChild(r1); meta.appendChild(r2); late.appendChild(meta);
+    }
+    var ok = btn('ok', '확인', function () { close(); }); late.appendChild(ok);
+    box.appendChild(late); o.appendChild(box); document.body.appendChild(o);
+    var timers = [], finished = false;
+    function close() { timers.forEach(clearTimeout); o.remove(); if (done) done(); }
+    function showCard(flipNow) {
+      stage.textContent = ''; art.textContent = '';
+      var a = fxArt('egg_' + id); a.classList.add('keep'); art.appendChild(a);
+      stage.appendChild(card); card.classList.add('in');
+      if (flipNow) card.classList.add('flip');
+    }
+    function finish() {
+      if (finished) return; finished = true; timers.forEach(clearTimeout);
+      if (!card.isConnected) showCard(true); else card.classList.add('flip');
+      late.classList.add('on');
+      if (spent) playLottie(cf, 'confetti', true).catch(function () {});
+    }
+    if (!spent || REDUCE) { finish(); return; }
+    var eg = el('div', 'eggph'); eg.appendChild(fxArt('eggcrack')); stage.appendChild(eg);
+    timers.push(setTimeout(function () { eg.textContent = ''; eg.appendChild(fxArt('eggopen')); }, 1550));
+    timers.push(setTimeout(function () { showCard(false); }, 2350));
+    timers.push(setTimeout(function () { card.classList.add('flip'); }, 2950));
+    timers.push(setTimeout(function () { finished = true; late.classList.add('on'); playLottie(cf, 'confetti', true).catch(function () {}); }, 3600));
+    o.addEventListener('click', function (ev) { if (!finished && !ok.contains(ev.target)) finish(); });
+  }
   function openEggs() {
     var old = $('xinfo'); if (old) old.remove();
     save(EGG_VIEW, Date.now());
@@ -2762,18 +2875,23 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       // 쓴 원두는 따로 센다(레벨, 총 원두, 랭킹은 그대로). 원두 기록에 남기려고 쓴 기록(XP.spl)도 둔다.
       XP.sp = (XP.sp || 0) + price; XP.egs = XP.egs || {}; XP.egs[id] = Date.now();
       XP.spl = XP.spl || []; XP.spl.push({ t: XP.egs[id], a: price, r: '이스터 에그 열기' }); xpSave();
-      justOpen = id; draw();
-      if (id === 'qmark') setTimeout(function () { toast('히든 보너스가 미리 열렸어요. 원두 모으는 법의 보너스 표에서 볼 수 있어요'); }, 900);
-      if (id === 'qmark2') { favRender(); setTimeout(function () { toast('나만의 메모가 생겼어요. 카페 카드의 메모 단추로 남겨 보세요'); }, 900); }
+      draw();
+      if (id === 'qmark2') favRender();
+      eggReveal(id, price, function () {
+        justOpen = id; draw(); justOpen = '';
+        if (id === 'qmark') setTimeout(function () { toast('히든 보너스가 미리 열렸어요. 원두 모으는 법의 보너스 표에서 볼 수 있어요'); }, 500);
+        if (id === 'qmark2') setTimeout(function () { toast('나만의 메모가 생겼어요. 카페 카드의 메모 단추로 남겨 보세요'); }, 500);
+      });
     };
     // 알 한 칸. 닫힌 알은 누르면 흔들리고, 연 알은 그 에그 그림(누르면 다시 움직임). 방금 연 알은 깨지는 알을 보여 준 뒤 그 에그 그림으로 바뀐다.
     // 어려운 에그의 닫힌 알은 짙은 보라 띠에 금빛 지그재그가 있는 알(egghard)이다.
     function card(id) {
       var e = eggName(id), hard = !!e[3], shut = hard ? 'egghard' : 'egg';
       var seen = !!(XP.egs || {})[id], c = el('div', 'egc' + (hard ? ' hard' : '') + (seen ? ' open' : '') + (justOpen === id ? ' pop' : '')), a = el('span', 'egart');
-      a.appendChild(justOpen === id ? fxArt('eggopen') : seen ? fxIcon('egg_' + id) : fxIcon(shut)); c.appendChild(a);
-      tapPlay(a, seen ? function () { return fxArt('egg_' + id); } : function () { return fxArt(shut); });
-      if (justOpen === id) setTimeout(function () { if (!a.isConnected) return; a.textContent = ''; var n = fxArt('egg_' + id); n.classList.add('poke'); a.appendChild(n); }, 1150);
+      a.appendChild(seen ? fxIcon('egg_' + id) : fxIcon(shut)); c.appendChild(a);
+      // 연 알은 칸을 누르면 카드로 다시 본다. 닫힌 알은 그림을 누르면 흔들린다.
+      if (seen) { c.setAttribute('role', 'button'); c.tabIndex = 0; c.addEventListener('click', function () { eggReveal(id); }); }
+      else tapPlay(a, function () { return fxArt(shut); });
       var d = new Date(XP.egg[id] || XP.ega[id]), when = (d.getMonth() + 1) + '월 ' + d.getDate() + '일 ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + '에 찾음';
       if (seen) { c.appendChild(el('b', null, e[1])); c.appendChild(el('p', null, e[2])); c.appendChild(el('small', null, when)); return c; }
       c.appendChild(el('b', null, '???')); c.appendChild(el('small', null, when));
@@ -2786,6 +2904,12 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       if (enough) label(); else { b.textContent = '원두가 모자라요'; b.disabled = true; }
       c.appendChild(b);
       return c;
+    }
+    var page = 0;
+    function go(p) {
+      var pages = Math.ceil((EGGS.filter(function (e) { return !e[3]; }).length + 1) / 5);
+      p = Math.max(0, Math.min(pages - 1, p)); if (p === page) return;
+      page = p; draw(); box.scrollTop = 0;
     }
     function draw() {
       box.textContent = '';
@@ -2808,13 +2932,37 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         var c = el('div', 'egc blank' + (hard ? ' hard' : '')), a = el('span', 'egart');
         a.appendChild(fxIcon(hard ? 'egghard' : 'egg')); c.appendChild(a); return c;
       };
+      // 한 쪽에 다섯 줄(일반 다섯 칸, 어려움 다섯 칸). 나온 에그 바로 다음 줄은 커밍 순(사용자 2026-11-26).
+      var rows = nN.map(function (n) { var h = null; nH.forEach(function (e) { if (e[3] === n[0]) h = e; }); return [n, h]; });
+      rows.push('soon');
+      var pages = Math.ceil(rows.length / 5); if (page >= pages) page = pages - 1;
+      var soon = function (hard) { var c = el('div', 'egc soon' + (hard ? ' hard' : '')), a = el('span', 'egart'); a.appendChild(fxIcon(hard ? 'egghard' : 'egg')); c.appendChild(a); c.appendChild(el('b', null, '커밍 순')); return c; };
       var g = el('div', 'egrid');
-      nN.forEach(function (n) {
-        var h = null; nH.forEach(function (e) { if (e[3] === n[0]) h = e; });
-        g.appendChild(slot(n[0], false));
-        g.appendChild(h ? slot(h[0], true) : el('div', 'egc none'));
+      rows.slice(page * 5, page * 5 + 5).forEach(function (r) {
+        if (r === 'soon') { g.appendChild(soon(false)); g.appendChild(soon(true)); return; }
+        g.appendChild(slot(r[0][0], false));
+        g.appendChild(r[1] ? slot(r[1][0], true) : el('div', 'egc none'));
       });
+      // 옆으로 밀어서도 쪽을 넘긴다
+      var sx = 0, sy = 0;
+      g.addEventListener('touchstart', function (ev) { sx = ev.touches[0].clientX; sy = ev.touches[0].clientY; }, { passive: true });
+      g.addEventListener('touchend', function (ev) {
+        var dx = ev.changedTouches[0].clientX - sx, dy = ev.changedTouches[0].clientY - sy;
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) go(page + (dx < 0 ? 1 : -1));
+      }, { passive: true });
       box.appendChild(g);
+      if (pages > 1) {
+        var nav = el('div', 'egpages'), prev = btn(null, null, function () { go(page - 1); }), next = btn(null, null, function () { go(page + 1); });
+        var pic = icon('right'); pic.style.transform = 'scaleX(-1)'; prev.appendChild(pic); prev.setAttribute('aria-label', '앞 쪽'); prev.disabled = page === 0;
+        next.appendChild(icon('right')); next.setAttribute('aria-label', '다음 쪽'); next.disabled = page === pages - 1;
+        nav.appendChild(prev);
+        for (var pi = 0; pi < pages; pi++) (function (p) {
+          var b = btn(p === page ? 'on' : null, String(p + 1), function () { go(p); });
+          b.setAttribute('aria-label', (p + 1) + '쪽'); if (p === page) b.setAttribute('aria-current', 'page');
+          nav.appendChild(b);
+        })(pi);
+        nav.appendChild(next); box.appendChild(nav);
+      }
       var f = el('div', 'dxfoot'); f.appendChild(btn('btn pri', '닫기', function () { o.remove(); })); box.appendChild(f);
     }
     draw(); o.appendChild(box); document.body.appendChild(o); fitVisible(o);
