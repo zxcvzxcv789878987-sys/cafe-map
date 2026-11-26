@@ -916,6 +916,20 @@ button.xlink .xbadge.qna { --pri: #1c7ed6; --pri2: #74c0fc; }
 .terms { margin: 4px 0 0; font-size: 12px; line-height: 1.5; color: var(--ink-3); text-align: center; }
 .terms a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .rpadm { margin-top: 6px; }
+/* 첫 사용 안내(2026-11-27): 가리키는 단추만 밝게 남기고 나머지를 어둡게, 그 아래 말풍선 */
+#coach { position: fixed; inset: 0; z-index: 95; }
+#coach.dim { background: rgba(15, 20, 30, .55); }
+#coach .chole { position: absolute; border-radius: 16px; box-shadow: 0 0 0 9999px rgba(15, 20, 30, .55); pointer-events: none; transition: left .25s, top .25s, width .25s, height .25s; }
+#coach .chole[hidden] { display: none; }
+#coach .ctip { position: absolute; padding: 14px 16px 10px; border-radius: 16px; background: var(--surface); box-shadow: var(--sh-2); }
+#coach .ctip.arrow::before { content: ""; position: absolute; top: -6px; left: calc(var(--ax) - 7px); width: 14px; height: 14px; border-radius: 3px; background: var(--surface); transform: rotate(45deg); }
+#coach .ccnt { font-size: 12px; font-weight: 700; color: var(--pri); }
+#coach .ctip b { display: block; margin-top: 2px; font-size: 16px; font-weight: 750; }
+#coach .ctip p { margin: 4px 0 10px; font-size: 14px; line-height: 1.55; color: var(--ink-2); }
+#coach .crow { display: flex; align-items: center; justify-content: space-between; }
+#coach .crow .link { padding: 8px 4px; font-size: 13px; color: var(--ink-3); }
+#coach .crow .btn { min-width: 92px; }
+@media (prefers-reduced-motion: reduce) { #coach .chole { transition: none; } }
 /* 도감 아래 상표 안내 한 줄 */
 .dxtm { margin: 0 0 8px; font-size: 11.5px; line-height: 1.45; color: var(--ink-3); text-align: center; }
 .xms span.next b { color: var(--ink); }
@@ -7119,6 +7133,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         ['찜 알림', function () { fxToast('latte', '찜했어요'); }]
       ]],
       ['묻는 창, 확인 창', [
+        ['첫 사용 안내 (처음 켰을 때)', function () { openCoach(); }],
         ['첫 기록 지우기 (다른 기록 없음)', function () { firstUndoBox(2000, false, function () { toast('지웠어요 (시험)'); }); }],
         ['첫 기록 지우기 (다른 기록 있음)', function () { firstUndoBox(2000, true, function () { toast('지웠어요 (시험)'); }); }],
         ['폐업 신고', function () { confirmGone(function () { toast('신고했어요 (시험)'); }); }],
@@ -8414,6 +8429,64 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   $('navHome').addEventListener('click', function () { resetAll(); closePanel(); goRegion(-1); });
   $('zin').addEventListener('click', function () { userMove = true; map.zoomIn(); });
   $('zout').addEventListener('click', function () { userMove = true; map.zoomOut(); });
+  // ----- 첫 사용 안내(2026-11-27): 처음 켰을 때 한 번만, 실제 단추를 가리키는 말풍선 셋 -----
+  // 아무 데나 누르면 다음, "건너뛰기"나 뒤로 단추, Esc는 바로 끝. 다시 보이지 않는다(시험 모드는 시험 메뉴에서 연다).
+  var COACH = [
+    { at: function () { return $('chips').querySelector('[data-act="filter"]'); }, t: '필터', m: '넓은 카페, 새로 연 카페, 좋아하는 브랜드만 골라 볼 수 있어요.' },
+    { at: function () { return $('chips').querySelector('[data-act="bonus"]'); }, t: '보너스 카페', m: '기록하면 원두를 더 주는 카페만 모아 봐요. 새로 연 카페, 오랫동안 기록이 없는 카페 같은 곳이에요.' },
+    { at: null, t: '콘센트 기록', m: '가 본 카페를 누르면 콘센트 자리를 기록할 수 있어요. 그 카페 가까이에 있을 때만 되고, 기록할 때마다 원두가 쌓여요.' }
+  ];
+  function openCoach() {
+    var old = $('coach'); if (old) old.remove();
+    var o = el('div'), hole = el('div', 'chole'), tip = el('div', 'ctip'), step = 0;
+    o.id = 'coach'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '처음 쓰는 법');
+    o.appendChild(hole); o.appendChild(tip); document.body.appendChild(o);
+    var done = function () { save('cafemap.coach', Date.now()); o.remove(); window.removeEventListener('resize', show); };
+    var next = function () { if (++step >= COACH.length) done(); else show(); };
+    function show() {
+      var c = COACH[step], t = c.at && c.at(), W = window.innerWidth, H = window.innerHeight, tw = Math.min(300, W - 32);
+      if (t && t.scrollIntoView) t.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      var r = t && t.getBoundingClientRect();
+      tip.textContent = '';
+      tip.appendChild(el('div', 'ccnt', (step + 1) + ' / ' + COACH.length));
+      tip.appendChild(el('b', null, c.t));
+      tip.appendChild(el('p', null, c.m));
+      var row = el('div', 'crow');
+      row.appendChild(btn('link', '건너뛰기', function (e) { e.stopPropagation(); done(); }));
+      row.appendChild(btn('btn pri', step < COACH.length - 1 ? '다음' : '시작하기', function (e) { e.stopPropagation(); next(); }));
+      tip.appendChild(row);
+      tip.style.width = tw + 'px';
+      place(t, r, W, H, tw);
+      // 칩 줄이 부드럽게 미끄러지며 그 칩을 화면 안으로 옮기는 중이면 자리가 바뀌므로, 멈춘 뒤에 한 번 더 맞춘다.
+      if (t) setTimeout(function () { if (o.isConnected && COACH[step] === c) place(t, t.getBoundingClientRect(), window.innerWidth, window.innerHeight, tw); }, 400);
+    }
+    function place(t, r, W, H, tw) {
+      if (r && r.width) {
+        var pad = 6, left = Math.max(16, Math.min(r.left + r.width / 2 - tw / 2, W - tw - 16));
+        o.classList.remove('dim'); hole.hidden = false;
+        hole.style.left = (r.left - pad) + 'px'; hole.style.top = (r.top - pad) + 'px';
+        hole.style.width = (r.width + pad * 2) + 'px'; hole.style.height = (r.height + pad * 2) + 'px';
+        tip.classList.add('arrow'); tip.style.setProperty('--ax', Math.round(r.left + r.width / 2 - left) + 'px');
+        tip.style.left = left + 'px'; tip.style.top = Math.min(r.bottom + pad + 14, H - 200) + 'px'; tip.style.transform = '';
+      } else {
+        o.classList.add('dim'); hole.hidden = true; tip.classList.remove('arrow');
+        tip.style.left = Math.round((W - tw) / 2) + 'px'; tip.style.top = '50%'; tip.style.transform = 'translateY(-50%)';
+      }
+    }
+    o.addEventListener('click', next);
+    window.addEventListener('resize', show);
+    o.coachDone = done;
+    show();
+    setTimeout(function () { var b = tip.querySelector('.btn'); if (b) b.focus(); }, 50);
+  }
+  // 앱을 처음 켠 사람에게만. 다른 창(로그인, 축하 등)이 떠 있으면 비켜 있다가 다시 본다.
+  function coachMaybe(n) {
+    if (TEST || load('cafemap.coach')) return;
+    var busy = P.kind || $('xinfo') || dmOpen || $('celeb') || $('lvup') || $('egrev') || (loginEl && !loginEl.hidden) || !$('loading').hidden;
+    if (busy) { if ((n || 0) < 20) setTimeout(function () { coachMaybe((n || 0) + 1); }, 3000); return; }
+    openCoach();
+  }
+  setTimeout(coachMaybe, 1500);
   // ----- Esc와 휴대폰의 뒤로 단추: 맨 위에 떠 있는 것 하나만 닫는다 -----
   // 순서: 축하 창 → 작은 창(#xinfo) → 로그인 창 → 새 동네 지도(그 안의 동 카드 먼저) → 카드나 판(목록에서 들어온 카드는 목록으로).
   function pressClose(o) {
@@ -8422,6 +8495,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     return false;
   }
   function closeTop() {
+    var ch = $('coach'); if (ch) { if (ch.coachDone) ch.coachDone(); else ch.remove(); return true; }
     var c = $('lvup') || $('celeb') || $('egrev');
     if (c) { if (!pressClose(c)) c.remove(); return true; }
     var x = $('xinfo');
@@ -8440,7 +8514,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 무언가 떠 있는 동안에는 방문 기록을 한 칸 쌓아 둔다. 뒤로 단추를 누르면 앱이 꺼지지 않고 그 칸이 빠지면서 맨 위 것만 닫힌다.
   // 다 닫히면 쌓아 둔 칸을 스스로 뺀다(그래야 다음 뒤로가 원래대로 앱을 끈다).
   var histOn = false, histSkip = false, histHash = '', histQ = false;
-  function anyLayer() { return !!(P.kind || $('xinfo') || dmOpen || $('celeb') || $('lvup') || $('egrev') || (loginEl && !loginEl.hidden)); }
+  // 새로고침하면 지난번에 쌓아 둔 칸의 표시가 남아 있다. 지금 칸은 원래 칸으로 되돌려 둔다.
+  try { if (history.state && history.state.cmLayer) history.replaceState(null, ''); } catch (e) { /* 그냥 둔다 */ }
+  function anyLayer() { return !!(P.kind || $('coach') || $('xinfo') || dmOpen || $('celeb') || $('lvup') || $('egrev') || (loginEl && !loginEl.hidden)); }
   function syncHist() {
     histQ = false;
     var open = anyLayer();
