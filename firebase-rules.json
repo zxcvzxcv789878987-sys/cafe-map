@@ -189,7 +189,7 @@
             ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12"
           },
           "x": {
-            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000 && newData.val() <= (data.exists() ? data.val() : 0) + 1000000"
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000 && (!data.exists() || newData.val() <= data.val() + 1000000) && (data.exists() || newData.val() <= 1000000)"
           },
           "v": {
             ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 120000"
