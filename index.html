@@ -920,8 +920,8 @@ button.xlink .xbadge.qna { --pri: #1c7ed6; --pri2: #74c0fc; }
 #coach { position: fixed; inset: 0; z-index: 95; }
 #coach .cshade { position: absolute; inset: 0; pointer-events: none; }
 #coach .cshade svg { display: block; }
-#coach .ctip { position: absolute; padding: 13px 15px 9px; border-radius: 16px; background: var(--surface); box-shadow: 0 10px 34px rgba(15, 20, 30, .28); transition: opacity .18s; }
-#coach.moving .ctip { opacity: 0; }
+#coach .ctip { position: absolute; padding: 13px 15px 9px; border-radius: 16px; background: var(--surface); box-shadow: 0 10px 34px rgba(15, 20, 30, .28); transition: opacity .22s ease, transform .22s ease; }
+#coach .ctip.hid { opacity: 0; transform: translateY(6px); pointer-events: none; }
 #coach .ctip::before { content: ""; position: absolute; width: 14px; height: 14px; border-radius: 3px; background: var(--surface); transform: rotate(45deg); display: none; }
 #coach .ctip.below::before { display: block; top: -6px; left: calc(var(--ax) - 7px); }
 #coach .ctip.above::before { display: block; bottom: -6px; left: calc(var(--ax) - 7px); }
@@ -4942,7 +4942,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   var ldEl = document.getElementById('loading'); if (ldEl) ldEl.hidden = true;   // 자료를 다 읽었으니 로딩 표시를 내린다.
   window.cafeDraw = function () { draw(); };   // 시험용: 그리는 데 걸리는 시간을 잴 때 쓴다.
   if (XP_DEV) window.cafeFake = function (i, list) { voters[i] = list; tally(i); };
-  window.cafeTest = { layout: function (r) { var L = tagLayout(r), sc = 512 * Math.pow(2, L.zoom), o = {}; regChildren(r).forEach(function (k) { if (L[k]) o[rName[k]] = [Math.round((L[k].x - L[k].ax) * sc), Math.round((L[k].y - L[k].ay) * sc), L[k].z ? +(L[k].z - L.zoom).toFixed(2) : 0, inShape(k, L[k].x, L[k].y) ? 1 : 0, L[k].zc ? +(L[k].zc - L.zoom).toFixed(2) : 0]; }); return o; },
+  window.cafeTest = { cam: function () { var c = map.getCenter(); return [+c.lng.toFixed(6), +c.lat.toFixed(6), +map.getZoom().toFixed(3), map.isMoving()]; }, layout: function (r) { var L = tagLayout(r), sc = 512 * Math.pow(2, L.zoom), o = {}; regChildren(r).forEach(function (k) { if (L[k]) o[rName[k]] = [Math.round((L[k].x - L[k].ax) * sc), Math.round((L[k].y - L[k].ay) * sc), L[k].z ? +(L[k].z - L.zoom).toFixed(2) : 0, inShape(k, L[k].x, L[k].y) ? 1 : 0, L[k].zc ? +(L[k].zc - L.zoom).toFixed(2) : 0]; }); return o; },
     go: function (path) { if (!path) { goRegion(-1); return -1; } for (var k = 0; k < NR; k++) if (regPath(k) === path) { goRegion(k); return k; } return null; },
     cur: function () { return S.reg; }, trimmed: function () { var o = []; for (var k = 0; k < NR; k++) if (rAll[k] >= 200 && fitBox(k)[0] !== rBox[k * 4] | fitBox(k)[2] !== rBox[k * 4 + 2] | fitBox(k)[1] !== rBox[k * 4 + 1] | fitBox(k)[3] !== rBox[k * 4 + 3]) o.push(regPath(k)); return o; }, relayout: function () { layoutCache = {}; draw(); },
     anchor: function (path) { for (var k = 0; k < NR; k++) if (regPath(k) === path) { var a = tagAnchor(k), ll = mercToLngLat(a.x, a.y); return [+ll[0].toFixed(3), +ll[1].toFixed(3)]; } return null; }, name: function (r) { return rName[r]; }, follow: function () { followView(); return S.reg < 0 ? '전국' : regPath(S.reg); }, reg: function () { return S.reg < 0 ? '전국' : regPath(S.reg); },
@@ -6130,6 +6130,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (row) acc.appendChild(row);
       sc.appendChild(acc);
     }
+    // 사용법(2026-11-27): 지도 점 보는 법과 콘센트 기록하는 법, 처음 안내 다시 보기. 처음 쓰는 사람이 찾기 쉽게 계정 바로 아래에 둔다.
+    var gsec = el('div', 'fsec'), gur = btn('xrow xlink', null, function () { openGuide(); }), gub = el('span', 'xbadge pic mn');
+    gub.appendChild(fxStill('mi_etc')); gur.appendChild(gub); gur.appendChild(el('span', null, '사용법')); gur.appendChild(icon('right'));
+    gsec.appendChild(gur); sc.appendChild(gsec);
     // 내 레벨과 모은 XP, 그리고 보상 체계(무엇을 하면 몇 XP인지, 어디까지 받았는지). 로그인하지 않았으면 레벨 대신 안내만 둔다.
     if (XP_ON && loginOn) {
       var xsec = el('div', 'fsec'), xl = el('div', 'xlv'), xtop = el('div', 'top');
@@ -6258,10 +6262,6 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var tr = btn('xrow xlink', null, function () { location.href = location.pathname + '?test'; }), tbd = el('span', 'xbadge pic mn');
       tbd.appendChild(fxStill('mi_test')); tr.appendChild(tbd); tr.appendChild(el('span', null, '시험 모드')); tr.appendChild(icon('right')); fbRows.push(tr);
     }
-    // 사용법: 지도 점 보는 법과 콘센트 기록하는 법, 처음 안내 다시 보기(2026-11-27)
-    var gur = btn('xrow xlink', null, function () { openGuide(); }), gub = el('span', 'xbadge pic mn');
-    gub.appendChild(fxStill('mi_etc')); gur.appendChild(gub); gur.appendChild(el('span', null, '사용법')); gur.appendChild(icon('right'));
-    fb.appendChild(gur);
     fb.appendChild(fr); fbRows.forEach(function (r) { fb.appendChild(r); }); sc.appendChild(fb);
     var info = el('div', 'fsec'), ul = el('ul', 'mlist');
     info.style.borderBottom = '0';
@@ -8489,59 +8489,60 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     }
     return (coachCafe = best);
   }
+  // 지도의 점 단계에서 옮길 자리. 다음 카드 단계에서 카드를 열 때(selectCafe) 지도가 다시 움직이지 않게, 카드를 열 때와 같은 자리에 카페를 둔다.
+  // (폰: 화면 가운데보다 20% 위, 컴퓨터: 가운데에서 오른쪽으로 180px. 배율이 13 이상이고 카드에 가리지 않으면 selectCafe는 지도를 옮기지 않는다.)
   function coachZoom() {
     var i = coachPickCafe();
     if (i < 0) return false;
     var H = map.getContainer().clientHeight;
-    map.easeTo({ center: [D.lng[i] / 1e5, D.lat[i] / 1e5], zoom: Math.max(map.getZoom(), 15), offset: mobile.matches ? [0, H * .18] : [160, 40], duration: 700 });
+    map.flyTo({ center: [D.lng[i] / 1e5, D.lat[i] / 1e5], zoom: Math.max(map.getZoom(), 15), offset: mobile.matches ? [0, -H * .2] : [180, 0], duration: 1200 });
     return true;
   }
   // 그 카페의 카드를 열고, pop이면 콘센트 기록 판까지 내린다.
   function coachCard(pop) {
     var i = coachPickCafe();
     if (i < 0) return false;
-    if (P.kind !== 'detail' || P.cafe !== i) { if (P.kind) closePanel(true); selectCafe(i, false, null); }
+    if (P.kind !== 'detail' || P.cafe !== i) {
+      if (P.kind) closePanel(true);
+      // selectCafe와 같지만 지도는 옮기지 않는다(앞 단계에서 카드에 가리지 않는 자리로 이미 옮겨 두었다. 사용자: 지도가 막 움직인다).
+      if (pileAt) closePile();
+      sel = i; P.cafe = i; P.prev = null;
+      openPanel('detail'); requestDraw();
+    }
     var info = panel.querySelector('.dh .sum');
     if (!info) return false;
+    info.classList.remove('nudge');   // 안내 중에는 단추를 흔들지 않는다
     if ((info.getAttribute('aria-pressed') === 'true') !== !!pop) info.click();
     return true;
   }
   function coachHome() {
-    if (coachCam) map.easeTo({ center: coachCam.c, zoom: coachCam.z, bearing: coachCam.b, pitch: coachCam.p, duration: 600 });
+    if (coachCam) map.flyTo({ center: coachCam.c, zoom: coachCam.z, bearing: coachCam.b, pitch: coachCam.p, duration: 1000 });
   }
   // 말풍선 자리: 폰에서 판 안의 항목은 그 위(지도 쪽)나 아래, 컴퓨터에서는 판 오른쪽.
   function coachSideAbove() { return mobile.matches ? ['above', 'below'] : ['right', 'below', 'above']; }
   function coachSideBelow() { return mobile.matches ? ['below', 'above'] : ['right', 'below', 'above']; }
-  // 단계: enter 그 화면을 만든다(못 만들면 false, 건너뜀). at 가리킬 곳. chip 같이 밝힐 칩(이 칩을 누르면 열린다는 것을 보이려고). extra 같이 밝힐 단추.
+  // 단계(2026-11-27 사용자: 너무 많다 → 아홉에서 여섯으로). enter 그 화면을 만든다(못 만들면 false, 건너뜀). at 가리킬 곳.
+  // chip 같이 밝힐 칩(이 칩을 누르면 열린다는 것을 보이려고). extra 같이 밝힐 단추.
   var COACH = [
     { enter: function () { return coachOpen('region'); }, chip: 'region', clip: true, side: coachSideBelow,
       at: function () { var c = panel.querySelectorAll('.grid .cell'); return [panel.querySelector('.ph'), c[0], c[1], c[2], c[3], c[4]]; },
       t: '지역', m: '시도, 시군구, 동 순서로 눌러 들어가면 지도가 그 동네로 가고, 그 동네 카페만 남아요. 지도 위의 지역 이름을 눌러도 돼요.' },
-    { enter: function () { return coachOpen('filter'); }, chip: 'filter', side: coachSideBelow,
-      at: function () { return [panel.querySelector('.fsec')]; },
-      t: '노트북 작업', m: '필터의 첫 칸이에요. 대형카페를 켜면 넓은 카페만 남아요. 몇 평부터 대형으로 볼지는 직접 정해요. 콘센트 좌석 있는 곳을 켜면 콘센트가 있다고 기록된 카페만 남아요.' },
-    { enter: function () { return coachOpen('filter'); }, chip: 'filter', clip: true, side: coachSideBelow,
-      at: function () { var rows = panel.querySelectorAll('.brow'); return [panel.querySelector('.bhead'), rows[0], rows[1]]; },
-      extra: function () { return [panel.querySelector('.pfoot .btn')]; },
-      t: '브랜드', m: '필터의 아래 칸이에요. 원하는 브랜드만 골라 볼 수 있어요. 저가커피를 켜면 저가커피 카페만 남아요. 압정을 누르면 그 브랜드가 목록 맨 위에 고정돼요. 다 고르면 적용하기를 눌러요.' },
+    { enter: function () { return coachOpen('filter'); }, chip: 'filter', side: coachSideAbove,
+      at: function () { return [panel]; },
+      t: '필터', m: '대형카페, 콘센트 좌석 있는 곳, 원하는 브랜드만 골라 볼 수 있어요. 고르는 대로 지도에 그 카페만 남아요.' },
     { enter: function () { return coachOpen('bonus'); }, chip: 'bonus', side: coachSideAbove,
       at: function () { return [panel.querySelector('.bsec')]; },
       t: '보너스 카페', m: '하나를 켜면 그 카페만 지도에 남고, 그 카페에 기록하면 원두를 더 받아요. 새로 연 카페는 문 연 지 1년이 안 된 곳, 오랜만의 기록은 6개월 넘게 아무도 기록하지 않은 곳, 첫 기록은 아직 아무도 기록하지 않은 곳이에요.' },
     { enter: function () { if (P.kind) closePanel(true); return coachZoom(); }, clear: true, legend: true,
       t: '지도의 점', m: '점 색은 카페 종류예요. 가까이 보면 브랜드 카페는 점 안에 로고가 보여요.' },
-    { enter: function () { return coachCard(false); }, side: coachSideAbove,
-      at: function () { return [panel.querySelector('.dh .sum')]; },
-      t: '콘센트 기록', m: '지도에서 카페를 누르면 카카오맵의 가게 정보가 나와요. 그 카페에 있을 때 이 콘센트 기록 단추를 눌러요.' },
     { enter: function () { return coachCard(true); }, side: coachSideAbove,
       at: function () { return [panel.querySelector('.dpop .opts.four') || panel.querySelector('.dpop .opts.one')]; },
-      t: '자리 고르기', m: '콘센트가 있는 자리를 모두 고르고, 콘센트가 없으면 없어요를 눌러요. 기록하면 원두를 받아요. 기록은 로그인한 뒤 그 카페에 있을 때만 돼요.' },
-    { enter: function () { return coachCard(true); }, chip: 'want', side: coachSideAbove,
-      at: function () { return [panel.querySelector('.dpop .acts .heart')]; },
-      t: '찜', m: '마음에 든 카페는 찜해 두세요. 위의 찜 칩을 누르면 찜한 카페만 모아 봐요. 찜도 로그인하면 할 수 있어요.' },
-    { enter: function () { if (P.kind !== 'menu') { if (P.kind) closePanel(true); coachHome(); $('menuBtn').click(); } return P.kind === 'menu'; }, side: coachSideAbove,
+      extra: function () { return [panel.querySelector('.dh .sum')]; },
+      t: '콘센트 기록', m: '지도에서 카페를 누르면 이 카드가 나와요. 그 카페에 있을 때 콘센트 기록을 누르고, 콘센트가 있는 자리를 모두 골라요. 없으면 없어요를 눌러요. 로그인하고 기록하면 원두를 받아요.' },
+    { enter: function () { if (P.kind !== 'menu') { if (P.kind) closePanel(true); $('menuBtn').click(); } return P.kind === 'menu'; }, side: coachSideBelow,
       at: function () { var rows = panel.querySelectorAll('.xrow'); for (var k = 0; k < rows.length; k++) if (rows[k].textContent.trim() === '사용법') return [rows[k]]; return [$('menuBtn')]; },
       extra: function () { return [$('menuBtn')]; },
-      t: '메뉴', m: '왼쪽 위 메뉴에 로그인, 내 레벨, 원두 모으는 법, 브랜드 도감, 새 동네 지도, 전체 랭킹이 있어요. 이 안내는 메뉴의 사용법에서 다시 볼 수 있어요.' }
+      t: '메뉴', m: '로그인, 내 레벨, 원두 모으는 법, 브랜드 도감, 새 동네 지도, 전체 랭킹은 왼쪽 위 메뉴에 있어요. 이 안내는 메뉴의 사용법에서 다시 볼 수 있어요.' }
   ];
   // 가리킬 것이 칩 줄이나 판 안에서 화면 밖에 있으면 그 줄(판)만 옮겨 보이게 한다. scrollIntoView는 화면 전체까지 밀어 올려서 쓰지 않는다.
   function coachReveal(e) {
@@ -8556,47 +8557,100 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       return;
     }
   }
+  // 넘어가기(2026-11-27 사용자: 뚝뚝 끊긴다): 말풍선과 밝힌 곳을 서서히 닫고 → 다음 화면을 만들고 → 판과 지도가 다 움직여 멈출 때까지 기다렸다가 →
+  // 밝힐 곳과 말풍선을 서서히 연다. 움직이는 동안에는 밝힌 곳을 다시 그리지 않는다(예전에는 0.12초마다 다시 그려서 칸이 뚝뚝 뛰었다).
   function openCoach() {
-    var old = $('coach'); if (old && old.coachDone) old.coachDone(); else if (old) old.remove();
+    var old = $('coach'); if (old && old.coachDone) old.coachDone(true); else if (old) old.remove();
     if (P.kind) closePanel(true);
     coachCafe = -1;
     var c0 = map.getCenter();
     coachCam = { c: [c0.lng, c0.lat], z: map.getZoom(), b: map.getBearing(), p: map.getPitch() };
-    var o = el('div'), shade = el('div', 'cshade'), tip = el('div', 'ctip'), step = -1, timers = [];
+    var o = el('div'), shade = el('div', 'cshade'), tip = el('div', 'ctip hid'), step = -1, gen = 0, anim = 0, busy = false, closing = false;
+    var holes = [], alpha = 0, dim = 0;   // alpha: 밝힌 곳이 뚫린 정도, dim: 어두운 막의 짙기(둘 다 0에서 1)
     o.id = 'coach'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '처음 쓰는 법');
     tip.setAttribute('aria-live', 'polite');
+    shade.innerHTML = '<svg aria-hidden="true"><defs><mask id="coachCut" maskUnits="userSpaceOnUse"><rect class="mb" fill="#fff"/><g class="mh"></g></mask></defs>'
+      + '<rect class="md" fill="rgb(15,20,30)" fill-opacity="0" mask="url(#coachCut)"/><g class="mr"></g></svg>';
+    var svg = shade.firstChild, mb = svg.querySelector('.mb'), mh = svg.querySelector('.mh'), md = svg.querySelector('.md'), mr = svg.querySelector('.mr');
     o.appendChild(shade); o.appendChild(tip); document.body.appendChild(o);
-    var clearT = function () { timers.forEach(clearTimeout); timers = []; };
-    var done = function () {
-      if (!o.isConnected) return;
-      clearT(); save('cafemap.coach', Date.now()); o.remove();
-      window.removeEventListener('resize', place); document.removeEventListener('keydown', onKey);
-      if (P.kind) closePanel(true);
+    function size() {
+      var W = window.innerWidth, H = window.innerHeight;
+      svg.setAttribute('width', W); svg.setAttribute('height', H); svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+      [mb, md].forEach(function (r) { r.setAttribute('width', W); r.setAttribute('height', H); });
+    }
+    function paint() {
+      md.setAttribute('fill-opacity', (.58 * dim).toFixed(3));
+      var hm = '', hr = '';
+      holes.forEach(function (h) {
+        var a = 'x="' + Math.round(h.l) + '" y="' + Math.round(h.t) + '" width="' + Math.round(h.r - h.l) + '" height="' + Math.round(h.b - h.t) + '" rx="14"';
+        hm += '<rect ' + a + ' fill="#000" fill-opacity="' + alpha.toFixed(3) + '"/>';
+        hr += '<rect ' + a + ' fill="none" stroke="#fff" stroke-width="2" stroke-opacity="' + (.9 * alpha * dim).toFixed(3) + '"/>';
+      });
+      mh.innerHTML = hm; mr.innerHTML = hr;
+    }
+    // 부드러운 값 바꾸기. 그리기가 멈춘 상태(숨긴 창 등)에서도 정해진 시간 뒤에는 마지막 값으로 끝난다.
+    function tween(ms, fn, end) {
+      var my = ++anim, t0 = performance.now(), fin = false;
+      var finish = function () { if (fin || my !== anim) return; fin = true; fn(1); if (end) end(); };
+      if (!ms || REDUCE) { finish(); return; }
+      var tick = function (now) {
+        if (fin || my !== anim || !o.isConnected) return;
+        var k = Math.min(1, (now - t0) / ms);
+        if (k >= 1) { finish(); return; }
+        fn(k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2);
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+      setTimeout(finish, ms + 150);
+    }
+    // 판이 올라오고 카드와 지도가 움직이는 것이 끝날 때까지 기다린다(가리킬 곳의 자리가 여러 번 같고 지도가 멈춰 있으면 끝).
+    function settle(s, g, cb) {
+      var last = '', same = 0, t0 = performance.now(), fin = false;
+      var finish = function () { if (fin || g !== gen) return; fin = true; cb(); };
+      var tick = function (now) {
+        if (fin || g !== gen || !o.isConnected) return;
+        var r = s.at ? rectOf(s.at(), s.clip ? panel : null) : null, key = r ? [r.l, r.t, r.r, r.b].map(Math.round).join(',') : '-';
+        var still = !(map.isMoving && map.isMoving());
+        if (key === last && still) same++; else { same = 0; last = key; }
+        if ((same >= 6 && now - t0 > 180) || now - t0 > 2000) finish(); else requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+      setTimeout(finish, 2400);
+    }
+    var done = function (now) {
+      if (!o.isConnected || closing) return;
+      closing = true; gen++;
+      save('cafemap.coach', Date.now());
+      window.removeEventListener('resize', onResize); document.removeEventListener('keydown', onKey);
+      tip.classList.add('hid');
+      if (P.kind) closePanel(now);
       if (window.scrollY || document.documentElement.scrollTop) window.scrollTo(0, 0);
       coachHome();
+      var a0 = alpha, d0 = dim;
+      tween(now ? 0 : 240, function (e) { alpha = a0 * (1 - e); dim = d0 * (1 - e); paint(); }, function () { o.remove(); });
     };
     // n번째 단계로 간다. 그 단계의 화면(판, 카드)을 만들 수 없으면 가던 쪽으로 건너뛴다.
     var go = function (n) {
-      clearT();
-      var dir = n >= step ? 1 : -1;
-      while (n >= 0 && n < COACH.length && COACH[n].enter() === false) n += dir;
-      if (n >= COACH.length) { done(); return; }
-      if (n < 0) return;
-      step = n;
-      o.classList.add('moving');
-      fill();
-      // 판이 올라오고 카드와 지도가 움직이는 동안에는 가리킬 곳이 계속 바뀐다. 짧게 자주 재다가 자리가 멈추면 말풍선을 보인다.
-      // (느린 기기에서 움직임이 늦게 끝나도 맞게. 2.5초가 지나면 멈추지 않았어도 보인다.)
-      var s = COACH[n], last = '', same = 0, t0 = Date.now();
-      var settle = function () {
-        if (!o.isConnected || COACH[step] !== s) return;
-        var r = s.at ? rectOf(s.at(), s.clip ? panel : null) : null, key = r ? [r.l, r.t, r.r, r.b].map(Math.round).join(',') : '-';
-        if (key !== last) { last = key; same = 0; place(); } else same++;
-        var age = Date.now() - t0;
-        if ((same >= 2 && age > 300) || age > 2500) o.classList.remove('moving');
-        if (age < 2500) timers.push(setTimeout(settle, 120));
-      };
-      timers.push(setTimeout(settle, 60));
+      if (busy || closing) return;
+      busy = true;
+      var g = ++gen, dir = n >= step ? 1 : -1, a0 = alpha, d0 = dim, wasClear = step >= 0 && COACH[step].clear;
+      tip.classList.add('hid');
+      tween(a0 || wasClear ? 180 : 0, function (e) { alpha = a0 * (1 - e); if (wasClear) dim = d0 + (1 - d0) * e; paint(); }, function () {
+        if (g !== gen) return;
+        while (n >= 0 && n < COACH.length && COACH[n].enter() === false) n += dir;
+        if (n >= COACH.length) { busy = false; done(); return; }
+        if (n < 0) n = 0;
+        step = n; fill();
+        var s = COACH[n];
+        settle(s, g, function () {
+          if (g !== gen) return;
+          place();
+          tip.classList.remove('hid');
+          busy = false;
+          var d1 = dim, dt = s.clear ? 0 : 1;
+          tween(240, function (e) { alpha = e; dim = d1 + (dt - d1) * e; paint(); });
+        });
+      });
     };
     function fill() {
       var s = COACH[step], hd = el('div', 'chead');
@@ -8627,21 +8681,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       }
       return r;
     }
-    // 어둡게 덮고 밝힐 곳(여러 군데)만 둥글게 뚫는다. 뚫은 곳에는 흰 테두리.
-    function paintShade(holes, clear) {
-      if (clear) { shade.innerHTML = ''; return; }
-      var W = window.innerWidth, H = window.innerHeight, cut = '', ring = '';
-      holes.forEach(function (h) {
-        var a = 'x="' + Math.round(h.l) + '" y="' + Math.round(h.t) + '" width="' + Math.round(h.r - h.l) + '" height="' + Math.round(h.b - h.t) + '" rx="14"';
-        cut += '<rect ' + a + ' fill="#000"/>';
-        ring += '<rect ' + a + ' fill="none" stroke="#fff" stroke-opacity=".9" stroke-width="2"/>';
-      });
-      shade.innerHTML = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true"><defs><mask id="coachCut"><rect width="' + W + '" height="' + H + '" fill="#fff"/>' + cut + '</mask></defs>'
-        + '<rect width="' + W + '" height="' + H + '" fill="rgba(15,20,30,.58)" mask="url(#coachCut)"/>' + ring + '</svg>';
-    }
+    // 밝힐 곳과 말풍선 자리를 정한다(그리기는 paint).
     function place() {
       if (step < 0 || !o.isConnected) return;
       var s = COACH[step], W = window.innerWidth, H = window.innerHeight, tw = Math.min(340, W - 32), gap = 12, pad = 6, x, y, side = null;
+      size();
       tip.style.width = tw + 'px';
       var els = s.at ? s.at() : null;
       if (els) coachReveal(els[0]);
@@ -8654,16 +8698,17 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         var g = { l: Math.max(4, q.l - pad), t: Math.max(4, q.t - pad), r: Math.min(W - 4, q.r + pad), b: Math.min(H - 4, q.b + pad) };
         return g.r - g.l > 4 && g.b - g.t > 4 ? g : null;
       };
-      var r = grow(s.at ? rectOf(els, s.clip ? panel : null) : null), holes = r ? [r] : [];
+      var r = grow(s.at ? rectOf(els, s.clip ? panel : null) : null);
+      holes = r ? [r] : [];
       var add = function (e) { var q = grow(rectOf([e], null)); if (q) holes.push(q); };
       if (chipEl) add(chipEl);
       if (s.extra) (s.extra() || []).forEach(add);
-      o.classList.toggle('clear', !!s.clear);
-      paintShade(holes, !!s.clear);
+      paint();
       tip.classList.remove('below', 'above', 'right', 'left');
       var th = tip.offsetHeight;
       if (!r) {
-        if (s.clear) { x = mobile.matches ? Math.round((W - tw) / 2) : 16; y = mobile.matches ? 124 : 76; }   // 지도가 보이게 위쪽에
+        // 지도를 보여 주는 단계: 폰은 아래쪽(카페가 화면 위쪽에 있다), 컴퓨터는 왼쪽 위
+        if (s.clear) { x = mobile.matches ? Math.round((W - tw) / 2) : 16; y = mobile.matches ? H - th - 28 : 76; }
         else { x = Math.round((W - tw) / 2); y = Math.round((H - th) / 2); }
       } else {
         var cx = (r.l + r.r) / 2, cy = (r.t + r.b) / 2, big = (r.b - r.t) > H * .3 || (r.r - r.l) > W * .6;
@@ -8689,16 +8734,18 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (side) tip.classList.add(side);
       tip.style.left = Math.round(x) + 'px'; tip.style.top = Math.round(y) + 'px';
     }
+    var onResize = function () { if (!busy) place(); };
     var onKey = function (e) {
       if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); go(step + 1); }
       else if (e.key === 'ArrowLeft' && step > 0) { e.preventDefault(); go(step - 1); }
     };
     o.addEventListener('click', function () { go(step + 1); });
-    window.addEventListener('resize', place);
+    window.addEventListener('resize', onResize);
     document.addEventListener('keydown', onKey);
     o.coachDone = done;
+    size();
     go(0);
-    setTimeout(function () { var b = tip.querySelector('.btn.pri'); if (b && o.isConnected) b.focus(); }, 480);
+    setTimeout(function () { var b = tip.querySelector('.btn.pri'); if (b && o.isConnected) b.focus({ preventScroll: true }); }, 900);
   }
   // 사용법 창(메뉴): 지도 점 보는 법, 콘센트 기록하는 법, 처음 안내 다시 보기
   function openGuide() {
