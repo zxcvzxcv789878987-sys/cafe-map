@@ -8540,7 +8540,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var i = coachPickCafe();
     if (i < 0) return false;
     var H = map.getContainer().clientHeight;
-    liveHold = 0;   // 앱을 켤 때의 매장 자리 기다림이 남아 있으면 카카오 장소가 있는 카페가 숨어 있다
+    // 카카오의 실제 매장 자리를 아직 못 받은 점은 미끄러지지 않게, 받을 때까지(길어야 2.5초) 그리지 않았다가 제자리에 그린다(사용자: 점들이 난리다).
+    // 안내를 시작할 때 미리 받아 두므로 보통은 도착하기 전에 다 와 있다.
+    liveHoldOn(2500);
     map.flyTo({ center: [D.lng[i] / 1e5, D.lat[i] / 1e5], zoom: Math.max(map.getZoom(), 15), offset: mobile.matches ? [0, -H * .2] : [180, 0], duration: 1200 });
     return true;
   }
@@ -8640,6 +8642,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var keepS = JSON.stringify({ reg: S.reg, showAll: S.showAll, seen: S.seen, bonus: S.bonus, cats: S.cats, brands: S.brands, tab: S.tab, big: S.big, outlet: S.outlet, chairs: S.chairs });
     var keepFollow = follow;
     setFollow(false);
+    // 지도의 점 단계에서 갈 곳(성수역)의 카카오 매장 자리를 미리 받아 둔다. 도착해서 받으면 점들이 제자리로 미끄러지는 게 다 보인다.
+    var ci = coachPickCafe(); if (ci >= 0) liveFetchAt(D.lng[ci] / 1e5, D.lat[ci] / 1e5, 14.6);
     resetAll(); S.reg = -1; S.showAll = false; changed();
     var o = el('div'), shade = el('div', 'cshade'), tip = el('div', 'ctip hid'), step = -1, gen = 0, anim = 0, busy = false, closing = false;
     var holes = [], alpha = 0, dim = 0;   // alpha: 밝힌 곳이 뚫린 정도, dim: 어두운 막의 짙기(둘 다 0에서 1)
