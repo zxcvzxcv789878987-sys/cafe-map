@@ -78,12 +78,13 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 .chip { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px; border-radius: 999px; background: var(--surface); box-shadow: var(--sh-1); font-size: 14px; font-weight: 600; white-space: nowrap; flex: none; }
 .chip:hover { background: var(--surface-2); }
 .chip[aria-pressed=true] { background: var(--pri); color: var(--on-pri); }
-/* 보너스 카페 칩: 지도의 새 카페 표시와 같은 초록 별. 켜면 칩이 초록이고 별은 흰 동그라미 안의 초록 별 */
-.chip .gstar { display: inline-flex; width: 18px; height: 18px; flex: none; }
-.chip .gstar svg { width: 100%; height: 100%; }
-.chip .gstar .gs-c { fill: #37b24d; } .chip .gstar .gs-s { fill: #fff; }
-.chip.bonus[aria-pressed=true] { background: #37b24d; color: #fff; }
-.chip.bonus[aria-pressed=true] .gs-c { fill: #fff; } .chip.bonus[aria-pressed=true] .gs-s { fill: #37b24d; }
+/* 보너스 카페 칩: 원두를 더 받는 곳이라 원두 그림. 켜면 칩이 원두 갈색이고 원두는 흰 동그라미 안에.
+   (예전에는 초록 별이었는데, 지도의 초록 별은 새로 연 카페에만 붙어서 헷갈렸다. 사용자 2026-11-27) */
+.chip .cbean { display: inline-grid; place-items: center; width: 18px; height: 18px; flex: none; border-radius: 50%; }
+.chip .cbean svg { width: 17px; height: 17px; display: block; }
+.chip.bonus[aria-pressed=true] .cbean { background: #fff; }
+.chip.bonus[aria-pressed=true] .cbean svg { width: 14px; height: 14px; }
+.chip.bonus[aria-pressed=true] { background: #8B5A3C; color: #fff; }
 /* 보너스 카페 판의 줄: 그림, 이름, 받는 XP */
 .bsec { display: flex; flex-direction: column; gap: 16px; }
 .bsec .blab { display: flex; align-items: center; gap: 9px; min-width: 0; }
@@ -4912,10 +4913,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (S.bonus === 'first') return !myO[i] && !(voters[i] && voters[i].length);
     return true;
   }
-  // 지도의 새 카페 표시와 같은 초록 별(초록 동그라미 안의 흰 별)
-  function starIcon() {
-    var w = el('span', 'gstar');
-    w.innerHTML = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9" class="gs-c"/><path class="gs-s" d="M10 3.6 11.9 8.1 16.4 10 11.9 11.9 10 16.4 8.1 11.9 3.6 10 8.1 8.1z"/></svg>';
+  // 보너스 카페 칩의 원두 그림(지도의 초록 별은 새로 연 카페 표시로만 쓴다)
+  function bonusIcon() {
+    var w = el('span', 'cbean');
+    w.innerHTML = BEAN_SVG;
     return w;
   }
   var BONUS_OPT = [
@@ -7469,11 +7470,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     box.appendChild(regionChip());
     // 걸러 보기와 설정은 필터 칩 하나에 다 들어 있다. 칩 이름은 늘 "필터"다. 켜 둔 조건이 있으면 칩이 진해지고, 옆의 x로 한 번에 푼다.
     box.appendChild(chip('필터', !!fl, 'filter', { icon: 'filter', caret: true, sub: fl ? ['reset', 'x', '필터 모두 풀기'] : null }));
-    // 보너스 카페: XP를 더 받는 곳만 본다(필터와 같이 쓴다). 누르면 필터 같은 판이 열리고 셋 중 하나를 켠다. 켜면 칩이 초록이고 이름이 고른 것으로 바뀐다.
+    // 보너스 카페: XP를 더 받는 곳만 본다(필터와 같이 쓴다). 누르면 필터 같은 판이 열리고 셋 중 하나를 켠다. 켜면 칩이 원두 갈색이고 이름이 고른 것으로 바뀐다.
     // 폰에서 칩 넷이 한 줄에 들어가야 해서 x는 두지 않는다(판의 스위치로 끈다).
     var bo = bonusOpt();
     var bc = chip(bo ? bo[2] : '보너스 카페', !!bo, 'bonus', { cls: 'bonus', aria: '보너스 카페 고르기' });
-    bc.insertBefore(starIcon(), bc.firstChild); box.appendChild(bc);
+    bc.insertBefore(bonusIcon(), bc.firstChild); box.appendChild(bc);
     // 찜은 "내 목록 보기"라서 혼자 쓴다. 켜면 필터와 새로 오픈이 초기화되고, 찜을 켠 채로 필터나 새로 오픈을 누르면 찜이 꺼진다.
     box.appendChild(chip('찜', S.seen === 'want', 'want', { pic: 'mi_heart', aria: '찜한 곳만 보기' }));
     // 지역을 골라 들어간 동안에만 오른쪽 아래에 뒤로, 처음부터 단추를 보여 준다.
