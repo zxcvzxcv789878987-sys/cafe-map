@@ -916,20 +916,34 @@ button.xlink .xbadge.qna { --pri: #1c7ed6; --pri2: #74c0fc; }
 .terms { margin: 4px 0 0; font-size: 12px; line-height: 1.5; color: var(--ink-3); text-align: center; }
 .terms a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .rpadm { margin-top: 6px; }
-/* 첫 사용 안내(2026-11-27): 가리키는 단추만 밝게 남기고 나머지를 어둡게, 그 아래 말풍선 */
+/* 첫 사용 안내(2026-11-27): 가리키는 곳과 그것을 여는 칩만 밝게 뚫고 나머지를 어둡게, 둘 다 가리지 않는 자리에 말풍선 */
 #coach { position: fixed; inset: 0; z-index: 95; }
-#coach.dim { background: rgba(15, 20, 30, .55); }
-#coach .chole { position: absolute; border-radius: 16px; box-shadow: 0 0 0 9999px rgba(15, 20, 30, .55); pointer-events: none; transition: left .25s, top .25s, width .25s, height .25s; }
-#coach .chole[hidden] { display: none; }
-#coach .ctip { position: absolute; padding: 14px 16px 10px; border-radius: 16px; background: var(--surface); box-shadow: var(--sh-2); }
-#coach .ctip.arrow::before { content: ""; position: absolute; top: -6px; left: calc(var(--ax) - 7px); width: 14px; height: 14px; border-radius: 3px; background: var(--surface); transform: rotate(45deg); }
-#coach .ccnt { font-size: 12px; font-weight: 700; color: var(--pri); }
-#coach .ctip b { display: block; margin-top: 2px; font-size: 16px; font-weight: 750; }
-#coach .ctip p { margin: 4px 0 10px; font-size: 14px; line-height: 1.55; color: var(--ink-2); }
-#coach .crow { display: flex; align-items: center; justify-content: space-between; }
+#coach .cshade { position: absolute; inset: 0; pointer-events: none; }
+#coach .cshade svg { display: block; }
+#coach .ctip { position: absolute; padding: 13px 15px 9px; border-radius: 16px; background: var(--surface); box-shadow: 0 10px 34px rgba(15, 20, 30, .28); transition: opacity .18s; }
+#coach.moving .ctip { opacity: 0; }
+#coach .ctip::before { content: ""; position: absolute; width: 14px; height: 14px; border-radius: 3px; background: var(--surface); transform: rotate(45deg); display: none; }
+#coach .ctip.below::before { display: block; top: -6px; left: calc(var(--ax) - 7px); }
+#coach .ctip.above::before { display: block; bottom: -6px; left: calc(var(--ax) - 7px); }
+#coach .ctip.right::before { display: block; left: -6px; top: calc(var(--ay) - 7px); }
+#coach .ctip.left::before { display: block; right: -6px; top: calc(var(--ay) - 7px); }
+#coach .chead { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+#coach .chead b { font-size: 16px; font-weight: 750; }
+#coach .ccnt { flex: none; font-size: 12px; font-weight: 700; color: var(--pri); }
+#coach .ctip p { margin: 4px 0 8px; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+#coach .crow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 #coach .crow .link { padding: 8px 4px; font-size: 13px; color: var(--ink-3); }
-#coach .crow .btn { min-width: 92px; }
-@media (prefers-reduced-motion: reduce) { #coach .chole { transition: none; } }
+#coach .cbtns { display: flex; gap: 6px; }
+#coach .cbtns .btn { height: 36px; min-width: 60px; }
+#coach .cbtns .btn.pri { min-width: 80px; }
+@media (prefers-reduced-motion: reduce) { #coach .ctip { transition: none; } }
+/* 지도 점 보는 법(첫 사용 안내, 사용법 창) */
+.clegend { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; margin: 2px 0 12px; }
+.clrow { display: flex; align-items: center; gap: 6px; font-size: 13px; line-height: 1.35; color: var(--ink-2); }
+.clico { flex: none; width: 26px; height: 26px; }
+.clico svg { width: 100%; height: 100%; display: block; }
+.xbox.guide .clegend { margin-top: 4px; }
+@media (max-width: 360px) { .clegend { grid-template-columns: 1fr; } }
 /* 도감 아래 상표 안내 한 줄 */
 .dxtm { margin: 0 0 8px; font-size: 11.5px; line-height: 1.45; color: var(--ink-3); text-align: center; }
 .xms span.next b { color: var(--ink); }
@@ -6244,6 +6258,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var tr = btn('xrow xlink', null, function () { location.href = location.pathname + '?test'; }), tbd = el('span', 'xbadge pic mn');
       tbd.appendChild(fxStill('mi_test')); tr.appendChild(tbd); tr.appendChild(el('span', null, '시험 모드')); tr.appendChild(icon('right')); fbRows.push(tr);
     }
+    // 사용법: 지도 점 보는 법과 콘센트 기록하는 법, 처음 안내 다시 보기(2026-11-27)
+    var gur = btn('xrow xlink', null, function () { openGuide(); }), gub = el('span', 'xbadge pic mn');
+    gub.appendChild(fxStill('mi_etc')); gur.appendChild(gub); gur.appendChild(el('span', null, '사용법')); gur.appendChild(icon('right'));
+    fb.appendChild(gur);
     fb.appendChild(fr); fbRows.forEach(function (r) { fb.appendChild(r); }); sc.appendChild(fb);
     var info = el('div', 'fsec'), ul = el('ul', 'mlist');
     info.style.borderBottom = '0';
@@ -8429,57 +8447,277 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   $('navHome').addEventListener('click', function () { resetAll(); closePanel(); goRegion(-1); });
   $('zin').addEventListener('click', function () { userMove = true; map.zoomIn(); });
   $('zout').addEventListener('click', function () { userMove = true; map.zoomOut(); });
-  // ----- 첫 사용 안내(2026-11-27): 처음 켰을 때 한 번만, 실제 단추를 가리키는 말풍선 셋 -----
-  // 아무 데나 누르면 다음, "건너뛰기"나 뒤로 단추, Esc는 바로 끝. 다시 보이지 않는다(시험 모드는 시험 메뉴에서 연다).
-  var COACH = [
-    { at: function () { return $('chips').querySelector('[data-act="filter"]'); }, t: '필터', m: '넓은 카페, 새로 연 카페, 좋아하는 브랜드만 골라 볼 수 있어요.' },
-    { at: function () { return $('chips').querySelector('[data-act="bonus"]'); }, t: '보너스 카페', m: '기록하면 원두를 더 주는 카페만 모아 봐요. 새로 연 카페, 오랫동안 기록이 없는 카페 같은 곳이에요.' },
-    { at: null, t: '콘센트 기록', m: '가 본 카페를 누르면 콘센트 자리를 기록할 수 있어요. 그 카페 가까이에 있을 때만 되고, 기록할 때마다 원두가 쌓여요.' }
+  // ----- 첫 사용 안내(2026-11-27 다시 만듦. 사용자: 실제 판을 열고 실제 단추를 보여 주면서, 틀리지 않게) -----
+  // 처음 켰을 때 한 번만 뜨고, 메뉴의 사용법에서 다시 볼 수 있다. 실제로 판과 카드를 열고 그 안의 항목을 밝게 가리킨다.
+  // 아무 데나 누르거나 "다음"이면 다음, "이전"이면 앞, "건너뛰기", 뒤로 단추, Esc는 바로 끝. 끝나면 연 판을 닫고 지도를 처음 자리로 돌린다.
+  // 지도 점의 뜻(색과 붙는 표시)은 앱 어디에도 없어서 여기와 사용법 창에 같이 둔다. 색과 표시는 paintDot, 묶음 점(같은 건물), outletBadge, newBadge, wantBadge와 같다.
+  var CL_BASE = '<circle cx="11.5" cy="12.5" r="7" fill="#c3c8d0" stroke="#fff" stroke-width="2"/>';
+  var COACH_LEGEND = [
+    ['<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.5" fill="#2463eb" stroke="#fff" stroke-width="2"/></svg>', '프랜차이즈'],
+    ['<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.5" fill="#f59f0a" stroke="#fff" stroke-width="2"/></svg>', '저가커피'],
+    ['<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.5" fill="#8a5a3c" stroke="#fff" stroke-width="2"/></svg>', '개인카페'],
+    ['<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="#14171c" stroke="#fff" stroke-width="2"/><text x="12" y="15.4" font-size="10" font-weight="750" text-anchor="middle" fill="#fff" font-family="sans-serif">2</text></svg>', '같은 건물의 카페 여러 곳 (누르면 목록)'],
+    ['<svg viewBox="0 0 24 24" aria-hidden="true">' + CL_BASE + '<circle cx="17" cy="7" r="3.8" fill="#0f8a5a" stroke="#fff" stroke-width="1.5"/></svg>', '콘센트 좌석이 있다고 기록된 곳'],
+    ['<svg viewBox="0 0 24 24" aria-hidden="true">' + CL_BASE + '<circle cx="6.5" cy="7" r="4.6" fill="#37b24d" stroke="#fff" stroke-width="1.3"/><path d="M6.5 3.8 7.6 5.9 9.7 7 7.6 8.1 6.5 10.2 5.4 8.1 3.3 7 5.4 5.9z" fill="#fff"/></svg>', '새로 연 카페 (문 연 지 1년 안)'],
+    ['<svg viewBox="0 0 24 24" aria-hidden="true">' + CL_BASE + '<g transform="translate(17 17.5) scale(.3) translate(-16 -15.8)"><path d="M16 27.6C5.4 20.6 2.4 15.1 2.4 10.7 2.4 6.7 5.4 3.9 9.2 3.9c2.7 0 4.9 1.5 6.8 4.1 1.9-2.6 4.1-4.1 6.8-4.1 3.8 0 6.8 2.8 6.8 6.8 0 4.4-3 9.9-13.6 16.9z" fill="#F8312F" stroke="#fff" stroke-width="5" paint-order="stroke"/></g></svg>', '내가 찜한 곳']
   ];
-  function openCoach() {
-    var old = $('coach'); if (old) old.remove();
-    var o = el('div'), hole = el('div', 'chole'), tip = el('div', 'ctip'), step = 0;
-    o.id = 'coach'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '처음 쓰는 법');
-    o.appendChild(hole); o.appendChild(tip); document.body.appendChild(o);
-    var done = function () { save('cafemap.coach', Date.now()); o.remove(); window.removeEventListener('resize', show); };
-    var next = function () { if (++step >= COACH.length) done(); else show(); };
-    function show() {
-      var c = COACH[step], t = c.at && c.at(), W = window.innerWidth, H = window.innerHeight, tw = Math.min(300, W - 32);
-      if (t && t.scrollIntoView) t.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-      var r = t && t.getBoundingClientRect();
-      tip.textContent = '';
-      tip.appendChild(el('div', 'ccnt', (step + 1) + ' / ' + COACH.length));
-      tip.appendChild(el('b', null, c.t));
-      tip.appendChild(el('p', null, c.m));
-      var row = el('div', 'crow');
-      row.appendChild(btn('link', '건너뛰기', function (e) { e.stopPropagation(); done(); }));
-      row.appendChild(btn('btn pri', step < COACH.length - 1 ? '다음' : '시작하기', function (e) { e.stopPropagation(); next(); }));
-      tip.appendChild(row);
-      tip.style.width = tw + 'px';
-      place(t, r, W, H, tw);
-      // 칩 줄이 부드럽게 미끄러지며 그 칩을 화면 안으로 옮기는 중이면 자리가 바뀌므로, 멈춘 뒤에 한 번 더 맞춘다.
-      if (t) setTimeout(function () { if (o.isConnected && COACH[step] === c) place(t, t.getBoundingClientRect(), window.innerWidth, window.innerHeight, tw); }, 400);
-    }
-    function place(t, r, W, H, tw) {
-      if (r && r.width) {
-        var pad = 6, left = Math.max(16, Math.min(r.left + r.width / 2 - tw / 2, W - tw - 16));
-        o.classList.remove('dim'); hole.hidden = false;
-        hole.style.left = (r.left - pad) + 'px'; hole.style.top = (r.top - pad) + 'px';
-        hole.style.width = (r.width + pad * 2) + 'px'; hole.style.height = (r.height + pad * 2) + 'px';
-        tip.classList.add('arrow'); tip.style.setProperty('--ax', Math.round(r.left + r.width / 2 - left) + 'px');
-        tip.style.left = left + 'px'; tip.style.top = Math.min(r.bottom + pad + 14, H - 200) + 'px'; tip.style.transform = '';
-      } else {
-        o.classList.add('dim'); hole.hidden = true; tip.classList.remove('arrow');
-        tip.style.left = Math.round((W - tw) / 2) + 'px'; tip.style.top = '50%'; tip.style.transform = 'translateY(-50%)';
-      }
-    }
-    o.addEventListener('click', next);
-    window.addEventListener('resize', show);
-    o.coachDone = done;
-    show();
-    setTimeout(function () { var b = tip.querySelector('.btn'); if (b) b.focus(); }, 50);
+  function coachLegend() {
+    var w = el('div', 'clegend');
+    COACH_LEGEND.forEach(function (x) { var r = el('div', 'clrow'), s = el('span', 'clico'); s.innerHTML = x[0]; r.appendChild(s); r.appendChild(el('span', null, x[1])); w.appendChild(r); });
+    return w;
   }
-  // 앱을 처음 켠 사람에게만. 다른 창(로그인, 축하 등)이 떠 있으면 비켜 있다가 다시 본다.
+  var coachCafe = -1, coachCam = null;
+  // 칩을 눌러 그 판을 연다(사람이 누른 것과 똑같이).
+  function coachOpen(kind) {
+    if (P.kind === kind) return true;
+    if (P.kind) closePanel(true);
+    var c = $('chips').querySelector('[data-act="' + kind + '"]');
+    if (c) c.click();
+    return P.kind === kind;
+  }
+  // 보여 줄 카페: 지금 지도 가운데에서 가장 가까운, 카카오맵 가게 화면이 있는 카페(그래야 카드 머리줄에 콘센트 기록 단추가 있다).
+  function coachPickCafe() {
+    if (!D.kid) return -1;
+    if (coachCafe >= 0 && pass[coachCafe] && D.kid[coachCafe]) return coachCafe;
+    var c = map.getCenter(), cx = (c.lng + 180) / 360, cy = mercY(c.lat), best = -1, bd = Infinity;
+    // 전국이나 도를 보고 있으면 지도 가운데가 한적한 곳이라 점이 몇 개 없다. 카페가 가장 많은 시군구의 가운데에서 고른다.
+    if (map.getZoom() < 9) { var top = -1; sggReg.forEach(function (r) { if (top < 0 || rAll[r] > rAll[top]) top = r; }); if (top >= 0 && rAll[top]) { cx = rCx[top]; cy = rCy[top]; } }
+    for (var i = 0; i < N; i++) {
+      if (!pass[i] || removed[i] || !D.kid[i]) continue;
+      var dx = mx[i] - cx, dy = my[i] - cy, d = dx * dx + dy * dy;
+      if (d < bd) { bd = d; best = i; }
+    }
+    return (coachCafe = best);
+  }
+  function coachZoom() {
+    var i = coachPickCafe();
+    if (i < 0) return false;
+    var H = map.getContainer().clientHeight;
+    map.easeTo({ center: [D.lng[i] / 1e5, D.lat[i] / 1e5], zoom: Math.max(map.getZoom(), 15), offset: mobile.matches ? [0, H * .18] : [160, 40], duration: 700 });
+    return true;
+  }
+  // 그 카페의 카드를 열고, pop이면 콘센트 기록 판까지 내린다.
+  function coachCard(pop) {
+    var i = coachPickCafe();
+    if (i < 0) return false;
+    if (P.kind !== 'detail' || P.cafe !== i) { if (P.kind) closePanel(true); selectCafe(i, false, null); }
+    var info = panel.querySelector('.dh .sum');
+    if (!info) return false;
+    if ((info.getAttribute('aria-pressed') === 'true') !== !!pop) info.click();
+    return true;
+  }
+  function coachHome() {
+    if (coachCam) map.easeTo({ center: coachCam.c, zoom: coachCam.z, bearing: coachCam.b, pitch: coachCam.p, duration: 600 });
+  }
+  // 말풍선 자리: 폰에서 판 안의 항목은 그 위(지도 쪽)나 아래, 컴퓨터에서는 판 오른쪽.
+  function coachSideAbove() { return mobile.matches ? ['above', 'below'] : ['right', 'below', 'above']; }
+  function coachSideBelow() { return mobile.matches ? ['below', 'above'] : ['right', 'below', 'above']; }
+  // 단계: enter 그 화면을 만든다(못 만들면 false, 건너뜀). at 가리킬 곳. chip 같이 밝힐 칩(이 칩을 누르면 열린다는 것을 보이려고). extra 같이 밝힐 단추.
+  var COACH = [
+    { enter: function () { return coachOpen('region'); }, chip: 'region', clip: true, side: coachSideBelow,
+      at: function () { var c = panel.querySelectorAll('.grid .cell'); return [panel.querySelector('.ph'), c[0], c[1], c[2], c[3], c[4]]; },
+      t: '지역', m: '시도, 시군구, 동 순서로 눌러 들어가면 지도가 그 동네로 가고, 그 동네 카페만 남아요. 지도 위의 지역 이름을 눌러도 돼요.' },
+    { enter: function () { return coachOpen('filter'); }, chip: 'filter', side: coachSideBelow,
+      at: function () { return [panel.querySelector('.fsec')]; },
+      t: '노트북 작업', m: '필터의 첫 칸이에요. 대형카페를 켜면 넓은 카페만 남아요. 몇 평부터 대형으로 볼지는 직접 정해요. 콘센트 좌석 있는 곳을 켜면 콘센트가 있다고 기록된 카페만 남아요.' },
+    { enter: function () { return coachOpen('filter'); }, chip: 'filter', clip: true, side: coachSideBelow,
+      at: function () { var rows = panel.querySelectorAll('.brow'); return [panel.querySelector('.bhead'), rows[0], rows[1]]; },
+      extra: function () { return [panel.querySelector('.pfoot .btn')]; },
+      t: '브랜드', m: '필터의 아래 칸이에요. 원하는 브랜드만 골라 볼 수 있어요. 저가커피를 켜면 저가커피 카페만 남아요. 압정을 누르면 그 브랜드가 목록 맨 위에 고정돼요. 다 고르면 적용하기를 눌러요.' },
+    { enter: function () { return coachOpen('bonus'); }, chip: 'bonus', side: coachSideAbove,
+      at: function () { return [panel.querySelector('.bsec')]; },
+      t: '보너스 카페', m: '하나를 켜면 그 카페만 지도에 남고, 그 카페에 기록하면 원두를 더 받아요. 새로 연 카페는 문 연 지 1년이 안 된 곳, 오랜만의 기록은 6개월 넘게 아무도 기록하지 않은 곳, 첫 기록은 아직 아무도 기록하지 않은 곳이에요.' },
+    { enter: function () { if (P.kind) closePanel(true); return coachZoom(); }, clear: true, legend: true,
+      t: '지도의 점', m: '점 색은 카페 종류예요. 가까이 보면 브랜드 카페는 점 안에 로고가 보여요.' },
+    { enter: function () { return coachCard(false); }, side: coachSideAbove,
+      at: function () { return [panel.querySelector('.dh .sum')]; },
+      t: '콘센트 기록', m: '지도에서 카페를 누르면 카카오맵의 가게 정보가 나와요. 그 카페에 있을 때 이 콘센트 기록 단추를 눌러요.' },
+    { enter: function () { return coachCard(true); }, side: coachSideAbove,
+      at: function () { return [panel.querySelector('.dpop .opts.four') || panel.querySelector('.dpop .opts.one')]; },
+      t: '자리 고르기', m: '콘센트가 있는 자리를 모두 고르고, 콘센트가 없으면 없어요를 눌러요. 기록하면 원두를 받아요. 기록은 로그인한 뒤 그 카페에 있을 때만 돼요.' },
+    { enter: function () { return coachCard(true); }, chip: 'want', side: coachSideAbove,
+      at: function () { return [panel.querySelector('.dpop .acts .heart')]; },
+      t: '찜', m: '마음에 든 카페는 찜해 두세요. 위의 찜 칩을 누르면 찜한 카페만 모아 봐요. 찜도 로그인하면 할 수 있어요.' },
+    { enter: function () { if (P.kind !== 'menu') { if (P.kind) closePanel(true); coachHome(); $('menuBtn').click(); } return P.kind === 'menu'; }, side: coachSideAbove,
+      at: function () { var rows = panel.querySelectorAll('.xrow'); for (var k = 0; k < rows.length; k++) if (rows[k].textContent.trim() === '사용법') return [rows[k]]; return [$('menuBtn')]; },
+      extra: function () { return [$('menuBtn')]; },
+      t: '메뉴', m: '왼쪽 위 메뉴에 로그인, 내 레벨, 원두 모으는 법, 브랜드 도감, 새 동네 지도, 전체 랭킹이 있어요. 이 안내는 메뉴의 사용법에서 다시 볼 수 있어요.' }
+  ];
+  // 가리킬 것이 칩 줄이나 판 안에서 화면 밖에 있으면 그 줄(판)만 옮겨 보이게 한다. scrollIntoView는 화면 전체까지 밀어 올려서 쓰지 않는다.
+  function coachReveal(e) {
+    if (!e) return;
+    for (var p = e.parentElement; p && p !== document.body; p = p.parentElement) {
+      var cs = getComputedStyle(p);
+      var ox = /(auto|scroll)/.test(cs.overflowX) && p.scrollWidth > p.clientWidth + 1, oy = /(auto|scroll)/.test(cs.overflowY) && p.scrollHeight > p.clientHeight + 1;
+      if (!ox && !oy) continue;
+      var pr = p.getBoundingClientRect(), er = e.getBoundingClientRect();
+      if (ox) { if (er.left < pr.left + 8) p.scrollLeft -= pr.left + 8 - er.left; else if (er.right > pr.right - 8) p.scrollLeft += er.right - pr.right + 8; }
+      if (oy) { if (er.top < pr.top + 8) p.scrollTop -= pr.top + 8 - er.top; else if (er.bottom > pr.bottom - 8) p.scrollTop += er.bottom - pr.bottom + 8; }
+      return;
+    }
+  }
+  function openCoach() {
+    var old = $('coach'); if (old && old.coachDone) old.coachDone(); else if (old) old.remove();
+    if (P.kind) closePanel(true);
+    coachCafe = -1;
+    var c0 = map.getCenter();
+    coachCam = { c: [c0.lng, c0.lat], z: map.getZoom(), b: map.getBearing(), p: map.getPitch() };
+    var o = el('div'), shade = el('div', 'cshade'), tip = el('div', 'ctip'), step = -1, timers = [];
+    o.id = 'coach'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '처음 쓰는 법');
+    tip.setAttribute('aria-live', 'polite');
+    o.appendChild(shade); o.appendChild(tip); document.body.appendChild(o);
+    var clearT = function () { timers.forEach(clearTimeout); timers = []; };
+    var done = function () {
+      if (!o.isConnected) return;
+      clearT(); save('cafemap.coach', Date.now()); o.remove();
+      window.removeEventListener('resize', place); document.removeEventListener('keydown', onKey);
+      if (P.kind) closePanel(true);
+      if (window.scrollY || document.documentElement.scrollTop) window.scrollTo(0, 0);
+      coachHome();
+    };
+    // n번째 단계로 간다. 그 단계의 화면(판, 카드)을 만들 수 없으면 가던 쪽으로 건너뛴다.
+    var go = function (n) {
+      clearT();
+      var dir = n >= step ? 1 : -1;
+      while (n >= 0 && n < COACH.length && COACH[n].enter() === false) n += dir;
+      if (n >= COACH.length) { done(); return; }
+      if (n < 0) return;
+      step = n;
+      o.classList.add('moving');
+      fill();
+      // 판이 올라오고 카드와 지도가 움직이는 동안에는 가리킬 곳이 계속 바뀐다. 짧게 자주 재다가 자리가 멈추면 말풍선을 보인다.
+      // (느린 기기에서 움직임이 늦게 끝나도 맞게. 2.5초가 지나면 멈추지 않았어도 보인다.)
+      var s = COACH[n], last = '', same = 0, t0 = Date.now();
+      var settle = function () {
+        if (!o.isConnected || COACH[step] !== s) return;
+        var r = s.at ? rectOf(s.at(), s.clip ? panel : null) : null, key = r ? [r.l, r.t, r.r, r.b].map(Math.round).join(',') : '-';
+        if (key !== last) { last = key; same = 0; place(); } else same++;
+        var age = Date.now() - t0;
+        if ((same >= 2 && age > 300) || age > 2500) o.classList.remove('moving');
+        if (age < 2500) timers.push(setTimeout(settle, 120));
+      };
+      timers.push(setTimeout(settle, 60));
+    };
+    function fill() {
+      var s = COACH[step], hd = el('div', 'chead');
+      tip.textContent = '';
+      hd.appendChild(el('b', null, s.t)); hd.appendChild(el('span', 'ccnt', (step + 1) + ' / ' + COACH.length));
+      tip.appendChild(hd);
+      tip.appendChild(el('p', null, s.m));
+      if (s.legend) tip.appendChild(coachLegend());
+      var row = el('div', 'crow'), right = el('span', 'cbtns');
+      row.appendChild(btn('link', '건너뛰기', function (e) { e.stopPropagation(); done(); }));
+      if (step > 0) right.appendChild(btn('btn', '이전', function (e) { e.stopPropagation(); go(step - 1); }));
+      right.appendChild(btn('btn pri', step < COACH.length - 1 ? '다음' : '시작하기', function (e) { e.stopPropagation(); go(step + 1); }));
+      row.appendChild(right); tip.appendChild(row);
+    }
+    // 가리킬 곳(여러 요소면 합친 범위). clipEl이 있으면 그 안에 보이는 부분만.
+    function rectOf(list, clipEl) {
+      var r = null;
+      (list || []).forEach(function (e) {
+        if (!e || !e.getClientRects().length) return;
+        var b = e.getBoundingClientRect();
+        if (!b.width || !b.height) return;
+        r = r ? { l: Math.min(r.l, b.left), t: Math.min(r.t, b.top), r: Math.max(r.r, b.right), b: Math.max(r.b, b.bottom) } : { l: b.left, t: b.top, r: b.right, b: b.bottom };
+      });
+      if (r && clipEl) {
+        var c = clipEl.getBoundingClientRect();
+        r = { l: Math.max(r.l, c.left), t: Math.max(r.t, c.top), r: Math.min(r.r, c.right), b: Math.min(r.b, c.bottom) };
+        if (r.r <= r.l || r.b <= r.t) r = null;
+      }
+      return r;
+    }
+    // 어둡게 덮고 밝힐 곳(여러 군데)만 둥글게 뚫는다. 뚫은 곳에는 흰 테두리.
+    function paintShade(holes, clear) {
+      if (clear) { shade.innerHTML = ''; return; }
+      var W = window.innerWidth, H = window.innerHeight, cut = '', ring = '';
+      holes.forEach(function (h) {
+        var a = 'x="' + Math.round(h.l) + '" y="' + Math.round(h.t) + '" width="' + Math.round(h.r - h.l) + '" height="' + Math.round(h.b - h.t) + '" rx="14"';
+        cut += '<rect ' + a + ' fill="#000"/>';
+        ring += '<rect ' + a + ' fill="none" stroke="#fff" stroke-opacity=".9" stroke-width="2"/>';
+      });
+      shade.innerHTML = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true"><defs><mask id="coachCut"><rect width="' + W + '" height="' + H + '" fill="#fff"/>' + cut + '</mask></defs>'
+        + '<rect width="' + W + '" height="' + H + '" fill="rgba(15,20,30,.58)" mask="url(#coachCut)"/>' + ring + '</svg>';
+    }
+    function place() {
+      if (step < 0 || !o.isConnected) return;
+      var s = COACH[step], W = window.innerWidth, H = window.innerHeight, tw = Math.min(340, W - 32), gap = 12, pad = 6, x, y, side = null;
+      tip.style.width = tw + 'px';
+      var els = s.at ? s.at() : null;
+      if (els) coachReveal(els[0]);
+      var chipEl = s.chip ? $('chips').querySelector('[data-act="' + s.chip + '"]') : null;
+      coachReveal(chipEl);
+      if (window.scrollY || document.documentElement.scrollTop) window.scrollTo(0, 0);   // 화면 전체는 움직이지 않는다
+      // 둘레를 조금 넓히고 화면 안으로 자른다. 화면 밖에 있으면(잘라서 남는 게 없으면) 밝히지 않는다.
+      var grow = function (q) {
+        if (!q) return null;
+        var g = { l: Math.max(4, q.l - pad), t: Math.max(4, q.t - pad), r: Math.min(W - 4, q.r + pad), b: Math.min(H - 4, q.b + pad) };
+        return g.r - g.l > 4 && g.b - g.t > 4 ? g : null;
+      };
+      var r = grow(s.at ? rectOf(els, s.clip ? panel : null) : null), holes = r ? [r] : [];
+      var add = function (e) { var q = grow(rectOf([e], null)); if (q) holes.push(q); };
+      if (chipEl) add(chipEl);
+      if (s.extra) (s.extra() || []).forEach(add);
+      o.classList.toggle('clear', !!s.clear);
+      paintShade(holes, !!s.clear);
+      tip.classList.remove('below', 'above', 'right', 'left');
+      var th = tip.offsetHeight;
+      if (!r) {
+        if (s.clear) { x = mobile.matches ? Math.round((W - tw) / 2) : 16; y = mobile.matches ? 124 : 76; }   // 지도가 보이게 위쪽에
+        else { x = Math.round((W - tw) / 2); y = Math.round((H - th) / 2); }
+      } else {
+        var cx = (r.l + r.r) / 2, cy = (r.t + r.b) / 2, big = (r.b - r.t) > H * .3 || (r.r - r.l) > W * .6;
+        var order = s.side ? s.side() : big ? ['right', 'left', 'above', 'below'] : ['below', 'above', 'right', 'left'];
+        var cX = function (v) { return Math.max(16, Math.min(v, W - tw - 16)); }, cY = function (v) { return Math.max(12, Math.min(v, H - th - 12)); };
+        var spot = function (sd) {
+          if (sd === 'below') return { x: cX(cx - tw / 2), y: r.b + gap };
+          if (sd === 'above') return { x: cX(cx - tw / 2), y: r.t - gap - th };
+          if (sd === 'right') return { x: r.r + gap, y: cY(Math.min(r.t, cy - th / 2)) };
+          return { x: r.l - gap - tw, y: cY(Math.min(r.t, cy - th / 2)) };
+        };
+        var inView = function (p) { return p.x >= 12 && p.x + tw <= W - 12 && p.y >= 8 && p.y + th <= H - 8; };
+        var apart = function (p) { return holes.every(function (h) { return p.x + tw <= h.l - 2 || p.x >= h.r + 2 || p.y + th <= h.t - 2 || p.y >= h.b + 2; }); };
+        var pick = null, k, p;
+        for (k = 0; k < order.length && !pick; k++) { p = spot(order[k]); if (inView(p) && apart(p)) { pick = p; side = order[k]; } }
+        // 같이 밝힌 칩이나 단추와 겹치는 자리밖에 없으면, 가리키는 곳만 피한다.
+        for (k = 0; k < order.length && !pick; k++) { p = spot(order[k]); if (inView(p)) { pick = p; side = order[k]; } }
+        if (!pick) pick = { x: cX(cx - tw / 2), y: cY(r.t + 12) };   // 둘레에 자리가 없으면 가리키는 곳 위에 겹친다
+        x = pick.x; y = pick.y;
+        tip.style.setProperty('--ax', Math.round(Math.max(18, Math.min(cx - x, tw - 18))) + 'px');
+        tip.style.setProperty('--ay', Math.round(Math.max(18, Math.min(cy - y, th - 18))) + 'px');
+      }
+      if (side) tip.classList.add(side);
+      tip.style.left = Math.round(x) + 'px'; tip.style.top = Math.round(y) + 'px';
+    }
+    var onKey = function (e) {
+      if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); go(step + 1); }
+      else if (e.key === 'ArrowLeft' && step > 0) { e.preventDefault(); go(step - 1); }
+    };
+    o.addEventListener('click', function () { go(step + 1); });
+    window.addEventListener('resize', place);
+    document.addEventListener('keydown', onKey);
+    o.coachDone = done;
+    go(0);
+    setTimeout(function () { var b = tip.querySelector('.btn.pri'); if (b && o.isConnected) b.focus(); }, 480);
+  }
+  // 사용법 창(메뉴): 지도 점 보는 법, 콘센트 기록하는 법, 처음 안내 다시 보기
+  function openGuide() {
+    var old = $('xinfo'); if (old) old.remove();
+    var o = el('div'), box = el('div', 'xbox guide'), hd = el('div', 'xhead'), bd = el('span', 'xbadge pic');
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '사용법');
+    o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
+    bd.appendChild(fxStill('mi_etc')); hd.appendChild(bd); hd.appendChild(el('h2', null, '사용법')); box.appendChild(hd);
+    box.appendChild(el('div', 'xgrp', '지도의 점'));
+    box.appendChild(coachLegend());
+    box.appendChild(el('div', 'xgrp', '콘센트 기록'));
+    box.appendChild(el('p', 'xexp', '그 카페에 있을 때 카페 카드의 콘센트 기록 단추를 누르고, 콘센트가 있는 자리를 모두 골라요. 콘센트가 없으면 없어요를 눌러요. 기록하려면 로그인해야 해요.'));
+    var two = el('div', 'two');
+    two.appendChild(btn('btn', '처음 안내 다시 보기', function () { o.remove(); if (P.kind) closePanel(true); openCoach(); }));
+    two.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
+    box.appendChild(two);
+    o.appendChild(box); document.body.appendChild(o); fitVisible(o);
+  }
+  // 앱을 처음 켠 사람에게만. 다른 창(로그인, 축하, 카드 등)이 떠 있으면 비켜 있다가 다시 본다.
   function coachMaybe(n) {
     if (TEST || load('cafemap.coach')) return;
     var busy = P.kind || $('xinfo') || dmOpen || $('celeb') || $('lvup') || $('egrev') || (loginEl && !loginEl.hidden) || !$('loading').hidden;
