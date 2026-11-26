@@ -8455,6 +8455,12 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   $('locate').addEventListener('click', function () { startHeading(true); setFollow(true); locateMe(); });
   // 날아가는 시간: 배율이 많이 바뀔수록, 멀수록 오래(1.6초에서 5.5초). 사용자 2026-11-27: 앱을 열 때, 내 위치 단추, 처음 안내가 끝날 때 너무 빠르다.
   function flyMs(dz, far) { return Math.round(Math.max(1600, Math.min(5500, 1100 + 480 * Math.abs(dz) + 380 * Math.min(far || 0, 6)))); }
+  function flyMsTo(ll, z) {
+    var p0 = map.project(ll), box = map.getContainer();
+    return flyMs(z - map.getZoom(), Math.hypot(p0.x - box.clientWidth / 2, p0.y - box.clientHeight / 2) / Math.max(1, box.clientWidth));
+  }
+  // 내 위치로 날아가는 중이면 그 목적지(c, z)와 도착하면 고를 동(reg). 처음 안내가 이 비행을 멈추고 안내가 끝나면 그리로 돌아간다.
+  var locPend = null, coachRet = null;
   function locateMe(done) {
     if (!navigator.geolocation) { toast('이 기기에서는 위치를 확인할 수 없어요'); return; }
     // 실시간으로 받아 둔 위치가 15초 안의 것이면 기다리지 않고 바로 간다(새로 받으면 2초쯤 걸린다).
@@ -8474,17 +8480,23 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var dur = flyMs(zTo - map.getZoom(), far);
       // 도착하면 고른 지역을 내가 있는 동으로 바꾼다. (지도가 스스로 움직인 것이라 지역 따라가기가 돌지 않아서, 전국이나 도에 머물러 있었다.)
       var here = leafAt(myLoc.x, myLoc.y);
+      // 처음 안내가 떠 있으면(앱을 열자마자 사용법을 연 경우) 안내를 흐트러뜨리지 않게 날아가지 않고, 안내가 끝날 때 돌아갈 곳만 여기로 바꾼다(사용자 2026-11-27).
+      if (coachRet) { coachRet(ll, zTo, here); return; }
       userMove = false;
+      var pend = locPend = { c: ll, z: zTo, reg: here, off: function () {} };
+      setTimeout(function () { if (locPend === pend) locPend = null; }, dur + 400);
       if (here >= 0) {
         var arrive = function () {
           var c = map.project(ll), w = map.getContainer();
           if (Math.abs(c.x - w.clientWidth / 2) > 60 || Math.abs(c.y - w.clientHeight / 2) > 60) return;   // 아직 도착하지 않았거나 손으로 다른 곳으로 옮겼다.
           map.off('moveend', arrive);
+          if (locPend === pend) locPend = null;
           if (S.reg === here) return;
           S.reg = here; S.showAll = false; hoverPill = -1;
           refilter(); renderChips(); draw(); persist();
         };
         map.on('moveend', arrive);
+        pend.off = function () { map.off('moveend', arrive); };
         setTimeout(function () { map.off('moveend', arrive); }, 8000);
       }
       flying = true; setTimeout(function () { flying = false; }, dur + 100);
@@ -8577,8 +8589,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var H = map.getContainer().clientHeight;
     // 카카오의 실제 매장 자리를 아직 못 받은 점은 미끄러지지 않게, 받을 때까지(길어야 2.5초) 그리지 않았다가 제자리에 그린다(사용자: 점들이 난리다).
     // 안내를 시작할 때 미리 받아 두므로 보통은 도착하기 전에 다 와 있다.
-    liveHoldOn(2500);
-    map.flyTo({ center: [D.lng[i] / 1e5, D.lat[i] / 1e5], zoom: Math.max(map.getZoom(), 15), offset: mobile.matches ? [0, -H * .2] : [180, 0], duration: 1200 });
+    var ll = [D.lng[i] / 1e5, D.lat[i] / 1e5], z = Math.max(map.getZoom(), 15), dur = flyMsTo(ll, z);
+    liveHoldOn(dur + 1000);
+    map.flyTo({ center: ll, zoom: z, offset: mobile.matches ? [0, -H * .2] : [180, 0], duration: dur, curve: 1.2 });
     return true;
   }
   // 그 카페의 카드를 열고, pop이면 콘센트 기록 판까지 내린다.
@@ -8600,8 +8613,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   }
   function coachHome() {
     if (!coachCam) return;
-    var p0 = map.project(coachCam.c), box = map.getContainer(), far = Math.hypot(p0.x - box.clientWidth / 2, p0.y - box.clientHeight / 2) / Math.max(1, box.clientWidth);
-    map.flyTo({ center: coachCam.c, zoom: coachCam.z, bearing: coachCam.b, pitch: coachCam.p, duration: flyMs(coachCam.z - map.getZoom(), far), curve: 1.2 });
+    var dur = flyMsTo(coachCam.c, coachCam.z);
+    // 돌아가는 동안에는 내 위치 따라가기가 끼어들지 않게 한다(끼어들면 중간에서 멈춘 것처럼 된다).
+    flying = true; setTimeout(function () { flying = false; }, dur + 100);
+    map.flyTo({ center: coachCam.c, zoom: coachCam.z, bearing: coachCam.b, pitch: coachCam.p, duration: dur, curve: 1.2 });
   }
   // 말풍선 자리: 폰에서 판 안의 항목은 그 위(지도 쪽)나 아래, 컴퓨터에서는 판 오른쪽.
   function coachSideAbove() { return mobile.matches ? ['above', 'below'] : ['right', 'below', 'above']; }
@@ -8670,14 +8685,29 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     opts = opts || {};
     var L = steps || coachList();
     var old = $('coach'); if (old && old.coachDone) old.coachDone(true); else if (old) old.remove();
+    coachRet = null;
     if (P.kind) closePanel(true);
     coachCafe = -1;
     var c0 = map.getCenter();
     coachCam = { c: [c0.lng, c0.lat], z: map.getZoom(), b: map.getBearing(), p: map.getPitch() };
+    // 앱을 열고 내 위치로 날아가는 중에 안내를 열면(사용자 2026-11-27): 날던 것을 멈춘다. 그대로 두면 도착할 때 지역이 내 동으로 바뀌어
+    // 지역 칩의 밝힌 자리가 어긋나고 성수의 점이 안 그려진다. 안내가 끝나면 날아가던 목적지와 그 동으로 간다.
+    var pendReg = -2;
+    if (locPend) {
+      locPend.off(); map.stop(); flying = false;
+      coachCam.c = locPend.c; coachCam.z = locPend.z; pendReg = locPend.reg;
+      locPend = null;
+    }
     // 안내하는 동안만: 고른 지역, 필터, 찜, 보너스를 풀어 둔다(지역을 골라 둔 채면 성수의 점이 하나도 안 그려진다).
     // 내 위치 따라가기도 멈춘다(켜져 있으면 위치가 잡힐 때마다 지도를 내 위치로 끌고 간다). 끝나면 둘 다 되돌린다(사용자 2026-11-27).
     var keepS = JSON.stringify({ reg: S.reg, showAll: S.showAll, seen: S.seen, bonus: S.bonus, cats: S.cats, brands: S.brands, tab: S.tab, big: S.big, outlet: S.outlet, chairs: S.chairs });
     var keepFollow = follow;
+    var setRet = function (c, z, reg) {
+      coachCam.c = c; coachCam.z = z;
+      if (reg >= 0) { var ks0 = JSON.parse(keepS); ks0.reg = reg; ks0.showAll = false; keepS = JSON.stringify(ks0); }
+    };
+    if (pendReg > -2) setRet(coachCam.c, coachCam.z, pendReg);
+    coachRet = setRet;   // 안내 중에 내 위치가 처음 잡히면 날아가지 않고 돌아갈 곳만 바꾼다
     setFollow(false);
     // 지도의 점 단계에서 갈 곳(성수역)의 카카오 매장 자리를 미리 받아 둔다. 도착해서 받으면 점들이 제자리로 미끄러지는 게 다 보인다.
     var ci = coachPickCafe(); if (ci >= 0) liveFetchAt(D.lng[ci] / 1e5, D.lat[ci] / 1e5, 14.6);
@@ -8729,14 +8759,15 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         var r = s.at ? rectOf(s.at(), s.clip ? panel : null) : null, key = r ? [r.l, r.t, r.r, r.b].map(Math.round).join(',') : '-';
         var still = !(map.isMoving && map.isMoving());
         if (key === last && still) same++; else { same = 0; last = key; }
-        if ((same >= 6 && now - t0 > 180) || now - t0 > 2000) finish(); else requestAnimationFrame(tick);
+        if ((same >= 6 && now - t0 > 180) || now - t0 > (still ? 2000 : 7000)) finish(); else requestAnimationFrame(tick);
       };
       requestAnimationFrame(tick);
-      setTimeout(finish, 2400);
+      setTimeout(finish, 7400);
     }
     var done = function (now) {
       if (!o.isConnected || closing) return;
       closing = true; gen++;
+      if (coachRet === setRet) coachRet = null;
       if (!opts.memo) save('cafemap.coach', Date.now());
       if (opts.memo) save('cafemap.memoGuide', Date.now());
       var ks = JSON.parse(keepS); for (var kk in ks) S[kk] = ks[kk];
