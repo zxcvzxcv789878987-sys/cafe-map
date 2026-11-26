@@ -833,12 +833,53 @@ button.xlink .xbadge.adm { --pri: #495057; --pri2: #adb5bd; }
 .fbd .gsee { align-self: flex-start; margin-top: 2px; }
 .fbd .gsee + textarea, .fbd .fbal + textarea { min-height: 80px; }
 /* 시험 모드 단추와 버튼 모음 */
-#testbtn { position: fixed; left: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 86px); z-index: 70; display: inline-flex; align-items: center; gap: 5px; height: 38px; padding: 0 14px 0 11px; border-radius: 999px; background: #212529; color: #fff; font-size: 13px; font-weight: 700; box-shadow: var(--sh-1); }
+/* 시험 모드(사용자 2026-11-26 다듬음). 지도 위 왼쪽 아래의 검은 알약: 왼쪽은 시험 메뉴, 오른쪽은 시험 끝내기(두 번 눌러야 끝남). */
+#testbar { position: fixed; left: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 86px); z-index: 70; display: inline-flex; align-items: stretch; height: 38px; border-radius: 999px; background: #212529; box-shadow: var(--sh-1); overflow: hidden; }
+#testbar button { display: inline-flex; align-items: center; gap: 5px; color: #fff; font-size: 13px; font-weight: 700; white-space: nowrap; transition: background .15s; }
+#testbtn { padding: 0 12px 0 11px; }
+#testend { padding: 0 13px 0 12px; border-left: 1px solid rgba(255, 255, 255, .16); color: rgba(255, 255, 255, .78); font-weight: 650; }
+#testend.sure { background: #e5484d; color: #fff; }
+#testbar button:active { background: rgba(255, 255, 255, .12); }
+#testbar #testend.sure:active { background: #c93b40; }
 #testbtn svg.i { width: 15px; height: 15px; }
-.xbox.tmenu { gap: 8px; }
+/* 시험 메뉴: 위(제목, 찾기, 묶음 칩)는 고정, 아래 단추만 스크롤 */
+.xbox.tmenu { width: min(440px, 100%); height: min(820px, 100%); max-height: 100%; padding: 0; gap: 0; overflow: hidden; }
+.tmhead { flex: none; position: relative; z-index: 1; padding: 16px 16px 0; background: var(--surface); box-shadow: 0 1px 0 var(--line); }
+.tmtop { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tmtop .xhead h2 { font-size: 19px; }
+.tmx { flex: none; width: 40px; height: 40px; margin: -6px -8px -6px 0; display: grid; place-items: center; border-radius: 12px; color: var(--ink-2); }
+.tmx:hover, .tmx:active { background: var(--surface-2); }
+.tmx svg.i { width: 20px; height: 20px; }
+.xbox p.tmnote { margin: 8px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--ink-2); }
+.tmsearch { display: flex; align-items: center; gap: 8px; height: 42px; margin-top: 12px; padding: 0 5px 0 12px; border-radius: 12px; background: var(--surface-2); color: var(--ink-3); cursor: text; }
+.tmsearch:focus-within { box-shadow: inset 0 0 0 1.5px var(--pri); }
+.tmsearch input { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; outline: 0; background: none; font-size: 15px; color: var(--ink); }
+.tmsearch input::placeholder { color: var(--ink-3); }
+.tmsearch input::-webkit-search-cancel-button { display: none; }
+.tmclr { flex: none; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; color: var(--ink-3); }
+.tmclr:active { background: var(--line); }
+.tmchips { display: flex; gap: 6px; margin: 0 -16px; padding: 10px 16px 12px; overflow-x: auto; scrollbar-width: none; }
+.tmchips::-webkit-scrollbar { display: none; }
+.tmchip { flex: none; height: 32px; padding: 0 12px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); font-size: 13px; font-weight: 700; white-space: nowrap; transition: background .15s, color .15s; }
+.tmchip.on { background: var(--pri); color: #fff; }
+.tmchip.rc:not(.on) { color: var(--pri); }
+.tmbody { flex: 1; min-height: 0; position: relative; overflow-y: auto; padding: 0 16px 22px; overscroll-behavior: contain; }
+.tmgrp { padding-top: 16px; }
+.tmgrp h3 { display: flex; align-items: baseline; gap: 6px; margin: 0 2px 8px; font-size: 13.5px; font-weight: 800; color: var(--ink); }
+.tmgrp h3 small { font-size: 12px; font-weight: 700; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.tmgrp.recent h3 { color: var(--pri); }
 .tgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.tgrid button { min-height: 44px; padding: 6px 8px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-size: 13px; font-weight: 650; line-height: 1.3; }
-.tgrid button:active { background: var(--surface-2); }
+.tgrid button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 50px; padding: 7px 8px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); text-align: center; line-height: 1.3; word-break: keep-all; transition: background .12s, transform .12s; }
+.tgrid button b { font-size: 13px; font-weight: 700; color: var(--ink); }
+.tgrid button small { font-size: 11.5px; font-weight: 500; color: var(--ink-2); }
+.tgrid button:hover { background: var(--surface-2); }
+.tgrid button:active { background: var(--surface-2); transform: scale(.97); }
+.tgrid .tcol { padding: 0 0 2px; font-size: 12px; font-weight: 800; text-align: center; color: var(--ink-2); }
+.tgrid .tcol.hard { color: var(--pri); }
+.tgrid button.hard { border-color: color-mix(in srgb, var(--pri) 20%, var(--line)); background: color-mix(in srgb, var(--pri) 7%, var(--surface)); }
+.tgrid button.hard b { color: #4f41c9; }
+.tgrid button.hard:active { background: color-mix(in srgb, var(--pri) 13%, var(--surface)); }
+.xbox p.tmnone { padding: 48px 0 20px; text-align: center; font-size: 14px; color: var(--ink-2); }
 button.xlink .xbadge.qna { --pri: #1c7ed6; --pri2: #74c0fc; }
 /* 문의 창: 종류마다 색이 다르다. 앱 오류 빨강, 기능 제안 노랑, 기타 문의 파랑. */
 .xbox.fb-bug, .fbk .fb-bug { --pri: #e03131; --pri2: #ff8787; }
@@ -6491,7 +6532,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   }
   // 버튼 모음: [묶음 이름, [[버튼 이름, 할 일], ...]]
   function testMenu() {
-    var close = function () { var x = $('xinfo'); if (x) x.remove(); };
+    var onKey = function (e) { if (e.key === 'Escape') close(); };
+    var close = function () { var x = $('xinfo'); if (x) x.remove(); document.removeEventListener('keydown', onKey); };
     var myFbSetup = function () { save('cafemap.myfb', [{ id: '-TEST1', k: 'idea', m: '주차 되는 카페만 볼 수 있으면 좋겠어요.\n주말에 차로 다녀서요.', t: Date.now() - 2 * 86400000 }]); save('cafemap.fbseen', {}); };
     var bigCafe = function () { for (var j = 0; j < N; j++) if (D.area[j] >= 400 && D.name[j].indexOf('스타벅스') === 0) return j; return 0; };
     function testEggs(n, k) {
@@ -6598,28 +6640,95 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
         ['처음으로 되돌리기', function () { XP.egg = {}; XP.ega = {}; XP.egs = {}; XP.sp = 0; XP.spl = []; favRender(); toast('이스터 에그를 처음으로 되돌렸어요'); }],
         ['세상 끝의 끝 자리로 가기', function () { closePanel(); map.jumpTo({ center: [121.0003, 31.0002], zoom: 19 }); }],
         ['쓴 기록 없이 연 에그 고치기 (예전에 연 모양)', function () { XP.egs = { metap: Date.now() - 3600000 }; XP.ega = Object.assign({}, XP.ega, XP.egs); XP.egg = Object.assign({}, XP.egg, XP.egs); XP.sp = 3000; XP.spl = []; eggSpendHeal(); openXpLog(); }]
-      ].concat(EGGS.map(function (e) { return [e[1] + ' 찾기', function () { eggFound(e[0]); }]; }))],
+      ]],
+      // 에그 하나씩 찾기: 도감처럼 일반 에그를 왼쪽, 그 어려운 짝을 오른쪽에 둔다(넷째 칸은 단추에 보일 글).
+      ['에그 하나씩 찾기', [].concat.apply([], EGGS.filter(function (e) { return !e[3]; }).map(function (n) {
+        var h = null; EGGS.forEach(function (e) { if (e[3] === n[0]) h = e; });
+        return [[n[1] + ' 찾기', function () { eggFound(n[0]); }, '', n[1]], h ? [h[1] + ' 찾기', function () { eggFound(h[0]); }, 'hard', h[1]] : null];
+      }))],
       ['그 밖', [
-        ['그림 모음 페이지 (예전 시안)', function () { location.href = 'test/fx.html'; }]
+        ['그림 모음 페이지 (앱의 그림 전부)', function () { location.href = 'test/fx.html'; }]
       ]]
     ];
+    // 칩에 보일 짧은 이름
+    var CHIP = { '축하와 알림': '축하', '묻는 창, 확인 창': '창', '닉네임': '닉네임', '지도': '지도', '내 기록': '내 기록', '사람': '사람', '문의, 폐업 신고': '문의',
+      '로그인 창': '로그인', '이스터 에그': '에그', '에그 하나씩 찾기': '에그 찾기', '그 밖': '그 밖' };
+    // 최근에 쓴 시험(이 기기, 시험 모드에만): 맨 위에 여섯 개까지
+    var RKEY = 'cafemap.testrecent', all = {};
+    groups.forEach(function (g) { g[1].forEach(function (b) { if (b) all[b[0]] = b; }); });
+    var recent = (load(RKEY) || []).filter(function (l) { return typeof l === 'string' && all[l]; });
+    var run = function (b) {
+      recent = [b[0]].concat(recent.filter(function (l) { return l !== b[0]; })).slice(0, 6); save(RKEY, recent);
+      close(); setTimeout(b[1], 120);
+    };
+    var gs = (recent.length ? [['최근에 쓴 시험', recent.map(function (l) { return all[l]; }), 'recent']] : []).concat(groups);
     close();
     var o = el('div'), box = el('div', 'xbox tmenu');
     o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '시험 모드');
-    o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
-    box.appendChild(el('h2', null, '시험 모드'));
-    box.appendChild(el('p', 'xexp', '서버에는 아무것도 저장하지 않아요. 새로고침하면 처음으로 돌아가요.'));
-    groups.forEach(function (g) {
-      box.appendChild(el('div', 'xgrp', g[0]));
+    o.addEventListener('click', function (e) { if (e.target === o) close(); });
+    var hd = el('div', 'tmhead'), top = el('div', 'tmtop'), ttl = el('div', 'xhead'), bd = el('span', 'xbadge pic');
+    bd.appendChild(fxStill('mi_test')); ttl.appendChild(bd); ttl.appendChild(el('h2', null, '시험 모드')); top.appendChild(ttl);
+    var x = btn('tmx', null, close); x.setAttribute('aria-label', '닫기'); x.appendChild(icon('x')); top.appendChild(x);
+    hd.appendChild(top);
+    hd.appendChild(el('p', 'tmnote', '서버에는 아무것도 저장하지 않아요. 새로고침하면 처음으로 돌아가요.'));
+    var sw = el('label', 'tmsearch'), q = el('input'), clr = btn('tmclr', null, function () { q.value = ''; filter(); q.focus(); });
+    q.type = 'search'; q.placeholder = '시험 찾기'; q.setAttribute('aria-label', '시험 찾기'); q.autocomplete = 'off';
+    clr.setAttribute('aria-label', '찾는 글 지우기'); clr.appendChild(icon('x')); clr.hidden = true;
+    sw.appendChild(icon('search')); sw.appendChild(q); sw.appendChild(clr); hd.appendChild(sw);
+    var chips = el('div', 'tmchips'); hd.appendChild(chips);
+    var body = el('div', 'tmbody'), secs = [];
+    gs.forEach(function (g) {
+      var sec = el('section', 'tmgrp' + (g[2] ? ' ' + g[2] : '')), h = el('h3'), pairs = g[0] === '에그 하나씩 찾기';
+      var total = g[1].filter(Boolean).length, cnt = el('small', null, String(total));
+      h.appendChild(document.createTextNode(g[0])); h.appendChild(cnt); sec.appendChild(h);
       var grid = el('div', 'tgrid');
-      g[1].forEach(function (b) { grid.appendChild(btn(null, b[0], function () { close(); setTimeout(b[1], 120); })); });
-      box.appendChild(grid);
+      if (pairs) { grid.appendChild(el('span', 'tcol', '일반')); grid.appendChild(el('span', 'tcol hard', '어려움')); }
+      g[1].forEach(function (b) {
+        if (!b) { grid.appendChild(el('span')); return; }
+        // 괄호 안의 말은 작은 둘째 줄로
+        var shown = b[3] || b[0], m = /^(.*?)\s*\(([^()]*)\)$/.exec(shown), bt = btn(b[2] === 'hard' ? 'hard' : null, null, function () { run(b); });
+        bt.appendChild(el('b', null, m ? m[1] : shown)); if (m) bt.appendChild(el('small', null, m[2]));
+        bt.dataset.q = (g[0] + b[0]).replace(/\s+/g, '').toLowerCase();
+        grid.appendChild(bt);
+      });
+      sec.appendChild(grid); body.appendChild(sec);
+      var c = btn('tmchip' + (g[2] === 'recent' ? ' rc' : ''), g[2] === 'recent' ? '최근' : (CHIP[g[0]] || g[0]), function () {
+        body.scrollTo({ top: sec.offsetTop - 2, behavior: REDUCE ? 'auto' : 'smooth' });
+      });
+      chips.appendChild(c); secs.push([sec, c, cnt, total]);
     });
-    var two = el('div', 'two');
-    two.appendChild(btn('btn', '시험 끝내기', function () { location.href = location.pathname; }));
-    two.appendChild(btn('btn pri', '닫기', close));
-    box.appendChild(two);
-    o.appendChild(box); document.body.appendChild(o);
+    var none = el('p', 'tmnone', '찾는 시험이 없어요'); none.hidden = true; body.appendChild(none);
+    // 찾기: 단추 글과 묶음 이름에서 띄어쓰기 없이 찾는다. 찾는 동안에는 칩을 숨긴다.
+    function filter() {
+      var v = q.value.replace(/\s+/g, '').toLowerCase(), any = false;
+      clr.hidden = !q.value; chips.hidden = !!v;
+      secs.forEach(function (x) {
+        var n = 0;
+        x[0].querySelectorAll('.tgrid button').forEach(function (b) { var on = !v || b.dataset.q.indexOf(v) >= 0; b.hidden = !on; if (on) n++; });
+        x[0].querySelectorAll('.tcol').forEach(function (t) { t.hidden = !!v; });
+        x[0].hidden = !n || (!!v && x[0].classList.contains('recent'));
+        x[2].textContent = String(v ? n : x[3]);
+        if (!x[0].hidden) any = true;
+      });
+      none.hidden = any; body.scrollTop = 0; spy();
+    }
+    // 지금 보고 있는 묶음의 칩을 켜고, 칩 줄 안에서 보이게 옮긴다
+    function spy() {
+      var cur = secs[0], st = body.scrollTop, end = st + body.clientHeight >= body.scrollHeight - 2;
+      secs.forEach(function (x) { if (!x[0].hidden && x[0].offsetTop - st <= 24) cur = x; });
+      if (end) for (var k = secs.length - 1; k >= 0; k--) if (!secs[k][0].hidden) { cur = secs[k]; break; }
+      secs.forEach(function (x) { x[1].classList.toggle('on', x === cur); });
+      var c = cur && cur[1];
+      if (c && !chips.hidden) {
+        if (c.offsetLeft - 16 < chips.scrollLeft) chips.scrollLeft = c.offsetLeft - 16;
+        else if (c.offsetLeft + c.offsetWidth + 16 > chips.scrollLeft + chips.clientWidth) chips.scrollLeft = c.offsetLeft + c.offsetWidth + 16 - chips.clientWidth;
+      }
+    }
+    q.addEventListener('input', filter);
+    body.addEventListener('scroll', spy, { passive: true });
+    document.addEventListener('keydown', onKey);
+    box.appendChild(hd); box.appendChild(body); o.appendChild(box); document.body.appendChild(o);
+    spy();
   }
   // 시험 모드에서만: 기록 거리 확인을 위치를 넣어 돌려 본다(콘솔에서 testNear(카페 번호, 위도, 경도, 오차), testFind(이름)).
   if (TEST) {
@@ -6635,8 +6744,17 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
     };
   }
   if (TEST) {
-    var tb = btn('', null, testMenu); tb.id = 'testbtn'; tb.appendChild(fxIcon('mi_test')); tb.appendChild(document.createTextNode('시험'));
-    document.body.appendChild(tb);
+    // 왼쪽 아래 검은 알약: 시험(메뉴 열기) | 끝내기(두 번 눌러야 끝남. 3초 안에 다시 안 누르면 되돌아온다)
+    var tbar = el('div'), tb = btn('', null, testMenu), te = btn('', '끝내기'), sure = false, sureT = 0;
+    tbar.id = 'testbar'; tb.id = 'testbtn'; te.id = 'testend';
+    tb.setAttribute('aria-label', '시험 메뉴 열기'); tb.appendChild(fxIcon('mi_test')); tb.appendChild(document.createTextNode('시험'));
+    te.setAttribute('aria-label', '시험 끝내기');
+    te.addEventListener('click', function () {
+      if (sure) { location.href = location.pathname; return; }
+      sure = true; te.classList.add('sure'); te.textContent = '한 번 더'; te.setAttribute('aria-label', '한 번 더 누르면 시험이 끝나요');
+      clearTimeout(sureT); sureT = setTimeout(function () { sure = false; te.classList.remove('sure'); te.textContent = '끝내기'; te.setAttribute('aria-label', '시험 끝내기'); }, 3000);
+    });
+    tbar.appendChild(tb); tbar.appendChild(te); document.body.appendChild(tbar);
     setTimeout(testMenu, 600);
   }
   $('menuBtn').addEventListener('click', function () { if (P.kind === 'menu') closePanel(); else { P.prev = null; openPanel('menu'); } });
