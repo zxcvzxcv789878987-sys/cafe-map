@@ -901,6 +901,17 @@ button.xlink .xbadge.qna { --pri: #1c7ed6; --pri2: #74c0fc; }
 
 .xbox textarea { width: 100%; min-height: 150px; resize: vertical; margin-top: 8px; padding: 12px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); font: inherit; font-size: 16px; line-height: 1.5; }
 .xbox textarea:focus { outline: 2px solid var(--pri); outline-offset: -1px; border-color: transparent; }
+/* 신고와 숨기기(2026-11-27). 사람 창 아래의 작은 글자 단추 둘, 신고 창의 사유 단추, 숨긴 사용자 이름, 이용약관 동의 한 줄 */
+.psact { display: flex; justify-content: center; gap: 18px; margin: 2px 0 -2px; }
+.psact .link { font-size: 13px; color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px; padding: 6px 2px; }
+.xli .rs.hid { color: var(--ink-3); font-style: italic; }
+.rpopts { display: flex; flex-direction: column; gap: 7px; margin: 4px 0 0; }
+.rpopt { min-height: 44px; padding: 8px 14px; border-radius: 12px; background: var(--surface-2); color: var(--ink-2); font-size: 14px; font-weight: 600; text-align: left; border: 1.5px solid transparent; }
+.rpopt.on { border-color: var(--pri); color: var(--ink); background: var(--surface); }
+.xbox textarea.rpta { min-height: 74px; }
+.terms { margin: 4px 0 0; font-size: 12px; line-height: 1.5; color: var(--ink-3); text-align: center; }
+.terms a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.rpadm { margin-top: 6px; }
 .xms span.next b { color: var(--ink); }
 /* 50곳 칸(받기 전): 옆 칸과 같은 색에 테두리만 다르게(사용자 2026-11-26, 노란 보물 모양은 뺌) */
 .xms span.tre { position: relative; overflow: visible; box-shadow: inset 0 0 0 1.5px #e9c46a; }
@@ -2440,7 +2451,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         else { XP = xpFresh(); XP.nick = randomNick(); XP.log = [{ t: Date.now(), a: 1000, r: '로그인' }]; xpSave(); xpFirst = true; }
         for (var vk in XP.vis) devClaim(vk);
         if (P.kind === 'menu' || P.kind === 'detail') renderPanel();
-        eggPull(); setTimeout(eggAnnounce, 1500);
+        eggPull(); setTimeout(eggAnnounce, 1500); setTimeout(nickResetCheck, 2500);
         // 앱을 열 때(로그인 단추가 아닐 때) 닉네임을 아직 안 정했으면 정하기 창. 로그인 단추로 들어오면 로그인 확인 창 뒤에 띄운다.
         if (!fromLogin && XP_ON && !XP.nickOk) setTimeout(openNickFirst, 400);
       }).catch(function () { /* 서버에 닿지 못하면 이 기기에 적어 둔 것으로 보여 준다 */ });
@@ -4668,6 +4679,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       g.id = 'gbtn'; msg.id = 'lmsg';
       box.appendChild(el('h2', 'ltitle')); box.appendChild(el('p', 'ldesc'));
       box.appendChild(g); box.appendChild(msg);
+      box.appendChild(termsNote('로그인하면'));
       box.appendChild(btn('link', '닫기', closeLogin));
       loginEl.appendChild(box);
       loginEl.addEventListener('click', function (e) { if (e.target === loginEl) closeLogin(); });
@@ -4751,7 +4763,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       for (k in goneMine) gones[k] = 1;
       for (k in seats) jobs.push(del('seats/' + k + '/' + who.u));
       for (k in gones) jobs.push(del('gone/' + k + '/' + who.u));
-      ['want', 'xp', 'pub', 'rank'].forEach(function (p) { jobs.push(del(p + '/' + who.u)); });
+      ['want', 'xp', 'pub', 'rank', 'nickreset'].forEach(function (p) { jobs.push(del(p + '/' + who.u)); });
       // 보낸 문의와 그 답: 답을 먼저 지운다(답을 지울 수 있는지는 문의의 주인으로 본다).
       jobs.push(fetch(base + 'feedback.json?orderBy=%22u%22&equalTo=' + encodeURIComponent(JSON.stringify(who.u)) + '&auth=' + a)
         .then(function (r) { if (!r.ok) throw new Error('db'); return r.json(); })
@@ -6164,6 +6176,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       XP.pub = v ? 1 : 0; xpSave();
       if (v) toast('다른 사람이 내 원두 기록을 볼 수 있어요. 시각은 보이지 않아요'); else { pubDelete(); toast('내 원두 기록을 비공개로 바꿨어요'); }
     }));
+    // 숨긴 사용자: 한 명이라도 있으면 줄이 생기고, 누르면 목록과 풀기 단추
+    var nHid = Object.keys(hiddenU).length;
+    if (nHid) { var hr = btn('xrow xlink', null, openHidden); hr.appendChild(el('span', null, '숨긴 사용자 ' + nHid + '명')); hr.appendChild(icon('right')); conf.appendChild(hr); }
     sc.appendChild(conf);
     // 문의하기: 누르면 글을 쓰는 창이 뜬다. 종류는 창 안에서 고른다.
     var fb = el('div', 'fsec'), fr = btn('xrow xlink', null, function () { openFeedback(); }), fbd = el('span', 'xbadge pic mn');
@@ -6195,6 +6210,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     ul.appendChild(li);
     // 개인정보처리방침: 스토어에 올릴 때도 이 주소를 적는다.
     var pl = el('li'), pa = el('a', null, '개인정보처리방침'); pa.href = 'privacy.html'; pa.target = '_blank'; pa.rel = 'noopener'; pl.appendChild(pa); ul.appendChild(pl);
+    var tl = el('li'), ta2 = el('a', null, '이용약관'); ta2.href = 'terms.html'; ta2.target = '_blank'; ta2.rel = 'noopener'; tl.appendChild(ta2); ul.appendChild(tl);
     info.appendChild(ul); sc.appendChild(info);
   }
   // 문의 창. 쓴 내용은 지도 서버의 문의함(v2/feedback)에 쌓이고, 매일 도는 확인 작업이 읽어서 운영자에게 알려 준다.
@@ -6224,7 +6240,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       // XP 기록을 공개한 사람이면 닉네임을 보이고, 누르면 그 사람의 레벨과 XP 기록 창(뒤로는 이 창으로).
       if (x.u && SHARE.db) fetch(SHARE.db + '/v2/pub/' + x.u + '/n.json').then(function (q) { return q.ok ? q.json() : null; }, function () { return null; }).then(function (nick) {
         if (!nick || !r.isConnected) return;
-        if (!x.me && !x.admin) nm.textContent = nick;
+        if (!x.me && !x.admin) nm.textContent = isHid(x.u) ? '숨긴 사용자' : nick;
         r.classList.add('tap'); r.setAttribute('role', 'button'); r.tabIndex = 0;
         r.addEventListener('click', function () {
           fetch(SHARE.db + '/v2/rank/' + x.u + '.json').then(function (q) { return q.ok ? q.json() : null; }, function () { return null; }).then(function (v) {
@@ -6270,6 +6286,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     field.appendChild(inp); field.appendChild(again);
     box.appendChild(field);
     box.appendChild(note('6개월에 한 번만 바꿀 수 있어요. 저장하면 ' + ymd(Date.now() + NICK_GAP) + '까지 다시 바꿀 수 없어요.'));
+    box.appendChild(termsNote('닉네임은 다른 사람에게 보여요. 저장하면'));
     var done = function () {
       var v = inp.value.trim().replace(/\s+/g, ' ');
       if (!v) { toast('닉네임을 적어 주세요'); return; }
@@ -6299,6 +6316,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     again.appendChild(fxIcon('mi_dice')); again.appendChild(el('span', null, '다른 이름'));
     field.appendChild(inp); field.appendChild(again); box.appendChild(field);
     var p = el('p', 'nknote'); p.appendChild(fxIcon('mi_clock')); p.appendChild(el('span', null, '정한 뒤에는 6개월에 한 번만 바꿀 수 있어요.')); box.appendChild(p);
+    box.appendChild(termsNote('닉네임은 다른 사람에게 보여요. 정하면'));
     var done = function () {
       var v = inp.value.trim().replace(/\s+/g, ' ');
       if (!v) { toast('닉네임을 적어 주세요'); return; }
@@ -6320,7 +6338,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
     var top = el('div', 'pstop');
     if (no) top.appendChild(el('span', 'psno', no + '등'));
-    var nm = el('h2', null, x.n || '이름 없음'); top.appendChild(nm);
+    var nm = el('h2', null, isHid(x.u) ? '숨긴 사용자' : x.n || '이름 없음'); top.appendChild(nm);
     if (x.u === SHARE.admin) top.appendChild(el('span', 'rktag', '운영자'));
     box.appendChild(top);
     var lv = el('div', 'pslv'), plv = Math.floor(x.x / 1000), ptr = tierOf(plv), psl = el('div', 'psl');
@@ -6354,11 +6372,108 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         r.appendChild(l); r.appendChild(rt); lg.appendChild(r);
       });
     });
+    // 신고와 숨기기: 나와 운영자에게는 없다.
+    var self = signedIn() && x.u === who.u, again = function () { openPerson(no, x, back); };
+    if (!self && x.u !== SHARE.admin) {
+      var acts = el('div', 'psact');
+      acts.appendChild(btn('link', '신고', function () { openReport(x, again); }));
+      acts.appendChild(btn('link', isHid(x.u) ? '숨김 풀기' : '이 사람 숨기기', function () {
+        if (isHid(x.u)) { delete hiddenU[x.u]; toast('숨김을 풀었어요'); }
+        else { hiddenU[x.u] = x.n || ''; toast('이 사람의 닉네임을 이 기기에서 숨겼어요. 메뉴의 환경설정에서 풀 수 있어요'); }
+        save('cafemap.hideUsers', hiddenU); again(); if (P.kind === 'menu') renderPanel();
+      }));
+      box.appendChild(acts);
+    }
     var two = el('div', 'two');
     two.appendChild(btn('btn', '뒤로', function () { if (back) back(); else openRank(); }));
     two.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
     box.appendChild(two);
     o.appendChild(box); document.body.appendChild(o);
+  }
+  // ----- 신고와 숨기기 -----
+  // 숨긴 사용자: 이 기기에만 적어 둔다(계정 번호 -> 숨길 때의 닉네임). 랭킹, 사람 창, 기록한 사람 창에서 닉네임 대신 "숨긴 사용자".
+  var hiddenU = load('cafemap.hideUsers') || {};
+  function isHid(u) { return !!u && Object.prototype.hasOwnProperty.call(hiddenU, u); }
+  function openHidden() {
+    var old = $('xinfo'); if (old) old.remove();
+    var o = el('div'), box = el('div', 'xbox fbl'), hd = el('div', 'xhead'), ll = el('div', 'xll');
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '숨긴 사용자');
+    o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
+    hd.appendChild(el('h2', null, '숨긴 사용자')); box.appendChild(hd);
+    var fill = function () {
+      ll.textContent = '';
+      var ks = Object.keys(hiddenU);
+      if (!ks.length) { ll.appendChild(el('p', 'xnone', '숨긴 사용자가 없어요')); return; }
+      ks.forEach(function (u) {
+        var r = el('div', 'xli'), rt = el('span', 'rt');
+        r.appendChild(el('span', 'rs', hiddenU[u] || '이름 없음'));
+        rt.appendChild(btn('link', '풀기', function () { delete hiddenU[u]; save('cafemap.hideUsers', hiddenU); fill(); if (P.kind === 'menu') renderPanel(); }));
+        r.appendChild(rt); ll.appendChild(r);
+      });
+    };
+    fill(); box.appendChild(ll);
+    box.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
+    o.appendChild(box); document.body.appendChild(o);
+  }
+  // 신고 창: 사유를 고르고(덧붙일 말은 골라서) 보낸다. 운영자의 받은 문의에 "신고"로 들어가고, 그때의 원두와 기록 수를 같이 보낸다.
+  var REPORT_WHY = ['불쾌한 닉네임', '욕설이나 혐오 표현', '원두가 비정상적으로 많아요 (버그나 조작 의심)', '기타'];
+  function openReport(x, back) {
+    var old = $('xinfo'); if (old) old.remove();
+    var o = el('div'), box = el('div', 'xbox nick report'), why = -1, opts = el('div', 'rpopts');
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '신고');
+    box.appendChild(el('h2', null, '신고하기'));
+    box.appendChild(el('p', 'xexp', (isHid(x.u) ? '숨긴 사용자' : x.n || '이름 없음') + '님을 신고하는 까닭을 골라 주세요. 운영자가 확인하고 닉네임을 바꾸거나 랭킹에서 빼요.'));
+    var bs = REPORT_WHY.map(function (w, k) {
+      var b = btn('rpopt', w, function () { why = k; bs.forEach(function (y, n) { y.classList.toggle('on', n === k); y.setAttribute('aria-pressed', n === k ? 'true' : 'false'); }); });
+      b.setAttribute('aria-pressed', 'false'); opts.appendChild(b); return b;
+    });
+    box.appendChild(opts);
+    var ta = document.createElement('textarea'); ta.maxLength = 500; ta.rows = 3; ta.placeholder = '덧붙일 말 (안 써도 돼요)'; ta.setAttribute('aria-label', '덧붙일 말'); ta.className = 'rpta';
+    box.appendChild(ta);
+    var sending = false, send = btn('btn pri', '신고 보내기', function () {
+      if (why < 0) { toast('신고하는 까닭을 골라 주세요'); return; }
+      if (sending) return;
+      if (!SHARE.db) { toast('지금은 신고를 받을 수 없어요'); return; }
+      var lines = ['[신고] ' + REPORT_WHY[why], '닉네임: ' + (x.n || '이름 없음'), '원두 ' + fmt(x.x || 0) + ', Lv.' + Math.floor((x.x || 0) / 1000) + ', 콘센트 기록 ' + (x.v || 0) + '곳, 새 동네 ' + (x.d || 0) + ', 새로 연 카페 ' + (x.o || 0) + ', 오랜만의 기록 ' + (x.r || 0)];
+      if (ta.value.trim()) lines.push('덧붙인 말: ' + ta.value.trim());
+      var rec = { k: 'report', m: lines.join('\n').slice(0, 1500), to: String(x.u || '').slice(0, 128), t: { '.sv': 'timestamp' } };
+      sending = true; send.textContent = '보내는 중';
+      var go = function (t) {
+        if (t) rec.u = who.u;
+        return fetch(SHARE.db + '/v2/feedback.json' + (t ? '?auth=' + encodeURIComponent(t) : ''), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rec) });
+      };
+      (signedIn() ? token().then(go, function () { return go(''); }) : go(''))
+        .then(function (r) { if (!r.ok) throw new Error('db'); o.remove(); doneBox('mi_flag', '신고를 보냈어요', '운영자가 확인할게요. 알려 주셔서 고마워요.'); })
+        .catch(function () { sending = false; send.textContent = '신고 보내기'; toast('보내지 못했어요. 잠시 뒤에 다시 해 주세요'); });
+    });
+    var two = el('div', 'two');
+    two.appendChild(btn('btn', '취소', function () { if (back) back(); else o.remove(); }));
+    two.appendChild(send); box.appendChild(two);
+    o.appendChild(box); document.body.appendChild(o); fitVisible(o);
+  }
+  // 이용약관과 개인정보처리방침 동의 한 줄(로그인 창, 닉네임 창)
+  function termsNote(lead) {
+    var p = el('p', 'terms');
+    p.appendChild(document.createTextNode(lead + ' '));
+    var a = el('a', null, '이용약관'); a.href = 'terms.html'; a.target = '_blank'; a.rel = 'noopener'; p.appendChild(a);
+    p.appendChild(document.createTextNode('과 '));
+    var b = el('a', null, '개인정보처리방침'); b.href = 'privacy.html'; b.target = '_blank'; b.rel = 'noopener'; p.appendChild(b);
+    p.appendChild(document.createTextNode('에 동의하는 거예요.'));
+    return p;
+  }
+  // 운영자가 내 닉네임을 바꿨으면(신고 처리) 그 이름을 받아 쓰고 알린다.
+  function nickResetCheck() {
+    if (!loginOn || !signedIn() || !SHARE.db) return;
+    token().then(function (t) {
+      var url = SHARE.db + '/v2/nickreset/' + who.u + '.json?auth=' + encodeURIComponent(t);
+      return fetch(url).then(function (r) { return r.ok ? r.json() : null; }).then(function (v) {
+        if (!v || !v.n) return;
+        XP.nick = v.n; delete XP.nickP; XP.nickOk = 1; xpSave();
+        fetch(url, { method: 'DELETE' }).catch(function () {});
+        if (P.kind === 'menu') renderPanel();
+        doneBox('cup', '운영자가 닉네임을 바꿨어요', v.n, true);
+      });
+    }).catch(function () { /* 다음에 다시 본다 */ });
   }
   // 전체 랭킹 창: XP 순으로 50등까지. XP가 같으면 같은 등수. 내가 50등 밖이면 맨 아래에 내 등수를 붙인다.
   function openRank() {
@@ -6375,7 +6490,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var r = btn('xli' + (x.u === me ? ' rkme' : ''), null, function () { openPerson(no, x); }), l = el('span', 'rkname'), rt = el('span', 'rt');
       l.appendChild(el('b', 'rkn' + (no <= 3 ? ' top' : ''), String(no)));
       var rkt = el('span', 'rkt'); rkt.appendChild(fxIcon(tierPic(tierOf(Math.floor(x.x / 1000))))); l.appendChild(rkt);
-      l.appendChild(el('span', 'rs', x.n || '이름 없음'));
+      l.appendChild(el('span', 'rs' + (isHid(x.u) ? ' hid' : ''), isHid(x.u) ? '숨긴 사용자' : x.n || '이름 없음'));
       if (x.u === SHARE.admin) l.appendChild(el('span', 'rktag', '운영자'));
       if (x.u === me) l.appendChild(el('span', 'rktag', '나'));
       rt.appendChild(el('b', null, 'Lv.' + Math.floor(x.x / 1000)));
@@ -6459,7 +6574,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 이 기기에서 보낸 문의: [{ id, k, m, t }]. 최근 50개까지.
   function fbMine() { var a = load('cafemap.myfb'); return Array.isArray(a) ? a : []; }
   function fbRemember(x) { var a = fbMine().filter(function (y) { return y.id !== x.id; }); a.unshift(x); save('cafemap.myfb', a.slice(0, 50)); }
-  var FB_KIND_NAME = { bug: '앱 오류', idea: '기능 제안', etc: '기타 문의' };
+  var FB_KIND_NAME = { bug: '앱 오류', idea: '기능 제안', etc: '기타 문의', report: '신고' };
   function fbSeen() { return load('cafemap.fbseen') || {}; }
   // 내 문의 목록: 이 기기 것과, 로그인했으면 계정에 연결된 것을 합친다. 답변도 같이 받아 온다.
   function fbLoad() {
@@ -6556,7 +6671,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       return Promise.all([rs[0].json(), rs[1].ok ? rs[1].json() : null]);
     }).then(function (d) {
       var all = d[0] || {}, reps = d[1] || {}, list = [];
-      for (var id in all) list.push({ id: id, k: all[id].k, m: all[id].m, t: all[id].t || 0, d: all[id].d, u: all[id].u, r: reps[id] });
+      for (var id in all) list.push({ id: id, k: all[id].k, m: all[id].m, t: all[id].t || 0, d: all[id].d, u: all[id].u, to: all[id].to, r: reps[id] });
       list.sort(function (a, b) { return b.t - a.t; });
       ll.textContent = '';
       if (!list.length) { ll.appendChild(el('p', 'xnone', '받은 문의가 없어요')); return; }
@@ -6574,6 +6689,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       ll.appendChild(el('div', 'fbq', x.m || ''));
       ll.appendChild(el('div', 'fbt', fbWhen(x.t) + (x.u ? ', 로그인한 사용자' : ', 로그인 안 한 사용자')));
       if (x.d) ll.appendChild(el('div', 'fbt', x.d));
+      if (x.k === 'report' && x.to) ll.appendChild(reportActs(x.to, tk));
       var ta = document.createElement('textarea'); ta.maxLength = 1500; ta.value = x.r ? x.r.m : ''; ta.setAttribute('aria-label', '답변');
       ll.appendChild(el('b', 'fbal', x.r ? '보낸 답변 (고칠 수 있어요)' : '답변'));
       ll.appendChild(ta);
@@ -6590,6 +6706,28 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       two.appendChild(send); foot.appendChild(two);
       fitVisible(o);
     };
+  }
+  // 운영자: 신고받은 사람에게 할 일. 닉네임 초기화(무작위 이름으로), 랭킹에서 빼기(제외 목록에 넣고 랭킹 줄을 지움, 되돌릴 수 있음).
+  function reportActs(u, tk) {
+    var box = el('div', 'rpadm'), db = SHARE.db + '/v2/', q = '.json?auth=' + tk;
+    var put = function (path, body, m) { return fetch(db + path + q, { method: m || 'PUT', headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }); };
+    var banBtn = btn('btn', '랭킹에서 빼기', null), banned = false;
+    var show = function () { banBtn.textContent = banned ? '랭킹 되돌리기' : '랭킹에서 빼기'; };
+    fetch(db + 'ban/' + u + q).then(function (r) { return r.ok ? r.json() : null; }).then(function (v) { banned = !!v; show(); }).catch(function () {});
+    banBtn.addEventListener('click', function () {
+      var job = banned ? put('ban/' + u, null, 'DELETE') : put('ban/' + u, { t: { '.sv': 'timestamp' } }).then(function (r) { if (!r.ok) throw new Error('db'); return put('rank/' + u, null, 'DELETE'); });
+      job.then(function (r) { if (!r.ok) throw new Error('db'); banned = !banned; show(); toast(banned ? '랭킹에서 뺐어요. 다시 올라오지 못해요' : '되돌렸어요. 그 사람이 앱을 열면 랭킹에 다시 올라가요'); })
+        .catch(function () { toast('하지 못했어요. 서버 규칙이 올라갔는지 확인해 주세요'); });
+    });
+    var nickBtn = btn('btn', '닉네임 초기화', function () {
+      var n = randomNick();
+      put('nickreset/' + u, { n: n, t: { '.sv': 'timestamp' } })
+        .then(function (r) { if (!r.ok) throw new Error('db'); return Promise.all([put('rank/' + u, { n: n }, 'PATCH'), put('pub/' + u, { n: n }, 'PATCH')]); })
+        .then(function () { toast('닉네임을 ' + n + '(으)로 바꿨어요'); })
+        .catch(function () { toast('하지 못했어요. 서버 규칙이 올라갔는지 확인해 주세요'); });
+    });
+    var two = el('div', 'two'); two.appendChild(nickBtn); two.appendChild(banBtn); box.appendChild(two);
+    return box;
   }
   // ----- 폐업 신고의 결과 -----
   var GONE_SAY = {
@@ -6798,7 +6936,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     return {
       items: {
         '-TEST1': { k: 'idea', m: '주차 되는 카페만 볼 수 있으면 좋겠어요.\n주말에 차로 다녀서요.', t: now - 2 * 86400000, u: 'test-user' },
-        '-TEST2': { k: 'bug', m: '카페를 누르면 카드가 안 열려요', t: now - 3600000, d: 'Mozilla/5.0 (Linux; Android 14) | 412x915' }
+        '-TEST2': { k: 'bug', m: '카페를 누르면 카드가 안 열려요', t: now - 3600000, d: 'Mozilla/5.0 (Linux; Android 14) | 412x915' },
+        '-TEST3': { k: 'report', m: '[신고] 원두가 비정상적으로 많아요 (버그나 조작 의심)\n닉네임: 원두부자\n원두 9,999,000, Lv.9999, 콘센트 기록 3곳, 새 동네 1, 새로 연 카페 0, 오랜만의 기록 0', to: 'test-cheater', t: now - 600000, u: 'test-user' }
       },
       replies: { '-TEST1': { m: '좋은 제안 고맙습니다. 주차 정보는 공식 자료를 찾는 대로 넣어 볼게요.', t: now - 86400000 } }
     };

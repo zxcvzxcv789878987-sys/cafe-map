@@ -134,7 +134,7 @@
           ".write": "!data.exists() || (auth != null && !newData.exists() && data.child('u').val() === auth.uid)",
           ".validate": "newData.hasChildren(['k', 'm', 't'])",
           "k": {
-            ".validate": "newData.isString() && newData.val().matches(/^(bug|idea|etc)$/)"
+            ".validate": "newData.isString() && newData.val().matches(/^(bug|idea|etc|report)$/)"
           },
           "m": {
             ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 1500"
@@ -147,6 +147,9 @@
           },
           "u": {
             ".validate": "auth != null && newData.val() === auth.uid"
+          },
+          "to": {
+            ".validate": "newData.isString() && newData.val().length <= 128 && newData.parent().child('k').val() === 'report'"
           },
           "$other": {
             ".validate": false
@@ -180,8 +183,8 @@
           "x"
         ],
         "$uid": {
-          ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'",
-          ".validate": "newData.hasChildren(['n', 'x', 't']) && (!data.exists() || newData.child('n').val() === data.child('n').val() || (newData.child('nt').val() === now && (!data.child('nt').exists() || now - data.child('nt').val() >= 15552000000)))",
+          ".write": "auth != null && ((auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous' && (!newData.exists() || !root.child('v2/ban/' + $uid).exists())) || auth.uid === 'YJZkK7gP9xYP2fBjh2KWnJHDOsl1')",
+          ".validate": "newData.hasChildren(['n', 'x', 't']) && (auth.uid === 'YJZkK7gP9xYP2fBjh2KWnJHDOsl1' || !data.exists() || newData.child('n').val() === data.child('n').val() || (newData.child('nt').val() === now && (!data.child('nt').exists() || now - data.child('nt').val() >= 15552000000)))",
           "n": {
             ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12"
           },
@@ -214,7 +217,7 @@
       "pub": {
         ".read": true,
         "$uid": {
-          ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'",
+          ".write": "auth != null && ((auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous') || auth.uid === 'YJZkK7gP9xYP2fBjh2KWnJHDOsl1')",
           ".validate": "newData.hasChildren(['n', 'log', 't'])",
           "n": {
             ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12"
@@ -241,6 +244,35 @@
                 ".validate": false
               }
             }
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      },
+      "ban": {
+        "$uid": {
+          ".read": "auth != null && (auth.uid === $uid || auth.uid === 'YJZkK7gP9xYP2fBjh2KWnJHDOsl1')",
+          ".write": "auth != null && auth.uid === 'YJZkK7gP9xYP2fBjh2KWnJHDOsl1'",
+          ".validate": "newData.hasChildren(['t'])",
+          "t": {
+            ".validate": "newData.val() === now"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      },
+      "nickreset": {
+        "$uid": {
+          ".read": "auth != null && (auth.uid === $uid || auth.uid === 'YJZkK7gP9xYP2fBjh2KWnJHDOsl1')",
+          ".write": "auth != null && (auth.uid === 'YJZkK7gP9xYP2fBjh2KWnJHDOsl1' || (auth.uid === $uid && !newData.exists()))",
+          ".validate": "newData.hasChildren(['n', 't'])",
+          "n": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12"
+          },
+          "t": {
+            ".validate": "newData.val() === now"
           },
           "$other": {
             ".validate": false
