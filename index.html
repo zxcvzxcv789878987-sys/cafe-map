@@ -2842,6 +2842,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var on = favOn();
     favBtn.classList.toggle('ghost', !on); favBtn.hidden = on && !!S.favHide;
     favBtn.innerHTML = on ? MEMO_SVG + '<span class="t">메모</span>' : '';
+    // 연 사람: 내 위치 단추 바로 옆(폰은 세로 줄 맨 아래, 컴퓨터는 가로 줄 맨 오른쪽)에 둬서 뒤로, 처음부터가 생기고 없어져도 자리가 그대로다.
+    // 안 연 사람의 투명 단추는 예전처럼 뒤로 단추 위(에그 설명과 같은 자리).
+    var pair = $('navBack') && $('navBack').parentNode;
+    if (pair && favBtn.parentNode === pair) { if (on) pair.appendChild(favBtn); else pair.insertBefore(favBtn, $('navBack')); }
+    if ($('navBack')) navVis();
     if (on) { favBtn.setAttribute('aria-label', '내 메모'); favBtn.removeAttribute('aria-hidden'); favBtn.tabIndex = 0; }
     else { favBtn.setAttribute('aria-hidden', 'true'); favBtn.removeAttribute('aria-label'); favBtn.tabIndex = -1; }
   }
@@ -7444,12 +7449,18 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     // 찜은 "내 목록 보기"라서 혼자 쓴다. 켜면 필터와 새로 오픈이 초기화되고, 찜을 켠 채로 필터나 새로 오픈을 누르면 찜이 꺼진다.
     box.appendChild(chip('찜', S.seen === 'want', 'want', { pic: 'mi_heart', aria: '찜한 곳만 보기' }));
     // 지역을 골라 들어간 동안에만 오른쪽 아래에 뒤로, 처음부터 단추를 보여 준다.
-    $('nav').hidden = S.reg < 0;
+    navVis();
     // 구(또는 구가 없는 시, 군)를 골랐을 때만 "전체 보기" 단추를 보여 준다. 누르면 동을 고르지 않고도 그 구의 카페가 전부 점으로 나온다.
     // 새로 오픈만 볼 때는 카페가 적어서 이미 하나씩 보이므로 이 단추를 두지 않는다.
     var all = $('navAll'), can = canShowAll() && S.bonus !== 'new' && S.bonus !== 'old';
     all.hidden = !can;
     if (can) { all.textContent = S.showAll ? '동별로 보기' : rName[S.reg] + ' 전체 보기'; all.setAttribute('aria-pressed', String(S.showAll)); }
+  }
+  // 오른쪽 아래 단추: 뒤로와 처음부터는 지역을 골랐을 때만. 메모 단추(투명 단추 에그를 연 사람)는 전국에서도 늘 보인다(사용자 2026-11-27).
+  function navVis() {
+    var inReg = S.reg >= 0, memo = favOn() && !S.favHide;
+    $('navBack').hidden = !inReg; $('navHome').hidden = !inReg;
+    $('nav').hidden = !inReg && !memo;
   }
   function toggleMenu(kind, anchor) { if (P.kind === kind) closePanel(); else openPanel(kind, anchor); }
   $('chips').addEventListener('click', function (e) {
@@ -8580,25 +8591,15 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       t: '사용법', m: '이 안내는 메뉴의 사용법에서 다시 볼 수 있어요.' }
   ];
   // 메모 사용법(메모 단추 이스터 에그를 연 사람만). 연 직후에 한 번 보여 주고, 사용법에서 처음 안내를 다시 보면 콘센트 기록 다음에 나온다.
-  // 지도의 메모 단추는 지역을 골랐을 때만 보여서, 지역을 고르지 않았으면 안내하는 동안만 그 카페의 동을 골라 두고 끝나면 되돌린다.
   var coachRegTmp = false, coachRegPrev = -1;
-  function coachMemoBtn() {
-    if (!favOn() || S.favHide) return false;
-    if (S.reg < 0) {
-      var i = coachPickCafe();
-      if (i < 0) return false;
-      coachRegTmp = true; coachRegPrev = S.reg;
-      S.reg = dongReg[D.dongOf[i]]; S.showAll = false; changed();
-    }
-    return !!$('navFav') && !$('navFav').hidden;
-  }
+  function coachMemoBtn() { return favOn() && !S.favHide && !!$('navFav') && !$('nav').hidden; }
   var COACH_MEMO = [
     { memo: true, enter: function () { return coachCard(true); }, side: coachSideAbove,
       at: function () { return [panel.querySelector('.dpop .acts .memo')]; },
       t: '나만의 메모', m: '카페마다 나만 보는 메모를 80자까지 남겨요.' },
     { memo: true, enter: function () { if (P.kind) closePanel(true); return coachMemoBtn(); },
       at: function () { return [$('navFav')]; },
-      t: '내 메모 모아 보기', m: '메모한 카페를 모아 봐요. 지역을 고르면 지도에 생겨요.' }
+      t: '내 메모 모아 보기', m: '메모한 카페를 이 단추로 모아 봐요.' }
   ];
   // 처음 안내의 단계: 메모 단추를 연 사람은 콘센트 기록 다음에 메모 사용법이 더 나온다.
   function coachList() { return favOn() ? COACH.slice(0, 5).concat(COACH_MEMO, COACH.slice(5)) : COACH; }
