@@ -952,6 +952,8 @@ button.xlink .xbadge.qna { --pri: #1c7ed6; --pri2: #74c0fc; }
 .clrow { display: flex; align-items: center; gap: 6px; font-size: 13px; line-height: 1.35; color: var(--ink-2); }
 .clico { flex: none; width: 26px; height: 26px; }
 .clico svg { width: 100%; height: 100%; display: block; }
+.cltx { display: flex; flex-direction: column; min-width: 0; }
+.cltx small { font-size: 12px; color: var(--ink-3); white-space: nowrap; }
 .xbox.guide .clegend { margin-top: 4px; }
 .xbox.guide .greplay { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 46px; margin: 2px 0 4px; padding: 0 14px; border-radius: 12px; background: color-mix(in srgb, var(--pri) 10%, var(--surface)); color: var(--pri); font-size: 14.5px; font-weight: 700; text-align: left; }
 .xbox.guide .greplay svg.i { width: 18px; height: 18px; }
@@ -2845,10 +2847,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var on = favOn();
     favBtn.classList.toggle('ghost', !on); favBtn.hidden = on && !!S.favHide;
     favBtn.innerHTML = on ? MEMO_SVG + '<span class="t">메모</span>' : '';
-    // 연 사람: 내 위치 단추 바로 옆(폰은 세로 줄 맨 아래, 컴퓨터는 가로 줄 맨 오른쪽)에 둬서 뒤로, 처음부터가 생기고 없어져도 자리가 그대로다.
-    // 안 연 사람의 투명 단추는 예전처럼 뒤로 단추 위(에그 설명과 같은 자리).
-    var pair = $('navBack') && $('navBack').parentNode;
-    if (pair && favBtn.parentNode === pair) { if (on) pair.appendChild(favBtn); else pair.insertBefore(favBtn, $('navBack')); }
+    // 자리는 늘 뒤로 단추 위(사용자 2026-11-27: 뒤로와 처음부터는 내 위치 바로 위에 그대로). 전국에서는 뒤로, 처음부터가 없어서 내 위치 바로 위에 온다.
     if ($('navBack')) navVis();
     if (on) { favBtn.setAttribute('aria-label', '내 메모'); favBtn.removeAttribute('aria-hidden'); favBtn.tabIndex = 0; }
     else { favBtn.setAttribute('aria-hidden', 'true'); favBtn.removeAttribute('aria-label'); favBtn.tabIndex = -1; }
@@ -8495,14 +8494,20 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     ['<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.5" fill="#2463eb" stroke="#fff" stroke-width="2"/></svg>', '프랜차이즈'],
     ['<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.5" fill="#f59f0a" stroke="#fff" stroke-width="2"/></svg>', '저가커피'],
     ['<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.5" fill="#8a5a3c" stroke="#fff" stroke-width="2"/></svg>', '개인카페'],
-    ['<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="#14171c" stroke="#fff" stroke-width="2"/><text x="12" y="15.4" font-size="10" font-weight="750" text-anchor="middle" fill="#fff" font-family="sans-serif">2</text></svg>', '같은 건물의 카페 여러 곳 (누르면 목록)'],
+    ['<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="#14171c" stroke="#fff" stroke-width="2"/><text x="12" y="15.4" font-size="10" font-weight="750" text-anchor="middle" fill="#fff" font-family="sans-serif">2</text></svg>', '같은 건물의 카페 여러 곳', '누르면 목록'],
     ['<svg viewBox="0 0 24 24" aria-hidden="true">' + CL_BASE + '<circle cx="17" cy="7" r="3.8" fill="#0f8a5a" stroke="#fff" stroke-width="1.5"/></svg>', '콘센트 좌석이 있다고 기록된 곳'],
-    ['<svg viewBox="0 0 24 24" aria-hidden="true">' + CL_BASE + '<circle cx="6.5" cy="7" r="4.6" fill="#37b24d" stroke="#fff" stroke-width="1.3"/><path d="M6.5 3.8 7.6 5.9 9.7 7 7.6 8.1 6.5 10.2 5.4 8.1 3.3 7 5.4 5.9z" fill="#fff"/></svg>', '새로 연 카페 (문 연 지 1년 안)'],
+    ['<svg viewBox="0 0 24 24" aria-hidden="true">' + CL_BASE + '<circle cx="6.5" cy="7" r="4.6" fill="#37b24d" stroke="#fff" stroke-width="1.3"/><path d="M6.5 3.8 7.6 5.9 9.7 7 7.6 8.1 6.5 10.2 5.4 8.1 3.3 7 5.4 5.9z" fill="#fff"/></svg>', '새로 연 카페', '문 연 지 1년 안'],
     ['<svg viewBox="0 0 24 24" aria-hidden="true">' + CL_BASE + '<g transform="translate(17 17.5) scale(.3) translate(-16 -15.8)"><path d="M16 27.6C5.4 20.6 2.4 15.1 2.4 10.7 2.4 6.7 5.4 3.9 9.2 3.9c2.7 0 4.9 1.5 6.8 4.1 1.9-2.6 4.1-4.1 6.8-4.1 3.8 0 6.8 2.8 6.8 6.8 0 4.4-3 9.9-13.6 16.9z" fill="#F8312F" stroke="#fff" stroke-width="5" paint-order="stroke"/></g></svg>', '내가 찜한 곳']
   ];
   function coachLegend() {
     var w = el('div', 'clegend');
-    COACH_LEGEND.forEach(function (x) { var r = el('div', 'clrow'), s = el('span', 'clico'); s.innerHTML = x[0]; r.appendChild(s); r.appendChild(el('span', null, x[1])); w.appendChild(r); });
+    // 괄호 설명은 아랫줄에 따로, 괄호 안에서 줄이 나뉘지 않게(사용자 2026-11-27)
+    COACH_LEGEND.forEach(function (x) {
+      var r = el('div', 'clrow'), s = el('span', 'clico'), t = el('span', 'cltx');
+      s.innerHTML = x[0]; r.appendChild(s); t.appendChild(el('span', null, x[1]));
+      if (x[2]) t.appendChild(el('small', null, '(' + x[2] + ')'));
+      r.appendChild(t); w.appendChild(r);
+    });
     return w;
   }
   var coachCafe = -1, coachCam = null;
