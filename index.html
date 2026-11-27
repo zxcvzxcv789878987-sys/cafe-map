@@ -8743,12 +8743,12 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var off = mobile.matches ? [0, -H * .2] : [180, 0];
     var hiddenByCard = mobile.matches ? pt.y > H * .42 : (pt.x < 470 && pt.y < H - 40);   // 컴퓨터의 카드는 왼쪽 14px부터 440px 폭
     var outside = pt.x < 40 || pt.x > W - 40 || pt.y < (mobile.matches ? 130 : 90) || pt.y > H - 40;
-    // 조금 옮길 때는 0.5초. 전국 지도처럼 멀리서 크게 확대해 들어갈 때는 내 위치 단추와 같은 날아가기(1.2~2초, 사용자 2026-11-28).
+    // 조금 옮길 때는 다른 짧은 이동과 같은 0.6초. 전국 지도처럼 멀리서 크게 확대해 들어갈 때는 내 위치 단추와 같은 날아가기(1.2~2초, 사용자 2026-11-28).
     if (pan || outside || hiddenByCard || z < 13) {
       setFollow(false);
       var cll = [D.lng[i] / 1e5, D.lat[i] / 1e5], zTo = Math.max(z, pan ? 15.5 : 13.5);
       if (zTo - z >= 1.5) { var fd = flyMsTo(cll, zTo); liveHoldOn(fd + 1000); map.flyTo({ center: cll, zoom: zTo, offset: off, duration: fd, curve: 1.2, essential: true }); }
-      else map.easeTo({ center: cll, zoom: zTo, offset: off, duration: 500 });
+      else map.easeTo({ center: cll, zoom: zTo, offset: off, duration: 600 });
     }
     openPanel('detail'); requestDraw();
   }
