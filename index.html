@@ -7654,7 +7654,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       for (var k = 0; k < unitN() && got < x[2]; k++) {
         if (D.ldk) { if (D.ldk[k].indexOf(pre) !== 0) continue; }
         else { var d = D.dong[k], g = D.sgg[d[1]]; if (D.sido[g[1]] !== x[0] || g[0] !== x[1]) continue; }
-        var tt = now - (n++) * 2.5 * D1;
+        // 가장 최근 것도 어제로 둔다. 오늘 기록이 미리 들어 있으면 시험할 때 하루 3곳이 일찍 막혀 헷갈린다(사용자 2026-11-28).
+        var tt = now - D1 - (n++) * 2.5 * D1;
         out[D.ldk ? ldKeyOf(k) : (D.sido[g[1]] + ' ' + g[0] + ' ' + d[0]).replace(/[.$#\[\]\/]/g, '_')] = tt;
         rec(k, tt);
         if (unitName(k) === '인계동') { rec(k, tt + 3600000, 1); rec(k, tt + 7200000, 2); }
