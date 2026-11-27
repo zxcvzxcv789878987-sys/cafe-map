@@ -9156,7 +9156,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   window.addEventListener('pointercancel', endTouch, { passive: true });
   // 방향 듣기는 앱을 열 때부터 켜 둔다(안드로이드는 허락 없이 온다). 아이폰은 사람이 단추를 누른 그 순간에만 허락을 물을 수 있어서,
   // 내 위치 단추를 누를 때(gesture) 아직 허락받지 않았으면 묻는다. 열 때 저절로는 묻지 않는다(물으면 실패하고 다시 묻지 못했다).
-  var headListen = false, headAsked = false;
+  // 아이폰은 이 허락을 기억하지 못하고 앱을 열 때마다 다시 묻는다. 계속 뜨는 게 귀찮다고 해서(사용자 2026-11-28) 평생 한 번만 묻는다.
+  //  그 뒤로는 묻지 않으므로, 아이폰에서 앱을 다시 열면 바라보는 방향은 안 돌 수 있다(위치는 그대로). 안드로이드는 원래 묻지 않는다.
+  var headListen = false, headAsked = !!load('cafemap.headAsked');
   function startHeading(gesture) {
     if (!headListen) {
       headListen = true;
@@ -9165,10 +9167,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     }
     var ask = window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function';
     if (!ask || !gesture || headAsked || headDeg !== null) return;
-    headAsked = true;
-    DeviceOrientationEvent.requestPermission().then(function (st) {
-      if (st !== 'granted') { headAsked = false; toast('보는 방향을 보려면 동작 및 방향 접근을 허용해 주세요'); }
-    }).catch(function () { headAsked = false; });
+    headAsked = true; save('cafemap.headAsked', 1);
+    DeviceOrientationEvent.requestPermission().catch(function () { /* 거절해도 다시 묻지 않는다 */ });
   }
   // 손으로 지도를 밀면 따라가기를 끈다(확대, 축소는 따라가기를 그대로 둔다).
   map.on('dragstart', function () { if (follow) setFollow(false); });
