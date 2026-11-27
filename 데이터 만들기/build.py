@@ -3,7 +3,7 @@
 import csv, sys, re, json, collections, difflib, os
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from brands import BRANDS, KAKAO_BRAND, BAKERY
+from brands import BRANDS, KAKAO_BRAND, BAKERY, pat_in
 
 workdir, outpath, license_files = sys.argv[1], sys.argv[2], sys.argv[3:]
 csv.field_size_limit(10**9)
@@ -55,7 +55,7 @@ def core(n):
 def brand_of(n):
     for i, (_, _, pats) in enumerate(BRANDS):
         # ^로 시작하는 글자는 이름의 맨 앞에 있을 때만 맞는 것으로 본다.
-        if any(n.startswith(p[1:]) if p[0] == '^' else p in n for p in pats):
+        if any(pat_in(n, p) for p in pats):
             return i
     return -1
 
@@ -69,6 +69,23 @@ def similar(a, b):
         return 1.0
     return max(difflib.SequenceMatcher(None, a, b).ratio(),
                difflib.SequenceMatcher(None, ca, cb).ratio())
+
+
+
+def brand_shop_ok(a, k):
+    """이름에 브랜드가 안 보이는 가게 a가 카카오의 브랜드 매장 k와 같은 가게인가(둘 다 norm 한 이름).
+    두 이름의 같은 끝부분(지점 이름)을 떼고 남은 앞부분을 견준다.
+    '카페블레스롤천안신불당점'과 '블레스롤천안신불당점'(카카오 쪽이 다 겹침)은 같은 가게,
+    '명동커피'와 '블루보틀명동카페', '뚜레쥬르올림픽공원역점'과 '요거트아이스크림의정석올림픽공원역점'은 다른 가게다.
+    (similar()는 커피, 카페 같은 말을 떼고 견주어 '명동'만 남아 같다고 보므로 여기서는 쓰지 않는다.)"""
+    a1, b1 = a, k
+    while a1 and b1 and a1[-1] == b1[-1]:
+        a1, b1 = a1[:-1], b1[:-1]
+    if not b1:
+        return True
+    if not a1:
+        return False      # 카카오 이름 앞에 우리 이름에 없는 말(브랜드)이 더 붙어 있다
+    return difflib.SequenceMatcher(None, a1, b1).ratio() >= 0.6
 
 
 # 1. 인허가 자료를 주소별로 모은다. 영업 중인 곳만.
@@ -488,6 +505,8 @@ if os.path.exists(places_path):
         ka = addr_key(v[1] or '')
         if ka:
             kaddr[ka].append(it)
+    # 카카오 장소를 차지한 줄 가운데 앞에서 뺀 줄(빵집, 카페 아닌 곳, 겹친 줄)이 있다. 그 장소는 지도에 없으니 다시 쓸 수 있게 한다.
+    taken = set(str(kid[i]) for i in range(len(names)) if i not in drop and kid[i])
     have = collections.defaultdict(list)          # 지금 남은 카페(카카오 좌표가 있으면 그것, 없으면 공공 좌표)
     for i in range(len(names)):
         if i in drop:
@@ -527,29 +546,46 @@ if os.path.exists(places_path):
         else:
             add['좌표 없음'] += 1
             continue
+        # 카카오 카페 목록에서 찾기: 같은 주소 먼저, 없으면 120m 안. 아직 아무 줄과도 짝지어지지 않은 장소를 먼저 고른다.
+        # 브랜드 매장은 같은 브랜드 장소만, 브랜드 아닌 곳은 브랜드 아닌 장소하고만 이름을 견준다.
+        # ('던킨 은평성모병원'이 '백미당 은평성모병원점'의 카카오 장소를 차지해 백미당이 빠지던 것을 막는다. 2026-11-27)
+        def fit(it):
+            kb = brand_of(it[3])
+            if b >= 0:
+                return 1.0 if kb == b else 0.0
+            if kb >= 0:
+                # 인허가 이름에는 브랜드가 안 보이지만 카카오는 브랜드 매장인 곳('카페블레스롤천안신불당점'과 '블레스롤 천안신불당점').
+                # 같은 끝부분(지점 이름)을 떼고 남은 앞부분도 비슷해야 같은 가게로 본다('휴게소 커피코너'와 '할리스 OO휴게소점'은 아니다).
+                if not brand_shop_ok(n, it[3]):
+                    return 0.0
+            return similar(n, it[3])
+        hit = None
+        same_addr = [it for it in kaddr.get(k, ()) if fit(it) >= 0.6]
+        if same_addr:
+            hit = min(same_addr, key=lambda it: (it[2] in taken, -fit(it)))
+        else:
+            best = None
+            for it in near(kgrid, pla, pln, 120):
+                sc = fit(it)
+                if sc >= 0.7:
+                    key = (it[2] in taken, -sc)
+                    if best is None or key < best:
+                        hit, best = it, key
+        if hit and hit[2] in taken:
+            add['카카오 장소가 이미 지도에 있음'] += 1
+            continue
         # 이미 지도에 있는가(앞에서 더한 줄도 have에 들어 있다)
+        #  이름이 비슷해도 브랜드가 다르거나 한쪽만 브랜드면 다른 가게다('테라로사 예술의전당지점'과 '공차 예술의전당점'처럼 지점 이름만 같은 곳).
+        #  카카오에서 찾은 매장은 카카오에서 확인된 다른 줄과 겹치지 않는다(카카오 장소가 다르면 다른 가게다. 200m 안에 같은 브랜드가 둘 있는 곳이 빠지지 않게).
         same = False
         for la, ln, i, hn in near(have, pla, pln, 200 if b >= 0 else 80):
-            if (b >= 0 and bidx[i] == b) or (dist(la, ln, pla, pln) <= 80 and similar(n, hn) >= 0.6):
+            if hit and kid[i]:
+                continue
+            if (b >= 0 and bidx[i] == b) or (b < 0 and bidx[i] < 0 and dist(la, ln, pla, pln) <= 80 and similar(n, hn) >= 0.6):
                 same = True
                 break
         if same:
             add['이미 지도에 있음'] += 1
-            continue
-        # 카카오 카페 목록에서 찾기: 같은 주소 먼저, 없으면 120m 안
-        hit = None
-        for it in kaddr.get(k, ()):
-            if similar(n, it[3]) >= 0.6 or (b >= 0 and brand_of(it[3]) == b):
-                hit = it
-                break
-        if not hit:
-            best = 0
-            for it in near(kgrid, pla, pln, 120):
-                sc = 1.0 if (b >= 0 and brand_of(it[3]) == b) else similar(n, it[3])
-                if sc >= 0.7 and sc > best:
-                    hit, best = it, sc
-        if hit and hit[2] in taken:
-            add['카카오 장소가 이미 지도에 있음'] += 1
             continue
         if not hit and (b < 0 or BRANDS[b][0] in BAKERY):   # 빵집, 도넛 브랜드는 카카오가 카페로 본 매장만
             add['카카오에서 카페로 확인 안 됨'] += 1
@@ -606,10 +642,7 @@ if os.path.exists(places_path):
         # 지점 이름만 같아서 짝지어진 다른 가게는 빼고 본다(사용자 2026-11-27: 뚜레쥬르올림픽공원역점이 같은 주소의 "요거트아이스크림의정석 올림픽공원역점"과
         # 짝이 되어 요아정이 됐다). 두 이름의 같은 끝부분(지점 이름)을 떼고 남은 앞부분이 비슷할 때만 그 브랜드로 본다.
         if j >= 0:
-            a1, b1 = norm(names[i]), norm(v[0])
-            while a1 and b1 and a1[-1] == b1[-1]:
-                a1, b1 = a1[:-1], b1[:-1]
-            if a1 and b1 and similar(a1, b1) < 0.5:
+            if not brand_shop_ok(norm(names[i]), norm(v[0])):
                 kb['(이름이 달라 안 정함)'] += 1
                 continue
         if j >= 0:

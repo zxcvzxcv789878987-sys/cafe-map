@@ -189,6 +189,11 @@
   "src": "https://www.tlj.co.kr/static/images/common/sns_tlj_logo.jpg",
   "px": 199
  },
+ "라떼킹": {
+  "file": "logos/d3ada7f0cc.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20250630/3dce51954f6de.png",
+  "px": 81
+ },
  "로스터리락온": {
   "file": "logos/3eb8a0e197.webp",
   "src": "https://cdn.imweb.me/upload/S202304261a27bcb12eb07/5315a6e38c738.png",
@@ -369,6 +374,11 @@
   "src": "https://viennacoffeehouse.co.kr/assets/favicon/apple-icon-180x180.png",
   "px": 173
  },
+ "빈스빈스": {
+  "file": "logos/dfb03e34bd.webp",
+  "src": "file",
+  "px": 50
+ },
  "빈이커피": {
   "file": "logos/2ea3652e1f-f.webp",
   "src": "https://cdn.imweb.me/thumbnail/20210821/bcecbe443366e.png",
@@ -434,6 +444,11 @@
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/2b/0e/68/2b0e684a-2fff-af01-3da0-a75df242bbdd/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg",
   "px": 512
  },
+ "스무디킹": {
+  "file": "logos/24b95cab05-f.webp",
+  "src": "https://scontent-icn2-1.cdninstagram.com/v/t51.2885-19/10375639_472697692863620_687626776_a.jpg?_nc_cat=103&_nc_map=urlgen_bucketless&ig_cache_key=GNdRngCEvBGC6q0BABha-CgAAAAAYUULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xNTAuQzMifQ%3D%3D&_nc_ohc=WhbSX2-VuiYQ7kNvwHZNj6U&_nc_oc=AdroRKEeqaPVyrzFvhZVQvq1KVvuEuUn1GP6NOdBmZTsViYSfTNyOVrtyiic3RGedOQ&_nc_zt=24&_nc_ht=scontent-icn2-1.cdninstagram.com&_nc_ss=79789&_nc_ct=RQosPBUCFQIAAAA&oh=00_AQW1nTb29muHesvq5q0XFJqpVz72VQRP0TK2tr27u7p3DQ&oe=6B0F7346",
+  "px": 150
+ },
  "스윗앤샷": {
   "file": "logos/d506546c2c-f.webp",
   "src": "https://cdn.imweb.me/upload/S202610192fc8707bc06df/45e78a2ba00c6.png",
@@ -443,6 +458,11 @@
   "file": "logos/73f75c041a.webp",
   "src": "https://www.starbucks.co.kr/favicon.ico",
   "px": 256
+ },
+ "스탠브루": {
+  "file": "logos/46349b3d5b-f.webp",
+  "src": "file",
+  "px": 370
  },
  "스트릿캔": {
   "file": "logos/8cffa4dc3a-f.webp",
