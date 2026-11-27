@@ -930,6 +930,12 @@ button.xlink .xbadge.qna { --pri: #1c7ed6; --pri2: #74c0fc; }
 .rpopt { min-height: 44px; padding: 8px 14px; border-radius: 12px; background: var(--surface-2); color: var(--ink-2); font-size: 14px; font-weight: 600; text-align: left; border: 1.5px solid transparent; }
 .rpopt.on { border-color: var(--pri); color: var(--ink); background: var(--surface); }
 .xbox textarea.rpta { min-height: 74px; }
+/* 설정의 내 기록 공개 아래 세 가지: 들여 쓰고 조금 작게(2026-11-28) */
+.pubsub { display: flex; flex-direction: column; gap: 12px; margin-top: -4px; padding-left: 16px; border-left: 2px solid var(--line); margin-left: 4px; }
+.pubsub .switch { font-size: 14px; font-weight: 600; color: var(--ink-2); }
+/* 사람 창의 동네 지도, 도감 줄(2026-11-28) */
+.pssee:empty { display: none; }
+.pssee .xrow small { margin-left: 7px; color: var(--ink-3); font-size: 12px; font-weight: 600; }
 /* 사용법의 콘센트 기록: 번호 붙은 차례와 그 아래 지킬 것(2026-11-28) */
 .gsteps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; counter-reset: gs; }
 .gsteps li { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; line-height: 1.5; color: var(--ink); counter-increment: gs; }
@@ -2659,7 +2665,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   }
   function xpPush() {
     if (!loginOn || !signedIn()) return;
-    var body = { xp: XP.xp, vis: XP.vis, vote: XP.vote, near: XP.near || {}, dong: XP.dong, dv: XP.dv || 0, fv: XP.fv || 0, fo: XP.fo || 0, mv: XP.mv || 0, md: XP.md || 0, mo: XP.mo || 0, mr: XP.mr || 0, br: XP.br || {}, mb: XP.mb || 0, log: XP.log || [], pub: XP.pub ? 1 : 0, egg: XP.egg || {}, ega: XP.ega || {}, egs: XP.egs || {}, sp: XP.sp || 0, spl: XP.spl || [], memo: XP.memo || {}, rw: XP.rw || {}, t: { '.sv': 'timestamp' } };
+    var body = { xp: XP.xp, vis: XP.vis, vote: XP.vote, near: XP.near || {}, dong: XP.dong, dv: XP.dv || 0, fv: XP.fv || 0, fo: XP.fo || 0, mv: XP.mv || 0, md: XP.md || 0, mo: XP.mo || 0, mr: XP.mr || 0, br: XP.br || {}, mb: XP.mb || 0, log: XP.log || [], pub: XP.pub ? 1 : 0, pubs: XP.pubs || null, egg: XP.egg || {}, ega: XP.ega || {}, egs: XP.egs || {}, sp: XP.sp || 0, spl: XP.spl || [], memo: XP.memo || {}, rw: XP.rw || {}, t: { '.sv': 'timestamp' } };
     if (XP.nick) body.nick = XP.nick;
     if (XP.nickT) body.nickT = XP.nickT;
     if (XP.nickOk) body.nickOk = 1;
@@ -2672,14 +2678,36 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 내 XP 기록 공개본: 켠 사람만 올린다. 날짜까지만 적고 시각은 뺀다(언제 어디 있었는지가 드러나지 않게). 최근 100개.
   //  쓴 원두(이스터 에그 열기 등, XP.spl)도 빼기(-)로 같이 올린다. 예전에는 받은 기록만 올려서 랭킹의 원두 기록에 쓴 것이 안 보였다(사용자 2026-11-27).
   function ymdKey(t) { if (!t) return ''; var d = new Date(t); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  // 공개 세 가지(사용자 2026-11-28): l 원두 기록, d 동네 지도, b 브랜드 도감. XP.pubs에 따로 적고 XP.pub은 하나라도 켜졌는지.
+  //  XP.pubs가 없는 예전 계정에서 원두 기록 공개를 켜 둔 사람은 셋 다 켠 것으로 본다.
+  function pubParts() {
+    var q = XP.pubs;
+    if (q && typeof q === 'object') return { l: !!q.l, d: !!q.d, b: !!q.b };
+    return XP.pub ? { l: true, d: true, b: true } : { l: false, d: false, b: false };
+  }
+  function setPub(q) {
+    var any = !!(q.l || q.d || q.b);
+    XP.pubs = { l: q.l ? 1 : 0, d: q.d ? 1 : 0, b: q.b ? 1 : 0 }; XP.pub = any ? 1 : 0;
+    xpSave();
+    if (!any) pubDelete();
+  }
   function pubPush() {
     if (!loginOn || !signedIn() || !XP.pub || !XP.nick) return;
+    var pp = pubParts();
     var ents = (XP.log || []).map(function (e, q) { return [e.t || 0, q, e.a || 0, e.r, e.c]; })
       .concat((Array.isArray(XP.spl) ? XP.spl : []).map(function (e, q) { return [e.t || 0, 1e6 + q, -(e.a || 0), e.r]; }));
     ents.sort(function (A, B) { return A[0] - B[0] || A[1] - B[1]; });
     var log = ents.slice(-100).map(function (e) { var x = { d: ymdKey(e[0]), a: e[2], r: xpShow(e[3]) }; if (e[4]) x.c = e[4]; return x; });
-    var body = { n: XP.nick, log: log, t: { '.sv': 'timestamp' } };
-    if (loginOn && myA()) body.a = myA();   // 기록한 사람 창에서 이 사람(공개를 켠 사람)의 닉네임을 찾을 수 있게
+    var body = { n: XP.nick, t: { '.sv': 'timestamp' } };
+    if (pp.l) body.log = log;
+    // 랭킹에서 동네 지도와 도감을 볼 수 있게 다녀온 동과 모은 브랜드도 올린다(날짜 없이, 켠 것만, 사용자 2026-11-28).
+    var dg = {}, bd = {}, k;
+    if (pp.d) for (k in XP.dong || {}) dg[k] = 1;
+    if (pp.b) for (k in XP.br || {}) if (brandIx[k] !== undefined) bd[k] = 1;
+    if (nKeys(dg)) body.dg = dg;
+    if (nKeys(bd)) body.bd = bd;
+    // 기록한 사람 창에서 이 사람의 닉네임을 찾을 수 있게. 어느 카페에 기록했는지가 드러나므로 원두 기록을 공개한 사람만.
+    if (pp.l && loginOn && myA()) body.a = myA();
     token().then(function (t) {
       return fetch(SHARE.db + '/v2/pub/' + who.u + '.json?auth=' + encodeURIComponent(t), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     }).catch(function () { /* 다음에 바뀔 때 다시 올린다 */ });
@@ -4349,9 +4377,12 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     return { version: 8, glyphs: (base && base.glyphs) || 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf', sources: src, layers: L };
   }
   var dmOpen = null;
-  function openDongMap() {
+  // who: 랭킹에서 다른 사람의 지도를 볼 때 { n: 닉네임, dong: { 동: 1 } }(그 사람이 원두 기록 공개를 켰을 때만, 날짜 없음).
+  //  남의 지도는 보기만 한다: 보너스 단추, 다녀온 날, 내가 기록한 카페 목록은 빼고 다녀왔는지만 보인다(사용자 2026-11-28).
+  function openDongMap(who) {
     if (dmOpen) return;
-    if (D.ldk && !LG) { toast('새 동네 지도를 준비하고 있어요'); legalLoad(function () { if (LG) openDongMap(); }); return; }
+    if (D.ldk && !LG) { toast('새 동네 지도를 준비하고 있어요'); legalLoad(function () { if (LG) openDongMap(who); }); return; }
+    var DG = who ? who.dong || {} : XP.dong;
     var old = $('xinfo'); if (old) old.remove();
     var o = el('div'), wbox = el('div', 'dmbox'), box = el('div', 'dmmap'), cv = el('div', 'dmcv');
     o.id = 'dmap'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '새 동네 지도');
@@ -4365,18 +4396,18 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     o.addEventListener('click', function (e) { if (e.target === o) close(); });
     // 다녀온 동과 지역마다 다녀온 동 수
     var ix = dongIndexMap(), vis = {}, regCnt = new Int32Array(NR), sggs = {}, sidos = {}, key, k, r;
-    for (key in XP.dong) {
+    for (key in DG) {
       var parts = key.split(' ');
       sidos[parts[0]] = 1; sggs[parts.slice(0, -1).join(' ')] = 1;
       k = ix[key]; if (k === undefined) continue;
-      vis[k] = dongTime(key) || 1;
+      vis[k] = who ? 1 : dongTime(key) || 1;
       for (r = unitReg(k); r >= 0; r = rParent[r]) regCnt[r]++;
     }
-    var nDong = xpCount(XP.dong), leafN = dmLeafCount();
+    var nDong = xpCount(DG), leafN = dmLeafCount();
     var isDone = function (rr) { return rr >= 0 && !rLeaf[rr] && regCnt[rr] > 0 && regCnt[rr] >= leafN[rr]; };
     // 머리와 한 줄 현황(큰 판은 답답해서 뺐다)
     var hd = el('div', 'xhead dmhead'), bd = el('span', 'xbadge pic');
-    bd.appendChild(fxStill('mi_map')); hd.appendChild(bd); hd.appendChild(el('h2', null, '새 동네 지도')); wbox.appendChild(hd);
+    bd.appendChild(fxStill('mi_map')); hd.appendChild(bd); hd.appendChild(el('h2', null, who ? (who.n || '이름 없음') + '님의 동네 지도' : '새 동네 지도')); wbox.appendChild(hd);
     var sum = el('div', 'dmsum');
     [['다녀온 동', nDong], ['구', xpCount(sggs)], ['시도', xpCount(sidos)]].forEach(function (x) {
       var c = el('span'); c.appendChild(el('small', null, x[0])); c.appendChild(el('b', null, String(x[1]))); sum.appendChild(c);
@@ -4388,7 +4419,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var bon = btn('dmbonus', null, function () { openRewards('dong', true); });
     bon.appendChild(icon('gift')); bon.appendChild(el('span', null, '새 동네 보너스')); bon.appendChild(el('b', null, nDong + '/' + nx + '동')); bon.appendChild(icon('right'));
     bon.setAttribute('aria-label', '새 동네 보너스 현황, 다음 목표 ' + nx + '동');
-    box.appendChild(bon);
+    if (!who) box.appendChild(bon);
     var nav = el('div', 'dmnav'), bBack = btn('nbtn', null, function () { if (cur >= 0) go(rParent[cur]); }), bHome = btn('nbtn', null, function () { go(-1); });
     bBack.appendChild(icon('back')); bBack.appendChild(el('span', 't', '뒤로')); bBack.setAttribute('aria-label', '뒤로');
     bHome.appendChild(icon('home')); bHome.appendChild(el('span', 't', '처음부터')); bHome.setAttribute('aria-label', '처음부터');
@@ -4426,7 +4457,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         var gi = gOf(regPath(r)); if (gi !== undefined && !geo.files[gi]) { n++; addSgg(gi); }
       });
     }
-    if (D.ldk) for (key in XP.dong) addSgg(gOf(key.split(' ').slice(0, -1).join(' ')));
+    if (D.ldk) for (key in DG) addSgg(gOf(key.split(' ').slice(0, -1).join(' ')));
     geo.dong.forEach(function (f) { f.properties.v = vis[f.properties.k] ? 1 : 0; });
     geo.lab.forEach(function (f) { f.properties.v = vis[f.properties.k] ? 1 : 0; });
     geo.sgg.forEach(function (f) { f.properties.d = isDone(f.properties.r) ? 1 : 0; });
@@ -4559,7 +4590,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       rw.appendChild(mini); rw.appendChild(tx); rw.appendChild(cx);
       card = el('div', 'dmcard'); card.appendChild(rw);
       // 어느 카페로 다녀왔는지: 도장 받은 곳(별)을 맨 위에, 그 동에서 기록한 다른 카페는 그 아래. 누르면 그 카페로 간다. 세 곳까지만 보이고 나머지는 수로.
-      var cfs = on ? dongCafesOf(kk) : [];
+      var cfs = on && !who ? dongCafesOf(kk) : [];
       if (cfs.length) {
         var cl = el('div', 'dmcl');
         cfs.slice(0, 3).forEach(function (c) {
@@ -4669,11 +4700,13 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     return (d.getFullYear() !== new Date().getFullYear() ? d.getFullYear() + '년 ' : '') + (d.getMonth() + 1) + '월 ' + d.getDate() + '일';
   }
   // 도감 창. focus: 바로 열 브랜드 번호(-1이면 목록), back: 뒤로 단추를 누르면 할 일
-  function openDex(focus, back) {
+  // who: 랭킹에서 다른 사람의 도감을 볼 때 { n: 닉네임, br: { 브랜드: 1 } }(원두 기록 공개를 켠 사람만, 날짜 없음).
+  //  남의 도감은 보기만 한다: 보너스 단추, NEW, 처음 모은 날, 모으면 받는 원두, 내가 기록한 매장은 뺀다.
+  function openDex(focus, back, who) {
     var old = $('xinfo'); if (old) old.remove();
     var seen = dexSeenAt();
-    save(DEX_SEEN, Date.now());
-    document.querySelectorAll('.dxdot').forEach(function (x) { x.remove(); });
+    var has = function (j) { return who ? !!(who.br || {})[D.brands[j][0]] : dexGot(j); };
+    if (!who) { save(DEX_SEEN, Date.now()); document.querySelectorAll('.dxdot').forEach(function (x) { x.remove(); }); }
     var o = el('div'), box = el('div', 'xbox dex');
     o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '브랜드 도감');
     o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
@@ -4696,7 +4729,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     function grid() {
       box.textContent = ''; box.scrollTop = 0;
       var hd = el('div', 'xhead'), bd = el('span', 'xbadge pic');
-      bd.appendChild(fxStill('mi_dex')); hd.appendChild(bd); hd.appendChild(el('h2', null, '브랜드 도감')); box.appendChild(hd);
+      bd.appendChild(fxStill('mi_dex')); hd.appendChild(bd); hd.appendChild(el('h2', null, who ? (who.n || '이름 없음') + '님의 도감' : '브랜드 도감')); box.appendChild(hd);
       var sum = el('div', 'dxsum'), sl = el('span'), nb = el('b');
       sum.appendChild(sl); sum.appendChild(nb); box.appendChild(sum);
       // 새 브랜드 보너스 창(모은 브랜드 수 표)을 여는 단추. 표 안의 브랜드 도감 줄로 다시 돌아온다.
@@ -4704,7 +4737,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var bon = btn('dxbon', null, function () { openRewards('brand', true); });
       bon.appendChild(icon('gift')); bon.appendChild(el('span', null, '새 브랜드 보너스'));
       bon.appendChild(el('b', null, nx0 > D.brands.length ? '다 모았어요' : have0 + '/' + nx0 + '개')); bon.appendChild(icon('right'));
-      box.appendChild(bon);
+      if (!who) box.appendChild(bon);
       var bar = el('div', 'dxbar'), sq = el('label', 'search inset dxq'), inp = el('input');
       sq.appendChild(icon('search'));
       inp.type = 'search'; inp.placeholder = '브랜드 이​름'; inp.value = dexQ; inp.autocomplete = 'off'; inp.setAttribute('aria-label', '브랜드 이​름 찾기');
@@ -4723,11 +4756,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         D.brands.forEach(function (b, j) {
           if (q) { if (b[0].replace(/\s/g, '').toLowerCase().indexOf(q) < 0) return; }
           else if (dexTab !== 'all' && b[1] !== dexTab) return;
-          var on = dexGot(j), c = btn('dxc' + (on ? '' : ' off'), null, function () { detail(j, grid); });
+          var on = has(j), c = btn('dxc' + (on ? '' : ' off'), null, function () { detail(j, grid); });
           all++; if (on) got++;
           if (on) c.style.setProperty('--dc', dexColor(j)[0]);
           c.appendChild(el('span', 'no', dexNo(j)));
-          if (on && XP.br[b[0]] > seen) c.appendChild(el('span', 'new', 'NEW'));
+          if (on && !who && XP.br[b[0]] > seen) c.appendChild(el('span', 'new', 'NEW'));
           c.appendChild(dexArt(j, on, 'still'));
           c.appendChild(el('span', 'nm', b[0]));
           c.setAttribute('aria-label', dexNo(j) + ' ' + b[0] + (on ? ', 모음' : ', 아직'));
@@ -4743,7 +4776,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     }
     function detail(j, bk) {
       box.textContent = ''; box.scrollTop = 0;
-      var b = D.brands[j], on = dexGot(j), top = el('div', 'dxtop'), big = el('div', 'dxbig');
+      var b = D.brands[j], on = has(j), top = el('div', 'dxtop'), big = el('div', 'dxbig');
       if (on) top.style.setProperty('--dc', dexColor(j)[0]);
       big.appendChild(dexArt(j, on, on ? 'keep' : 'pop')); top.appendChild(big); tapPlay(big, function () { return dexArt(j, on, 'pop'); });
       top.appendChild(el('span', 'no', dexNo(j)));
@@ -4754,10 +4787,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var row = function (k, v) { var r = el('div', 'xrow'); r.appendChild(el('span', null, k)); r.appendChild(bean(el('b', null, v))); rows.appendChild(r); };
       row('지도 속 매장', fmt(brandCount[j]) + '곳');
       row('만나기', dexMeet(brandCount[j]));
-      if (on) row('처음 모은 날', dexDay(XP.br[b[0]]));
+      if (who) row(who.n || '이 사람', on ? '모았어요' : '아직이에요');
+      else if (on) row('처음 모은 날', dexDay(XP.br[b[0]]));
       else row('모으면', '+500 원두');
       box.appendChild(rows);
-      var mine = on ? dexMine(j) : [];
+      var mine = on && !who ? dexMine(j) : [];
       if (mine.length) {
         box.appendChild(el('div', 'xsep')); box.appendChild(el('div', 'xgrp', '내가 기록한 매장 ' + mine.length + '곳'));
         var ll = el('div', 'xll');
@@ -6594,11 +6628,25 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     nv.appendChild(nvTabs); conf.appendChild(nv); dragPick(nvTabs);
     if (XP_ON && favOn()) conf.appendChild(toggleRow('내 메모 단추', !S.favHide, function (v) { S.favHide = !v; persist(); favRender(); }));
     conf.appendChild(toggleRow('지역 경계', S.outline, function (v) { S.outline = v; refilter(); draw(); renderChips(); persist(); }));
-    // 내 XP 기록 공개: 켜면 랭킹과 기록한 사람 창에서 다른 사람이 내 닉네임과 XP 기록(날짜까지)을 볼 수 있다. 기본은 꺼짐.
-    if (loginOn && signedIn() && XP_ON) conf.appendChild(toggleRow('내 원두 기록 공개', !!XP.pub, function (v) {
-      XP.pub = v ? 1 : 0; xpSave();
-      if (v) toast('다른 사람이 내 원두 기록을 볼 수 있어요. 시각은 보이지 않아요'); else { pubDelete(); toast('내 원두 기록을 비공개로 바꿨어요'); }
-    }));
+    // 내 기록 공개(사용자 2026-11-28): 큰 스위치 하나와 그 아래 세 가지(원두 기록, 동네 지도, 브랜드 도감).
+    //  큰 스위치를 켜면 셋 다 켜고, 끄면 셋 다 끈다. 셋 중 하나라도 켜져 있으면 큰 스위치도 켜진 모양. 기본은 꺼짐.
+    //  켜면 랭킹에서 다른 사람이 볼 수 있다. 원두 기록은 날짜까지만, 동네 지도와 도감은 날짜 없이.
+    if (loginOn && signedIn() && XP_ON) {
+      var pp0 = pubParts(), pubAll = toggleRow('내 기록 공개', pp0.l || pp0.d || pp0.b, function (v) {
+        setPub({ l: v, d: v, b: v });
+        subs.forEach(function (sw) { sw.c.checked = v; });
+        toast(v ? '랭킹에서 다른 사람이 내 원두 기록, 동네 지도, 도감을 볼 수 있어요' : '내 기록을 모두 비공개로 바꿨어요');
+      }), allC = pubAll.querySelector('input'), sub = el('div', 'pubsub');
+      var subs = [['l', '원두 기록'], ['d', '동네 지도'], ['b', '브랜드 도감']].map(function (x) {
+        var row = toggleRow(x[1], pp0[x[0]], function (v) {
+          var q = pubParts(); q[x[0]] = v; setPub(q);
+          allC.checked = q.l || q.d || q.b;
+        });
+        sub.appendChild(row);
+        return { c: row.querySelector('input') };
+      });
+      conf.appendChild(pubAll); conf.appendChild(sub);
+    }
     // 숨긴 사용자: 한 명이라도 있으면 줄이 생기고, 누르면 목록과 풀기 단추
     var nHid = Object.keys(hiddenU).length;
     if (nHid) { var hr = btn('xrow xlink', null, openHidden); hr.appendChild(el('span', null, '숨긴 사용자 ' + nHid + '명')); hr.appendChild(icon('right')); conf.appendChild(hr); }
@@ -6788,11 +6836,28 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     });
     grp.appendChild(cols); st.appendChild(grp);
     box.appendChild(st);
+    // 동네 지도와 도감(사용자 2026-11-28): 원두 기록 공개를 켠 사람만. 누르면 그 사람의 것을 보기만 하는 모양으로 연다. 나는 내 것을 연다.
+    var see = el('div', 'pssee');
+    box.appendChild(see);
     // XP 기록: 본인이 공개를 켠 사람만 보인다. 날짜까지만.
     var lg = el('div', 'xll pslog'); lg.appendChild(el('p', 'xnone', '불러오는 중'));
     box.appendChild(el('div', 'xgrp', '원두 기록')); box.appendChild(lg);
     var mine = signedIn() && x.u === who.u;
+    var seeRow = function (pic, label, n, unit, go) {
+      var r = btn('xrow xlink', null, go), bd2 = el('span', 'xbadge pic mn'), l = el('span', null, label);
+      bd2.appendChild(fxStill(pic)); r.appendChild(bd2);
+      l.appendChild(el('small', null, n + unit)); r.appendChild(l); r.appendChild(icon('right')); see.appendChild(r);
+    };
     fetch(SHARE.db + '/v2/pub/' + x.u + '.json').then(function (r) { return r.ok ? r.json() : null; }, function () { return null; }).then(function (pb) {
+      var nm2 = isHid(x.u) ? '숨긴 사용자' : x.n || '이름 없음';
+      if (mine) {
+        seeRow('mi_map', '새 동네 지도', xpCount(XP.dong), '동', function () { openDongMap(); });
+        seeRow('mi_dex', '브랜드 도감', dexHave(), '개', function () { openDex(-1, again); });
+      } else if (pb && (pb.dg || pb.bd)) {
+        var who2 = { n: nm2, dong: pb.dg || {}, br: pb.bd || {} };
+        seeRow('mi_map', '동네 지도', xpCount(who2.dong), '동', function () { openDongMap(who2); });
+        seeRow('mi_dex', '브랜드 도감', xpCount(who2.br), '개', function () { openDex(-1, again, who2); });
+      }
       lg.textContent = '';
       if (!pb || !Array.isArray(pb.log)) { lg.appendChild(el('p', 'xnone', mine ? '비공개예요. 메뉴의 환경설정에서 공개할 수 있어요.' : '기록을 공개하지 않았어요')); return; }
       var rows = pb.log.slice().reverse();
@@ -7603,7 +7668,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         var pubs = { p0: '느긋한 판다', p2: '졸린 고양이' }, nk = pubs[mp[1]];
         if (!nk) return null;
         if (mp[2]) return nk;
-        return { n: nk, log: [{ d: '2026-11-20', a: 1000, r: '로그인' }, { d: '2026-11-21', a: 2000, r: '첫 콘센트 기록', c: '스타벅스 강남역점' }, { d: '2026-11-21', a: 500, r: '새 동네', c: '역삼1동' }, { d: '2026-11-24', a: 1000, r: '콘센트 기록', c: '투썸플레이스 역삼점' }, { d: '2026-11-24', a: 500, r: '새로 연 카페', c: '투썸플레이스 역삼점' }] };
+        // 동네 지도와 도감도 공개한 사람(시험용): 수원 근처 동 몇 곳과 브랜드 열두 개
+        var tdg = {}, tbd = {}; Object.keys(testDongMap()).slice(0, mp[1] === 'p0' ? 12 : 4).forEach(function (q) { tdg[q] = 1; }); D.brands.slice(0, mp[1] === 'p0' ? 12 : 5).forEach(function (q) { tbd[q[0]] = 1; });
+        return { n: nk, dg: tdg, bd: tbd, log: [{ d: '2026-11-20', a: 1000, r: '로그인' }, { d: '2026-11-21', a: 2000, r: '첫 콘센트 기록', c: '스타벅스 강남역점' }, { d: '2026-11-21', a: 500, r: '새 동네', c: '역삼1동' }, { d: '2026-11-24', a: 1000, r: '콘센트 기록', c: '투썸플레이스 역삼점' }, { d: '2026-11-24', a: 500, r: '새로 연 카페', c: '투썸플레이스 역삼점' }] };
       }
       var mr2 = path.match(/^\/v2\/rank\/([^/]+)\.json$/);
       if (mr2) return { n: { p0: '느긋한 판다', p2: '졸린 고양이' }[mr2[1]] || '시험 사람', x: 21000, v: 14, d: 6, o: 0, r: 0 };
