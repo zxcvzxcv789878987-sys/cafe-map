@@ -459,6 +459,18 @@ button.oli { width: 100%; padding: 11px 0; margin: 0; background: none; color: v
 .osc { flex: none; width: 118px; padding: 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; align-items: flex-start; gap: 8px; text-align: left; }
 .osc b { max-width: 100%; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .osc span { font-size: 12.5px; color: var(--ink-2); }
+/* 블로그 후기(2026-11-28) */
+.oblog[hidden] { display: none; }
+.obhd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
+.obhd h2 { margin: 0; }
+.obp { display: flex; gap: 12px; align-items: center; padding: 10px 0; color: var(--ink); text-decoration: none; }
+.obth { flex: none; width: 64px; height: 64px; border-radius: 10px; background: var(--surface-2); overflow: hidden; }
+.obth img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.obtx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.obtx b { font-size: 15px; font-weight: 600; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.obtx > span { font-size: 13px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.obk { font-style: normal; display: inline-block; margin-right: 6px; padding: 1px 6px; border-radius: 5px; background: color-mix(in srgb, var(--pri) 12%, var(--surface)); color: #4c3fc4; font-size: 12px; font-weight: 800; vertical-align: 1px; }
+.obmore { align-self: stretch; height: 44px; margin-top: 4px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-size: 14px; font-weight: 700; color: var(--ink); }
 .oonly[hidden], .orow[hidden] { display: none; }
 .oonly { border-radius: 16px; background: color-mix(in srgb, var(--pri) 7%, var(--surface)); padding: 14px 14px 16px; display: flex; flex-direction: column; gap: 12px; }
 .oin h2 { margin: 0; font-size: 15.5px; font-weight: 800; color: var(--ink); }
@@ -9277,6 +9289,46 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     fetch('info/' + f + '.json').then(function (r) { if (!r.ok) throw new Error('info'); return r.json(); })
       .then(function (o) { infoCache[f] = o || {}; done(infoCache[f][c] || null); }, function () { done(null); });
   }
+  // 블로그 후기: 중계 서버(Cloudflare Workers, 카카오 키를 숨김)가 카카오 블로그 검색으로 찾은 네이버 블로그 글을 돌려준다.
+  //  결과는 저장하지 않는다(카카오 규칙). 같은 카드를 다시 열 때만 쓰려고 이번 실행 동안 메모리에만 둔다.
+  var BLOG_API = 'https://cafemap-blog.rdh0811.workers.dev/blog', blogMem = {};
+  function blogAreas(i) {
+    var dn = D.dong[D.dongOf[i]], sg = D.sgg[dn[1]][0].split(' ').pop(), a = [];
+    var s1 = sg.replace(/(시|군|구)$/, ''); if (s1.length >= 2) a.push(s1);
+    var d1 = dn[0].replace(/[0-9.]+/g, '').replace(/(동|가|읍|면|리)$/, ''); if (d1.length >= 2 && a.indexOf(d1) < 0) a.push(d1);
+    return a;
+  }
+  function cafeBlog(i, done) {
+    var c = cidOf(i);
+    if (blogMem[c]) { done(blogMem[c]); return; }
+    fetch(BLOG_API + '?q=' + encodeURIComponent(D.name[i]) + '&a=' + encodeURIComponent(blogAreas(i).join(',')))
+      .then(function (r) { if (!r.ok) throw new Error('blog'); return r.json(); })
+      .then(function (list) { blogMem[c] = list || []; done(blogMem[c]); }, function () { done(null); });
+  }
+  function blogFill(box, list) {
+    box.textContent = '';
+    var hd = el('div', 'obhd'); hd.appendChild(el('h2', null, '블로그 후기')); box.appendChild(hd);
+    var shown = 3, rows = el('div', 'obrows'); box.appendChild(rows);
+    var draw = function () {
+      rows.textContent = '';
+      list.slice(0, shown).forEach(function (x) {
+        var a = document.createElement('a'); a.className = 'obp'; a.href = x.u; a.target = '_blank'; a.rel = 'noopener noreferrer';
+        var th = el('span', 'obth');
+        if (x.p) { var im = document.createElement('img'); im.src = x.p; im.alt = ''; im.loading = 'lazy'; im.referrerPolicy = 'no-referrer'; im.onerror = function () { im.remove(); }; th.appendChild(im); }
+        a.appendChild(th);
+        var tx = el('span', 'obtx'), tt = el('b');
+        if (x.k) tt.appendChild(el('em', 'obk', '카공'));
+        tt.appendChild(document.createTextNode(x.t)); tx.appendChild(tt);
+        var dd = x.d ? new Date(x.d) : null, ds = dd && !isNaN(dd) ? dd.getFullYear() + '.' + (dd.getMonth() + 1) + '.' + dd.getDate() : '';
+        tx.appendChild(el('span', null, x.b + (ds ? ', ' + ds : ''))); a.appendChild(tx);
+        rows.appendChild(a);
+      });
+      var old = box.querySelector('.obmore'); if (old) old.remove();
+      if (list.length > shown) box.appendChild(btn('obmore', '더 보기', function () { shown = list.length; draw(); }));
+    };
+    draw();
+    box.hidden = false;
+  }
   function cafeOurs(i, act) {
     var w = el('div', 'oin'), v = votes[i] || [0, 0, 0, 0, 0];
     // 맨 위: 이름 앞에 지도의 점과 같은 로고, 오른쪽에 길찾기
@@ -9302,6 +9354,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (bon.firstChild) w.appendChild(bon);
     // 콘센트 기록: 카드가 쥔 칸을 그대로 옮겨 붙인다.
     if (act.rec) w.appendChild(act.rec);
+    // 블로그 후기(사용자 2026-11-28): 카공 후기(이름 + 콘센트로 찾은 글)를 앞에, 그 뒤에 그 카페 블로그 글. 글이 없으면 칸을 숨긴다.
+    var blog = el('section', 'osec oblog'); blog.hidden = true; w.appendChild(blog);
+    cafeBlog(i, function (list) { if (list && list.length && blog.isConnected !== false) blogFill(blog, list); });
     // 찾아가기와 매장: 자료 파일을 받은 뒤 채운다(같은 파일은 한 번만 받는다).
     var go = el('section', 'osec'), shop = el('section', 'osec');
     go.hidden = true; w.appendChild(go); w.appendChild(shop);
