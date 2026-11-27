@@ -946,6 +946,17 @@ button.xlink .xbadge.qna { --pri: #1c7ed6; --pri2: #74c0fc; }
 .rpopt { min-height: 44px; padding: 8px 14px; border-radius: 12px; background: var(--surface-2); color: var(--ink-2); font-size: 14px; font-weight: 600; text-align: left; border: 1.5px solid transparent; }
 .rpopt.on { border-color: var(--pri); color: var(--ink); background: var(--surface); }
 .xbox textarea.rpta { min-height: 74px; }
+/* 지도 자료(2026-11-28): 메뉴 맨 아래 줄 하나와 작은 출처, 누르면 묶음별로 정리한 창 */
+.mfoot { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--ink-3); }
+.mfoot a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.mfoot .mlinks { display: flex; gap: 14px; }
+.xbox.srcs { gap: 8px; }
+.srcl { margin: 0; display: flex; flex-direction: column; gap: 2px; }
+.srcl dt { margin-top: 6px; font-size: 12.5px; color: var(--ink-3); }
+.srcl dt:first-child { margin-top: 0; }
+.srcl dd { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink); overflow-wrap: anywhere; }
+.srcl dd a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.xbox p.srcn { margin: 2px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--ink-2); }
 /* 내 기록 공개(2026-11-28 사용자가 고름): 설정의 줄은 지금 공개한 것을 작게 적고, 창 안에는 큰 스위치와 체크 줄 셋 */
 .pubrow { display: flex; align-items: center; gap: 6px; width: 100%; padding: 0; background: none; color: var(--ink); text-align: left; font-size: 15px; font-weight: 650; cursor: pointer; }
 .pubrow .pubn { flex: none; }
@@ -2721,6 +2732,46 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   function pubSummary() {
     var q = pubParts(), on = PUB_ITEMS.filter(function (x) { return q[x[0]]; });
     return !on.length ? '꺼짐' : on.length === PUB_ITEMS.length ? '모두 공개' : on.map(function (x) { return x[1]; }).join(', ');
+  }
+  // 지도 자료 창: 묶음(카페, 지역, 배경 지도, 상표)마다 이름과 출처를 위아래로 적는다.
+  function openSources() {
+    var old = $('xinfo'); if (old) old.remove();
+    var o = el('div'), box = el('div', 'xbox srcs');
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '지도 자료');
+    o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
+    box.appendChild(el('h2', null, '지도 자료'));
+    var grp = function (title, rows, note) {
+      box.appendChild(el('div', 'xgrp', title));
+      var dl = el('dl', 'srcl');
+      rows.forEach(function (r) {
+        dl.appendChild(el('dt', null, r[0]));
+        var dd = el('dd');
+        if (typeof r[1] === 'string') dd.textContent = r[1]; else dd.appendChild(r[1]);
+        dl.appendChild(dd);
+      });
+      box.appendChild(dl);
+      if (note) box.appendChild(el('p', 'srcn', note));
+    };
+    grp('카페', [
+      ['카페 수', fmt(N) + '곳'],
+      ['목록과 이름', '소상공인시장진흥공단 상가(상권)정보, 행정안전부 지방행정 인허가 데이터(휴게음식점, 제과점영업, 일반음식점)'],
+      ['넓이와 개업', '행정안전부 지방행정 인허가 데이터']
+    ], '카페 이름은 이 자료에 등록된 이름이라 간판이나 카카오맵과 다를 수 있어요.');
+    grp('지역', [
+      ['경계', '통계청 SGIS (vuski/admdongkor)'],
+      ['법정동 이름과 범위', '국토교통부 브이월드 법정구역정보']
+    ]);
+    var bg = el('span');
+    [['OpenFreeMap', 'https://openfreemap.org/'], ['© OpenMapTiles', 'https://www.openmaptiles.org/'], ['© OpenStreetMap contributors', 'https://www.openstreetmap.org/copyright']].forEach(function (x, n) {
+      var a2 = el('a', null, x[0]); a2.href = x[1]; a2.target = '_blank'; a2.rel = 'noopener';
+      if (n) bg.appendChild(document.createTextNode(', '));
+      bg.appendChild(a2);
+    });
+    grp('배경 지도', [['지도 그림', bg]]);
+    box.appendChild(el('div', 'xgrp', '상표'));
+    box.appendChild(el('p', 'srcn', '카페 이름과 브랜드 로고는 각 회사의 상표예요. 카페 지도는 이 회사들과 관계가 없어요.'));
+    box.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
+    o.appendChild(box); document.body.appendChild(o); fitVisible(o);
   }
   // 내 기록 공개 창: 위에 큰 스위치(켜면 셋 다, 끄면 셋 다), 아래 체크 줄 셋. 줄을 하나 고르면 큰 스위치도 켜지고, 다 빼면 꺼진다.
   function openPubSet() {
@@ -6768,24 +6819,21 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var car = btn('xrow xlink', null, function () { openCafeAdd(); }), cab = el('span', 'xbadge pic mn'), cal = el('span', null, '없는 카페 제보');
     if (cafeNew > 0) cal.appendChild(el('i', 'fbdot'));
     cab.appendChild(fxStill('mi_pin')); car.appendChild(cab); car.appendChild(cal); car.appendChild(icon('right'));
-    fb.appendChild(gur); fb.appendChild(fr); fb.appendChild(car); fbRows.forEach(function (r) { fb.appendChild(r); }); sc.appendChild(fb);
-    var info = el('div', 'fsec'), ul = el('ul', 'mlist');
+    // 지도 자료: 사용법, 문의하기와 같은 모양의 줄. 누르면 자료 출처를 묶음별로 정리한 창(openSources).
+    var sr = btn('xrow xlink', null, openSources), srb = el('span', 'xbadge pic mn'), srl = el('span', null, '지도 자료');
+    srb.appendChild(fxStill('mi_map')); sr.appendChild(srb); sr.appendChild(srl); sr.appendChild(icon('right'));
+    fb.appendChild(gur); fb.appendChild(fr); fb.appendChild(car); fb.appendChild(sr); fbRows.forEach(function (r) { fb.appendChild(r); }); sc.appendChild(fb);
+    // 지도 자료(사용자 2026-11-28: 너무 많아졌다, 열어야 보이게). 메뉴에는 줄 하나와, 늘 보여야 하는 배경 지도 출처, 개인정보처리방침, 이용약관만 둔다.
+    var info = el('div', 'fsec');
     info.style.borderBottom = '0';
-    info.appendChild(el('div', 'ftitle', '지도 자료'));
-    ['카페 ' + fmt(N) + '곳', '카페 목록: 소상공인시장진흥공단 상가(상권)정보', '카페 이름: 소상공인시장진흥공단 상가(상권)정보와 행정안전부 지방행정 인허가 데이터(휴게음식점, 제과점영업, 일반음식점)에 등록된 이름이라 간판이나 카카오맵과 다를 수 있어요', '넓이와 개업: 행정안전부 지방행정 인허가 데이터', '지역 경계: 통계청 SGIS (vuski/admdongkor)', '법정동 이름과 범위: 국토교통부 브이월드 법정구역정보'].forEach(function (t) { ul.appendChild(el('li', null, t)); });
-    // 배경 지도의 출처 표시(예전에는 지도 구석의 i 단추에 있었다). 자료를 쓰는 조건이라 링크와 함께 남긴다.
-    var li = el('li', null, '배경 지도: ');
-    [['OpenFreeMap', 'https://openfreemap.org/'], ['© OpenMapTiles', 'https://www.openmaptiles.org/'], ['© OpenStreetMap contributors', 'https://www.openstreetmap.org/copyright']].forEach(function (x, n) {
-      var a2 = el('a', null, x[0]); a2.href = x[1]; a2.target = '_blank'; a2.rel = 'noopener';
-      if (n) li.appendChild(document.createTextNode(', '));
-      li.appendChild(a2);
-    });
-    ul.appendChild(li);
-    ul.appendChild(el('li', null, '카페 이름과 브랜드 로고는 각 회사의 상표예요. 카페 지도는 이 회사들과 관계가 없어요.'));
-    // 개인정보처리방침: 스토어에 올릴 때도 이 주소를 적는다.
-    var pl = el('li'), pa = el('a', null, '개인정보처리방침'); pa.href = 'privacy.html'; pa.target = '_blank'; pa.rel = 'noopener'; pl.appendChild(pa); ul.appendChild(pl);
-    var tl = el('li'), ta2 = el('a', null, '이용약관'); ta2.href = 'terms.html'; ta2.target = '_blank'; ta2.rel = 'noopener'; tl.appendChild(ta2); ul.appendChild(tl);
-    info.appendChild(ul); sc.appendChild(info);
+    var foot2 = el('div', 'mfoot');
+    // 배경 지도의 출처는 자료를 쓰는 조건이라 창 안에 숨기지 않고 메뉴에 늘 보이게 둔다.
+    var osm = el('div', null, '배경 지도 '), oa = el('a', null, '© OpenStreetMap contributors');
+    oa.href = 'https://www.openstreetmap.org/copyright'; oa.target = '_blank'; oa.rel = 'noopener'; osm.appendChild(oa); foot2.appendChild(osm);
+    var lk = el('div', 'mlinks');
+    [['개인정보처리방침', 'privacy.html'], ['이용약관', 'terms.html']].forEach(function (x) { var a3 = el('a', null, x[0]); a3.href = x[1]; a3.target = '_blank'; a3.rel = 'noopener'; lk.appendChild(a3); });
+    foot2.appendChild(lk);
+    info.appendChild(foot2); sc.appendChild(info);
   }
   // 문의 창. 쓴 내용은 지도 서버의 문의함(v2/feedback)에 쌓이고, 매일 도는 확인 작업이 읽어서 운영자에게 알려 준다.
   // 문의함은 아무도 읽을 수 없게 막혀 있다(운영자만 비밀 키로 읽는다). 로그인 없이도 보낼 수 있다.
