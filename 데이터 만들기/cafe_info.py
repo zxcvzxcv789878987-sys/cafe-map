@@ -4,8 +4,7 @@
 #
 # 넣는 것(모두 공공 자료, 거리는 공개 cafes.js 좌표로 잰 직선 미터)
 #   b: 가까운 버스정류장 [이름, 미터] 1km 안. 국토교통부 전국 버스정류장 위치정보(공공데이터포털 파일 15067528)
-#   s: 가까운 지하철역 [역 이름, 미터] 1km 안. 전국도시철도역사정보 표준데이터(15013205). 화면의 버튼으로만 받아져서
-#      사람이 받아 작업/info_src/subway.csv 또는 subway.xlsx로 둔다. 없으면 빼고 만든다.
+#   s: 가까운 지하철역 [역 이름, 미터] 1km 안. 전국도시철도역사정보 표준데이터(15013205). 원본은 철도 데이터 포털(data.kric.go.kr)의 엑셀.
 #   p: 500m 안 가장 가까운 공영(민영) 주차장 [이름, 미터, 무료|유료|혼합]. 전국주차장정보 표준데이터 API
 #   m: 1이면 지역사랑상품권(조폐공사 모바일 가맹점, 음료점 562, 계속사업자) 가맹점. 이름이 비슷하고 150m 안인 곳.
 #      사업자등록번호는 받자마자 버리고 어디에도 저장하지 않는다.
@@ -61,6 +60,18 @@ def fetch_bus():
     print('버스정류장 파일', len(data) // (1 << 20), 'MB', flush=True)
 
 
+def fetch_subway():
+    """전국도시철도역사정보 표준데이터 원본(철도 데이터 포털, 국가철도공단). 공공데이터포털 15013205의 '바로가기'가 가리키는 곳."""
+    req = urllib.request.Request('https://data.kric.go.kr/rips/dataset/download.file?type=filedata&id=32&operation=1',
+                                 headers={'User-Agent': UA, 'Referer': 'https://data.kric.go.kr/rips/M_01_01/detail.do?id=32'})
+    data = urllib.request.urlopen(req, timeout=120).read()
+    if data[:2] != b'PK' or len(data) < 50000:
+        raise RuntimeError('지하철역 파일이 엑셀이 아니거나 너무 작다.')
+    open(os.path.join(SRC, 'subway.xlsx.part'), 'wb').write(data)
+    os.replace(os.path.join(SRC, 'subway.xlsx.part'), os.path.join(SRC, 'subway.xlsx'))
+    print('지하철역 파일', len(data) // 1024, 'KB', flush=True)
+
+
 def fetch_parking():
     url = 'http://api.data.go.kr/openapi/tn_pubr_prkplce_info_api'
     out, page = [], 1
@@ -110,7 +121,7 @@ def fetch_money():
 
 if FETCH:
     # 하나가 실패해도 멈추지 않고 지난번에 받아 둔 자료로 만든다(받아 둔 것도 없으면 그 항목만 빠진다).
-    for f in (fetch_bus, fetch_parking, fetch_money):
+    for f in (fetch_bus, fetch_subway, fetch_parking, fetch_money):
         try:
             f()
         except Exception as e:
