@@ -410,6 +410,51 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 /* 다른 사람들이 없어졌다고 알린 카페: 카드 윗줄 아래에 한 줄로 알린다. */
 .gonebar { flex: none; padding: 7px 14px; font-size: 12.5px; font-weight: 650; color: var(--ink); background: color-mix(in srgb, #f59f00 16%, var(--surface)); border-top: 1px solid var(--line); }
 .dbody iframe { display: block; width: 100%; height: 100%; border: 0; background: var(--surface-2); }
+.dbody iframe[hidden] { display: none; }
+/* 카드의 탭(2026-11-28): 카카오맵, 카페지도 정보 */
+.dtabs { flex: none; display: flex; padding: 0 16px; border-top: 1px solid var(--line); }
+.dtab { flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 14.5px; font-weight: 600; color: var(--ink-3); background: none; border-bottom: 3px solid transparent; }
+.dtab[aria-selected=true] { color: var(--ink); font-weight: 800; border-bottom-color: var(--pri); }
+.dtabs + .dbody, .dtabs + .gonebar + .dbody { border-top: 0; }
+.dours { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; background: var(--surface); }
+.dours[hidden] { display: none; }
+.oin { padding: 16px 18px 28px; display: flex; flex-direction: column; gap: 18px; }
+.otop { display: flex; align-items: flex-start; gap: 12px; }
+.otl { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.otl h1 { margin: 0; font-size: 21px; font-weight: 800; letter-spacing: -.3px; overflow-wrap: anywhere; }
+.osub { font-size: 13px; color: var(--ink-2); }
+.oheart { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; }
+.oheart .fxs { width: 20px; height: 20px; opacity: .45; filter: grayscale(1); }
+.oheart[aria-pressed=true] .fxs { opacity: 1; filter: none; }
+.obtns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.obtns .btn { height: 46px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.obtns .btn svg.i, .obtns .btn .fxs { width: 18px; height: 18px; }
+.oonly { border-radius: 16px; background: color-mix(in srgb, var(--pri) 7%, var(--surface)); padding: 14px 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+.oin h2 { margin: 0; font-size: 15.5px; font-weight: 800; color: var(--ink); }
+.oonly h2 { color: #4c3fc4; font-size: 14.5px; }
+.orow { display: flex; gap: 12px; align-items: flex-start; }
+.oic { flex: none; width: 34px; height: 34px; border-radius: 10px; background: var(--surface); display: grid; place-items: center; }
+.oic .fxs { width: 20px; height: 20px; }
+.otx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding-top: 2px; }
+.otx b { font-size: 14.5px; font-weight: 700; }
+.otx small { font-size: 12.5px; color: var(--ink-2); line-height: 1.5; }
+.ochips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.ochips span { height: 26px; padding: 0 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-size: 12px; color: var(--ink-2); display: inline-flex; align-items: center; }
+.obase, .olist, .onear { display: flex; flex-direction: column; gap: 8px; }
+.oline { display: flex; align-items: center; gap: 10px; font-size: 14.5px; line-height: 1.5; padding: 4px 0; overflow-wrap: anywhere; }
+.oline > span { flex: 1; min-width: 0; }
+.ocopy { flex: none; height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+.olist .row { padding-left: 0; padding-right: 0; }
+.ogrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ocard { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 11px 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); text-align: left; min-width: 0; }
+.ocard b { font-size: 14px; font-weight: 700; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ocard small { font-size: 12px; color: var(--ink-2); }
+.ocard em { font-style: normal; font-size: 12px; font-weight: 700; }
+.ocard em.og { color: #0b7285; }
+.ocard em.on { color: #2b9a41; }
+.ofoot { display: flex; flex-direction: column; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+.olink { align-self: flex-start; padding: 0; background: none; font-size: 13px; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
+.ofoot p { margin: 0; font-size: 12px; line-height: 1.6; color: var(--ink-3); }
 /* 판은 머리줄 아래에서 아래로 스르륵 내려오고, 닫을 때는 위로 스르륵 올라간다. 닫힌 동안에는 눌리지 않게 숨긴다.
    폰에서는 카드도 같이 오르내리므로(setSnap의 'slow') 둘의 시간과 빠르기 곡선을 똑같이 맞춘다: 천천히 출발해서 천천히 멈춘다. */
 .dscrim { position: absolute; inset: 0; z-index: 1; background: rgba(15, 20, 30, .28); opacity: 0; visibility: hidden; transition: opacity .46s ease, visibility 0s .46s; }
@@ -9112,7 +9157,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     }
     sync();
     var refit = function () {};
-    var body = null;
+    var body = null, tabs = null;
     if (pid) {
       // 지도 위에 덮이는 판. 단추를 다시 누르거나 판 바깥의 어두운 곳을 누르면 닫힌다.
       var scrim = el('div', 'dscrim'), pop = el('div', 'dpop'), popOn = false;
@@ -9146,6 +9191,20 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       fr.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms');
       body = el('div', 'dbody'); body.appendChild(fr); body.appendChild(scrim); body.appendChild(pop);
       pop.inert = true; info.setAttribute('aria-pressed', 'false');
+      // 탭 두 개(사용자 2026-11-27 시안, 2026-11-28 넣음): 카카오맵(처음, 지금 가게 화면 그대로)과 카페지도 정보(우리 자료).
+      var ours = el('div', 'dours'); ours.hidden = true; body.insertBefore(ours, scrim);
+      tabs = el('div', 'dtabs'); tabs.setAttribute('role', 'tablist');
+      var tabBtn = function (label, on) { var b = btn('dtab', label, null); b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(on)); tabs.appendChild(b); return b; };
+      var tK = tabBtn('카카오맵', true), tO = tabBtn('카페지도 정보', false);
+      var showTab = function (o2) {
+        tK.setAttribute('aria-selected', String(!o2)); tO.setAttribute('aria-selected', String(o2));
+        fr.hidden = o2; ours.hidden = !o2;
+        // 폰에서 카드가 반만 올라와 있으면 우리 정보를 읽기 좋게 끝까지 올린다.
+        if (o2 && mobile.matches && snap === 'half') { lift = 0; setSnap('full', true); }
+        if (o2) { ours.textContent = ''; ours.appendChild(cafeOurs(i, { pop: function () { openPop(true); }, want: function () { bWant.click(); setTimeout(function () { if (!ours.hidden) showTab(true); }, 300); }, gone: function () { bGone[0].click(); } })); ours.scrollTop = 0; }
+      };
+      tK.addEventListener('click', function () { showTab(false); });
+      tO.addEventListener('click', function () { showTab(true); });
       h.appendChild(info);
       if (!nudged) { nudged = true; info.classList.add('nudge'); }
       panel.setAttribute('data-embed', '');
@@ -9175,10 +9234,89 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       bk.setAttribute('aria-label', shut ? '닫기' : '뒤로'); bk.title = shut ? '닫기' : '뒤로'; bk.appendChild(icon(shut ? 'x' : 'back')); h.appendChild(bk);
     }
     panel.appendChild(h);
+    if (tabs) panel.appendChild(tabs);
     // 다른 사람 두 명 이상이 없어졌다고 알린 카페는 윗줄 아래에 한 줄로 알린다(지도에서 빼지는 않는다).
     if ((goneVotes[i] || 0) >= 2) panel.appendChild(el('div', 'gonebar', '폐업했다는 신고 ' + goneVotes[i] + '명'));
     else if ((notVotes[i] || 0) >= 2) panel.appendChild(el('div', 'gonebar', '카페가 아니라는 신고 ' + notVotes[i] + '명'));
     panel.appendChild(body);
+  }
+  // 카페지도 정보 탭의 내용(우리 자료만). 자료가 없는 칸은 숨긴다. act: pop 콘센트 기록 판 열기, want 찜, gone 신고.
+  function cafeOurs(i, act) {
+    var w = el('div', 'oin'), v = votes[i] || [0, 0, 0, 0, 0];
+    // 이름과 찜
+    var top = el('div', 'otop'), tl = el('div', 'otl');
+    tl.appendChild(el('h1', null, D.name[i]));
+    var sub = [D.dong[D.dongOf[i]][0]], dt = distText(i); if (dt) sub.push('여기서 ' + dt);
+    tl.appendChild(el('div', 'osub', sub.join(', ')));
+    var hw = btn('oheart', null, act.want); hw.setAttribute('aria-label', '찜'); hw.setAttribute('aria-pressed', String(want[i] === 1)); hw.appendChild(fxIcon('mi_heart'));
+    top.appendChild(tl); top.appendChild(hw); w.appendChild(top);
+    // 길찾기와 콘센트 기록
+    var two = el('div', 'obtns');
+    var bg = btn('btn pri', null, function () { openRoute(i); }); bg.appendChild(icon('route')); bg.appendChild(document.createTextNode('길찾기'));
+    var bp = btn('btn', null, act.pop); bp.appendChild(fxIcon('plug')); bp.appendChild(document.createTextNode('콘센트 기록'));
+    two.appendChild(bg); two.appendChild(bp); w.appendChild(two);
+    // 카페지도에만 있는 정보
+    var only = el('section', 'oonly'), rows = 0;
+    only.appendChild(el('h2', null, '카페지도에만 있는 정보'));
+    var row = function (pic, title, note, extra) {
+      var r = el('div', 'orow'), ic = el('span', 'oic'), tx = el('div', 'otx');
+      ic.appendChild(fxIcon(pic)); tx.appendChild(el('b', null, title)); if (note) tx.appendChild(el('small', null, note));
+      if (extra) tx.appendChild(extra);
+      r.appendChild(ic); r.appendChild(tx); only.appendChild(r); rows++;
+    };
+    var ym = D.since ? D.since[i] : 0, ago = monthsAgo(i);
+    if (ym) row('cal', Math.floor(ym / 100) + '년 ' + (ym % 100) + '월에 문 열었어요', ago < 12 ? '문 연 지 ' + (ago < 1 ? '한 달이 안 된' : ago + '개월 된') + ' 새 카페예요' : '문 연 지 ' + Math.floor(ago / 12) + '년 넘었어요');
+    if (D.area[i] > 0) row('town', '매장 넓이 ' + pyeong(D.area[i]) + '평', '약 ' + fmt(D.area[i]) + '㎡' + (D.area[i] >= S.bigPy * PYEONG ? ', 대형 카페예요' : ''));
+    var ny = v[0] + (myO[i] === 1 ? 1 : 0), nn = v[1] + (myO[i] === -1 ? 1 : 0), seats = el('div', 'ochips');
+    if (ny) CHAIRS.forEach(function (c) { var n2 = v[c[3]] + (myO[i] === 1 && (myC[i] & c[2]) ? 1 : 0); if (n2) seats.appendChild(el('span', null, c[1] + ' ' + n2)); });
+    row('plug', ny + nn ? '콘센트 좌석 있어요 ' + ny + '명, 없어요 ' + nn + '명' : '아직 콘센트 기록이 없어요', ny + nn ? null : '처음 기록하면 원두를 2배로 받아요', seats.firstChild ? seats : null);
+    if (ago >= 0 && ago < 12) row('shop', '새로 연 카페예요', '콘센트를 기록하면 +500 원두를 더 받아요');
+    else if (staleCafe(i)) row('stamp', '오랜만의 기록을 기다리는 카페예요', '6개월 넘게 기록이 없어요. 기록하면 +500 원두를 더 받아요');
+    if (rows) w.appendChild(only);
+    // 기본 정보: 주소와 층, 브랜드
+    var base = el('section', 'obase'); base.appendChild(el('h2', null, '기본 정보'));
+    var fl = D.floor[i], addr = fullAddr(i) + (fl > 0 ? ' ' + fl + '층' : fl < 0 ? ' 지하' : '');
+    var ar = el('div', 'oline'); ar.appendChild(el('span', null, addr));
+    var cp = btn('ocopy', '복사', function () { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(addr).then(function () { toast('주소를 복사했어요'); }, function () { toast(addr); }); else toast(addr); });
+    ar.appendChild(cp); base.appendChild(ar);
+    if (D.brand[i] >= 0) base.appendChild(el('div', 'oline', '브랜드 ' + D.brands[D.brand[i]][0]));
+    w.appendChild(base);
+    // 같은 건물의 카페
+    var same = [];
+    for (var j = 0; j < N; j++) if (j !== i && D.lat[j] === D.lat[i] && D.lng[j] === D.lng[i] && !removed[j] && !dabang[j]) same.push(j);
+    if (same.length) {
+      var sb = el('section', 'olist'); sb.appendChild(el('h2', null, '같은 건물의 카페 ' + same.length + '곳'));
+      same.slice(0, 6).forEach(function (j2) { sb.appendChild(cafeRow(j2, false, 'detail')); });
+      w.appendChild(sb);
+    }
+    // 근처 비슷한 카페: 같은 종류(프랜차이즈, 저가커피, 개인카페)에서 가까운 넷, 1km 안. 콘센트 기록이 있으면 먼저.
+    var near = [], kx = Math.cos(D.lat[i] / 1e5 * Math.PI / 180);
+    for (var k = 0; k < N; k++) {
+      if (k === i || removed[k] || dabang[k] || grp[k] !== grp[i] || (D.lat[k] === D.lat[i] && D.lng[k] === D.lng[i])) continue;
+      var dy = (D.lat[k] - D.lat[i]) / 1e5, dx = (D.lng[k] - D.lng[i]) / 1e5 * kx, m = Math.sqrt(dx * dx + dy * dy) * 111320;
+      if (m <= 1000) near.push([m - (outlet[k] === 1 ? 300 : 0), k, m]);
+    }
+    near.sort(function (a, b) { return a[0] - b[0]; });
+    if (near.length) {
+      var nb = el('section', 'onear'); nb.appendChild(el('h2', null, '근처 비슷한 ' + GROUPS[grp[i]].label));
+      var g = el('div', 'ogrid');
+      near.slice(0, 4).forEach(function (x) {
+        var c = btn('ocard', null, function () { selectCafe(x[1], true, 'detail'); }), k2 = x[1];
+        c.appendChild(el('b', null, D.name[k2]));
+        var bits = [Math.round(x[2] / 10) * 10 + 'm']; if (D.area[k2] > 0) bits.push(pyeong(D.area[k2]) + '평');
+        c.appendChild(el('small', null, bits.join(', ')));
+        if (outlet[k2] === 1) c.appendChild(el('em', 'og', '콘센트 있어요'));
+        else if (monthsAgo(k2) >= 0 && monthsAgo(k2) < 12) c.appendChild(el('em', 'on', '새로 연 카페'));
+        g.appendChild(c);
+      });
+      nb.appendChild(g); w.appendChild(nb);
+    }
+    // 신고와 자료 출처
+    var ft = el('section', 'ofoot');
+    var rp = btn('olink', '문을 닫았거나 카페가 아니면 신고', act.gone); ft.appendChild(rp);
+    ft.appendChild(el('p', null, '자료: 소상공인시장진흥공단 상가(상권)정보, 행정안전부 지방행정 인허가 데이터. 콘센트 기록은 카페지도 사용자들이 남긴 것이에요.'));
+    w.appendChild(ft);
+    return w;
   }
   // 머리줄을 잡고 끌면 카드가 손가락을 따라 움직인다.
   // 폰에서 카카오맵 화면이 든 카드는 두 단계다: 반만 보이는 상태에서 올리면 전체, 전체에서 내리면 반, 반에서 더 내리면 닫힘.
