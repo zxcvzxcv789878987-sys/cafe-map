@@ -595,6 +595,7 @@ body.osh-on #toast { z-index: 95; }
 .pvcap { flex: none; display: flex; flex-direction: column; gap: 6px; padding: 16px 20px calc(18px + env(safe-area-inset-bottom, 0px)); background: none; border: 0; color: #fff; text-align: left; font: inherit; }
 .pvcap b { font-size: 16px; font-weight: 700; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pvcap span { font-size: 13px; color: rgba(255, 255, 255, .7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rpgold { display: flex; align-items: center; gap: 8px; margin: 2px 0 4px; padding: 10px 12px; border-radius: 12px; background: #fff4cc; font-size: 14px; font-weight: 700; color: #7a5600; }
 .obfold { align-self: stretch; height: 42px; margin: 2px 0 6px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-size: 14px; font-weight: 700; color: var(--ink); display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
 .obfold[hidden] { display: none; }
 .obfold svg.i { width: 16px; height: 16px; transform: rotate(180deg); }
@@ -3417,10 +3418,13 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
     box.appendChild(el('h2', null, '정보 수정 제안'));
     if (has) box.appendChild(el('p', 'xexp', D.name[ci]));
+    // 원두는 한 번만 적는다(사용자 2026-11-28: 그 밖에 틀린 정보도 반영되면 같은 원두).
+    var rwl = el('div', 'rpgold'), rwb = el('span', 'obean'); rwb.innerHTML = BEAN_SVG; rwl.appendChild(rwb); rwl.appendChild(el('span', null, '반영되면 원두 +' + fmt(GONE_XP)));
+    box.appendChild(rwl);
     var ta = document.createElement('textarea'); ta.className = 'rpta'; ta.maxLength = 300; ta.placeholder = '이름이 바뀌었어요, 2층으로 옮겼어요'; ta.setAttribute('aria-label', '무엇이 틀렸나요');
     var bs = GONE_WHY.map(function (x) {
       var b = btn('rpopt', null, function () { pick = x[0]; show(); if (pick === 3) ta.focus(); });
-      b.appendChild(el('b', null, x[1])); b.appendChild(el('small', null, x[0] === 3 ? '이름, 위치, 층 같은 것' : '반영되면 원두 ' + fmt(GONE_XP)));
+      b.appendChild(el('b', null, x[1]));
       opts.appendChild(b); return b;
     });
     var sending = false;
@@ -3439,7 +3443,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         return fetch(SHARE.db + '/v2/feedback.json' + (t ? '?auth=' + encodeURIComponent(t) : ''), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rec) });
       };
       (signedIn() ? token().then(post, function () { return post(''); }) : post(''))
-        .then(function (r) { if (!r.ok) throw new Error('db'); o.remove(); doneBox('plane', '정보 수정 제안을 보냈어요', '운영자가 확인하고 고칠게요. 답은 메뉴의 내 문의에서 볼 수 있어요.'); })
+        .then(function (r) { if (!r.ok) throw new Error('db'); o.remove(); doneBox('plane', '정보 수정 제안을 보냈어요', '운영자가 확인하고 반영하면 ' + fmt(GONE_XP) + ' 원두를 드려요. 답은 메뉴의 내 문의에서 볼 수 있어요.'); })
         .catch(function () { sending = false; send.textContent = '보내기'; toast('보내지 못했어요. 잠시 뒤에 다시 해 주세요'); });
     });
     var show = function () {
@@ -7673,7 +7677,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       });
       two.appendChild(btn('btn', '뒤로', function () { o.remove(); openAdminFb(); }));
       two.appendChild(send); foot.appendChild(two);
-      if (isCafeFb(x)) cafeDecide(x, ta, foot, tk, function () { o.remove(); openAdminFb(); });
+      if (isCafeFb(x) || isFixFb(x)) cafeDecide(x, ta, foot, tk, function () { o.remove(); openAdminFb(); });
       fitVisible(o);
     };
   }
@@ -7913,6 +7917,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   }
   var cafeNew = 0;   // 아직 안 본 제보 결과 수
   function isCafeFb(x) { return !!x && x.k === 'cafe'; }
+  // 정보 수정 제안의 "그 밖에 틀린 정보"(문의로 들어온 것). 반영되면 3,000 원두(사용자 2026-11-28).
+  function isFixFb(x) { return !!x && x.k === 'etc' && /^\[정보 수정 제안\]/.test(x.m || ''); }
+  function fbReward(x) { return isFixFb(x) ? GONE_XP : CAFE_ADD_XP; }
   function cafeFbName(x) { return ((x && x.m) || '').split('\n')[0]; }
   // 제보 하나의 상태: [목록에 쓰는 말, 색 class]
   function cafeState(x) {
@@ -7928,8 +7935,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var items = [], now = Date.now();
     XP.rw = XP.rw || {};
     list.forEach(function (x) {
-      if (!isCafeFb(x) || !x.r || x.r.ok !== 1 || x.acc !== who.u || XP.rw[x.id]) return;
-      XP.rw[x.id] = now; items.push([CAFE_ADD_XP, '없는 카페 제보', cafeFbName(x).slice(0, 80)]);
+      if (!(isCafeFb(x) || isFixFb(x)) || !x.r || x.r.ok !== 1 || x.acc !== who.u || XP.rw[x.id]) return;
+      XP.rw[x.id] = now;
+      if (isFixFb(x)) items.push([GONE_XP, '정보 수정 제안', (x.m || '').split('\n')[0].replace(/^\[정보 수정 제안\]\s*/, '').slice(0, 80)]);
+      else items.push([CAFE_ADD_XP, '없는 카페 제보', cafeFbName(x).slice(0, 80)]);
     });
     if (items.length) xpGive(items);
   }
@@ -8020,7 +8029,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       li.appendChild(tx); steps.appendChild(li);
     });
     box.appendChild(steps);
-    var nt = el('p', 'xexp'); nt.appendChild(document.createTextNode('운영자가 확인하고 지도에서 지우면 ')); nt.appendChild(bean(el('b', null, fmt(GONE_XP) + ' 원두'))); nt.appendChild(document.createTextNode('를 드려요.'));
+    var nt = el('p', 'xexp'); nt.appendChild(document.createTextNode('운영자가 확인하고 반영하면 ')); nt.appendChild(bean(el('b', null, fmt(GONE_XP) + ' 원두'))); nt.appendChild(document.createTextNode('를 드려요.'));
     box.appendChild(nt);
     var two = el('div', 'two');
     two.appendChild(btn('btn', '뒤로', function () { o.remove(); openCafeReport(); }));
@@ -8090,7 +8099,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         .then(function (r) {
           if (!r.ok) throw new Error('db');
           if (TEST) { testFb().replies[x.id] = { m: v, ok: ok, t: Date.now() }; setTimeout(fbCheck, 300); }
-          toast(ok ? '반영했어요. 제보한 사람이 앱을 열면 ' + fmt(CAFE_ADD_XP) + ' 원두를 받아요' : '반영 안 함으로 답했어요');
+          toast(ok ? '반영했어요. 보낸 사람이 앱을 열면 ' + fmt(fbReward(x)) + ' 원두를 받아요' : '반영 안 함으로 답했어요');
           back();
         })
         .catch(function () { sending = false; toast('보내지 못했어요. 서버 규칙이 올라갔는지 확인해 주세요'); });
