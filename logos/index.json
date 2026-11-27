@@ -39,6 +39,11 @@
   "src": "https://www.graypipple.com/asset/img/og_image.jpg",
   "px": 295
  },
+ "그릭베리": {
+  "file": "logos/2191b7bdf2-f.webp",
+  "src": "https://greekberry.kr/img/og.png",
+  "px": 750
+ },
  "금커피별빙수": {
   "file": "logos/cca17bbe3e.webp",
   "src": "https://cdn.imweb.me/thumbnail/20200831/907e444beceba.png",
@@ -304,10 +309,20 @@
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/2b/0e/68/2b0e684a-2fff-af01-3da0-a75df242bbdd/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg",
   "px": 512
  },
+ "스윗앤샷": {
+  "file": "logos/d506546c2c-f.webp",
+  "src": "https://cdn.imweb.me/upload/S202610192fc8707bc06df/45e78a2ba00c6.png",
+  "px": 802
+ },
  "스타벅스": {
   "file": "logos/73f75c041a.webp",
   "src": "https://www.starbucks.co.kr/favicon.ico",
   "px": 256
+ },
+ "스트릿캔": {
+  "file": "logos/8cffa4dc3a-f.webp",
+  "src": "https://xn--7y2br6n8lkd8d.com/images/thumbnail.png",
+  "px": 337
  },
  "쓰리엑스라지커피": {
   "file": "logos/ea00d4dbca.webp",
@@ -389,6 +404,16 @@
   "src": "http://ogadanew.cafe24.com/wp-content/uploads/2019/11/mb_logo.png",
   "px": 32
  },
+ "오슬랑": {
+  "file": "logos/38bd4d23c3.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20241224/dd8e31b17ab12.png",
+  "px": 196
+ },
+ "와드커피": {
+  "file": "logos/3d650655b5.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20230620/805792d7e36aa.png",
+  "px": 196
+ },
  "요거트월드": {
   "file": "logos/616bd2213a-f.webp",
   "src": "https://yogurtworld.co.kr/images/yogurtworldthumb.png",
@@ -423,6 +448,11 @@
   "file": "logos/cb834386aa-f.webp",
   "src": "http://위치커피.com/img/logo.png",
   "px": 368
+ },
+ "위클리베이글": {
+  "file": "logos/0c5e9f0be4-f.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20240120/9f9ce8e1024db.png",
+  "px": 196
  },
  "읍천리382": {
   "file": "logos/597a1c8c06-f.webp",
@@ -574,6 +604,11 @@
   "src": "http://coffeesmith.co.kr/wp/wp-content/uploads/2015/06/logo-240px.png",
   "px": 49
  },
+ "커피스토어": {
+  "file": "logos/75b7891989-f.webp",
+  "src": "https://xn--9t4b29ctzlbyc75f.com/images/thumbnail.png",
+  "px": 388
+ },
  "커피에반하다": {
   "file": "logos/4cf3b9b9a5.webp",
   "src": "https://coffeebanhada.com/image/touch.png",
@@ -703,6 +738,11 @@
   "file": "logos/4e8c426706.webp",
   "src": "https://cdn.imweb.me/thumbnail/20250526/3cd408e38890a.png",
   "px": 196
+ },
+ "하복당": {
+  "file": "logos/5f802a8a24-f.webp",
+  "src": "https://cdn.imweb.me/upload/S202603316aa551eb8731e/3eaf57e2aa5c0.png",
+  "px": 812
  },
  "하삼동커피": {
   "file": "logos/1fcab3fb22-f.webp",
