@@ -546,6 +546,7 @@ if os.path.exists(places_path):
                 bld2[kk] = row
     add = collections.Counter()
     ROADPART = re.compile(r'(\S+(?:로|길))\s+((?:지하)?\d+(?:-\d+)?)')
+    why31 = {}     # 3-1에서 인허가 줄마다 넣지 않은 까닭(3-3 보고에 쓴다)
     for k, j, c, b in cands:
         raw, n = c[5], c[0]
         row = bld2.get(k)
@@ -554,10 +555,10 @@ if os.path.exists(places_path):
         elif c[8] is not None and c[9] is not None and c[8] > 0:
             pla, pln = tm_wgs.to_wgs(c[8], c[9])
             if not (33 < pla < 39 and 124 < pln < 132):
-                add['좌표 이상'] += 1
+                add['좌표 이상'] += 1; why31[(k, j)] = '좌표 이상'
                 continue
         else:
-            add['좌표 없음'] += 1
+            add['좌표 없음'] += 1; why31[(k, j)] = '좌표 없음'
             continue
         # 카카오 카페 목록에서 찾기: 같은 주소 먼저, 없으면 120m 안. 아직 아무 줄과도 짝지어지지 않은 장소를 먼저 고른다.
         # 브랜드 매장은 같은 브랜드 장소만, 브랜드 아닌 곳은 브랜드 아닌 장소하고만 이름을 견준다.
@@ -585,7 +586,7 @@ if os.path.exists(places_path):
                     if best is None or key < best:
                         hit, best = it, key
         if hit and hit[2] in taken:
-            add['카카오 장소가 이미 지도에 있음'] += 1
+            add['카카오 장소가 이미 지도에 있음'] += 1; why31[(k, j)] = '카카오 장소가 이미 지도에 있음'
             continue
         # 이미 지도에 있는가(앞에서 더한 줄도 have에 들어 있다)
         #  이름이 비슷해도 브랜드가 다르거나 한쪽만 브랜드면 다른 가게다('테라로사 예술의전당지점'과 '공차 예술의전당점'처럼 지점 이름만 같은 곳).
@@ -598,10 +599,10 @@ if os.path.exists(places_path):
                 same = True
                 break
         if same:
-            add['이미 지도에 있음'] += 1
+            add['이미 지도에 있음'] += 1; why31[(k, j)] = '이미 지도에 있음'
             continue
         if not hit and (b < 0 or BRANDS[b][0] in BAKERY):   # 빵집, 도넛 브랜드는 카카오가 카페로 본 매장만
-            add['카카오에서 카페로 확인 안 됨'] += 1
+            add['카카오에서 카페로 확인 안 됨'] += 1; why31[(k, j)] = '카카오에서 카페로 확인 안 됨'
             continue
         # 지역: 상가정보 건물이 있으면 그 행정동, 없으면 가장 가까운 카페의 행정동
         if row:
@@ -616,7 +617,7 @@ if os.path.exists(places_path):
                 if d < bd:
                     nb, bd = i, d
             if nb is None:
-                add['지역을 몰라 못 넣음'] += 1
+                add['지역을 몰라 못 넣음'] += 1; why31[(k, j)] = '지역을 몰라 못 넣음'
                 continue
             di = dongs[nb]
         m = ROADPART.search(c[6])
@@ -637,7 +638,7 @@ if os.path.exists(places_path):
             add['브랜드, 카카오로 확인' if b >= 0 else '이름, 카카오로 확인'] += 1
         else:
             kid.append(0); in_kakao.append(0); lats.append(round(pla * 1e5)); lngs.append(round(pln * 1e5))
-            add['브랜드, 카카오에 없지만 넣음'] += 1
+            add['브랜드, 카카오에 없지만 넣음'] += 1; why31[(k, j)] = '브랜드, 카카오에 없지만 넣음'
         have[cell(pla, pln)].append((pla, pln, len(names) - 1, n))
     print('인허가에서 더한 카페(3-1)', dict(add))
 
@@ -701,6 +702,10 @@ if os.path.exists(places_path):
         elif not kid[i]:
             loose[cell(it[0], it[1])].append(it)
     want3 = [(pid, j) for pid, j in kbrand.items() if pid not in taken3]
+    allb = collections.defaultdict(list)      # 지금 지도에 있는 브랜드 매장(공개 좌표). 같은 건물의 같은 이름이면 넣지 않는다.
+    for i in range(len(names)):
+        if i not in drop and bidx[i] >= 0:
+            allb[cell(pub_lats[i] / 1e5, pub_lngs[i] / 1e5)].append((pub_lats[i] / 1e5, pub_lngs[i] / 1e5, i, norm(names[i])))
     need3 = set(addr_key(places[pid][1] or '') for pid, _ in want3) - {None}
     bld3 = {}
     with open(os.path.join(workdir, 'buildings.csv'), encoding='utf-8', newline='') as f:
@@ -723,10 +728,18 @@ if os.path.exists(places_path):
                 d = dist(la, ln, kla, kln)
                 if d < bd:
                     best, bd = i, d
+        # 큰 건물(백화점, 쇼핑몰)은 상가정보 건물 좌표와 카카오 매장 좌표가 수백 m 떨어진다. 같은 도로명 건물(공개 좌표 30m 안)에 있는 같은 브랜드도 같은 가게로 본다.
+        brow = bld3.get(k)
+        if best is None and brow:
+            bla, bln = float(brow[5]), float(brow[4])
+            for la, ln, i, _ in near(loose, bla, bln, 30):
+                if bidx[i] == j and not kid[i]:
+                    best = i
+                    break
         if best is not None:
             i = best
             kid[i] = int(pid); in_kakao[i] = 1; lats[i], lngs[i] = round(kla * 1e5), round(kln * 1e5)
-            why3 = '이름이 달라 지도 매장(%s)과 짝을 못 지음' % names[i]
+            why3 = '카카오와 짝을 못 지은 지도 매장(%s)이 있었음' % names[i]
             st3['지도 매장과 짝 지음'] += 1
             audit.append((BRANDS[j][0], v[0], v[1], why3, '짝 지음'))
             continue
@@ -749,8 +762,20 @@ if os.path.exists(places_path):
             st3['폐업 신고만 있어 안 넣음'] += 1
             audit.append((BRANDS[j][0], v[0], v[1], '같은 주소에 폐업 신고만 있음(카카오에 남은 옛 정보로 봄)', '안 넣음'))
             continue
+        lic_j = [jj for jj, c in enumerate(lic_all.get(k, ())) if c[1] == j] if k else []
         if why3 is None:
-            why3 = '인허가에는 있지만 이름이 달라 안 넣음(%s)' % lic_open[0][5] if lic_open else '공공자료(상가정보, 인허가)에 없음'
+            if lic_j:
+                jj = lic_j[0]
+                why3 = ('인허가 줄이 상가정보의 다른 줄과 먼저 짝지어져 후보에서 빠짐' if (k, jj) in used
+                        else '인허가에서 더할 때 빠짐: ' + why31.get((k, jj), '후보가 아님(이름, 날짜 조건)'))
+            else:
+                why3 = '공공자료(상가정보, 인허가)에 없음'
+        # 카카오 운영정책: 카카오에서 받은 이름과 목록은 저장, 공개하지 않는다(사용자 2026-11-28 결정: 인허가가 있는 곳만 넣는다).
+        # 카카오에만 있는 매장은 넣지 않고 기록만 한다. 넣는 매장의 이름은 인허가 이름이다.
+        if not lic_open:
+            st3['카카오에만 있어 안 넣음'] += 1
+            audit.append((BRANDS[j][0], v[0], v[1], why3, '카카오에만 있어 안 넣음(운영정책)'))
+            continue
         row = bld3.get(k)
         if not row:
             st3['건물을 못 찾아 안 넣음'] += 1
@@ -764,11 +789,22 @@ if os.path.exists(places_path):
         pre = row[1] + ' ' + row[2] + ' '
         if road.startswith(pre):
             road = road[len(pre):]
-        names.append(v[0]); bidx.append(j); areas.append(0); dongs.append(di); roads.append(road); floors.append(0)
-        since.append(0); closed.append(False); ltypes.append(''); kcat.append(v[5])
+        lc = lic_open[0]
+        disp3 = re.sub(r'^\s*(?:\(주\)|주식회사|㈜)\s*', '', lc[5]).strip()
+        # 카카오에 같은 가게가 두 번 올라 있는 곳(예: '매머드커피'와 바뀐 이름 '매머드익스프레스'). 같은 건물에 같은 브랜드, 비슷한 이름이 이미 있으면 넣지 않는다.
+        bla, bln = float(row[5]), float(row[4])
+        if any(bidx[i] == j and similar(norm(disp3), hn) >= 0.8 for _, _, i, hn in near(allb, bla, bln, 30)):
+            st3['같은 건물에 같은 가게가 있어 안 넣음'] += 1
+            audit.append((BRANDS[j][0], v[0], v[1], '카카오에 같은 가게가 두 번 올라 있음', '안 넣음'))
+            continue
+        fm3 = FLOOR.search(lc[6] or '')
+        names.append(disp3); bidx.append(j); areas.append(0 if lc[3] == '뷔페식' else round(lc[4])); dongs.append(di); roads.append(road)
+        floors.append(0 if not fm3 else -1 if fm3.group(1) else int(fm3.group(2)))
+        since.append(lc[2]); closed.append(False); ltypes.append(lc[3]); kcat.append(v[5])
         pub_lats.append(round(float(row[5]) * 1e5)); pub_lngs.append(round(float(row[4]) * 1e5))
         lats.append(round(kla * 1e5)); lngs.append(round(kln * 1e5)); kid.append(int(pid)); in_kakao.append(1)
         taken3.add(pid)
+        allb[cell(bla, bln)].append((bla, bln, len(names) - 1, norm(disp3)))
         st3['새로 넣음'] += 1
         audit.append((BRANDS[j][0], v[0], v[1], why3, '넣음'))
     print('카카오 브랜드 매장으로 채움(3-3)', dict(st3), collections.Counter(a[3].split('(')[0] for a in audit).most_common(8))
