@@ -8090,7 +8090,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (a > 0) { f2.appendChild(el('b', null, pyeong(a) + '평')); f2.appendChild(el('small', null, fmt(a) + '㎡')); if (a >= S.bigPy * PYEONG) { var bm = btn('bigmark', '대형 ' + S.bigPy + '평 이상', function () { openBigBox(i); }); bm.appendChild(icon('right')); f2.appendChild(bm); } } else f2.appendChild(el('small', null, '자료 없음'));
     // 문 연 달. 넓이 아랫줄에 적는다. 인허가 자료에서 같은 가게를 찾은 카페만 안다. 모르면 적지 않는다.
     var ym = D.since ? D.since[i] : 0;
-    if (ym) { var f3 = fact('개업'), ago = monthsAgo(i); f3.appendChild(el('b', null, Math.floor(ym / 100) + '년 ' + (ym % 100) + '월')); if (ago < 3) { var om = btn('omark', null, function () { toast('인허가를 받은 달이에요. 아직 문을 열기 전일 수 있어요'); }); om.appendChild(fxIcon('mi_clock')); om.appendChild(document.createTextNode('준비 중일 수 있어요')); f3.appendChild(om); } else if (ago < 12) { var nw = el('small', 'newmark'); nw.appendChild(fxIcon('shop')); nw.appendChild(document.createTextNode('새로 연 카페예요')); f3.appendChild(nw); } }
+    // 인허가 3달 안이면 아직 문을 안 열었을 수 있어 "준비 중일 수 있어요". 다만 카카오맵에 가게가 올라 있으면(카드 아래 카카오맵 화면이 뜨는 곳) 문을 연 것으로 보고 "새로 연 카페예요"(사용자 2026-11-27).
+    if (ym) { var f3 = fact('개업'), ago = monthsAgo(i); f3.appendChild(el('b', null, Math.floor(ym / 100) + '년 ' + (ym % 100) + '월')); if (ago < 3 && !(D.kid && D.kid[i])) { var om = btn('omark', null, function () { toast('인허가를 받은 달이에요. 아직 문을 열기 전일 수 있어요'); }); om.appendChild(fxIcon('mi_clock')); om.appendChild(document.createTextNode('준비 중일 수 있어요')); f3.appendChild(om); } else if (ago < 12) { var nw = el('small', 'newmark'); nw.appendChild(fxIcon('shop')); nw.appendChild(document.createTextNode('새로 연 카페예요')); f3.appendChild(nw); } }
     if (b >= 0) {
       var f4 = fact('브랜드');
       f4.appendChild(el('span', null, D.brands[b][0]));
