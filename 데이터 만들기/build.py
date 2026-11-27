@@ -98,6 +98,7 @@ for path in license_files:
         i_a1, i_a2 = ih.get('시설총규모'), ih.get('소재지면적')
         i_type = ih.get('업태구분명')
         i_date = ih.get('인허가일자')
+        i_x, i_y = ih.get('좌표정보(X)'), ih.get('좌표정보(Y)')
         for row in r:
             if len(row) != len(h):
                 continue
@@ -119,8 +120,12 @@ for path in license_files:
                     area = max(area, float(row[i] or 0))
                 except ValueError:
                     pass
+            try:
+                tx, ty = float(row[i_x]), float(row[i_y])
+            except (TypeError, ValueError, IndexError):
+                tx = ty = None
             lic_all[k].append([n, brand_of(n), ym_of(row[i_date]) if i_date is not None else 0, row[i_type] if i_type is not None else '',
-                               area if 0 < area <= 30000 else 0.0, row[i_name].strip(), row[i_addr], is_general])
+                               area if 0 < area <= 30000 else 0.0, row[i_name].strip(), row[i_addr], is_general, tx, ty])
             if area <= 0 or area > 30000:
                 continue
             lic[k].append((n, brand_of(n), area, row[i_type] if i_type is not None else ''))
@@ -444,6 +449,148 @@ if os.path.exists(places_path):
         for i, w in why.items():
             f.write('%s' % '	'.join((w, names[i], roads[i])) + chr(10))
     drop.update(why)
+
+    # 3-1. 인허가에만 있고 카페 목록(상가정보)에는 없는 카페를 더한다(사용자 2026-11-27: 블루보틀이 지도에 1곳뿐이다).
+    #   블루보틀처럼 일반음식점(업태 기타, 경양식 등)으로 허가받은 카페가 많다. 2-1은 최근 열두 달, 업태 까페만 보므로 이런 곳이 빠졌다.
+    #   후보: 영업 중인 인허가(휴게음식점, 일반음식점, 제과점) 가운데 이름으로 브랜드를 알아본 곳, 또는 이름에 카페, 커피 같은 말이 든 곳.
+    #   확인: 카카오 전국 카페 목록에 같은 주소(또는 120m 안)에 이름이 비슷한 카페가 있어야 넣는다(김밥집 "푸드카페" 같은 곳이 빠진다).
+    #         브랜드 매장은 카카오에서 못 찾아도 넣는다(브랜드면 카페가 확실하다). 다만 같은 브랜드가 200m 안에 이미 있으면 같은 가게로 본다.
+    #   지도에 이미 있는 곳(200m 안 같은 브랜드, 80m 안 비슷한 이름, 이미 다른 줄과 짝지어진 카카오 장소)은 넣지 않는다.
+    #   좌표: 공개용은 상가정보 건물 좌표(없으면 인허가 좌표를 바꾼 것), 내 컴퓨터용은 카카오 좌표. 이름은 인허가 이름(카카오 이름은 쓰지 않는다).
+    import math
+    import tm_wgs
+    ADD_WORD = re.compile(r'카페|까페|커피|coffee|cafe|로스터|로스터리|에스프레소|브루잉', re.I)
+    ADD_NOT = re.compile(r'호프|포차|부동산|공인중개|당구|노래|pc방|피씨방|편의점|만화|키즈|보드|스터디|독서실|웨딩|뷔페|학원|네일|식당|주점|술|룸카페|사주|타로|라이브|김밥|분식', re.I)
+    KBAD = re.compile(r'사주카페|라이브카페|보드카페|만화방|만화카페|키즈카페|유아')
+    GS = 0.002
+
+    def cell(la, ln):
+        return (int(la / GS), int(ln / GS))
+
+    def near(grid, la, ln, m):
+        c0 = cell(la, ln)
+        rr = int(m / 111000 / GS) + 1
+        for a in range(c0[0] - rr, c0[0] + rr + 1):
+            for bb in range(c0[1] - rr, c0[1] + rr + 1):
+                for it in grid.get((a, bb), ()):
+                    if math.hypot((it[0] - la) * 111000, (it[1] - ln) * 88000) <= m:
+                        yield it
+
+    def dist(la, ln, la2, ln2):
+        return math.hypot((la - la2) * 111000, (ln - ln2) * 88000)
+
+    kgrid, kaddr = collections.defaultdict(list), collections.defaultdict(list)
+    for pid, v in places.items():
+        if not v[5].startswith('음식점 > 카페') or KBAD.search(v[5]):
+            continue
+        it = (v[4], v[3], pid, norm(v[0]))
+        kgrid[cell(v[4], v[3])].append(it)
+        ka = addr_key(v[1] or '')
+        if ka:
+            kaddr[ka].append(it)
+    have = collections.defaultdict(list)          # 지금 남은 카페(카카오 좌표가 있으면 그것, 없으면 공공 좌표)
+    for i in range(len(names)):
+        if i in drop:
+            continue
+        have[cell(lats[i] / 1e5, lngs[i] / 1e5)].append((lats[i] / 1e5, lngs[i] / 1e5, i, norm(names[i])))
+    cands = []
+    for k, v in lic_all.items():
+        for j, c in enumerate(v):
+            if (k, j) in used:
+                continue
+            raw = c[5]
+            b = brand_of(raw.replace(' ', ''))
+            if not (b >= 0 or ADD_WORD.search(raw)) or (b < 0 and ADD_NOT.search(raw)):
+                continue
+            cands.append((k, j, c, b))
+    need_b = set(x[0] for x in cands)
+    bld2 = {}
+    with open(os.path.join(workdir, 'buildings.csv'), encoding='utf-8', newline='') as f:
+        r2 = csv.reader(f)
+        next(r2)
+        for row in r2:
+            kk = addr_key(row[0])
+            if kk in need_b and kk not in bld2:
+                bld2[kk] = row
+    add = collections.Counter()
+    ROADPART = re.compile(r'(\S+(?:로|길))\s+((?:지하)?\d+(?:-\d+)?)')
+    for k, j, c, b in cands:
+        raw, n = c[5], c[0]
+        row = bld2.get(k)
+        if row:
+            pla, pln = float(row[5]), float(row[4])
+        elif c[8] is not None and c[9] is not None and c[8] > 0:
+            pla, pln = tm_wgs.to_wgs(c[8], c[9])
+            if not (33 < pla < 39 and 124 < pln < 132):
+                add['좌표 이상'] += 1
+                continue
+        else:
+            add['좌표 없음'] += 1
+            continue
+        # 이미 지도에 있는가(앞에서 더한 줄도 have에 들어 있다)
+        same = False
+        for la, ln, i, hn in near(have, pla, pln, 200 if b >= 0 else 80):
+            if (b >= 0 and bidx[i] == b) or (dist(la, ln, pla, pln) <= 80 and similar(n, hn) >= 0.6):
+                same = True
+                break
+        if same:
+            add['이미 지도에 있음'] += 1
+            continue
+        # 카카오 카페 목록에서 찾기: 같은 주소 먼저, 없으면 120m 안
+        hit = None
+        for it in kaddr.get(k, ()):
+            if similar(n, it[3]) >= 0.6 or (b >= 0 and brand_of(it[3]) == b):
+                hit = it
+                break
+        if not hit:
+            best = 0
+            for it in near(kgrid, pla, pln, 120):
+                sc = 1.0 if (b >= 0 and brand_of(it[3]) == b) else similar(n, it[3])
+                if sc >= 0.7 and sc > best:
+                    hit, best = it, sc
+        if hit and hit[2] in taken:
+            add['카카오 장소가 이미 지도에 있음'] += 1
+            continue
+        if not hit and b < 0:
+            add['카카오에서 카페로 확인 안 됨'] += 1
+            continue
+        # 지역: 상가정보 건물이 있으면 그 행정동, 없으면 가장 가까운 카페의 행정동
+        if row:
+            sido, sgg, dong = row[1], row[2] or row[1], row[3] or '기타'
+            si = sido_ix.setdefault(sido, len(sido_ix))
+            gi = sgg_ix.setdefault((si, sgg), len(sgg_ix))
+            di = dong_ix.setdefault((gi, dong), len(dong_ix))
+        else:
+            nb, bd = None, 1e9
+            for la, ln, i, hn in near(have, pla, pln, 1500):
+                d = dist(la, ln, pla, pln)
+                if d < bd:
+                    nb, bd = i, d
+            if nb is None:
+                add['지역을 몰라 못 넣음'] += 1
+                continue
+            di = dongs[nb]
+        m = ROADPART.search(c[6])
+        road = (m.group(1) + ' ' + m.group(2)) if m else c[6].split(',')[0]
+        fm = FLOOR.search(c[6])
+        ym = c[2]
+        for cn, cb, cy in closed_all.get(k, ()):
+            if cy and cy < ym and ((b >= 0 and cb == b) or (b < 0 and similar(n, cn) >= 0.6)):
+                ym = cy
+        disp = re.sub(r'^\s*(?:\(주\)|주식회사|㈜)\s*', '', raw).strip()
+        names.append(disp); bidx.append(b); areas.append(0 if c[3] == '뷔페식' else round(c[4])); dongs.append(di); roads.append(road)
+        floors.append(0 if not fm else -1 if fm.group(1) else int(fm.group(2)))
+        since.append(ym); closed.append(False); ltypes.append(c[3]); kcat.append(None)
+        pub_lats.append(round(pla * 1e5)); pub_lngs.append(round(pln * 1e5))
+        if hit:
+            taken.add(hit[2]); kid.append(int(hit[2])); in_kakao.append(1)
+            lats.append(round(hit[0] * 1e5)); lngs.append(round(hit[1] * 1e5))
+            add['브랜드, 카카오로 확인' if b >= 0 else '이름, 카카오로 확인'] += 1
+        else:
+            kid.append(0); in_kakao.append(0); lats.append(round(pla * 1e5)); lngs.append(round(pln * 1e5))
+            add['브랜드, 카카오에 없지만 넣음'] += 1
+        have[cell(pla, pln)].append((pla, pln, len(names) - 1, n))
+    print('인허가에서 더한 카페(3-1)', dict(add))
     print('카카오 좌표', dict(kstat))
     print('카카오 좌표로 바꾼 카페', len(new_xy), '두 줄이라 한 줄로 합친 카페', len(dups))
 if drop:
