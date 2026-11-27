@@ -603,6 +603,15 @@ if os.path.exists(places_path):
             continue
         last = v[5].split(' > ')[-1]
         j = bname.get(re.sub(r'[^0-9a-z가-힣]', '', KAKAO_BRAND.get(last, last).lower()), -1)
+        # 지점 이름만 같아서 짝지어진 다른 가게는 빼고 본다(사용자 2026-11-27: 뚜레쥬르올림픽공원역점이 같은 주소의 "요거트아이스크림의정석 올림픽공원역점"과
+        # 짝이 되어 요아정이 됐다). 두 이름의 같은 끝부분(지점 이름)을 떼고 남은 앞부분이 비슷할 때만 그 브랜드로 본다.
+        if j >= 0:
+            a1, b1 = norm(names[i]), norm(v[0])
+            while a1 and b1 and a1[-1] == b1[-1]:
+                a1, b1 = a1[:-1], b1[:-1]
+            if a1 and b1 and similar(a1, b1) < 0.5:
+                kb['(이름이 달라 안 정함)'] += 1
+                continue
         if j >= 0:
             bidx[i] = j
             kb[BRANDS[j][0]] += 1

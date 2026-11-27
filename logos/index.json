@@ -169,6 +169,11 @@
   "src": "https://cdn.imweb.me/upload/S202304261a27bcb12eb07/5315a6e38c738.png",
   "px": 2701
  },
+ "마시그래이": {
+  "file": "logos/31fcb1f48e.webp",
+  "src": "https://www.masigray.com:5021/images/common/logo.png",
+  "px": 47
+ },
  "만랩커피": {
   "file": "logos/9caa20e3d6-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/a5/fa/08/a5fa08ce-f662-2011-c559-c9c96211377d/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg",
@@ -629,6 +634,11 @@
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/7c/5e/15/7c5e15e6-b2e5-ba73-679c-9c117c66053d/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg",
   "px": 512
  },
+ "카페아이엔지": {
+  "file": "logos/ecc005e590.webp",
+  "src": "http://www.cafeing.kr/ing/images/common/m_logo.png",
+  "px": 52
+ },
  "카페인24": {
   "file": "logos/d99a2da72c-f.webp",
   "src": "https://cdn.imweb.me/thumbnail/20251027/88b40e0bdd97c.png",
@@ -798,6 +808,11 @@
   "file": "logos/2b5b8a2df4.webp",
   "src": "https://tenpercentcoffee.com/images/logo20261014.ico?v=20261022",
   "px": 256
+ },
+ "토프레소": {
+  "file": "logos/ed76453ed9-f.webp",
+  "src": "https://www.topresso.com/default/img/b_bi_logo2.gif",
+  "px": 99
  },
  "투빅커피": {
   "file": "logos/68581de5af.webp",
