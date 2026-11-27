@@ -9800,9 +9800,14 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       list.slice(0, shown).forEach(function (x) {
         var a = document.createElement('a'); a.className = 'obp'; a.href = x.u; a.target = '_blank'; a.rel = 'noopener noreferrer';
         a.addEventListener('click', function (e) { e.preventDefault(); openBlogView(x.u, x.b); });
-        var th = el('span', 'obth');
-        if (x.p) { var im = document.createElement('img'); im.src = x.p; im.alt = ''; im.loading = 'lazy'; im.referrerPolicy = 'no-referrer'; im.onerror = function () { im.remove(); }; th.appendChild(im); }
-        a.appendChild(th);
+        // 글 대표 사진: 카카오가 주는 대표 사진이 없거나 안 열리면 그 글에 실린 다른 사진으로, 그것도 없으면 빈 회색 칸 대신 칸을 뺀다(사용자 2026-11-28).
+        var srcs = [x.p].concat(imgs.filter(function (y) { return y.u === x.u; }).slice(0, 2).map(picMid)).filter(Boolean);
+        if (srcs.length) {
+          var th = el('span', 'obth'), im = document.createElement('img'), at = 0;
+          im.src = srcs[0]; im.alt = ''; im.loading = 'lazy'; im.referrerPolicy = 'no-referrer';
+          im.onerror = function () { at++; if (at < srcs.length) im.src = srcs[at]; else th.remove(); };
+          th.appendChild(im); a.appendChild(th);
+        }
         var tx = el('span', 'obtx'), tt = el('b');
         if (x.k) tt.appendChild(el('em', 'obk', '카공'));
         tt.appendChild(document.createTextNode(x.t)); tx.appendChild(tt);
