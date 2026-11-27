@@ -595,6 +595,9 @@ body.osh-on #toast { z-index: 95; }
 .pvcap { flex: none; display: flex; flex-direction: column; gap: 6px; padding: 16px 20px calc(18px + env(safe-area-inset-bottom, 0px)); background: none; border: 0; color: #fff; text-align: left; font: inherit; }
 .pvcap b { font-size: 16px; font-weight: 700; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pvcap span { font-size: 13px; color: rgba(255, 255, 255, .7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.obfold { align-self: stretch; height: 42px; margin: 2px 0 6px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-size: 14px; font-weight: 700; color: var(--ink); display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+.obfold[hidden] { display: none; }
+.obfold svg.i { width: 16px; height: 16px; transform: rotate(180deg); }
 .obgm { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(20, 23, 28, .45); color: #fff; font-size: 16px; font-weight: 800; }
 .oshdel { margin-top: 10px; align-self: center; padding: 8px; background: none; border: 0; font-size: 13.5px; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
 .obmore { align-self: stretch; height: 44px; margin-top: 4px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-size: 14px; font-weight: 700; color: var(--ink); }
@@ -9761,9 +9764,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var pics = imgs.length >= 3 ? imgs : list.filter(function (x) { return x.p; }).map(function (x) { return { s: x.p, i: x.p, u: x.u, t: x.t, b: x.b }; });
     // +N을 누르면 따로 창을 열지 않고 이 칸 안에서 아래로 모두 펼친다(사용자 2026-11-28).
     if (pics.length >= 3) {
-      var gd = el('div', 'obgrid'), all = false;
+      var gd = el('div', 'obgrid'), all = false, fold = btn('obfold', null, function () { all = false; drawGrid(); gd.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
+      fold.appendChild(document.createTextNode('사진 접기')); fold.appendChild(icon('down')); fold.hidden = true;
       var drawGrid = function () {
         gd.textContent = '';
+        fold.hidden = !all;
         var cnt = all ? pics.length : pics.length >= 6 ? 6 : 3;
         pics.slice(0, cnt).forEach(function (x, n) {
           var more = !all && n === cnt - 1 && pics.length > cnt;
@@ -9777,7 +9782,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         if (pics.length < 3) gd.remove();
       };
       drawGrid();
-      box.appendChild(gd);
+      box.appendChild(gd); box.appendChild(fold);
     }
     box.appendChild(rows);
     var draw = function () {
