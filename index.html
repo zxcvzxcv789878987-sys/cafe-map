@@ -429,10 +429,17 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 /* 아래쪽: 개수 단추, 지도 단추 */
 #count { position: absolute; z-index: 15; left: 50%; bottom: 22px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 18px; border-radius: 999px; background: var(--pri); color: var(--on-pri); font-weight: 650; box-shadow: var(--sh-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
 #count:hover { opacity: .9; }
-/* 이 화면에 없을 때 개수 단추 위의 칩 둘(2026-11-28). 카드나 판이 열려 있으면 숨긴다. */
-#nogo { position: absolute; z-index: 15; left: 50%; bottom: 74px; transform: translateX(-50%); display: flex; gap: 8px; }
+/* 이 화면에 없을 때(2026-11-28 사용자가 고름): 개수 단추 자리에 흰 상자 하나. 위에 문구, 아래 단추 둘(왼쪽 회색 전국 지도, 오른쪽 보라 가까운 곳).
+   폰에서는 오른쪽 아래 둥근 단추들과 겹치지 않게 가운데보다 조금 왼쪽에 둔다. 카드나 판이 열려 있으면 숨긴다. */
+#nogo { position: absolute; z-index: 15; left: 50%; bottom: 22px; transform: translateX(-50%); width: 232px; padding: 12px 12px 10px; border-radius: 16px; background: var(--surface); box-shadow: var(--sh-2); text-align: center; }
 #nogo[hidden], .sheet-open #nogo { display: none; }
-#nogo .chip .fxs { width: 17px; height: 17px; }
+#nogo .ngt { font-size: 15px; font-weight: 700; color: var(--ink); }
+#nogo .ngs { margin-top: 2px; font-size: 12.5px; color: var(--ink-2); }
+#nogo .ngb { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
+#nogo .ngb button { height: 42px; border-radius: 11px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; font-size: 13.5px; font-weight: 650; line-height: 1.2; white-space: nowrap; background: var(--surface-2); color: var(--ink); }
+#nogo .ngb button.pri { background: var(--pri); color: var(--on-pri); }
+#nogo .ngb small { font-size: 11.5px; font-weight: 500; opacity: .8; }
+@media (max-width: 760px) { #nogo { left: calc(50% - 26px); bottom: calc(22px + env(safe-area-inset-bottom, 0px)); } }
 #count svg.i { width: 16px; height: 16px; }
 #ctrl { position: absolute; right: 14px; bottom: 44px; z-index: 15; display: flex; flex-direction: column; gap: 8px; }
 #nav { position: absolute; z-index: 15; right: 66px; bottom: 44px; display: flex; gap: 8px; }
@@ -870,6 +877,8 @@ button.xlink .xbadge.adm { --pri: #495057; --pri2: #adb5bd; }
 #testbar { position: fixed; left: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 86px); z-index: 70; display: inline-flex; align-items: stretch; height: 38px; border-radius: 999px; background: #212529; box-shadow: var(--sh-1); overflow: hidden; }
 #testbar button { display: inline-flex; align-items: center; gap: 5px; color: #fff; font-size: 13px; font-weight: 700; white-space: nowrap; transition: background .15s; }
 #testbtn { padding: 0 12px 0 11px; }
+/* 이 화면에 없을 때 상자(#nogo)가 떠 있으면 시험 알약을 그 위, 전체 보기 단추보다 위로 */
+.nogo-on #testbar { bottom: calc(env(safe-area-inset-bottom, 0px) + 200px); }
 #testend { padding: 0 13px 0 12px; border-left: 1px solid rgba(255, 255, 255, .16); color: rgba(255, 255, 255, .78); font-weight: 650; }
 #testend.sure { background: #e5484d; color: #fff; }
 #testbar button:active { background: rgba(255, 255, 255, .12); }
@@ -1139,6 +1148,8 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   .npair .nbtn svg.i { width: 20px; height: 20px; }
   /* "OO구 전체 보기"는 개수 단추 바로 위 가운데. */
   #navAll { position: absolute; z-index: 15; left: 50%; translate: -50% 0; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); height: 40px; border-radius: 999px; }
+  /* 이 화면에 없을 때 상자(#nogo)가 떠 있으면 그 위로 올린다 */
+  .nogo-on #navAll { left: calc(50% - 26px); bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
   /* 지도 출처(i)는 왼쪽 아래 구석. */
   .maplibregl-ctrl-bottom-left { left: 12px; bottom: calc(32px + env(safe-area-inset-bottom, 0px)); }
   .maplibregl-ctrl-bottom-left .maplibregl-ctrl-attrib { margin: 0; }
@@ -8138,12 +8149,25 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     c.hidden = !inCity(S.reg) && S.seen !== 'want';   // 찜한 곳만 볼 때는 전국에서도 목록을 열 수 있어야 한다.
     // 이 화면에는 없지만 다른 곳에는 있으면, 개수 단추 바로 위에 칩 둘(사용자 2026-11-28): 가장 가까운 곳 보기, 전국 지도로 보기.
     var ng = $('nogo'), showNg = !c.hidden && !vc && fTotal > 0;
-    if (showNg && !ng.firstChild) {
-      var cn = btn('chip', null, goNearest); cn.appendChild(fxIcon('mi_pin')); cn.appendChild(el('span', null, '가장 가까운 곳')); cn.setAttribute('aria-label', '가장 가까운 곳 보기');
-      var ck = btn('chip', null, function () { if (P.kind) closePanel(); goRegion(-1); }); ck.appendChild(fxIcon('mi_map')); ck.appendChild(el('span', null, '전국 지도')); ck.setAttribute('aria-label', '전국 지도로 보기');
-      ng.appendChild(cn); ng.appendChild(ck);
-    }
     ng.hidden = !showNg;
+    c.style.visibility = showNg ? 'hidden' : '';   // 상자가 개수 단추 자리를 대신한다
+    document.body.classList.toggle('nogo-on', showNg);   // 폰에서 "OO 전체 보기" 단추를 상자 위로 올린다
+    if (showNg) {
+      var nr = nearestPass(), sub = totalPass ? '이 지역의 다른 곳에 ' + fmt(totalPass) + '곳 있어요' : '다른 지역에 ' + fmt(fTotal) + '곳 있어요';
+      var dist = !nr ? '' : nr.m >= 10000 ? Math.round(nr.m / 1000) + 'km' : nr.m >= 1000 ? (Math.round(nr.m / 100) / 10) + 'km' : (Math.round(nr.m / 10) * 10) + 'm';
+      var key = sub + '|' + dist;
+      if (ng.dataset.k !== key) {
+        ng.dataset.k = key; ng.textContent = '';
+        ng.appendChild(el('div', 'ngt', '이 화면에는 없어요'));
+        ng.appendChild(el('div', 'ngs', sub));
+        var two = el('div', 'ngb');
+        var ck = btn(null, '전국 지도', function () { if (P.kind) closePanel(); goRegion(-1); });
+        var cn = btn('pri', '가까운 곳', goNearest);
+        if (dist) cn.appendChild(el('small', null, dist));
+        cn.setAttribute('aria-label', '가장 가까운 곳 보기' + (dist ? ', ' + dist : ''));
+        two.appendChild(ck); two.appendChild(cn); ng.appendChild(two);
+      }
+    }
     if (c.dataset.t === txt) return;
     c.dataset.t = txt; c.textContent = '';
     c.appendChild(icon('list')); c.appendChild(el('span', null, txt));
@@ -8213,7 +8237,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         }
         var kb = btn('btn sm', null, function () { closePanel(); goRegion(-1); });
         kb.appendChild(document.createTextNode('전국 지도로 보기')); kb.appendChild(el('small', null, fmt(fTotal) + '곳'));
-        two.appendChild(kb);
+        two.insertBefore(kb, two.firstChild);
         e.appendChild(two);
       }
       if (anyFilter() || S.seen !== 'all' || S.bonus) e.appendChild(btn('btn sm', '필터 초기화', function () { resetAll(); changed(); }));
