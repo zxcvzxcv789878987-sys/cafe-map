@@ -174,10 +174,20 @@
   "src": "https://www.masigray.com:5021/images/common/logo.png",
   "px": 47
  },
+ "마실커피": {
+  "file": "logos/4f8b714b85-f.webp",
+  "src": "https://scontent-gmp1-1.cdninstagram.com/v/t51.2885-19/367544265_342001491484124_5641022430241414743_n.jpg?stp=dst-jpg_s150x150_tt6&_nc_cat=103&_nc_map=urlgen_bucketless&ig_cache_key=GMlH6BXcnWltDDcBAFfejEwD8EhObkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=klinonoT3ucQ7kNvwGHcnv0&_nc_oc=AdqmbE-F4P26qPgwvXSLxjYYC3RDZQebP7xiTZfryJbwb9FcCGj1ByGr4QTbhXhUcXM&_nc_zt=24&_nc_ht=scontent-gmp1-1.cdninstagram.com&_nc_ss=79789&_nc_ct=RQosPBUCFQIAAAA&oh=00_AQW-fUuywe_gIIDyss5ftqkii-Ic-VU7E5vRpeWAakUC7A&oe=6B0F4123",
+  "px": 150
+ },
  "만랩커피": {
   "file": "logos/9caa20e3d6-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/a5/fa/08/a5fa08ce-f662-2011-c559-c9c96211377d/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "만월경": {
+  "file": "logos/db48989b01-f.webp",
+  "src": "https://scontent-gmp1-1.cdninstagram.com/v/t51.2885-19/461007729_1253247132268276_1006670086294787572_n.jpg?stp=dst-jpg_s150x150_tt6&_nc_cat=106&_nc_map=urlgen_bucketless&ig_cache_key=GHFrehv0diJW0nMEAPTVnCMcafgNbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy42MTQuQzMifQ%3D%3D&_nc_ohc=xcGtJvKVMqsQ7kNvwGSjIGT&_nc_oc=Adq7sD5h7VnYLzHtr1lgI5p6sy5YRfiZsQIjnj-MRjMUZZeLTtbPb97DrUEAloVExZA&_nc_zt=24&_nc_ht=scontent-gmp1-1.cdninstagram.com&_nc_ss=79789&_nc_ct=RQosPBUCFQIAAAA&oh=00_AQXwe5fo-MNxzj_Xo3iuqLJ-9mOQWkbVdoHh0wObgrVdvw&oe=6B0F23C0",
+  "px": 150
  },
  "매머드커피": {
   "file": "logos/2f3239771e-f.webp",
@@ -318,6 +328,11 @@
   "file": "logos/b81994564a.webp",
   "src": "https://www.blushaak.co.kr/images/logo/logo-icon.png",
   "px": 826
+ },
+ "블루포트": {
+  "file": "logos/59e869703a-f.webp",
+  "src": "https://scontent-gmp1-1.cdninstagram.com/v/t51.82787-19/626553336_18093581677986805_2363912089554706716_n.jpg?stp=dst-jpg_s150x150_tt6&_nc_cat=109&_nc_map=urlgen_bucketless&ig_cache_key=GPhxWCX1g6FEBEhAABzhKFqFTc4gbmNDAQAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy43OTYuQzMifQ%3D%3D&_nc_ohc=3Gh5eczVoYkQ7kNvwGJlEBl&_nc_oc=Adp9gVBzSq74GFZ_CXStbvpdkOV4gTFGVAm0e1EXekClTJBSrMHN-9r7OwvXxaP4hcs&_nc_zt=24&_nc_ht=scontent-gmp1-1.cdninstagram.com&_nc_gid=VXmHl0I2wiSh79i190wFEg&_nc_ss=79789&_nc_ct=RQosPBUCFQIAAAA&oh=00_AQX14CvAbMXPW7Pu8yIXR8UnB-VDpsexH_xNj3Gmmycgsg&oe=6B0F5209",
+  "px": 150
  },
  "비엔나커피하우스": {
   "file": "logos/6041cc54bd-f.webp",
@@ -539,6 +554,11 @@
   "src": "https://yoajung.co.kr/images/yoajungthumb.png",
   "px": 472
  },
+ "우주라이크커피": {
+  "file": "logos/3e8243eb02-f.webp",
+  "src": "https://scontent-gmp1-1.cdninstagram.com/v/t51.2885-19/483008571_1165092011953666_2179476049975053881_n.jpg?stp=dst-jpg_s150x150_tt6&_nc_cat=101&_nc_map=urlgen_bucketless&ig_cache_key=GDsgyhwCzoAfpSMEADkOPIvrDT8ebkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4zMjAuQzMifQ%3D%3D&_nc_ohc=A7ujNI11tSEQ7kNvwHhX1eG&_nc_oc=Adpz4i9Z3clTYOAoNFBzI3U2L9Ot3j0i1FRGKuHg5JhxiSA-kGlSnENSibjigtSYPQc&_nc_zt=24&_nc_ht=scontent-gmp1-1.cdninstagram.com&_nc_ss=79789&_nc_ct=RQosPBUCFQIAAAA&oh=00_AQVxI9iud_YIoaKf3lEkCd7-uNpOduXIpQxPD8Q5yKxMIw&oe=6B0F4779",
+  "px": 150
+ },
  "우지커피": {
   "file": "logos/321bd57b12-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/e9/d2/29/e9d22920-bdb6-73ed-c28b-d6abe6c95cb9/oozy_coffee_appicon-0-0-1x_U007ephone-0-1-0-sRGB-85-220.png/512x512bb.jpg",
@@ -658,6 +678,11 @@
   "file": "logos/8b1c08c0ca.webp",
   "src": "https://cafe1liter.com/favicon.ico",
   "px": 144
+ },
+ "카페일분": {
+  "file": "logos/15172c06aa-f.webp",
+  "src": "https://scontent-gmp1-1.cdninstagram.com/v/t51.2885-19/472414423_607878771713373_8248393018528784696_n.jpg?stp=dst-jpg_s150x150_tt6&_nc_cat=106&_nc_map=urlgen_bucketless&ig_cache_key=GNd4KBxdJUHO3CgCADhhOJ2-LXhybkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=nKqSZSLxE2gQ7kNvwGTZHYo&_nc_oc=AdoEGzY1uK4gzsRvpp84ZXHQjrqJHjJDClvmIQv0oomiDN42N2wOYPkkGPaduX0YiMw&_nc_zt=24&_nc_ht=scontent-gmp1-1.cdninstagram.com&_nc_ss=79789&_nc_ct=RQosPBUCFQIAAAA&oh=00_AQU2aNsBkE7teRQ-zeNwDCwJR42yFFNo_GiCGeUcWgrMGA&oe=6B0F3B98",
+  "px": 150
  },
  "카페프리헷": {
   "file": "logos/4154dde9d1.webp",
