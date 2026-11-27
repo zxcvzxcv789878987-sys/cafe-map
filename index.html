@@ -958,6 +958,7 @@ button.xlink .xbadge.qna { --pri: #1c7ed6; --pri2: #74c0fc; }
 .faq details[open] summary::after { transform: rotate(-135deg) translateY(-2px); }
 .faq details p { margin: 0 2px 12px; font-size: 13.5px; line-height: 1.6; color: var(--ink-2); }
 /* 카페 제보 창(2026-11-28): 제보 줄 오른쪽의 받는 원두 */
+.crep button.xlink.plain { padding: 13px 2px; font-size: 15px; }
 .crep .crxp { margin-left: auto; margin-right: 4px; font-size: 13px; font-weight: 700; color: var(--ink-2); white-space: nowrap; }
 .crep button.xlink.xrow > span:not(.xbadge) { flex: 1; min-width: 0; }
 /* 지도 자료(2026-11-28): 메뉴 맨 아래 줄 하나와 작은 출처, 누르면 묶음별로 정리한 창 */
@@ -7326,8 +7327,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     bd.appendChild(fxStill('mi_inbox')); hd.appendChild(bd); hd.appendChild(el('h2', null, '받은 문의와 제보')); box.appendChild(hd);
     var list = el('div'); box.appendChild(list);
     var row = function (pic, label, n, go) {
-      var r = btn('xrow xlink', null, function () { o.remove(); go(); }), b2 = el('span', 'xbadge pic mn'), l = el('span', null, label);
-      b2.appendChild(fxStill(pic)); r.appendChild(b2);
+      var r = btn('xrow xlink plain', null, function () { o.remove(); go(); }), l = el('span', null, label);
       if (n > 0) { l.appendChild(el('small', null, n + '건 확인 전')); l.appendChild(el('i', 'fbdot')); }
       r.appendChild(l); r.appendChild(icon('right')); list.appendChild(r);
     };
@@ -7718,9 +7718,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
     bd.appendChild(fxStill('mi_ask')); hd.appendChild(bd); hd.appendChild(el('h2', null, '문의와 제보')); box.appendChild(hd);
     box.appendChild(el('div', 'xgrp', '보내기'));
+    // 줄에는 아이콘을 두지 않는다(사용자 2026-11-28: 9개를 맞춰 그려도 난잡하다). 묶음 제목이 나눠 준다. pic은 그 창 머리에만 쓴다.
     var row = function (pic, label, xp, go, dot) {
-      var r = btn('xrow xlink', null, go), b2 = el('span', 'xbadge pic mn'), l = el('span', null, label);
-      b2.appendChild(fxStill(pic)); r.appendChild(b2);
+      var r = btn('xrow xlink plain', null, go), l = el('span', null, label);
       if (dot) l.appendChild(el('i', 'fbdot'));
       r.appendChild(l);
       if (xp) r.appendChild(bean(el('b', 'crxp', '+' + fmt(xp) + ' 원두')));
