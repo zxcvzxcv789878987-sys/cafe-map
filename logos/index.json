@@ -24,6 +24,11 @@
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/8b/97/9e/8b979e1b-61c6-6c02-182d-4d7a2c74d160/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg",
   "px": 512
  },
+ "달리는커피": {
+  "file": "logos/ba6c697ea7-f.webp",
+  "src": "https://dalcu.co.kr/images/thumbnail.png",
+  "px": 974
+ },
  "달콤커피": {
   "file": "logos/70e33c9f30-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/9b/93/41/9b934102-2951-07d0-57ab-5e648892156e/AppIcon-0-0-1x_U007emarketing-0-8-0-0-85-220.png/512x512bb.jpg",
@@ -43,6 +48,11 @@
   "file": "logos/96350051ab-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/63/eb/7b/63eb7bfb-881c-bfd1-885a-b1538eac826e/AppIcon-0-0-1x_U007emarketing-0-7-0-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "더카페": {
+  "file": "logos/4247869ae6-f.webp",
+  "src": "https://thecaffeopen.com/ogimg.jpg",
+  "px": 375
  },
  "데이롱카페": {
   "file": "logos/4326747295-f.webp",
@@ -89,6 +99,11 @@
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/de/d3/b0/ded3b0e5-92d0-1bd3-bb3d-e79c6e4a0b2e/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg",
   "px": 512
  },
+ "몬스터커피": {
+  "file": "logos/5cc110b078-f.webp",
+  "src": "https://www.monster-hnm-coffee.com/assets/site/img/common/og-image-0623.png",
+  "px": 408
+ },
  "바나타이거": {
   "file": "logos/9d636bd738-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/03/16/ec/0316ec02-6b41-9ef8-4b9e-3b9d20e41667/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg",
@@ -98,6 +113,11 @@
   "file": "logos/c91f869513.webp",
   "src": "https://banapresso.com/apple-touch-icon.png",
   "px": 192
+ },
+ "발도스커피": {
+  "file": "logos/e30e641f01-f.webp",
+  "src": "http://valdos.co.kr/w/img/admin/logo200.png",
+  "px": 180
  },
  "백억커피": {
   "file": "logos/5a26882aa3-f.webp",
@@ -109,10 +129,20 @@
   "src": "https://www.bulkcoffee.co.kr/wp-content/uploads/2023/07/bulkcoffee_favicon.png",
   "px": 500
  },
+ "베러먼데이": {
+  "file": "logos/14719e01e6.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20240710/abf0f4f3b2a9f.png",
+  "px": 196
+ },
  "벤티프레소": {
   "file": "logos/9d6576fdca-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/e2/b4/d6/e2b4d6e9-0b6b-8b35-abc5-8691cc9e8f8b/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "봉명동내커피": {
+  "file": "logos/40faf522b9.webp",
+  "src": "https://www.xn--220bq3dn1huxcd07aowi.com/images_2025/bmdnc_logo_footer.webp",
+  "px": 103
  },
  "브런치빈": {
   "file": "logos/f7d7aa7102-f.webp",
@@ -134,6 +164,11 @@
   "src": "https://www.blushaak.co.kr/images/logo/logo-icon.png",
   "px": 826
  },
+ "빙동댕": {
+  "file": "logos/a7fcdbcfd2.webp",
+  "src": "https://static.wixstatic.com/media/92c24c_3d6f00eba69d499894a25846039375a8~mv2.png",
+  "px": 148
+ },
  "빽다방": {
   "file": "logos/7b25f69f3d.webp",
   "src": "https://paikdabang.com/favicon.png",
@@ -148,6 +183,11 @@
   "file": "logos/4ea05ec7d1-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/ed/2b/3e/ed2b3e6b-7631-68de-55f1-afed729801a1/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "셀렉토커피": {
+  "file": "logos/616f95d759.webp",
+  "src": "https://www.selecto.co.kr/assets/images/main/logo.png",
+  "px": 90
  },
  "쉬즈베이글": {
   "file": "logos/36cd42fdc7-f.webp",
@@ -194,6 +234,16 @@
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/84/ef/eb/84efeb8b-386a-9528-4f13-9a3834a11461/youngcoffeeAppIcon-0-0-1x_U007ephone-0-1-0-sRGB-85-220.png/512x512bb.jpg",
   "px": 512
  },
+ "요거트월드": {
+  "file": "logos/616bd2213a-f.webp",
+  "src": "https://yogurtworld.co.kr/images/yogurtworldthumb.png",
+  "px": 953
+ },
+ "요거트퍼플": {
+  "file": "logos/606ffbaaf3-f.webp",
+  "src": "https://www.yogurtpurple.com/favicon.png",
+  "px": 500
+ },
  "요거프레소": {
   "file": "logos/32e5437a6f.webp",
   "src": "https://www.google.com/s2/favicons?sz=128&domain=yogerpresso.co.kr",
@@ -213,6 +263,11 @@
   "file": "logos/c9677778b5.webp",
   "src": "https://cdn.imweb.me/thumbnail/20220526/70420f83c9239.png",
   "px": 196
+ },
+ "읍천리382": {
+  "file": "logos/597a1c8c06-f.webp",
+  "src": "https://xn--382-v18me95c8ph.com/img/dakdonggari/og_img.png",
+  "px": 557
  },
  "이디야": {
   "file": "logos/e1f684a083.webp",
@@ -278,6 +333,11 @@
   "file": "logos/8b1c08c0ca.webp",
   "src": "https://cafe1liter.com/favicon.ico",
   "px": 144
+ },
+ "커스텀커피": {
+  "file": "logos/bc92a5b112.webp",
+  "src": "https://kustomcoffee.co.kr/web/upload/share-image-1-c396d8be2c740167d8ef44ff5ee22673.png",
+  "px": 628
  },
  "커피니": {
   "file": "logos/00ce21ff64.webp",
