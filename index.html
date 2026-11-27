@@ -293,16 +293,15 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .opt:hover { border-color: var(--ink-3); }
 .opt svg.i { width: 15px; height: 15px; vertical-align: -3px; margin-right: 5px; }
 .opt[aria-pressed=true] svg.i { fill: currentColor; }
-/* 카드 맨 아래 줄: 왼쪽에 찜, 오른쪽에 폐업 신고. 폐업 신고는 자주 누르는 단추가 아니라서 테두리 없이 옅게 둔다. */
+/* 카드 맨 아래 줄: 왼쪽에 찜, 오른쪽에 신고. 신고는 자주 누르는 단추가 아니라서 테두리 없이 옅게 둔다. */
 /* 투표 단추는 한 줄에 같은 너비로 놓는다. */
 .rec .opts.one { flex-wrap: nowrap; }
 .rec .opts.one .opt { flex: 1; min-width: 0; padding: 0 6px; white-space: nowrap; }
 .rec .opts.three .opt { font-size: 12.5px; }
 .rec .acts { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-/* 나만의 메모 단추가 있으면 찜 바로 오른쪽에 붙이고, 카페 아님과 폐업 신고는 오른쪽 끝에 붙여 둔다 */
+/* 나만의 메모 단추가 있으면 찜 바로 오른쪽에 붙이고, 신고는 오른쪽 끝에 둔다 */
 .rec .acts .opt.memo { margin-right: auto; }
-.rec .acts { flex-wrap: wrap; row-gap: 6px; }
-.rec .acts .rep { display: inline-flex; align-items: center; gap: 2px; margin-left: auto; }
+.rec .acts .rep { margin-left: auto; }
 .acts .opt { white-space: nowrap; }
 .opt.quiet { border-color: transparent; color: var(--ink-3); padding: 0 8px; }
 .acts .opt { display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
@@ -931,6 +930,11 @@ button.xlink .xbadge.qna { --pri: #1c7ed6; --pri2: #74c0fc; }
 .rpopt { min-height: 44px; padding: 8px 14px; border-radius: 12px; background: var(--surface-2); color: var(--ink-2); font-size: 14px; font-weight: 600; text-align: left; border: 1.5px solid transparent; }
 .rpopt.on { border-color: var(--pri); color: var(--ink); background: var(--surface); }
 .xbox textarea.rpta { min-height: 74px; }
+/* 카페 신고 창의 까닭 단추: 굵은 제목과 아래 작은 설명 */
+.rpopt b { display: block; font-size: 14.5px; font-weight: 700; }
+.rpopt small { display: block; margin-top: 2px; font-size: 12.5px; font-weight: 500; color: var(--ink-3); }
+.xbox .btn.pri:disabled { opacity: .4; cursor: default; }
+.rpundo { align-self: center; padding: 6px 10px; font-size: 13px; color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px; }
 /* 없는 카페 제보 창(2026-11-27): 이름, 위치, 한마디 칸 */
 .cafl { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 700; color: var(--ink-2); }
 .cafl textarea.rpta { margin-top: 0; }
@@ -3000,17 +3004,41 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     two.appendChild(btn('btn pri', okLabel, function () { o.remove(); go(); }));
     box.appendChild(two); o.appendChild(box); document.body.appendChild(o);
   }
-  // w: 1 폐업 신고(기본), 2 카페 아님 신고
-  function confirmGone(go, w) {
+  // 카페 신고 창(사용자 2026-11-28): 카드의 신고 단추 하나를 누르면 폐업과 카페 아님 중에서 고른다.
+  //  cur: 내가 이미 한 신고(0 없음, 1 폐업, 2 카페 아님). go(v): v 1, 2는 그 까닭으로 신고, 0은 내 신고 거두기.
+  var GONE_WHY = [
+    [1, '문을 닫았어요', '가 보니 이 카페가 없어요'],
+    [2, '카페가 아니에요', '식당, 술집, 마트처럼 커피를 팔지 않는 곳이에요']
+  ];
+  function confirmGone(go, cur) {
     var old = $('xinfo'); if (old) old.remove();
-    var o = el('div'), box = el('div', 'xbox nick done'), ti = el('div', 'dti'), two = el('div', 'two');
-    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', goneKind(w));
-    ti.appendChild(fxArt('mi_flag')); box.appendChild(ti);
-    box.appendChild(el('h2', null, w === 2 ? '카페가 아닌 곳으로 신고할까요?' : '폐업으로 신고할까요?'));
-    box.appendChild(el('p', 'xexp', w === 2 ? '식당, 술집, 마트처럼 커피를 팔지 않는 곳이면 신고해 주세요. 운영자가 확인한 뒤 지도에서 지울지 정해요.' : '운영자가 확인한 뒤 지도에서 지울지 정해요.'));
+    var o = el('div'), box = el('div', 'xbox nick report'), opts = el('div', 'rpopts'), two = el('div', 'two'), pick = cur || 0;
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '카페 신고');
+    o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
+    box.appendChild(el('h2', null, cur ? '내 신고' : '신고하기'));
+    box.appendChild(el('p', 'xexp', '까닭을 골라 주세요. 운영자가 확인한 뒤 지도에서 지울지 정해요.'));
+    var bs = GONE_WHY.map(function (x) {
+      var b = btn('rpopt', null, function () { pick = x[0]; show(); });
+      b.appendChild(el('b', null, x[1])); b.appendChild(el('small', null, x[2]));
+      opts.appendChild(b); return b;
+    });
+    var send = btn('btn pri', '신고하기', function () {
+      if (!pick) { toast('신고하는 까닭을 골라 주세요'); return; }
+      o.remove();
+      if (pick !== cur) go(pick);
+    });
+    var show = function () {
+      bs.forEach(function (b, n) { var on = GONE_WHY[n][0] === pick; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+      // 이미 신고한 곳: 다른 까닭을 고를 때만 바꾸기를 누를 수 있다.
+      send.textContent = cur ? '바꾸기' : '신고하기'; send.disabled = !!cur && pick === cur;
+    };
+    box.appendChild(opts);
+    // 이미 신고했으면 거두는 단추를 아래에 작게 둔다.
+    if (cur) box.appendChild(btn('rpundo', '내 신고 거두기', function () { o.remove(); go(0); }));
     two.appendChild(btn('btn', '취소', function () { o.remove(); }));
-    two.appendChild(btn('btn pri', '신고하기', function () { o.remove(); go(); }));
+    two.appendChild(send);
     box.appendChild(two); o.appendChild(box); document.body.appendChild(o);
+    show();
   }
   // 그림이 든 확인 창: 그림, 제목, 아래 글, 확인 단추. big이면 아래 글을 크게(닉네임).
   function doneBox(pic, title, sub, big, next) {
@@ -7663,7 +7691,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         ['사용법에서 처음 안내 다시 보기 (메모 단추 연 사람)', function () { XP.egs = XP.egs || {}; if (!XP.egs.qmark2) { XP.egs.qmark2 = Date.now(); favRender(); } openCoach(null, { rewatch: true }); }],
         ['첫 기록 지우기 (다른 기록 없음)', function () { firstUndoBox(2000, false, function () { toast('지웠어요 (시험)'); }); }],
         ['첫 기록 지우기 (다른 기록 있음)', function () { firstUndoBox(2000, true, function () { toast('지웠어요 (시험)'); }); }],
-        ['폐업 신고', function () { confirmGone(function () { toast('신고했어요 (시험)'); }); }],
+        ['카페 신고 (까닭 고르기)', function () { confirmGone(function (v) { toast(v ? goneKind(v) + '했어요 (시험)' : '신고를 거뒀어요 (시험)'); }); }],
+        ['카페 신고 (이미 신고한 곳)', function () { confirmGone(function (v) { toast(v ? goneKind(v) + '로 바꿨어요 (시험)' : '신고를 거뒀어요 (시험)'); }, 1); }],
         ['대형 기준', function () { openBigBox(bigCafe()); }],
         ['폐업 신고 보냄', function () { goneSent(); }],
         ['문의 보냄', function () { fbSent(); }],
@@ -7713,7 +7742,6 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         ['받은 카페 신고 (운영자)', function () { var u0 = who.u; who.u = SHARE.admin; openAdminGone(); who.u = u0; }],
         ['없는 카페 제보', function () { openCafeAdd(); }],
         ['내 없는 카페 제보', function () { openMyCafeAdd(); }],
-        ['카페 아님 신고', function () { confirmGone(function () { toast('신고했어요 (시험)'); }, 2); }],
         ['카페 아님 신고 보냄', function () { goneSent(2); }]
       ]],
       ['로그인 창', [
@@ -8560,23 +8588,14 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var bWant = btn('opt', null, function () { needLogin(function () { setWant(i, !want[i]); if (want[i]) fxToast('latte', '찜했어요'); sync(); if (S.seen !== 'all') refilter(); requestDraw(); }, 'want'); });
     bWant.classList.add('heart');
     bWant.appendChild(fxIcon('mi_heart')); bWant.appendChild(document.createTextNode('찜'));
-    // 폐업 신고: 가 보니 이 카페가 없을 때 누른다. 운영자가 확인한 뒤 모두의 지도에서 빼거나 남긴다.
-    // 카페 아님 신고(2026-11-27): 커피를 팔지 않는 식당, 술집, 마트가 카페로 올라 있을 때. 폐업 신고 바로 왼쪽에 같은 모양으로 둔다.
-    //  한 카페에 내 신고는 하나만이라, 다른 쪽을 누르면 그 까닭으로 바꾼다.
-    var goneTap = function (w) {
-      var go = function (v) { setGone(i, v); sync(); refilter(); requestDraw(); };
-      if (myGone[i] === w) { go(0); return; }
-      confirmGone(function () { go(w); goneSent(w); }, w);
-    };
-    var bNot = voteBtn('카페 아님', function () { goneTap(2); }, 'gone');
-    bNot[0].classList.add('quiet', 'notcafe');
-    bNot[0].title = '커피를 팔지 않는 식당, 술집, 마트일 때 눌러 주세요';
-    var bGone = voteBtn('폐업 신고', function () { goneTap(1); }, 'gone');
-    bGone[0].classList.add('quiet'); bGone[0].insertBefore(fxIcon('mi_flag'), bGone[0].firstChild);
-    bGone[0].title = '가 보니 이 카페가 없을 때 눌러 주세요';
-    // 두 신고 단추는 한 묶음으로 오른쪽 끝에 둔다. 좁은 폰에서 한 줄에 안 들어가면 묶음째 아랫줄 오른쪽으로 내려간다.
-    var rep = el('span', 'rep');
-    rep.appendChild(bNot[0]); rep.appendChild(bGone[0]);
+    // 신고: 폐업(가 보니 없음)과 카페 아님(커피를 팔지 않는 식당, 술집, 마트)을 한 단추에 두고, 누르면 까닭을 고른다(사용자 2026-11-28).
+    //  운영자가 확인한 뒤 모두의 지도에서 빼거나 남긴다. 한 카페에 내 신고는 하나만이라, 다른 까닭을 고르면 바꾼다.
+    var bGone = voteBtn('신고', function () {
+      confirmGone(function (v) { setGone(i, v); sync(); refilter(); requestDraw(); if (v) goneSent(v); }, myGone[i]);
+    }, 'gone');
+    bGone[0].classList.add('quiet', 'rep'); bGone[0].insertBefore(fxIcon('mi_flag'), bGone[0].firstChild);
+    bGone[0].title = '문을 닫았거나 카페가 아닌 곳이면 눌러 주세요';
+    var rep = bGone[0];
     r3.appendChild(bWant); r3.appendChild(rep);
     rec.appendChild(r3);
     // 나만의 메모(투명 단추 에그를 연 사람만): 찜 옆 메모 단추, 메모가 있으면 그 아래에 내 메모 줄(누르면 고침). 나만 본다.
@@ -8656,8 +8675,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var ny = v[0] + (myO[i] === 1 ? 1 : 0), nn = v[1] + (myO[i] === -1 ? 1 : 0);
       total.textContent = people(ny + nn);
       bWant.setAttribute('aria-pressed', String(want[i] === 1));
-      setBtn(bGone, myGone[i] === 1, (goneVotes[i] || 0) + (myGone[i] === 1 ? 1 : 0));
-      setBtn(bNot, myGone[i] === 2, (notVotes[i] || 0) + (myGone[i] === 2 ? 1 : 0));
+      setBtn(bGone, myGone[i] > 0, (goneVotes[i] || 0) + (notVotes[i] || 0) + (myGone[i] ? 1 : 0));
       more.classList.toggle('on', ny > 0); more.inert = ny === 0;
       setBtn(yes, myO[i] === 1, v[0] + (myO[i] === 1 ? 1 : 0));
       setBtn(no, myO[i] === -1, v[1] + (myO[i] === -1 ? 1 : 0));
