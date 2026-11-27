@@ -949,6 +949,15 @@ button.xlink .xbadge.qna { --pri: #1c7ed6; --pri2: #74c0fc; }
 .rpopt { min-height: 44px; padding: 8px 14px; border-radius: 12px; background: var(--surface-2); color: var(--ink-2); font-size: 14px; font-weight: 600; text-align: left; border: 1.5px solid transparent; }
 .rpopt.on { border-color: var(--pri); color: var(--ink); background: var(--surface); }
 .xbox textarea.rpta { min-height: 74px; }
+/* 사용법의 접는 묶음(2026-11-28): 묶음 이름 줄을 누르면 아래로 펼쳐진다 */
+.gsecs { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.gsec { border-bottom: 1px solid var(--line); }
+.gsec > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 15px 2px; font-size: 15.5px; font-weight: 700; color: var(--ink); cursor: pointer; }
+.gsec > summary::-webkit-details-marker { display: none; }
+.gsec > summary::after { content: ""; flex: none; width: 8px; height: 8px; margin-right: 4px; border-right: 2px solid var(--ink-3); border-bottom: 2px solid var(--ink-3); transform: rotate(45deg) translateY(-2px); transition: transform .15s; }
+.gsec[open] > summary::after { transform: rotate(-135deg) translateY(-2px); }
+.gsec .gin { display: flex; flex-direction: column; gap: 10px; padding: 0 2px 16px; }
+.gsec .gin .faq { border-top: 0; }
 /* 사용법의 자주 묻는 질문(2026-11-28): 누르면 펼쳐지는 줄 */
 .faq { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
 .faq details { border-bottom: 1px solid var(--line); }
@@ -3262,7 +3271,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     ['idle', '멍때리기', '카페 카드를 열어 둔 채 1분 동안 아무것도 누르지 않았어요.'],
     ['night', '막차', '밤 10시부터 새벽 2시 사이에 콘센트를 기록했어요.'],
     ['dawn', '아침형 인간', '새벽 4시부터 아침 7시 사이에 콘센트를 기록했어요.'],
-    ['guide', '사용법 정독', '처음 안내를 본 뒤 메뉴의 사용법을 직접 열어 끝까지 읽었어요.'],
+    ['guide', '사용법 정독', '처음 안내를 본 뒤 메뉴의 사용법을 직접 열어 세 묶음을 모두 펼쳐 읽었어요.'],
     // 넷째 칸이 있으면 어려운 짝이고, 그 값은 짝인 일반 에그(도감에서 같은 줄 오른쪽에 놓인다).
     // 같은 행동을 더 어렵게 한 것이고, 일반 쪽과 한 번의 행동으로 같이 깨지지 않게 만든다(사용자 2026-11-26).
     ['corner2', '세상 끝의 끝', '지도를 가장 크게 확대해서 왼쪽 아래 맨 끝에 숨은 아주 작은 친구를 찾았어요.', 'corner'],
@@ -9823,18 +9832,29 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     setTimeout(function () { var b = tip.querySelector('.btn.pri'); if (b && o.isConnected) b.focus({ preventScroll: true }); }, 900);
   }
   // 사용법 창(메뉴): 지도 점 보는 법, 콘센트 기록하는 법, 처음 안내 다시 보기
-  // fromMenu: 메뉴에서 직접 열었다(처음 안내를 이미 본 사람이 끝까지 4초 넘게 보고 있으면 이스터 에그 '사용법 정독').
+  // fromMenu: 메뉴에서 직접 열었다(처음 안내를 이미 본 사람이 세 묶음을 모두 펼쳐 보면 이스터 에그 '사용법 정독').
   function openGuide(fromMenu) {
     var old = $('xinfo'); if (old) old.remove();
     var o = el('div'), box = el('div', 'xbox guide'), hd = el('div', 'xhead'), bd = el('span', 'xbadge pic');
     o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '사용법');
     o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
     bd.appendChild(fxStill('mi_guide')); hd.appendChild(bd); hd.appendChild(el('h2', null, '사용법')); box.appendChild(hd);
-    box.appendChild(el('div', 'xgrp', '지도의 점'));
-    box.appendChild(coachLegend());
-    box.appendChild(el('div', 'xgrp', '콘센트 기록'));
-    // 줄글 한 덩어리는 읽기 힘들어서(사용자 2026-11-28) 차례는 번호 줄로, 지킬 것은 아래 작은 점 줄로 나눈다. 단추 이름은 굵게.
-    var steps = el('ol', 'gsteps'), notes = el('ul', 'gnotes');
+    // 사용법(사용자 2026-11-28: 정보가 너무 많다): 맨 위에 처음 안내 다시 보기, 그 아래 접는 묶음 셋(지도의 점, 콘센트 기록, 자주 묻는 질문).
+    //  묶음 이름을 누르면 그 아래로 펼쳐진다. 한 화면에 다 들어온다.
+    var rp = btn('greplay', null, function () { o.remove(); if (P.kind) closePanel(true); openCoach(null, { rewatch: true }); });
+    rp.appendChild(el('span', null, '처음 안내 다시 보기')); rp.appendChild(icon('right'));
+    box.appendChild(rp);
+    var secs = el('div', 'gsecs'), opened = {};
+    var sec = function (key, title, body) {
+      var d = document.createElement('details'), sm = document.createElement('summary');
+      d.className = 'gsec'; sm.textContent = title; d.appendChild(sm);
+      var inner = el('div', 'gin'); inner.appendChild(body); d.appendChild(inner);
+      d.addEventListener('toggle', function () { if (d.open) { opened[key] = 1; readCheck(); } });
+      secs.appendChild(d);
+    };
+    sec('dot', '지도의 점', coachLegend());
+    // 콘센트 기록: 차례는 번호 줄로, 지킬 것은 아래 작은 점 줄로(사용자 2026-11-28). 단추 이름은 굵게.
+    var rec = document.createDocumentFragment(), steps = el('ol', 'gsteps'), notes = el('ul', 'gnotes');
     [[['그 카페에 있을 때 카드의 ', 0], ['콘센트 기록', 1], ['을 눌러요', 0]],
      [['콘센트가 있는 자리를 모두 골라요', 0]],
      [['콘센트가 없으면 ', 0], ['없어요', 1], ['를 눌러요', 0]]].forEach(function (parts) {
@@ -9843,14 +9863,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       li.appendChild(tx); steps.appendChild(li);
     });
     ['로그인해야 기록할 수 있어요', '하루 3곳까지 기록할 수 있어요'].forEach(function (t) { notes.appendChild(el('li', null, t)); });
-    box.appendChild(steps); box.appendChild(notes);
-    // 처음 안내 다시 보기: 닫기와 나란히 두면 취소 단추처럼 보여서(사용자 2026-11-27) 내용 칸에 따로 두고, 맨 아래에는 닫기만.
-    box.appendChild(el('div', 'xgrp', '처음 안내'));
-    var rp = btn('greplay', null, function () { o.remove(); if (P.kind) closePanel(true); openCoach(null, { rewatch: true }); });
-    rp.appendChild(el('span', null, '처음 안내 다시 보기')); rp.appendChild(icon('right'));
-    box.appendChild(rp);
-    // 자주 묻는 질문(사용자 2026-11-28): 사용법 맨 아래. 질문을 누르면 답이 펼쳐진다.
-    box.appendChild(el('div', 'xgrp', '자주 묻는 질문'));
+    rec.appendChild(steps); rec.appendChild(notes);
+    sec('rec', '콘센트 기록', rec);
+    // 자주 묻는 질문: 질문을 누르면 답이 펼쳐진다.
     var faq = el('div', 'faq');
     [
       ['카페 이름이 카카오맵과 왜 달라요?', '지도의 이름은 소상공인시장진흥공단 상가(상권)정보와 행정안전부 지방행정 인허가 데이터에 등록된 이름이에요. 그래서 간판이나 카카오맵과 다를 수 있어요.'],
@@ -9864,17 +9879,13 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var d = document.createElement('details'), sm = document.createElement('summary');
       sm.textContent = x[0]; d.appendChild(sm); d.appendChild(el('p', null, x[1])); faq.appendChild(d);
     });
-    box.appendChild(faq);
-    var end = el('div', 'gend'); box.appendChild(end);   // 끝까지 읽었는지 보는 자리(맨 아래 내용 바로 뒤)
+    sec('faq', '자주 묻는 질문', faq);
+    box.appendChild(secs);
     box.appendChild(btn('btn pri gclose', '닫기', function () { o.remove(); }));
     o.appendChild(box); document.body.appendChild(o); fitVisible(o);
-    if (fromMenu && load('cafemap.coach') && window.IntersectionObserver) {
-      var tm = 0, io = new IntersectionObserver(function (es) {
-        if (!o.isConnected) { io.disconnect(); return; }
-        if (es[0].isIntersecting) { if (!tm) tm = setTimeout(function () { if (o.isConnected) eggFound('guide'); io.disconnect(); }, 4000); }
-        else if (tm) { clearTimeout(tm); tm = 0; }
-      }, { threshold: 1 });
-      io.observe(end);
+    // 이스터 에그 '사용법 정독': 처음 안내를 본 사람이 메뉴에서 사용법을 열어 세 묶음을 모두 펼쳐 보면(예전에는 끝까지 4초).
+    function readCheck() {
+      if (fromMenu && load('cafemap.coach') && opened.dot && opened.rec && opened.faq) setTimeout(function () { if (o.isConnected) eggFound('guide'); }, 1500);
     }
   }
   // 앱을 처음 켠 사람에게만. 다른 창(로그인, 축하, 카드 등)이 떠 있으면 비켜 있다가 다시 본다.
