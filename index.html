@@ -9275,47 +9275,20 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var base = el('section', 'obase'); base.appendChild(el('h2', null, '기본 정보'));
     var fl = D.floor[i], addr = fullAddr(i) + (fl > 0 ? ' ' + fl + '층' : fl < 0 ? ' 지하' : '');
     var ar = el('div', 'oline'); ar.appendChild(el('span', null, addr));
-    var cp = btn('ocopy', '복사', function () { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(addr).then(function () { toast('주소를 복사했어요'); }, function () { toast(addr); }); else toast(addr); });
-    ar.appendChild(cp); base.appendChild(ar);
+    base.appendChild(ar);
     // 브랜드: 누르면 브랜드 도감의 그 브랜드 칸으로(사용자 2026-11-28 정함)
     if (D.brand[i] >= 0) { var brw = btn('oline obrand', null, function () { openDex(D.brand[i]); }); brw.appendChild(el('span', null, '브랜드 ' + D.brands[D.brand[i]][0])); brw.appendChild(el('small', null, '도감에서 보기')); brw.appendChild(icon('right')); base.appendChild(brw); }
     w.appendChild(base);
     // 같은 건물의 카페
     var same = [];
     // 같은 건물: 도로명 주소가 같은 곳(점 자리는 카카오 실제 자리로 옮겨질 수 있어 좌표로는 못 가린다).
-    var myAddr = fullAddr(i), sameOf = {};
-    for (var j = 0; j < N; j++) if (j !== i && D.road[j] === D.road[i] && !removed[j] && !dabang[j] && fullAddr(j) === myAddr) { same.push(j); sameOf[j] = 1; }
+    var myAddr = fullAddr(i);
+    for (var j = 0; j < N; j++) if (j !== i && D.road[j] === D.road[i] && !removed[j] && !dabang[j] && fullAddr(j) === myAddr) same.push(j);
     if (same.length) {
       var sb = el('section', 'olist'); sb.appendChild(el('h2', null, '같은 건물의 카페 ' + same.length + '곳'));
       same.slice(0, 6).forEach(function (j2) { sb.appendChild(cafeRow(j2, false, 'detail')); });
       w.appendChild(sb);
     }
-    // 근처 비슷한 카페: 같은 종류(프랜차이즈, 저가커피, 개인카페)에서 가까운 넷, 1km 안. 콘센트 기록이 있으면 먼저.
-    var near = [], kx = Math.cos(D.lat[i] / 1e5 * Math.PI / 180);
-    for (var k = 0; k < N; k++) {
-      if (k === i || removed[k] || dabang[k] || grp[k] !== grp[i] || sameOf[k]) continue;
-      var dy = (D.lat[k] - D.lat[i]) / 1e5, dx = (D.lng[k] - D.lng[i]) / 1e5 * kx, m = Math.sqrt(dx * dx + dy * dy) * 111320;
-      if (m <= 1000) near.push([m - (outlet[k] === 1 ? 300 : 0), k, m]);
-    }
-    near.sort(function (a, b) { return a[0] - b[0]; });
-    if (near.length) {
-      var nb = el('section', 'onear'); nb.appendChild(el('h2', null, '근처 비슷한 ' + GROUPS[grp[i]].label));
-      var g = el('div', 'ogrid');
-      near.slice(0, 4).forEach(function (x) {
-        var c = btn('ocard', null, function () { selectCafe(x[1], true, 'detail'); }), k2 = x[1];
-        c.appendChild(el('b', null, D.name[k2]));
-        var bits = [Math.round(x[2] / 10) * 10 + 'm']; if (D.area[k2] > 0) bits.push(pyeong(D.area[k2]) + '평');
-        c.appendChild(el('small', null, bits.join(', ')));
-        if (outlet[k2] === 1) c.appendChild(el('em', 'og', '콘센트 있어요'));
-        else if (monthsAgo(k2) >= 0 && monthsAgo(k2) < 12) c.appendChild(el('em', 'on', '새로 연 카페'));
-        g.appendChild(c);
-      });
-      nb.appendChild(g); w.appendChild(nb);
-    }
-    // 신고와 자료 출처
-    var ft = el('section', 'ofoot');
-    ft.appendChild(el('p', null, '자료: 소상공인시장진흥공단 상가(상권)정보, 행정안전부 지방행정 인허가 데이터. 콘센트 기록은 카페지도 사용자들이 남긴 것이에요.'));
-    w.appendChild(ft);
     return w;
   }
   // 머리줄을 잡고 끌면 카드가 손가락을 따라 움직인다.
