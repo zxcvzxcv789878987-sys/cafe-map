@@ -946,12 +946,20 @@ button.xlink .xbadge.qna { --pri: #1c7ed6; --pri2: #74c0fc; }
 .rpopt { min-height: 44px; padding: 8px 14px; border-radius: 12px; background: var(--surface-2); color: var(--ink-2); font-size: 14px; font-weight: 600; text-align: left; border: 1.5px solid transparent; }
 .rpopt.on { border-color: var(--pri); color: var(--ink); background: var(--surface); }
 .xbox textarea.rpta { min-height: 74px; }
-/* 설정의 내 기록 공개 아래 세 가지: 들여 쓰고 조금 작게(2026-11-28) */
-.pubsub { display: flex; flex-direction: column; gap: 12px; margin-top: -4px; padding-left: 16px; border-left: 2px solid var(--line); margin-left: 4px; }
-.pubsub .switch { font-size: 14px; font-weight: 600; color: var(--ink-2); }
-.pubsub .switch input { width: 34px; height: 20px; }
-.pubsub .switch input::after { width: 16px; height: 16px; }
-.pubsub .switch input:checked::after { transform: translateX(14px); }
+/* 내 기록 공개(2026-11-28 사용자가 고름): 설정의 줄은 지금 공개한 것을 작게 적고, 창 안에는 큰 스위치와 체크 줄 셋 */
+.pubrow { display: flex; align-items: center; gap: 6px; width: 100%; padding: 0; background: none; color: var(--ink); text-align: left; font-size: 15px; font-weight: 650; cursor: pointer; }
+.pubrow .pubn { flex: none; }
+.pubrow .pubst { flex: 1; min-width: 0; text-align: right; font-size: 13.5px; font-weight: 500; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pubrow svg.i { flex: none; width: 18px; height: 18px; color: var(--ink-3); }
+.xbox.pubset { gap: 12px; }
+.pubck { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.pubi { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 2px; border-bottom: 1px solid var(--line); text-align: left; background: none; color: inherit; }
+.pubi .ck { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--line-2); display: grid; place-items: center; color: transparent; }
+.pubi .ck svg.i { width: 14px; height: 14px; }
+.pubi.on .ck { background: var(--pri); border-color: var(--pri); color: #fff; }
+.pubi .tx { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pubi .tx b { font-size: 15px; font-weight: 650; color: var(--ink); }
+.pubi .tx small { font-size: 12.5px; color: var(--ink-3); }
 /* 사람 창의 동네 지도, 도감 줄(2026-11-28) */
 .pssee:empty { display: none; }
 .pssee .xrow small { margin-left: 7px; color: var(--ink-3); font-size: 12px; font-weight: 600; }
@@ -2708,6 +2716,41 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var q = XP.pubs;
     if (q && typeof q === 'object') return { l: !!q.l, d: !!q.d, b: !!q.b };
     return XP.pub ? { l: true, d: true, b: true } : { l: false, d: false, b: false };
+  }
+  var PUB_ITEMS = [['l', '원두 기록', '받은 원두와 까닭, 날짜까지(시각은 안 보여요)'], ['d', '동네 지도', '다녀온 동만, 날짜 없이'], ['b', '브랜드 도감', '모은 브랜드만, 날짜 없이']];
+  function pubSummary() {
+    var q = pubParts(), on = PUB_ITEMS.filter(function (x) { return q[x[0]]; });
+    return !on.length ? '꺼짐' : on.length === PUB_ITEMS.length ? '모두 공개' : on.map(function (x) { return x[1]; }).join(', ');
+  }
+  // 내 기록 공개 창: 위에 큰 스위치(켜면 셋 다, 끄면 셋 다), 아래 체크 줄 셋. 줄을 하나 고르면 큰 스위치도 켜지고, 다 빼면 꺼진다.
+  function openPubSet() {
+    var old = $('xinfo'); if (old) old.remove();
+    var o = el('div'), box = el('div', 'xbox pubset');
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '내 기록 공개');
+    var done = function () { o.remove(); if (P.kind === 'menu') renderPanel(); };
+    o.addEventListener('click', function (e) { if (e.target === o) done(); });
+    box.appendChild(el('h2', null, '내 기록 공개'));
+    var q0 = pubParts();
+    var top = toggleRow('공개하기', q0.l || q0.d || q0.b, function (v) { setPub({ l: v, d: v, b: v }); paint(); });
+    var topC = top.querySelector('input');
+    box.appendChild(top);
+    box.appendChild(el('p', 'xexp', '켜면 랭킹에서 다른 사람이 볼 수 있어요. 무엇을 보여 줄지 골라요.'));
+    var list = el('div', 'pubck'), rows = PUB_ITEMS.map(function (x) {
+      var r = btn('pubi', null, function () { var q = pubParts(); q[x[0]] = !q[x[0]]; setPub(q); paint(); }), ck = el('span', 'ck'), tx = el('span', 'tx');
+      r.setAttribute('role', 'checkbox');
+      ck.appendChild(icon('check')); tx.appendChild(el('b', null, x[1])); tx.appendChild(el('small', null, x[2]));
+      r.appendChild(ck); r.appendChild(tx); list.appendChild(r);
+      return [r, x[0]];
+    });
+    box.appendChild(list);
+    function paint() {
+      var q = pubParts();
+      topC.checked = !!(q.l || q.d || q.b);
+      rows.forEach(function (rw) { var on = !!q[rw[1]]; rw[0].classList.toggle('on', on); rw[0].setAttribute('aria-checked', String(on)); });
+    }
+    paint();
+    box.appendChild(btn('btn pri', '닫기', done));
+    o.appendChild(box); document.body.appendChild(o);
   }
   function setPub(q) {
     var any = !!(q.l || q.d || q.b);
@@ -6673,24 +6716,12 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     nv.appendChild(nvTabs); conf.appendChild(nv); dragPick(nvTabs);
     if (XP_ON && favOn()) conf.appendChild(toggleRow('내 메모 단추', !S.favHide, function (v) { S.favHide = !v; persist(); favRender(); }));
     conf.appendChild(toggleRow('지역 경계', S.outline, function (v) { S.outline = v; refilter(); draw(); renderChips(); persist(); }));
-    // 내 기록 공개(사용자 2026-11-28): 큰 스위치 하나와 그 아래 세 가지(원두 기록, 동네 지도, 브랜드 도감).
-    //  큰 스위치를 켜면 셋 다 켜고, 끄면 셋 다 끈다. 셋 중 하나라도 켜져 있으면 큰 스위치도 켜진 모양. 기본은 꺼짐.
-    //  켜면 랭킹에서 다른 사람이 볼 수 있다. 원두 기록은 날짜까지만, 동네 지도와 도감은 날짜 없이.
+    // 내 기록 공개(사용자 2026-11-28): 설정에는 줄 하나(지금 공개한 것)만 두고, 누르면 창에서 고른다(openPubSet).
     if (loginOn && signedIn() && XP_ON) {
-      var pp0 = pubParts(), pubAll = toggleRow('내 기록 공개', pp0.l || pp0.d || pp0.b, function (v) {
-        setPub({ l: v, d: v, b: v });
-        subs.forEach(function (sw) { sw.c.checked = v; });
-        toast(v ? '랭킹에서 다른 사람이 내 원두 기록, 동네 지도, 도감을 볼 수 있어요' : '내 기록을 모두 비공개로 바꿨어요');
-      }), allC = pubAll.querySelector('input'), sub = el('div', 'pubsub');
-      var subs = [['l', '원두 기록'], ['d', '동네 지도'], ['b', '브랜드 도감']].map(function (x) {
-        var row = toggleRow(x[1], pp0[x[0]], function (v) {
-          var q = pubParts(); q[x[0]] = v; setPub(q);
-          allC.checked = q.l || q.d || q.b;
-        });
-        sub.appendChild(row);
-        return { c: row.querySelector('input') };
-      });
-      conf.appendChild(pubAll); conf.appendChild(sub);
+      // 위 스위치 줄(내 메모 단추, 지역 경계)과 같은 굵기의 이름, 오른쪽에 지금 공개한 것을 회색 글자로.
+      var pr = btn('pubrow', null, openPubSet);
+      pr.appendChild(el('span', 'pubn', '내 기록 공개')); pr.appendChild(el('span', 'pubst', pubSummary())); pr.appendChild(icon('right'));
+      conf.appendChild(pr);
     }
     // 숨긴 사용자: 한 명이라도 있으면 줄이 생기고, 누르면 목록과 풀기 단추
     var nHid = Object.keys(hiddenU).length;
