@@ -3,9 +3,12 @@
 #   --fetch: 원본 자료를 새로 받는다(refresh.py가 매달 붙여 부른다). 없으면 작업/info_src/에 받아 둔 것으로 만든다.
 #
 # 넣는 것(모두 공공 자료, 거리는 공개 cafes.js 좌표로 잰 직선 미터)
-#   b: 가까운 버스정류장 [이름, 미터] 1km 안. 국토교통부 전국 버스정류장 위치정보(공공데이터포털 파일 15067528)
+#   b: 가까운 버스정류장 1km 안. 국토교통부 전국 버스정류장 위치정보(공공데이터포털 파일 15067528)
+#      [이름, 미터, 위도x1e5, 경도x1e5, 정류장번호(nodeid, 예: ADB354000317), 도시코드(cityCode), 모바일단축번호]. 빈 끝 칸은 뺀다.
+#      서울(도시코드 11)의 단축번호는 서울시 정류소 번호(arsId, 다섯 자리). 경기 정류장(GGB로 시작)의 경기도 정류소 ID는 GGB 뒤의 숫자.
 #   s: 가까운 지하철역 [역 이름, 미터] 1km 안. 전국도시철도역사정보 표준데이터(15013205). 원본은 철도 데이터 포털(data.kric.go.kr)의 엑셀.
-#   p: 500m 안 가장 가까운 공영(민영) 주차장 [이름, 미터, 무료|유료|혼합]. 전국주차장정보 표준데이터 API
+#   p: 500m 안 가장 가까운 공영(민영) 주차장 [이름, 미터, 무료|유료|혼합(모르면 ''), {y, x: 위도, 경도 x1e5, n: 주차구획수, d: 운영요일,
+#      w, s, h: 평일, 토요일, 공휴일 운영시간 '09:00-18:00', f: [기본시간(분), 기본요금, 추가단위시간(분), 추가단위요금]}]. 빈 칸은 뺀다. 전국주차장정보 표준데이터 API
 #   m: 1이면 지역사랑상품권(조폐공사 모바일 가맹점, 음료점 562, 계속사업자) 가맹점. 이름이 비슷하고 150m 안인 곳.
 #      사업자등록번호는 받자마자 버리고 어디에도 저장하지 않는다.
 #   e, y, c: 건축물대장(승객용 승강기 수, 사용승인 연도, 건물 주차 대수). building_info.py가 작업/info_src/bld.json에 나눠 받아 둔 것을 붙인다.
@@ -72,6 +75,28 @@ def fetch_subway():
     print('지하철역 파일', len(data) // 1024, 'KB', flush=True)
 
 
+def park_extra(it):
+    """주차장 작은 창에 쓰는 칸(표준데이터 그대로, 빈 칸은 뺀다).
+    n: 주차구획수, d: 운영요일, w/s/h: 평일/토요일/공휴일 운영시간 '시작-끝', f: [기본시간(분), 기본요금, 추가단위시간(분), 추가단위요금]."""
+    def num(k):
+        try:
+            return int(float(it.get(k) or ''))
+        except ValueError:
+            return None
+
+    def hours(a, b):
+        a, b = (it.get(a) or '').strip(), (it.get(b) or '').strip()
+        return a + '-' + b if a and b else None
+    x = {'n': num('prkcmprt') or None, 'd': (it.get('operDay') or '').strip() or None,
+         'w': hours('weekdayOperOpenHhmm', 'weekdayOperColseHhmm'),
+         's': hours('satOperOperOpenHhmm', 'satOperCloseHhmm'),
+         'h': hours('holidayOperOpenHhmm', 'holidayCloseOpenHhmm')}
+    f = [num('basicTime'), num('basicCharge'), num('addUnitTime'), num('addUnitCharge')]
+    if any(f[1:]):          # 요금이 하나라도 적힌 곳만(무료 주차장의 기본시간만 있는 줄은 뺀다)
+        x['f'] = [v if v is not None else 0 for v in f]
+    return {k: v for k, v in x.items() if v}
+
+
 def fetch_parking():
     url = 'http://api.data.go.kr/openapi/tn_pubr_prkplce_info_api'
     out, page = [], 1
@@ -87,7 +112,7 @@ def fetch_parking():
             except ValueError:
                 continue
             if 33 < la < 39 and 124 < ln < 132:
-                out.append([it.get('prkplceNm') or '', round(la, 6), round(ln, 6), it.get('parkingchrgeInfo') or '', it.get('prkplceSe') or ''])
+                out.append([it.get('prkplceNm') or '', round(la, 6), round(ln, 6), it.get('parkingchrgeInfo') or '', it.get('prkplceSe') or '', park_extra(it)])
         total = int(body.get('totalCount') or 0)
         if not items or page * 1000 >= total:
             break
@@ -142,13 +167,20 @@ def read_bus():
     h = next(r)
     ih = {k.strip(): i for i, k in enumerate(h)}
     i_n, i_la, i_ln = ih['정류장명'], ih['위도'], ih['경도']
+    i_id, i_ars, i_city, i_cn, i_mg = ih.get('정류장번호'), ih.get('모바일단축번호'), ih.get('도시코드'), ih.get('도시명'), ih.get('관리도시명')
+    cell = lambda row, i: row[i].strip() if i is not None and i < len(row) else ''
     for row in r:
         try:
             la, ln = float(row[i_la]), float(row[i_ln])
         except (ValueError, IndexError):
             continue
         if 33 < la < 39 and 124 < ln < 132 and row[i_n].strip():
-            out.append([row[i_n].strip(), la, ln])
+            city, ars = cell(row, i_city), cell(row, i_ars)
+            if city == '11' and ars.isdigit():
+                ars = ars.zfill(5)      # 서울 정류소 번호(arsId)는 다섯 자리
+            # 자기 지역 BIS가 관리하는 줄인가(서울 정류장이 경기BIS에도 한 번 더 올라 있다. 실시간 도착은 자기 지역 번호가 맞다)
+            home = cell(row, i_cn)[:2] == cell(row, i_mg)[:2]
+            out.append([row[i_n].strip(), la, ln, cell(row, i_id), city, ars, home])
     return out
 
 
@@ -290,7 +322,15 @@ gb = grid(bus)
 for i in range(N):
     p, d = nearest(gb, lat[i], lng[i], 1000)
     if p:
-        info[i]['b'] = [p[0], int(round(d))]
+        if not p[6]:
+            # 다른 지역 BIS의 줄이면 30m 안의 같은 이름, 자기 지역 줄로 바꾼다(서울 정류장의 경기BIS 줄 등)
+            q, dq = nearest(gb, p[1], p[2], 30, ok=lambda x: x[6] and x[0] == p[0])
+            if q:
+                p, d = q, dist(lat[i], lng[i], q[1], q[2])
+        b = [p[0], int(round(d)), round(p[1] * 1e5), round(p[2] * 1e5), p[3], p[4], p[5]]
+        while b and b[-1] == '':
+            b.pop()
+        info[i]['b'] = b
         stat['버스정류장'] += 1
 print('버스정류장', len(bus), '곳, 붙은 카페', stat['버스정류장'], flush=True)
 
@@ -314,7 +354,9 @@ if os.path.exists(pk_path):
         p, d = nearest(gp, lat[i], lng[i], 500)
         if p:
             fee = p[3] if p[3] in ('무료', '유료', '혼합') else ''
-            info[i]['p'] = [p[0], int(round(d))] + ([fee] if fee else [])
+            x = dict(p[5]) if len(p) > 5 else {}
+            x['y'], x['x'] = round(p[1] * 1e5), round(p[2] * 1e5)
+            info[i]['p'] = [p[0], int(round(d)), fee, x]
             stat['주차장'] += 1
     print('주차장', len(park), '곳, 붙은 카페', stat['주차장'], flush=True)
 
