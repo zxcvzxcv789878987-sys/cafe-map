@@ -470,6 +470,93 @@ button.oli { width: 100%; padding: 11px 0; margin: 0; background: none; color: v
 .obtx b { font-size: 15px; font-weight: 600; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
 .obtx > span { font-size: 13px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .obk { font-style: normal; display: inline-block; margin-right: 6px; padding: 1px 6px; border-radius: 5px; background: color-mix(in srgb, var(--pri) 12%, var(--surface)); color: #4c3fc4; font-size: 12px; font-weight: 800; vertical-align: 1px; }
+.otop .opin { width: 44px; height: 44px; }
+.otl h1 { word-break: keep-all; overflow-wrap: anywhere; }
+.otags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; }
+.obig { display: inline-flex; align-items: center; gap: 6px; padding: 2px 0; background: none; border: 0; font: inherit; cursor: pointer; }
+.obig .py { font-size: 13px; color: var(--ink-2); }
+.otag { font-size: 12px; font-weight: 700; border-radius: 6px; padding: 3px 7px; }
+.otag.big { color: #4c3fc4; background: color-mix(in srgb, var(--pri) 10%, var(--surface)); }
+.otag.new { color: #1e6b30; background: #e6f4ea; }
+.oacts { flex: none; display: flex; margin: -4px -8px 0 0; }
+.oact { width: 44px; height: 52px; padding: 0; background: none; border: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--ink); font-size: 11px; font-weight: 600; }
+.oact svg.i { width: 22px; height: 22px; }
+.oact.ohw[aria-pressed=true] svg.i { color: #F8312F; fill: #F8312F; }
+.obasic { display: flex; flex-direction: column; gap: 2px; margin-top: -4px; }
+.oaddr { display: flex; align-items: center; gap: 10px; min-height: 46px; }
+.oaddr > svg.i { flex: none; width: 20px; height: 20px; color: var(--ink-2); }
+.oaddr > span { flex: 1; min-width: 0; font-size: 15.5px; font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; }
+.oaddr .oroute { height: 40px; margin-top: 0; }
+.ohrs, .omemol { width: 100%; min-height: 46px; padding: 0; background: none; border: 0; display: flex; align-items: center; gap: 10px; text-align: left; color: var(--ink); font: inherit; }
+.ohrs > svg.i:first-child, .omemol > svg { flex: none; width: 20px; height: 20px; color: var(--ink-2); }
+.ohrs > span:nth-of-type(1) { flex: 1; font-size: 15px; }
+.ohrs .k { font-size: 14px; font-weight: 700; color: #4c3fc4; }
+.ohrs > svg.i:last-child { flex: none; width: 16px; height: 16px; color: #4c3fc4; }
+.omemol > span { flex: 1; min-width: 0; font-size: 14.5px; line-height: 1.45; color: var(--ink); overflow-wrap: anywhere; }
+.oln { display: flex; align-items: center; gap: 12px; min-height: 46px; font-size: 15px; }
+.oln > svg.i { flex: none; width: 20px; height: 20px; color: var(--ink-2); }
+.oln .lb { flex: none; width: 76px; font-size: 14px; color: var(--ink-2); }
+.oln .v { flex: 1; min-width: 0; line-height: 1.4; overflow-wrap: anywhere; }
+.oln .d { flex: none; font-size: 14px; font-weight: 700; }
+.oln .fee { font-style: normal; margin-left: 6px; font-size: 12px; font-weight: 700; color: var(--ink-2); background: var(--surface-2); border-radius: 5px; padding: 2px 6px; white-space: nowrap; }
+.ofix { width: 100%; padding: 16px 0 2px; border: 0; border-top: 1px solid var(--line); background: none; display: flex; align-items: center; gap: 8px; font: inherit; font-size: 14px; color: var(--ink-2); text-align: left; }
+.ofix > span { flex: 1; }
+.ofix svg.i { flex: none; width: 17px; height: 17px; }
+/* 콘센트 칸과 기록하기 창(2026-11-28 시안) */
+.omod { border: 1px solid var(--line); border-radius: 18px; padding: 18px 16px 16px; display: flex; flex-direction: column; }
+.omhd { display: flex; align-items: center; justify-content: space-between; }
+.omhd h2 { margin: 0; font-size: 18px; font-weight: 800; }
+.omwho { display: inline-flex; align-items: center; gap: 2px; background: none; border: 0; padding: 4px 0; font-size: 14px; color: var(--ink-2); }
+.omwho svg.i { width: 15px; height: 15px; }
+.omst { margin-top: 12px; display: flex; align-items: center; gap: 8px; }
+.omst b { font-size: 18px; font-weight: 800; letter-spacing: -.2px; }
+.ompic { flex: none; width: 34px; height: 34px; display: grid; place-items: center; }
+.ompic svg { width: 100%; height: 100%; display: block; }
+.ompic.dim svg { opacity: .45; filter: grayscale(1); }
+.ompic .fxs { width: 32px; height: 32px; }
+.omtiles { margin-top: 14px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.omtile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 12px 4px 11px; border-radius: 14px; background: color-mix(in srgb, var(--pri) 6%, var(--surface)); }
+.omtile .omname { font-size: 13px; font-weight: 600; white-space: nowrap; }
+.omtile b { font-size: 16px; font-weight: 800; color: #4c3fc4; }
+.omtile.off { background: var(--surface-2); }
+.omtile.off b { color: var(--ink-3); }
+.omtile.off .omseat svg { opacity: .4; filter: grayscale(1); }
+.omtile.mine { box-shadow: inset 0 0 0 2px var(--pri); }
+.ommk { position: absolute; top: 6px; right: 6px; font-size: 10.5px; font-weight: 800; color: #fff; background: var(--pri); border-radius: 6px; padding: 1px 5px; }
+.omseat { width: 30px; height: 30px; display: block; }
+.omseat svg { width: 100%; height: 100%; display: block; }
+.omnote { margin-top: 10px; font-size: 13.5px; color: var(--ink-2); }
+.omnote.c { text-align: center; }
+.omgold { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; padding: 11px 12px; border-radius: 12px; background: #fff4cc; font-size: 14px; font-weight: 700; color: #7a5600; }
+.omgold > div { display: flex; align-items: center; gap: 8px; }
+.omgold > div > span:nth-child(2) { flex: 1; }
+.omgold b { font-weight: 800; }
+.omgo { margin-top: 14px; width: 100%; height: 50px; border-radius: 14px; border: 0; background: var(--pri); color: var(--on-pri); font-size: 16px; font-weight: 700; }
+.omgo.full { background: var(--surface-2); color: var(--ink-3); font-size: 15.5px; }
+.ommine { margin-top: 14px; display: flex; align-items: center; gap: 10px; font-size: 14.5px; }
+.ommine > span { flex: 1; min-width: 0; line-height: 1.45; }
+.ommine b { font-weight: 700; }
+.omfix { flex: none; height: 40px; padding: 0 16px; border-radius: 12px; border: 1.5px solid var(--line-2); background: var(--surface); font-size: 14px; font-weight: 700; color: var(--ink); }
+.osh { position: fixed; inset: 0; z-index: 72; display: flex; align-items: flex-end; justify-content: center; background: rgba(15, 20, 30, 0); transition: background .22s ease; }
+.osh.on { background: rgba(15, 20, 30, .45); }
+.oshbox { width: 100%; max-width: 480px; box-sizing: border-box; background: var(--surface); border-radius: 22px 22px 0 0; padding: 10px 20px calc(22px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; transform: translateY(100%); transition: transform .26s cubic-bezier(.2, .8, .2, 1); }
+.osh.on .oshbox { transform: none; }
+.oshgrab { align-self: center; width: 38px; height: 4px; border-radius: 2px; background: var(--line-2); }
+.oshbox h2 { margin: 18px 0 0; font-size: 20px; font-weight: 800; letter-spacing: -.3px; }
+.oshsub { margin: 6px 0 0; font-size: 14px; color: var(--ink-2); }
+.oshgrid { margin-top: 18px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.oshop { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 4px 14px; border-radius: 16px; border: 1.5px solid var(--line-2); background: var(--surface); font-size: 14px; font-weight: 700; color: var(--ink); }
+.oshop .omseat { width: 40px; height: 40px; }
+.oshop.on, .oshnone.on { border: 2px solid var(--pri); background: color-mix(in srgb, var(--pri) 9%, var(--surface)); color: #4c3fc4; }
+.oshck { position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; border-radius: 50%; background: var(--pri); display: none; place-items: center; }
+.oshck svg.i { width: 12px; height: 12px; color: #fff; stroke-width: 3; }
+.oshop.on .oshck { display: grid; }
+.oshnone { margin-top: 8px; height: 50px; border-radius: 14px; border: 1.5px solid var(--line-2); background: var(--surface); font-size: 15px; font-weight: 700; color: var(--ink); }
+.oshgold { margin-top: 18px; }
+.oshgo { margin-top: 12px; height: 54px; border-radius: 14px; border: 0; background: var(--pri); color: var(--on-pri); font-size: 16.5px; font-weight: 800; }
+.oshgo:disabled { background: var(--surface-2); color: var(--ink-3); }
+.oshnote { margin: 12px 0 0; text-align: center; font-size: 13px; color: var(--ink-2); }
+.oshdel { margin-top: 10px; align-self: center; padding: 8px; background: none; border: 0; font-size: 13.5px; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
 .obmore { align-self: stretch; height: 44px; margin-top: 4px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-size: 14px; font-weight: 700; color: var(--ink); }
 .oonly[hidden], .orow[hidden] { display: none; }
 .oonly { border-radius: 16px; background: color-mix(in srgb, var(--pri) 7%, var(--surface)); padding: 14px 14px 16px; display: flex; flex-direction: column; gap: 12px; }
@@ -2076,7 +2163,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4.500 7h15M4.500 12h15M4.500 17h15"/></symbol>
   <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3.500l2 5.900 5.900 2-5.900 2-2 5.900-2-5.900-5.900-2 5.900-2z"/></symbol>
   <symbol id="i-flag" viewBox="0 0 24 24"><path d="M6 21V4.500M6 5h11l-2.300 3.750L17 12.500H6"/></symbol>
-  <symbol id="i-subway" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="14" rx="4"/><path d="M5 11h14M9 14h.01M15 14h.01M8 21l2-4M16 21l-2-4"/></symbol><symbol id="i-bus" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="15" rx="3"/><path d="M4 10h16M8 14.500h.01M16 14.500h.01M7 18v2M17 18v2"/></symbol><symbol id="i-car" viewBox="0 0 24 24"><path d="M5 16v-5l2-5h10l2 5v5M5 16h14M5 16v2M19 16v2M7.500 13h.01M16.500 13h.01M5 11h14"/></symbol><symbol id="i-bld" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="1.500"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></symbol><symbol id="i-card" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2.500"/><path d="M3 10h18M7 14.500h3"/></symbol><symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.500" cy="8.500" r="1.300"/></symbol><symbol id="i-route" viewBox="0 0 24 24"><path d="M12 3 21 12l-9 9-9-9z"/><path d="M9 14.500v-2.500a1 1 0 0 1 1-1h4.500M12.800 9l1.900 2-1.900 2"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.500 6.500l4 4"/></symbol><symbol id="i-park" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M10 16.500V7.500h3.200a2.600 2.600 0 0 1 0 5.200H10"/></symbol><symbol id="i-lift" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 9.500l3-3 3 3M9 14.500l3 3 3-3"/></symbol><symbol id="i-subway" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="14" rx="4"/><path d="M5 11h14M9 14h.01M15 14h.01M8 21l2-4M16 21l-2-4"/></symbol><symbol id="i-bus" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="15" rx="3"/><path d="M4 10h16M8 14.500h.01M16 14.500h.01M7 18v2M17 18v2"/></symbol><symbol id="i-car" viewBox="0 0 24 24"><path d="M5 16v-5l2-5h10l2 5v5M5 16h14M5 16v2M19 16v2M7.500 13h.01M16.500 13h.01M5 11h14"/></symbol><symbol id="i-bld" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="1.500"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></symbol><symbol id="i-card" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2.500"/><path d="M3 10h18M7 14.500h3"/></symbol><symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.500" cy="8.500" r="1.300"/></symbol><symbol id="i-route" viewBox="0 0 24 24"><path d="M12 3 21 12l-9 9-9-9z"/><path d="M9 14.500v-2.500a1 1 0 0 1 1-1h4.500M12.800 9l1.900 2-1.900 2"/></symbol>
   <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3M8 7l4-4 4 4M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"/></symbol>
   <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.010M4 12h.010M4 18h.010"/></symbol>
   <symbol id="i-podium" viewBox="0 0 24 24"><path d="M9 20V9.500h6V20M3.500 20v-6.500H9M15 15h5.500v5M2.500 20h19M12 3.500l.900 1.800 2 .300-1.450 1.400.350 2-1.800-.950-1.800.950.350-2L9.100 5.600l2-.300z"/></symbol>
@@ -3277,38 +3364,50 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     two.appendChild(btn('btn pri', okLabel, function () { o.remove(); go(); }));
     box.appendChild(two); o.appendChild(box); document.body.appendChild(o);
   }
-  // 카페 신고 창(사용자 2026-11-28): 카드의 신고 단추 하나를 누르면 폐업과 카페 아님 중에서 고른다.
-  //  cur: 내가 이미 한 신고(0 없음, 1 폐업, 2 카페 아님). go(v): v 1, 2는 그 까닭으로 신고, 0은 내 신고 거두기.
-  var GONE_WHY = [
-    [1, '문을 닫았어요', '가 보니 이 카페가 없어요'],
-    [2, '카페가 아니에요', '식당, 술집, 마트처럼 커피를 팔지 않는 곳이에요']
-  ];
-  function confirmGone(go, cur) {
+  // 정보 수정 제안 창(사용자 2026-11-28, 예전 이름 카페 신고). 문을 닫았어요, 카페가 아니에요(반영되면 원두), 그 밖에 틀린 정보(글로 적어 문의로 보냄).
+  //  cur: 내가 이미 한 제안(0 없음, 1 폐업, 2 카페 아님). go(v): v 1, 2는 그 까닭으로, 0은 내 제안 거두기. ci: 카페 번호.
+  var GONE_WHY = [[1, '문을 닫았어요'], [2, '카페가 아니에요'], [3, '그 밖에 틀린 정보']];
+  function confirmGone(go, cur, ci) {
     var old = $('xinfo'); if (old) old.remove();
-    var o = el('div'), box = el('div', 'xbox nick report'), opts = el('div', 'rpopts'), two = el('div', 'two'), pick = cur || 0;
-    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '카페 신고');
+    var o = el('div'), box = el('div', 'xbox nick report'), opts = el('div', 'rpopts'), two = el('div', 'two'), pick = cur || 0, has = ci != null && ci >= 0;
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '정보 수정 제안');
     o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
-    box.appendChild(el('h2', null, cur ? '내 신고' : '신고하기'));
-    box.appendChild(el('p', 'xexp', '까닭을 골라 주세요. 운영자가 확인하고 지도에서 지우면 ' + fmt(GONE_XP) + ' 원두를 드려요.'));
+    box.appendChild(el('h2', null, '정보 수정 제안'));
+    if (has) box.appendChild(el('p', 'xexp', D.name[ci]));
+    var ta = document.createElement('textarea'); ta.className = 'rpta'; ta.maxLength = 300; ta.placeholder = '이름이 바뀌었어요, 2층으로 옮겼어요'; ta.setAttribute('aria-label', '무엇이 틀렸나요');
     var bs = GONE_WHY.map(function (x) {
-      var b = btn('rpopt', null, function () { pick = x[0]; show(); });
-      b.appendChild(el('b', null, x[1])); b.appendChild(el('small', null, x[2]));
+      var b = btn('rpopt', null, function () { pick = x[0]; show(); if (pick === 3) ta.focus(); });
+      b.appendChild(el('b', null, x[1])); b.appendChild(el('small', null, x[0] === 3 ? '이름, 위치, 층 같은 것' : '반영되면 원두 ' + fmt(GONE_XP)));
       opts.appendChild(b); return b;
     });
-    var send = btn('btn pri', '신고하기', function () {
-      if (!pick) { toast('신고하는 까닭을 골라 주세요'); return; }
-      o.remove();
-      if (pick !== cur) go(pick);
+    var sending = false;
+    var send = btn('btn pri', '보내기', function () {
+      if (!pick) { toast('무엇이 틀렸는지 골라 주세요'); return; }
+      if (pick !== 3) { o.remove(); if (pick !== cur) go(pick); return; }
+      var tx = ta.value.trim();
+      if (!tx) { toast('무엇이 틀렸는지 적어 주세요'); ta.focus(); return; }
+      if (sending) return;
+      if (!SHARE.db) { toast('지금은 보낼 수 없어요'); return; }
+      // 문의(기타)로 보낸다. 운영자는 받은 문의에서 보고 답하고, 보낸 사람은 메뉴의 내 문의에서 답을 본다.
+      var rec = { k: 'etc', m: ('[정보 수정 제안] ' + (has ? D.name[ci] + ' (' + fullAddr(ci) + ')' : '') + '\n' + tx).slice(0, 1500), t: { '.sv': 'timestamp' } };
+      sending = true; send.textContent = '보내는 중';
+      var post = function (t) {
+        if (t) rec.u = who.u;
+        return fetch(SHARE.db + '/v2/feedback.json' + (t ? '?auth=' + encodeURIComponent(t) : ''), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rec) });
+      };
+      (signedIn() ? token().then(post, function () { return post(''); }) : post(''))
+        .then(function (r) { if (!r.ok) throw new Error('db'); o.remove(); doneBox('plane', '정보 수정 제안을 보냈어요', '운영자가 확인하고 고칠게요. 답은 메뉴의 내 문의에서 볼 수 있어요.'); })
+        .catch(function () { sending = false; send.textContent = '보내기'; toast('보내지 못했어요. 잠시 뒤에 다시 해 주세요'); });
     });
     var show = function () {
       bs.forEach(function (b, n) { var on = GONE_WHY[n][0] === pick; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
-      // 이미 신고한 곳: 다른 까닭을 고를 때만 바꾸기를 누를 수 있다.
-      send.textContent = cur ? '바꾸기' : '신고하기'; send.disabled = !!cur && pick === cur;
+      ta.hidden = pick !== 3;
+      // 이미 제안한 곳: 다른 까닭을 고를 때만 바꾸기를 누를 수 있다.
+      send.textContent = cur && pick !== 3 ? '바꾸기' : '보내기'; send.disabled = !!cur && pick === cur;
     };
-    box.appendChild(opts);
-    // 이미 신고했으면 거두는 단추를 아래에 작게 둔다.
-    if (cur) box.appendChild(btn('rpundo', '내 신고 거두기', function () { o.remove(); go(0); }));
-    two.appendChild(btn('btn', '취소', function () { o.remove(); }));
+    box.appendChild(opts); box.appendChild(ta);
+    if (cur) box.appendChild(btn('rpundo', '내 제안 거두기', function () { o.remove(); go(0); }));
+    two.appendChild(btn('btn', '닫기', function () { o.remove(); }));
     two.appendChild(send);
     box.appendChild(two); o.appendChild(box); document.body.appendChild(o);
     show();
@@ -5374,9 +5473,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   var LOGIN_TEXT = {
     vote: ['로그인하고 기록하기', '한 사람이 한 번만 기록할 수 있게 확인해요.'],
     want: ['로그인하고 찜하기', '찜한 카페를 내 계정에 저장해서 다른 기기에서도 볼 수 있어요.'],
-    gone: ['로그인하고 신고하기', '한 사람이 한 번만 신고할 수 있게 확인해요.'],
+    gone: ['로그인하고 보내기', '한 사람이 한 번만 보낼 수 있게 확인해요.'],
     cafeadd: ['로그인하고 제보하기', '반영되면 원두를 드리려면 로그인이 필요해요.'],
-    menu: ['로그인', '기록, 찜, 폐업 신고를 하려면 로그인이 필요해요.']
+    menu: ['로그인', '기록, 찜, 정보 수정 제안을 하려면 로그인이 필요해요.']
   };
   function needLogin(fn, what) { if (!loginOn || signedIn()) fn(); else openLogin(fn, what); }
   function openLogin(fn, what) {
@@ -5450,7 +5549,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var o = el('div'), box = el('div', 'xbox nick done'), two = el('div', 'two');
     o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '계정 삭제');
     box.appendChild(el('h2', null, '계정을 삭제할까요?'));
-    box.appendChild(el('p', 'xexp', '내 기록, 찜, 폐업 신고, 원두와 레벨, 닉네임과 랭킹, 보낸 문의와 받은 답이 모두 지워지고 되돌릴 수 없어요.'));
+    box.appendChild(el('p', 'xexp', '내 기록, 찜, 정보 수정 제안, 원두와 레벨, 닉네임과 랭킹, 보낸 문의와 받은 답이 모두 지워지고 되돌릴 수 없어요.'));
     two.appendChild(btn('btn', '취소', function () { o.remove(); }));
     two.appendChild(btn('btn pri', '삭제하기', function () { o.remove(); go(); }));
     box.appendChild(two); o.appendChild(box); document.body.appendChild(o);
@@ -6798,7 +6897,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         }).catch(function () {});
       } else {
         whoEl.appendChild(el('b', null, '로그인하지 않았어요'));
-        whoEl.appendChild(el('small', null, '기록, 찜, 폐업 신고는 로그인해야 할 수 있어요'));
+        whoEl.appendChild(el('small', null, '기록, 찜, 정보 수정 제안은 로그인해야 할 수 있어요'));
         row.appendChild(whoEl); row.appendChild(btn('btn sm pri', '로그인', function () { openLogin(null, 'menu'); }));
       }
       if (row) acc.appendChild(row);
@@ -7441,7 +7540,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var paint = function (nFb, nCafe) {
       list.textContent = '';
       row('rp_q_in', '받은 문의', nFb, function () { openAdminFb('fb'); });
-      row('rp_g_in', '받은 폐업, 카페 아님 제보', adminGone().todo.length, function () { openAdminGone(); });
+      row('rp_g_in', '받은 정보 수정 제안', adminGone().todo.length, function () { openAdminGone(); });
       row('rp_a_in', '받은 없는 카페 제보', nCafe, function () { openAdminFb('cafe'); });
     };
     paint(0, 0);
@@ -7547,14 +7646,14 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   };
   // w: 1 폐업 신고, 2 카페 아님 신고
   function goneSay(w, d) { return (w === 2 ? NOT_SAY : GONE_SAY)[d]; }
-  function goneKind(w) { return w === 2 ? '카페 아님 신고' : '폐업 신고'; }
+  function goneKind(w) { return w === 2 ? '카페 아님 제보' : '폐업 제보'; }
   // 내 폐업 신고 창: 목록, 누르면 그 카페의 결과
   function openMyGone(fromFb) {
     var old = $('xinfo'); if (old) old.remove();
     var o = el('div'), box = el('div', 'xbox fbl'), hd = el('div', 'xhead'), bd = el('span', 'xbadge pic');
-    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '내 폐업, 카페 아님 제보');
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '내 정보 수정 제안');
     o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
-    bd.appendChild(fxStill('rp_g_mine')); hd.appendChild(bd); hd.appendChild(el('h2', null, '내 폐업, 카페 아님 제보')); box.appendChild(hd);
+    bd.appendChild(fxStill('rp_g_mine')); hd.appendChild(bd); hd.appendChild(el('h2', null, '내 정보 수정 제안')); box.appendChild(hd);
     var ll = el('div', 'xll'), foot = el('div');
     box.appendChild(ll); box.appendChild(foot);
     var ends = function (back) {
@@ -7615,9 +7714,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (!isAdmin()) return;
     var old = $('xinfo'); if (old) old.remove();
     var o = el('div'), box = el('div', 'xbox fbl'), hd = el('div', 'xhead'), bd = el('span', 'xbadge pic');
-    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '받은 폐업, 카페 아님 신고');
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '받은 정보 수정 제안');
     o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
-    bd.appendChild(fxStill('rp_g_in')); hd.appendChild(bd); hd.appendChild(el('h2', null, '받은 폐업, 카페 아님 제보')); box.appendChild(hd);
+    bd.appendChild(fxStill('rp_g_in')); hd.appendChild(bd); hd.appendChild(el('h2', null, '받은 정보 수정 제안')); box.appendChild(hd);
     var ll = el('div', 'xll'); ll.appendChild(el('p', 'xnone', '불러오는 중')); box.appendChild(ll);
     var foot = el('div'); foot.appendChild(btn('btn pri', '닫기', function () { o.remove(); })); box.appendChild(foot);
     o.appendChild(box); document.body.appendChild(o);
@@ -7632,7 +7731,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       goneAll = d[0] || {}; goneDec = d[1] || {}; recountGone(); refilter(); requestDraw();
       var g = adminGone();
       ll.textContent = '';
-      if (!g.todo.length && !g.done.length) { ll.appendChild(el('p', 'xnone', '받은 신고가 없어요')); return; }
+      if (!g.todo.length && !g.done.length) { ll.appendChild(el('p', 'xnone', '받은 제안이 없어요')); return; }
       var row = function (x) {
         var r = btn('xli fbi', null, function () { decide(x); }), l = el('span'), rt = el('span', 'rt');
         l.appendChild(el('span', 'rs', D.name[x.j]));
@@ -7643,7 +7742,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       };
       if (g.todo.length) { ll.appendChild(el('div', 'gsub', '확인 전 ' + g.todo.length + '곳')); g.todo.forEach(row); }
       if (g.done.length) { ll.appendChild(el('div', 'gsub', '정한 것 ' + g.done.length + '곳')); g.done.forEach(row); }
-    }).catch(function () { ll.textContent = ''; ll.appendChild(el('p', 'xnone', '신고를 불러오지 못했어요')); });
+    }).catch(function () { ll.textContent = ''; ll.appendChild(el('p', 'xnone', '제안을 불러오지 못했어요')); });
     var decide = function (x) {
       hd.querySelector('h2').textContent = D.name[x.j];
       ll.textContent = ''; ll.className = 'fbd';
@@ -7684,7 +7783,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   }
   // 문의를 보낸 뒤: 확인 단추를 눌러 닫는 창
   // 폐업 신고를 보낸 뒤: 문의 보냄과 같은 종이비행기 창에 글만 바꿔서(사용자 2026-11-26)
-  function goneSent(w) { doneBox('plane', goneKind(w) + '를 보냈어요', '운영자가 확인하고 지도에서 지우면 ' + fmt(GONE_XP) + ' 원두를 드려요. 결과는 메뉴의 문의와 제보에서 볼 수 있어요.'); }
+  function goneSent(w) { doneBox('plane', '정보 수정 제안을 보냈어요', '운영자가 확인하고 지도에서 지우면 ' + fmt(GONE_XP) + ' 원두를 드려요. 결과는 메뉴의 문의와 제보에서 볼 수 있어요.'); }
   function fbSent() { doneBox('plane', '문의를 보냈어요', '답변이 오면 메뉴 단추에 빨간 점이 떠요. 메뉴의 문의와 제보에서 볼 수 있어요.'); }
   function openFeedback() {
     var old = $('xinfo'); if (old) old.remove();
@@ -7834,12 +7933,12 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       r.appendChild(icon('right')); box.appendChild(r);
     };
     row('rp_q_send', '문의하기', 0, function () { openFeedback(); });
-    row('rp_g_send', '폐업이나 카페 아님 제보', GONE_XP, function () { openGoneHowto(); });
+    row('rp_g_send', '정보 수정 제안', GONE_XP, function () { openGoneHowto(); });
     row('rp_a_send', '없는 카페 제보', CAFE_ADD_XP, function () { openCafeAdd(); });
     box.appendChild(el('div', 'xgrp', '내가 보낸 것'));
     var nFb = fbMine().filter(function (x) { return !isCafeFb(x); }).length, nAdd = fbMine().filter(isCafeFb).length, nGone = nKeys(goneMine);
     row('rp_q_mine', '내 문의' + (nFb ? ' ' + nFb + '건' : ''), 0, function () { openMyFb(null, true); }, fbNew > 0);
-    row('rp_g_mine', '내 폐업, 카페 아님 제보' + (nGone ? ' ' + nGone + '건' : ''), 0, function () { openMyGone(true); }, goneNew > 0);
+    row('rp_g_mine', '내 정보 수정 제안' + (nGone ? ' ' + nGone + '건' : ''), 0, function () { openMyGone(true); }, goneNew > 0);
     row('rp_a_mine', '내 없는 카페 제보' + (nAdd ? ' ' + nAdd + '건' : ''), 0, function () { openMyCafeAdd(true); }, cafeNew > 0);
     box.appendChild(btn('btn pri', '닫기', function () { o.remove(); }));
     o.appendChild(box); document.body.appendChild(o); fitVisible(o);
@@ -7848,10 +7947,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   function openGoneHowto() {
     var old = $('xinfo'); if (old) old.remove();
     var o = el('div'), box = el('div', 'xbox nick'), steps = el('ol', 'gsteps');
-    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '폐업이나 카페 아님 제보');
+    o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '정보 수정 제안');
     o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
-    box.appendChild(el('h2', null, '폐업이나 카페 아님 제보'));
-    [[['지도에서 그 카페를 눌러요', 0]], [['카드의 ', 0], ['카페지도 정보', 1], [' 탭을 눌러요', 0]], [['콘센트 기록 아래 ', 0], ['신고', 1], ['를 누르고 까닭을 골라요', 0]]].forEach(function (parts) {
+    box.appendChild(el('h2', null, '정보 수정 제안'));
+    [[['지도에서 그 카페를 눌러요', 0]], [['카드의 ', 0], ['카페지도 정보', 1], ['를 아래로 내려요', 0]], [['맨 아래 ', 0], ['정보 수정 제안', 1], ['을 누르고 골라요', 0]]].forEach(function (parts) {
       var li = el('li'), tx = el('span');
       parts.forEach(function (x) { tx.appendChild(x[1] ? el('b', null, x[0]) : document.createTextNode(x[0])); });
       li.appendChild(tx); steps.appendChild(li);
@@ -8176,7 +8275,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       ['문의, 폐업 신고', [
         ['내 문의', function () { myFbSetup(); openMyFb(); }],
         ['카페 제보', function () { openCafeReport(); }],
-        ['내 폐업, 카페 아님 제보', function () { save('cafemap.goneseen', {}); goneNewCount(); openMyGone(); }],
+        ['내 정보 수정 제안', function () { save('cafemap.goneseen', {}); goneNewCount(); openMyGone(); }],
         ['새 답 빨간 점', function () { myFbSetup(); save('cafemap.goneseen', {}); fbCheck(); goneNewCount(); toast('왼쪽 위 메뉴 단추를 보세요'); }],
         ['받은 문의와 제보 (운영자)', function () { var u0 = who.u; who.u = SHARE.admin; openAdminInbox(); who.u = u0; }],
         ['받은 문의 (운영자)', function () { var u0 = who.u; who.u = SHARE.admin; openAdminFb(); who.u = u0; }],
@@ -9025,7 +9124,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 주소의 시군구는 카페 자료(주소 기준, 행정동 쪽)를 쓴다. 카페 이름표(cidOf)도 이것으로 만들어서, 동 기준이 바뀌어도 기록과 찜이 그대로 붙는다.
   function fullAddr(i) { var d = (D.dongOfA || D.dongOf)[i], g = (D.dongA || D.dong)[d][1]; var sido = D.sido[sggSido[g]], sg = D.sgg[g][0]; return (sg === sido ? sido : sido + ' ' + sg) + ' ' + D.road[i]; }
   function selectCafe(i, pan, from) {
-    sel = i; P.cafe = i; P.prev = from;
+    sel = i; P.cafe = i; P.prev = from; P.ktab = -1;
     if (pileAt) closePile();
     // 지역을 골라 둔 채로 다른 동의 카페를 찾아가면, 지역을 그 카페의 동으로 바꿔서 주변 카페도 같이 보이게 한다.
     if (S.reg >= 0 && !regMask[D.dongOf[i]]) { S.reg = dongReg[D.dongOf[i]]; S.showAll = false; hoverPill = -1; refilter(); renderChips(); persist(); }
@@ -9115,11 +9214,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     bWant.appendChild(fxIcon('mi_heart')); bWant.appendChild(document.createTextNode('찜'));
     // 신고: 폐업(가 보니 없음)과 카페 아님(커피를 팔지 않는 식당, 술집, 마트)을 한 단추에 두고, 누르면 까닭을 고른다(사용자 2026-11-28).
     //  운영자가 확인한 뒤 모두의 지도에서 빼거나 남긴다. 한 카페에 내 신고는 하나만이라, 다른 까닭을 고르면 바꾼다.
-    var bGone = voteBtn('신고', function () {
-      confirmGone(function (v) { setGone(i, v); sync(); refilter(); requestDraw(); if (v) goneSent(v); }, myGone[i]);
+    var bGone = voteBtn('수정 제안', function () {
+      confirmGone(function (v) { setGone(i, v); sync(); refilter(); requestDraw(); if (v) goneSent(v); }, myGone[i], i);
     }, 'gone');
     bGone[0].classList.add('quiet', 'rep'); bGone[0].insertBefore(fxIcon('mi_flag'), bGone[0].firstChild);
-    bGone[0].title = '문을 닫았거나 카페가 아닌 곳이면 눌러 주세요';
+    bGone[0].title = '정보가 틀렸으면 알려 주세요';
     var rep = bGone[0];
     r3.appendChild(bWant); r3.appendChild(rep);
     rec.appendChild(r3);
@@ -9138,7 +9237,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     }
     // 있어요/없어요와 자리 물음 대신, 방문 인증 줄과 단추 넷(자리 셋, 없어요)을 보여 준다. 방문 인증 전에는 투표 단추가 눌리지 않는다.
     // 방문 인증은 로그인한 뒤 카페 근처에서만 된다. 투표 단추를 누르면 진짜 콘센트 투표(v2/seats)로 저장되고 XP도 같이 받는다.
-    var xs = function () {};
+    var xs = function () {}, castSet = null, removeMine = null;
     if (XP_ON && loginOn) {
       r1.hidden = true; more.hidden = true;
       var locating = false, xk = cidOf(i);
@@ -9189,6 +9288,37 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       rec.insertBefore(xr, more); rec.insertBefore(xhint, more);
       // 기록하는 곳 제목: XP 알림의 콘센트 기록과 같은 플러그 그림을 앞에 붙인다.
       var vb = rec.querySelector('.vh b'); vb.textContent = ''; vb.appendChild(fxIcon('plug')); vb.appendChild(document.createTextNode('콘센트 기록 (중복 선택)'));
+      // 기록하기 창(2026-11-28 시안)에서 고른 자리를 한꺼번에 적는다. 지금 기록과 다른 자리만 하나씩 켜고 끈다.
+      //  켜질 자리를 먼저 바꿔서 중간에 기록이 비는 일(원두가 빠졌다 다시 들어오는 일)이 없게 한다.
+      var applySet = function (o, bits, again) {
+        if (again) { apply(o, o === -1 ? 0 : bits, true); return; }
+        var m = XP.vote[xk] || [myO[i] || 0, myC[i] || 0, 0];
+        if (o === -1) { if (m[0] !== -1) apply(-1, 0); return; }
+        var had = m[0] === 1 ? m[1] : 0, diff = had ^ bits;
+        [1, 2, 4].filter(function (b) { return diff & b; })
+          .sort(function (b1, b2) { return ((bits & b1) ? 0 : 1) - ((bits & b2) ? 0 : 1); })
+          .forEach(function (b) { apply(1, b); });
+      };
+      castSet = function (o, bits, done) {
+        if (locating) return;
+        var busy = function (on) { locating = on; if (on) toast('위치 확인 중'); };
+        needLogin(function () {
+          if (navigator.onLine === false) eggFound('offline2');
+          if ((!myO[i] || canRevote(i)) && dayFull(i)) { dayFullBox(); return; }
+          if (canRevote(i)) { checkNear(i, function () { applySet(o, bits, true); done(); }, busy); return; }
+          if (myO[i]) { markNear(i); applySet(o, bits); done(); return; }
+          if (beenNear(i)) { markNear(i); applySet(o, bits); done(); return; }
+          if (devOwner(xk) && devOwner(xk) !== who.u) { toast('이 폰에서는 이 카페에 다른 계정으로 이미 기록했어요'); return; }
+          checkNear(i, function () { devClaim(xk); markNear(i); applySet(o, bits); done(); }, busy);
+        }, 'vote');
+      };
+      // 내 기록 지우기: 첫 콘센트 기록이면 먼저 묻는다(firstUndo).
+      removeMine = function () {
+        var m = XP.vote[xk] || [myO[i] || 0, myC[i] || 0, 0];
+        if (!m[0]) return;
+        var o = m[0], bit = o === 1 ? m[1] : 0;
+        needLogin(function () { if (!firstUndo(o, bit)) apply(o, bit); }, 'vote');
+      };
       xs = function () {
         var re = canRevote(i), mine = re ? [0, 0] : [myO[i], myC[i]], v = votes[i] || [0, 0, 0, 0, 0];
         xb.forEach(function (cb) { var on = mine[0] === 1 && (mine[1] & cb[1][2]) !== 0; setBtn(cb[0], on, v[cb[1][3]] + (on ? 1 : 0)); });
@@ -9209,9 +9339,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       setBtn(no, myO[i] === -1, v[1] + (myO[i] === -1 ? 1 : 0));
       chairBtns.forEach(function (cb) { var on = (myC[i] & cb[1][2]) !== 0; setBtn(cb[0], on, v[cb[1][3]] + (on ? 1 : 0)); });
       xs();
-      // 카페지도 정보 탭의 "아직 콘센트 기록이 없어요" 줄은 기록이 생기면 숨긴다(묶음에 남은 줄이 없으면 묶음도).
-      var op = ours && ours.querySelector('.oplug');
-      if (op) { op.hidden = ny + nn > 0; var oo = op.parentNode; oo.hidden = !oo.querySelector('.obline:not([hidden])'); }
+      // 카페지도 정보 탭: 콘센트 칸을 새로 그리고 찜 단추를 맞춘다.
+      if (omEl && omEl.isConnected) fillOutlet(omEl);
+      var ohw = ours && ours.querySelector('.ohw'); if (ohw) ohw.setAttribute('aria-pressed', String(want[i] === 1));
     }
     function store() {
       if (myO[i] !== 1) myC[i] = 0;
@@ -9219,34 +9349,137 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (S.outlet) refilter();
       requestDraw(); refit();
     }
+    // ----- 카페지도 정보 탭의 콘센트 칸(2026-11-28 시안) -----
+    // 결과 한 줄(콘센트 자리 있어요), 자리별 사람 수, 원두 보너스(한 줄에 하나씩), 기록하기 단추. 기록은 아래에서 올라오는 창에서 고른다.
+    var omEl = null;
+    // 기록하면 받을 원두: [[이름, 원두]]. 이미 기록했으면(6개월이 지나 다시 기록할 때가 아니면) 빈 목록. xpVote와 같은 셈.
+    function outletReward() {
+      var re = canRevote(i);
+      if (myO[i] && !re) return [];
+      if (re) return [['콘센트 기록', 1000], ['오랜만의 기록', 500]];
+      var first = !isAdmin() && !(realVotes[i] || 0), ago = monthsAgo(i), last = lastVote(i), out = [];
+      out.push(first ? ['첫 기록 원두(2배)', 2000] : ['콘센트 기록', 1000]);
+      if (ago >= 0 && ago < 12) out.push(['새로 연 카페', 500]);
+      if (last && Date.now() - last > HALF_YEAR) out.push(['오랜만의 기록', 500]);
+      return out;
+    }
+    function fillOutlet(box) {
+      box.textContent = '';
+      var v = votes[i] || [0, 0, 0, 0, 0], re = canRevote(i), mo = re ? 0 : myO[i], mc = mo === 1 ? myC[i] : 0;
+      var ny = v[0] + (mo === 1 ? 1 : 0), nn = v[1] + (mo === -1 ? 1 : 0), tot = ny + nn;
+      var hd = el('div', 'omhd'); hd.appendChild(el('h2', null, '콘센트'));
+      if (tot) { var wl = btn('omwho', null, function () { openVoters(i); }); wl.appendChild(document.createTextNode(tot + '명 기록')); wl.appendChild(icon('right')); hd.appendChild(wl); }
+      box.appendChild(hd);
+      var st = el('div', 'omst'), pic = el('span', 'ompic');
+      if (!tot) { pic.innerHTML = SAD_CUP_SVG; st.appendChild(pic); st.appendChild(el('b', null, '아직 기록이 없어요')); }
+      else { pic.appendChild(fxIcon('plug')); if (ny < nn) pic.classList.add('dim'); st.appendChild(pic); st.appendChild(el('b', null, ny >= nn ? '콘센트 자리 있어요' : '콘센트가 없다는 기록이 많아요')); }
+      box.appendChild(st);
+      if (tot) {
+        var tl = el('div', 'omtiles');
+        CHAIRS.forEach(function (c) {
+          var mine = (mc & c[2]) !== 0, n = v[c[3]] + (mine ? 1 : 0), t = el('div', 'omtile' + (n ? '' : ' off') + (mine ? ' mine' : ''));
+          if (mine) t.appendChild(el('span', 'ommk', '내 기록'));
+          var sp = el('span', 'omseat'); sp.innerHTML = SEAT_SVG[c[0]]; t.appendChild(sp);
+          t.appendChild(el('span', 'omname', c[1])); t.appendChild(el('b', null, n + '명'));
+          tl.appendChild(t);
+        });
+        box.appendChild(tl);
+        if (nn) box.appendChild(el('div', 'omnote', '콘센트가 없다고 한 사람 ' + nn + '명'));
+      }
+      var bon = outletReward().filter(function (x) { return x[0] !== '콘센트 기록'; });
+      if (bon.length) box.appendChild(goldBox(bon));
+      if (mo) {
+        var my = el('div', 'ommine'), mt = el('span');
+        mt.appendChild(el('b', null, '내 기록'));
+        mt.appendChild(document.createTextNode(' ' + (mo === -1 ? '콘센트 없어요' : CHAIRS.filter(function (c) { return mc & c[2]; }).map(function (c) { return c[1]; }).join(', '))));
+        my.appendChild(mt); my.appendChild(btn('omfix', '고치기', function () { outletSheet(); }));
+        box.appendChild(my);
+      } else {
+        var full = dayFull(i);
+        box.appendChild(btn('omgo' + (full ? ' full' : ''), full ? '오늘은 3곳을 다 기록했어요' : '콘센트 기록하기', function () { if (full) { dayFullBox(); return; } outletSheet(); }));
+        if (full) box.appendChild(el('div', 'omnote c', '내일 다시 기록할 수 있어요'));
+      }
+    }
+    // 기록하기 창: 자리 셋(여러 개 고르기)과 콘센트가 없어요. 받을 원두를 한 줄에 하나씩 보여 준다.
+    function outletSheet() {
+      var old = $('osheet'); if (old) old.remove();
+      var re = canRevote(i), mo = re ? 0 : myO[i], selO = mo, selB = mo === 1 ? myC[i] : 0;
+      var o = el('div', 'osh'), sh = el('div', 'oshbox');
+      o.id = 'osheet'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '콘센트 기록하기');
+      var close = function () { o.classList.remove('on'); setTimeout(function () { o.remove(); }, 230); };
+      o.addEventListener('click', function (e) { if (e.target === o) close(); });
+      sh.appendChild(el('span', 'oshgrab'));
+      sh.appendChild(el('h2', null, '어느 자리에 콘센트가 있나요?'));
+      sh.appendChild(el('p', 'oshsub', '여러 개 골라도 돼요'));
+      var grid = el('div', 'oshgrid');
+      var opts = CHAIRS.map(function (c) {
+        var b = btn('oshop', null, function () { if (selO !== 1) { selO = 1; selB = 0; } selB ^= c[2]; if (!selB) selO = 0; show(); });
+        var ck = el('span', 'oshck'); ck.appendChild(icon('check')); b.appendChild(ck);
+        var sp = el('span', 'omseat'); sp.innerHTML = SEAT_SVG[c[0]]; b.appendChild(sp); b.appendChild(el('span', null, c[1]));
+        grid.appendChild(b); return [b, c];
+      });
+      sh.appendChild(grid);
+      var none = btn('oshnone', '콘센트가 없어요', function () { if (selO === -1) selO = 0; else { selO = -1; selB = 0; } show(); });
+      sh.appendChild(none);
+      var rw = outletReward();
+      if (rw.length) { var gb = goldBox(rw); gb.classList.add('oshgold'); sh.appendChild(gb); }
+      var go = btn('oshgo', '기록하기', function () { if (!selO) return; castSet(selO, selB, close); });
+      sh.appendChild(go);
+      if (mo) sh.appendChild(btn('oshdel', '내 기록 지우기', function () { close(); removeMine(); }));
+      else sh.appendChild(el('p', 'oshnote', '카페 안에 있을 때만 기록할 수 있어요'));
+      function show() {
+        opts.forEach(function (x) { var on = selO === 1 && (selB & x[1][2]) !== 0; x[0].classList.toggle('on', on); x[0].setAttribute('aria-pressed', String(on)); });
+        none.classList.toggle('on', selO === -1); none.setAttribute('aria-pressed', String(selO === -1));
+        go.disabled = !selO || (!!mo && selO === mo && (selO !== 1 || selB === myC[i]));
+      }
+      o.appendChild(sh); document.body.appendChild(o); show();
+      requestAnimationFrame(function () { o.classList.add('on'); });
+    }
     sync();
     var refit = function () {};
     var body = null, tabs = null, ours = null;
+    // 이 카페로 바로 오는 링크 보내기. 폰에서는 공유 창을 띄우고, 컴퓨터에서는 주소를 복사한다.
+    var doShare = function () {
+      var base = location.protocol === 'file:' ? 'https://zxcvzxcv789878987-sys.github.io/cafe-map/' : location.origin + location.pathname;
+      var url = base + '#c=' + cidOf(i);
+      if (navigator.share && mobile.matches) navigator.share({ title: D.name[i], url: url }).catch(function () {});
+      else if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { toast('이 카페로 바로 오는 링크를 복사했어요'); }, function () { toast(url); });
+      else toast(url);
+    };
     if (pid) {
-      // 콘센트 기록, 찜, 메모, 신고는 카페지도 정보 탭 안에 있다(사용자 2026-11-28: 머리줄 단추로 내려오던 판을 탭 안으로).
+      // 탭 두 개(사용자 2026-11-28): 카페지도 정보(왼쪽, 처음 열림)와 카카오맵(카카오 가게 화면, 처음 누를 때 불러온다).
       var fr = document.createElement('iframe');
-      fr.title = D.name[i] + ' 카카오맵'; fr.src = 'https://place.map.kakao.com/' + pid; fr.referrerPolicy = 'no-referrer';
+      fr.title = D.name[i] + ' 카카오맵'; fr.referrerPolicy = 'no-referrer'; fr.hidden = true;
       // 안에 띄운 화면이 이 지도 창 자체를 다른 곳으로 보내지 못하게 한다. 새 창 열기는 허용한다.
       fr.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms');
       body = el('div', 'dbody'); body.appendChild(fr);
-      // 탭 두 개(사용자 2026-11-27 시안, 2026-11-28 넣음): 카카오맵(처음, 지금 가게 화면 그대로)과 카페지도 정보(우리 자료와 콘센트 기록).
-      ours = el('div', 'dours'); ours.hidden = true; body.appendChild(ours);
+      ours = el('div', 'dours'); body.appendChild(ours);
       tabs = el('div', 'dtabs'); tabs.setAttribute('role', 'tablist');
       var tabBtn = function (label, cls, on) { var b = btn('dtab ' + cls, label, null); b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(on)); tabs.appendChild(b); return b; };
-      var tK = tabBtn('카카오맵', 'k', true), tO = tabBtn('카페지도 정보', 'o', false);
+      var tO = tabBtn('카페지도 정보', 'o', true), tK = tabBtn('카카오맵', 'k', false);
       var showTab = function (o2) {
         tK.setAttribute('aria-selected', String(!o2)); tO.setAttribute('aria-selected', String(o2));
-        tO.classList.remove('nudge');
+        P.ktab = o2 ? -1 : i;
+        if (!o2 && !fr.getAttribute('src')) fr.src = 'https://place.map.kakao.com/' + pid;
         fr.hidden = o2; ours.hidden = !o2;
-        // 폰에서 카드가 반만 올라와 있으면 우리 정보를 읽기 좋게 끝까지 올린다.
-        if (o2 && mobile.matches && snap === 'half') { lift = 0; setSnap('full', true); }
-        if (o2) { ours.textContent = ''; ours.appendChild(cafeOurs(i, { rec: rec })); ours.scrollTop = 0; sync(); }
+        if (o2) {
+          omEl = castSet ? el('section', 'omod') : null;
+          if (omEl) fillOutlet(omEl);
+          ours.textContent = '';
+          ours.appendChild(cafeOurs(i, {
+            rec: rec, outlet: omEl, share: doShare,
+            want: function () { bWant.click(); },
+            memo: bMemo ? function () { bMemo.click(); } : null,
+            kakao: function () { showTab(false); },
+            fix: function () { bGone[0].click(); }
+          }));
+          ours.scrollTop = 0;
+        }
       };
       tK.addEventListener('click', function () { showTab(false); });
       tO.addEventListener('click', function () { showTab(true); });
       h.classList.add('tabbed'); h.appendChild(tabs);
-      // 콘센트 기록이 이 탭 안에 있으니, 앱을 연 뒤 처음 연 카드에서 한 번 살짝 강조한다.
-      if (!nudged) { nudged = true; tO.classList.add('nudge'); }
+      showTab(P.ktab !== i);
       panel.setAttribute('data-embed', '');
     } else {
       // 카카오맵에 없는 카페: 띄울 화면이 없으므로 이름과 내용을 카드에 바로 적고, 없다는 것만 알린다.
@@ -9258,25 +9491,17 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       d.appendChild(dl); d.appendChild(rec);
       body.appendChild(d);
     }
-    // 이 카페로 바로 오는 링크를 보내는 단추. 폰에서는 공유 창을 띄우고, 컴퓨터에서는 주소를 복사한다.
-    var sh = btn('ib', null, function () {
-      var base = location.protocol === 'file:' ? 'https://zxcvzxcv789878987-sys.github.io/cafe-map/' : location.origin + location.pathname;
-      var url = base + '#c=' + cidOf(i);
-      if (navigator.share && mobile.matches) navigator.share({ title: D.name[i], url: url }).catch(function () {});
-      else if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { toast('이 카페로 바로 오는 링크를 복사했어요'); }, function () { toast(url); });
-      else toast(url);
-    });
-    sh.setAttribute('aria-label', '이 카페 링크 공유'); sh.title = '링크 공유'; sh.appendChild(icon('share'));
-    h.appendChild(sh);
-    // 컴퓨터, 태블릿에서 지도에서 바로 연 카드는 닫기(x)로 보여 준다. 돌아갈 목록이 있거나 폰이면 뒤로(←).
+    // 공유: 탭이 있는 카드는 카페지도 정보 안(이름 오른쪽, 찜 옆)에 있다. 카카오맵에 없는 카페만 머리줄에.
+    if (!pid) { var sh = btn('ib', null, doShare); sh.setAttribute('aria-label', '이 카페 링크 공유'); sh.title = '링크 공유'; sh.appendChild(icon('share')); h.appendChild(sh); }
+    // 닫기는 늘 x(사용자 2026-11-28). 목록에서 들어왔으면 닫을 때 그 목록으로 돌아간다.
     if (back) {
-      var shut = !P.prev && !mobile.matches, bk = btn('ib back', null, back);
-      bk.setAttribute('aria-label', shut ? '닫기' : '뒤로'); bk.title = shut ? '닫기' : '뒤로'; bk.appendChild(icon(shut ? 'x' : 'back')); h.appendChild(bk);
+      var bk = btn('ib back', null, back);
+      bk.setAttribute('aria-label', '닫기'); bk.title = '닫기'; bk.appendChild(icon('x')); h.appendChild(bk);
     }
     panel.appendChild(h);
     // 다른 사람 두 명 이상이 없어졌다고 알린 카페는 윗줄 아래에 한 줄로 알린다(지도에서 빼지는 않는다).
-    if ((goneVotes[i] || 0) >= 2) panel.appendChild(el('div', 'gonebar', '폐업했다는 신고 ' + goneVotes[i] + '명'));
-    else if ((notVotes[i] || 0) >= 2) panel.appendChild(el('div', 'gonebar', '카페가 아니라는 신고 ' + notVotes[i] + '명'));
+    if ((goneVotes[i] || 0) >= 2) panel.appendChild(el('div', 'gonebar', '문을 닫았다는 제보 ' + goneVotes[i] + '명'));
+    else if ((notVotes[i] || 0) >= 2) panel.appendChild(el('div', 'gonebar', '카페가 아니라는 제보 ' + notVotes[i] + '명'));
     panel.appendChild(body);
   }
   // 카페지도 정보 탭의 내용(우리 자료만, 2026-11-28 사용자와 정한 시안). 자료가 없는 줄은 숨긴다. act.rec: 카드의 콘센트 기록 칸(찜, 메모, 신고 포함).
@@ -9329,86 +9554,115 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     draw();
     box.hidden = false;
   }
+  // 카페지도 정보 탭에서 쓰는 그림: 기록 없을 때 "힝" 하는 컵(입 없이 눈썹만 처짐), 콘센트 자리 셋(벽면 의자는 벽과 하나로 붙은 붙박이 의자).
+  var SAD_CUP_SVG = '<svg viewBox="0 0 32 32" aria-hidden="true"><g transform="translate(0.32 2.172) scale(0.98)"><rect x="8.6" y="3.1" width="14.8" height="2.6" rx="1.3" fill="#5B5B66"/><rect x="5.6" y="5.3" width="20.8" height="3.2" rx="1.6" fill="#5B5B66"/><path d="M6.7 8.2H25.3L23.2 28.6H8.8Z" fill="#FFFFFF" stroke="#E1D8D2" stroke-width=".5"/><path d="M7.47 18.8H24.53L23.91 24.8H8.09Z" fill="#A56953"/><path d="M11.7 11.6L14.6 10.5M20.3 11.6L17.4 10.5" stroke="#3F3F46" stroke-width=".9" stroke-linecap="round" fill="none"/><circle cx="13.5" cy="14.2" r="1.05" fill="#3F3F46"/><circle cx="18.5" cy="14.2" r="1.05" fill="#3F3F46"/><ellipse cx="11.4" cy="16.4" rx="1.1" ry=".6" fill="#FF8FA8" opacity=".6"/><ellipse cx="20.6" cy="16.4" rx="1.1" ry=".6" fill="#FF8FA8" opacity=".6"/></g></svg>';
+  var SEAT_SVG = {
+    w: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="3" width="3" height="26" rx="1" fill="#E1D8D2"/><rect x="2" y="28.4" width="28" height="1.3" rx=".6" fill="#E1D8D2"/><rect x="5" y="20" width="24" height="8.6" rx="1" fill="#9A7B62"/><rect x="5" y="16" width="24" height="5" rx="2" fill="#C98B5E"/><rect x="5" y="5.5" width="5" height="12" rx="2" fill="#A86F45"/></svg>',
+    s: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="8" width="26" height="3" rx="1.5" fill="#9A7B62"/><rect x="22.5" y="11" width="2.6" height="17" rx="1" fill="#7A5F4A"/><rect x="5" y="15" width="11" height="3.2" rx="1.6" fill="#636363"/><rect x="9.6" y="18" width="2" height="10" rx="1" fill="#8B93A1"/><rect x="7" y="24" width="7" height="1.4" rx=".7" fill="#8B93A1"/></svg>',
+    n: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="9" y="5" width="3.2" height="15" rx="1.6" fill="#A86F45"/><rect x="9" y="16" width="14.5" height="3.6" rx="1.6" fill="#C98B5E"/><rect x="10" y="19.5" width="2.1" height="9" rx="1" fill="#A86F45"/><rect x="20.6" y="19.5" width="2.1" height="9" rx="1" fill="#A86F45"/></svg>'
+  };
+  // 주소의 시도 이름을 짧게(서울특별시 → 서울). 카카오맵, 네이버 지도와 같은 꼴.
+  var SIDO_SHORT = { '서울특별시': '서울', '부산광역시': '부산', '대구광역시': '대구', '인천광역시': '인천', '광주광역시': '광주', '대전광역시': '대전', '울산광역시': '울산', '세종특별자치시': '세종', '경기도': '경기', '강원특별자치도': '강원', '충청북도': '충북', '충청남도': '충남', '전북특별자치도': '전북', '전라남도': '전남', '경상북도': '경북', '경상남도': '경남', '제주특별자치도': '제주' };
+  function shortAddr(i) { var a = fullAddr(i), k = a.indexOf(' '), s0 = a.slice(0, k); return SIDO_SHORT[s0] ? SIDO_SHORT[s0] + a.slice(k) : a; }
+  // 원두 보너스 노란 칸: 한 줄에 하나씩, 이름과 원두("첫 기록 원두(2배) +2,000", "새로 연 카페 +500"). 사용자 2026-11-28.
+  function goldBox(list) {
+    var g = el('div', 'omgold');
+    list.forEach(function (x) { var l = el('div'), b = el('span', 'obean'); b.innerHTML = BEAN_SVG; l.appendChild(b); l.appendChild(el('span', null, x[0])); l.appendChild(el('b', null, '+' + fmt(x[1]))); g.appendChild(l); });
+    return g;
+  }
+  // 카페지도 정보 탭의 내용(2026-11-28 시안, 카카오맵과 비교해 정함). 자료가 없는 줄은 숨긴다.
+  //  이름 줄(로고, 평수와 표시, 찜 메모 공유) → 주소와 길찾기 → 영업시간, 전화번호(앱 안의 카카오맵 탭으로) → 콘센트 → 블로그 후기 →
+  //  근처(버스정류장, 주차장) → 편의(지역화폐, 승강기, 건물 주차장) → 같은 건물의 카페 → 정보 수정 제안.
+  //  act: outlet 콘센트 칸(없으면 rec), want 찜, memo 메모(이스터 에그를 연 사람만), share 공유, kakao 카카오맵 탭으로, fix 정보 수정 제안.
   function cafeOurs(i, act) {
-    var w = el('div', 'oin'), v = votes[i] || [0, 0, 0, 0, 0];
-    // 맨 위: 이름 앞에 지도의 점과 같은 로고, 오른쪽에 길찾기
+    var w = el('div', 'oin');
     var top = el('div', 'otop'), tl = el('div', 'otl');
     var lg = pinEl(i); lg.classList.add('opin'); top.appendChild(lg);
     tl.appendChild(el('h1', null, D.name[i]));
-    var sub = [D.dong[D.dongOf[i]][0]], dt = distText(i); if (dt) sub.push('여기서 ' + dt);
-    tl.appendChild(el('div', 'osub', sub.join(', ')));
-    var bg = btn('oroute', null, function () { openRoute(i); }); bg.appendChild(icon('route')); bg.appendChild(document.createTextNode('길찾기'));
-    top.appendChild(tl); top.appendChild(bg); w.appendChild(top);
-    // 숫자 두 칸: 매장 넓이, 문 연 지(카페지도에만 있는 정보). 아는 것만.
-    var ym = D.since ? D.since[i] : 0, ago = monthsAgo(i), stat = el('div', 'ostat');
-    var cell = function (big, small) { var c = el('div'); c.appendChild(el('b', null, big)); c.appendChild(el('span', null, small)); stat.appendChild(c); };
-    if (D.area[i] > 0) cell(pyeong(D.area[i]) + '평', D.area[i] >= S.bigPy * PYEONG ? '매장 넓이, 대형' : '매장 넓이');
-    if (ym) cell(ago < 1 ? '1달 안' : ago < 12 ? ago + '개월' : Math.floor(ago / 12) + '년', '문 연 지');
-    if (stat.firstChild) { stat.classList.toggle('one', !stat.children[1]); w.appendChild(stat); }
-    // 원두 보너스 띠(노랑): 아무도 기록하지 않은 카페, 새로 연 카페, 오랜만의 기록을 기다리는 카페
-    var bon = el('div', 'obonus');
-    var bline = function (text, cls) { var l = el('div', 'obline' + (cls ? ' ' + cls : '')), b = el('span', 'obean'); b.innerHTML = BEAN_SVG; l.appendChild(b); l.appendChild(el('span', null, text)); bon.appendChild(l); };
-    if (!(v[0] + v[1] + (myO[i] ? 1 : 0))) bline('첫 기록 2배', 'oplug');
-    if (ago >= 0 && ago < 12) bline('새로 연 카페 +500');
-    else if (staleCafe(i)) bline('오랜만의 기록 +500');
-    if (bon.firstChild) w.appendChild(bon);
-    // 콘센트 기록: 카드가 쥔 칸을 그대로 옮겨 붙인다.
-    if (act.rec) w.appendChild(act.rec);
+    // 평수는 작게, 대형이면 그 옆에 대형 카페 표시. 누르면 대형 기준을 정하는 창(사용자 2026-11-28).
+    var tags = el('div', 'otags'), ar = D.area[i], ago = monthsAgo(i);
+    if (ar > 0) {
+      var big = btn('obig', null, function () { openBigBox(i); });
+      big.setAttribute('aria-label', '매장 넓이 ' + pyeong(ar) + '평, 눌러서 대형 기준 바꾸기');
+      big.appendChild(el('span', 'py', pyeong(ar) + '평'));
+      if (ar >= S.bigPy * PYEONG) big.appendChild(el('span', 'otag big', '대형 카페'));
+      tags.appendChild(big);
+    }
+    if (ago >= 0 && ago < 12) tags.appendChild(el('span', 'otag new', '새로 연 카페'));
+    if (tags.firstChild) tl.appendChild(tags);
+    top.appendChild(tl);
+    var acts = el('div', 'oacts');
+    var actBtn = function (cls, pic, label, fn) { var b = btn('oact ' + cls, null, fn); b.appendChild(pic); b.appendChild(el('span', null, label)); acts.appendChild(b); return b; };
+    var memoPic = function () { var t = document.createElement('span'); t.innerHTML = MEMO_SVG; return t.firstChild; };
+    var hw = actBtn('ohw', icon('heart'), '찜', act.want); hw.setAttribute('aria-pressed', String(want[i] === 1));
+    if (act.memo) actBtn('omemo', memoPic(), '메모', act.memo);
+    actBtn('oshare', icon('share'), '공유', act.share);
+    top.appendChild(acts); w.appendChild(top);
+    // 주소와 길찾기 한 줄, 그 아래 영업시간과 전화번호(공식 자료가 없어 앱 안의 카카오맵 탭으로 넘긴다), 내 메모
+    var basic = el('div', 'obasic'), fl = D.floor[i], ad = el('div', 'oaddr');
+    ad.appendChild(icon('pin')); ad.appendChild(el('span', null, shortAddr(i) + (fl > 0 ? ', ' + fl + '층' : fl < 0 ? ', 지하' : '')));
+    var rt = btn('oroute', null, function () { openRoute(i); }); rt.appendChild(icon('route')); rt.appendChild(document.createTextNode('길찾기'));
+    ad.appendChild(rt); basic.appendChild(ad);
+    var hr = btn('ohrs', null, act.kakao);
+    hr.appendChild(icon('clock')); hr.appendChild(el('span', null, '영업시간, 전화번호')); hr.appendChild(el('span', 'k', '카카오맵 탭에서 보기')); hr.appendChild(icon('right'));
+    basic.appendChild(hr);
+    var myMemo = act.memo && (XP.memo || {})[cidOf(i)];
+    if (myMemo) { var ml = btn('omemol', null, act.memo); ml.appendChild(memoPic()); ml.appendChild(el('span', null, myMemo.m)); ml.setAttribute('aria-label', '내 메모: ' + myMemo.m + ', 눌러서 고치기'); basic.appendChild(ml); }
+    w.appendChild(basic);
+    // 콘센트
+    if (act.outlet) w.appendChild(act.outlet); else if (act.rec) w.appendChild(act.rec);
     // 블로그 후기(사용자 2026-11-28): 카공 후기(이름 + 콘센트로 찾은 글)를 앞에, 그 뒤에 그 카페 블로그 글. 글이 없으면 칸을 숨긴다.
     var blog = el('section', 'osec oblog'); blog.hidden = true; w.appendChild(blog);
-    cafeBlog(i, function (list) { if (list && list.length && blog.isConnected !== false) blogFill(blog, list); });
-    // 찾아가기와 매장: 자료 파일을 받은 뒤 채운다(같은 파일은 한 번만 받는다).
-    var go = el('section', 'osec'), shop = el('section', 'osec');
-    go.hidden = true; w.appendChild(go); w.appendChild(shop);
-    var line = function (box, ic, text, note, right) {
-      var r = el('div', 'oli'), tx = el('div', 'otx2');
-      r.appendChild(icon(ic)); tx.appendChild(document.createTextNode(text));
-      if (note) tx.appendChild(el('em', null, ' ' + note));
-      r.appendChild(tx); if (right) r.appendChild(right);
-      box.appendChild(r); return r;
+    cafeBlog(i, function (list) { if (list && list.length) blogFill(blog, list); });
+    // 근처와 편의: 자료 파일(info/)을 받은 뒤 채운다. 지하철역은 카카오맵이 출구까지 더 정확히 보여 줘서 뺐다(2026-11-28).
+    var near = el('section', 'osec'), conv = el('section', 'osec');
+    near.hidden = true; conv.hidden = true; w.appendChild(near); w.appendChild(conv);
+    var line = function (box, ic, label, val, right) {
+      var r = el('div', 'oln'); r.appendChild(icon(ic));
+      if (label) r.appendChild(el('span', 'lb', label));
+      var v = el('span', 'v'); if (typeof val === 'string') v.textContent = val; else v.appendChild(val); r.appendChild(v);
+      if (right) r.appendChild(el('span', 'd', right));
+      box.appendChild(r);
     };
-    var meter = function (m) { return el('span', 'odist', m >= 1000 ? (Math.round(m / 100) / 10) + 'km' : Math.round(m) + 'm'); };
-    shop.appendChild(el('h2', null, '매장'));
-    var fl = D.floor[i];
-    line(shop, 'pin', fullAddr(i) + (fl > 0 ? ' ' + fl + '층' : fl < 0 ? ' 지하' : ''));
-    var shopTail = el('div'); shop.appendChild(shopTail);
-    if (D.brand[i] >= 0) {
-      var br = btn('oli', null, function () { openDex(D.brand[i]); });
-      br.appendChild(icon('tag')); br.appendChild(el('div', 'otx2', D.brands[D.brand[i]][0]));
-      br.appendChild(el('span', 'odex', '도감')); br.appendChild(icon('right'));
-      shop.appendChild(br);
-    }
+    var meter = function (m) { return m >= 1000 ? (Math.round(m / 100) / 10) + 'km' : Math.round(m) + 'm'; };
     cafeInfo(i, function (x) {
-      if (!x || !w.isConnected && !w.parentNode) return;
-      if (x.s || x.b || x.p) {
-        go.appendChild(el('h2', null, '찾아가기'));
-        if (x.s) line(go, 'subway', x.s[0], null, meter(x.s[1]));
-        if (x.b) line(go, 'bus', /정류장$/.test(x.b[0]) ? x.b[0] : x.b[0] + ' 정류장', null, meter(x.b[1]));
-        if (x.p) line(go, 'car', /주차/.test(x.p[0]) ? x.p[0] : x.p[0] + ' 주차장', { '무료': '무료', '유료': '유료', '혼합': '무료와 유료' }[x.p[2]] || '', meter(x.p[1]));
-        go.hidden = false;
+      if (!x) return;
+      if (x.b || x.p) {
+        near.appendChild(el('h2', null, '근처'));
+        if (x.b) line(near, 'bus', '버스정류장', x.b[0], meter(x.b[1]));
+        if (x.p) {
+          var pv = document.createElement('span'), fee = { '무료': '무료', '유료': '유료', '혼합': '무료와 유료' }[x.p[2]];
+          pv.appendChild(document.createTextNode(x.p[0])); if (fee) pv.appendChild(el('em', 'fee', fee));
+          line(near, 'park', '주차장', pv, meter(x.p[1]));
+        }
+        near.hidden = false;
       }
-      // 건물(건축물대장): 승강기는 있을 때만 적는다.
-      var bits = [];
-      if (x.e) bits.push('승강기 있음');
-      if (x.c > 0) bits.push('주차 ' + x.c + '대');
-      if (x.y) bits.push(x.y + '년 지은 건물');
-      if (bits.length) line(shopTail, 'bld', bits.join(', '));
-      if (x.m) line(shopTail, 'card', '지역화폐 가맹점');
+      if (x.m || x.e || x.c > 0) {
+        conv.appendChild(el('h2', null, '편의'));
+        if (x.m) line(conv, 'card', '', '지역화폐 가맹점');
+        if (x.e) line(conv, 'lift', '', '승강기 있음');
+        if (x.c > 0) line(conv, 'park', '', '건물 주차장 ' + x.c + '대');
+        conv.hidden = false;
+      }
     });
-    // 같은 건물의 카페: 도로명 주소가 같은 곳(점 자리는 카카오 실제 자리로 옮겨질 수 있어 좌표로는 못 가린다). 옆으로 넘기는 작은 카드.
+    // 같은 건물의 카페: 도로명 주소가 같은 곳(점 자리는 카카오 실제 자리로 옮겨질 수 있어 좌표로는 못 가린다). 옆으로 넘기는 작은 카드, 층.
     var same = [], myAddr = fullAddr(i);
     for (var j = 0; j < N; j++) if (j !== i && D.road[j] === D.road[i] && !removed[j] && !dabang[j] && fullAddr(j) === myAddr) same.push(j);
     if (same.length) {
+      same.sort(function (p1, p2) { return (D.floor[p1] || 99) - (D.floor[p2] || 99); });
       var sb = el('section', 'osec'); sb.appendChild(el('h2', null, '같은 건물의 카페 ' + same.length + '곳'));
       var rail = el('div', 'osame');
       same.slice(0, 12).forEach(function (j2) {
-        var c = btn('osc', null, function () { selectCafe(j2, true, 'detail'); });
+        var c = btn('osc', null, function () { selectCafe(j2, true, 'detail'); }), f2 = D.floor[j2];
         c.appendChild(pinEl(j2)); c.appendChild(el('b', null, D.name[j2]));
-        c.appendChild(el('span', null, D.area[j2] > 0 ? pyeong(D.area[j2]) + '평' : '넓이 모름'));
+        if (f2) c.appendChild(el('span', null, f2 > 0 ? f2 + '층' : '지하'));
         rail.appendChild(c);
       });
       sb.appendChild(rail); w.appendChild(sb);
     }
+    // 맨 아래: 정보 수정 제안(문을 닫았어요, 카페가 아니에요, 그 밖에 틀린 정보)
+    var fx = btn('ofix', null, act.fix); fx.appendChild(icon('pencil')); fx.appendChild(el('span', null, '정보 수정 제안')); fx.appendChild(icon('right'));
+    w.appendChild(fx);
     return w;
   }
   // 머리줄을 잡고 끌면 카드가 손가락을 따라 움직인다.
@@ -9786,10 +10040,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     { enter: function () { if (P.kind) closePanel(true); return coachZoom(); }, clear: true, legend: true,
       t: '지도의 점', m: '점 색은 카페 종류예요. 가까이 보면 브랜드 카페는 점 안에 로고가 보여요.' },
     { enter: function () { return coachCard(true); }, side: coachSideAbove,
-      at: function () { return [panel.querySelector('.dours .opts.four') || panel.querySelector('.dours .opts.one')]; },
+      at: function () { return [panel.querySelector('.dours .omgo') || panel.querySelector('.dours .omfix') || panel.querySelector('.dours .omod') || panel.querySelector('.dours .rec')]; },
       extra: function () { return [panel.querySelector('.dtabs .dtab.o')]; },
       t: '콘센트 기록', m: '그 카페에 있을 때 하루 3곳까지 기록할 수 있어요.',
-      steps: ['카드의 카페지도 정보 탭을 눌러요', '콘센트가 있는 자리를 모두 골라요 (없으면 없어요)', '기록하면 원두를 받아요 (로그인 필요)'] },
+      steps: ['카드의 콘센트 기록하기를 눌러요', '콘센트가 있는 자리를 모두 골라요 (없으면 콘센트가 없어요)', '기록하면 원두를 받아요 (로그인 필요)'] },
     // 마지막: 메뉴 설명은 하지 않고 사용법 줄만 밝힌다(사용자: 메뉴를 말하는지 사용법을 말하는지 헷갈린다).
     { enter: function () {
         if (P.kind !== 'menu') { if (P.kind) closePanel(true); $('menuBtn').click(); }
@@ -9809,7 +10063,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   function coachMemoBtn() { return favOn() && !S.favHide && !!$('navFav') && !$('nav').hidden; }
   var COACH_MEMO = [
     { memo: true, enter: function () { return coachCard(true); }, side: coachSideAbove,
-      at: function () { return [panel.querySelector('.dours .acts .memo')]; },
+      at: function () { return [panel.querySelector('.dours .omemo')]; },
       t: '나만의 메모', m: '카페마다 나만 보는 메모를 80자까지 남겨요.' },
     { memo: true, enter: function () { if (P.kind) closePanel(true); return coachMemoBtn(); },
       at: function () { return [$('navFav')]; },
@@ -10086,9 +10340,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     sec('dot', '지도의 점', coachLegend());
     // 콘센트 기록: 차례는 번호 줄로, 지킬 것은 아래 작은 점 줄로(사용자 2026-11-28). 단추 이름은 굵게.
     var rec = document.createDocumentFragment(), steps = el('ol', 'gsteps'), notes = el('ul', 'gnotes');
-    [[['그 카페에 있을 때 카드의 ', 0], ['카페지도 정보', 1], [' 탭을 눌러요', 0]],
+    [[['그 카페에 있을 때 카드의 ', 0], ['콘센트 기록하기', 1], ['를 눌러요', 0]],
      [['콘센트가 있는 자리를 모두 골라요', 0]],
-     [['콘센트가 없으면 ', 0], ['없어요', 1], ['를 눌러요', 0]]].forEach(function (parts) {
+     [['콘센트가 없으면 ', 0], ['콘센트가 없어요', 1], ['를 골라요', 0]]].forEach(function (parts) {
       var li = el('li'), tx = el('span');
       parts.forEach(function (x) { tx.appendChild(x[1] ? el('b', null, x[0]) : document.createTextNode(x[0])); });
       li.appendChild(tx); steps.appendChild(li);
@@ -10103,7 +10357,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       ['콘센트 기록은 왜 하루 3곳까지예요?', '기록하려고 일부러 돌아다니지 않아도 되게요. 내일 또 기록할 수 있어요.'],
       ['원두는 어디에 써요?', '원두 1,000개마다 레벨이 1 올라요. 이스터 에그를 찾으면 원두로 열 수 있어요.'],
       ['지도에 없는 카페가 있어요', '메뉴의 문의와 제보에서 없는 카페 제보로 알려 주세요. 운영자가 확인하고 지도에 넣으면 ' + fmt(CAFE_ADD_XP) + ' 원두를 드려요.'],
-      ['문을 닫았거나 카페가 아닌 곳이 있어요', '그 카페 카드의 신고를 누르고 까닭을 골라 주세요. 운영자가 확인하고 지도에서 지우면 ' + fmt(GONE_XP) + ' 원두를 드려요.'],
+      ['문을 닫았거나 카페가 아닌 곳이 있어요', '카드의 카페지도 정보 맨 아래 정보 수정 제안을 눌러 주세요. 운영자가 확인하고 지도에서 지우면 ' + fmt(GONE_XP) + ' 원두를 드려요.'],
       ['위치는 왜 물어요?', '내 위치를 지도에 보여 주고, 콘센트를 기록할 때 그 카페에 있는지 확인하려고요. 위치는 저장하지 않아요.'],
       ['내 기록을 다른 사람이 볼 수 있어요?', '메뉴의 내 기록 공개를 켠 것만 랭킹에서 보여요. 처음에는 꺼져 있어요.']
     ].forEach(function (x) {
