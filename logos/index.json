@@ -154,6 +154,11 @@
   "src": "https://thecaffeopen.com/ogimg.jpg",
   "px": 375
  },
+ "던킨": {
+  "file": "logos/0aa6cc420b-f.webp",
+  "src": "https://www.dunkindonuts.co.kr/images/favicon_180x180.png",
+  "px": 132
+ },
  "데니스커피": {
   "file": "logos/6bf1c0ff1c.webp",
   "src": "http://deniscoffee.alldaycafe.kr/images/main/logo.png",
@@ -178,6 +183,11 @@
   "file": "logos/15164f2c9a.webp",
   "src": "https://cdn.imweb.me/thumbnail/20240705/1e466ebdf8f7a.png",
   "px": 196
+ },
+ "뚜레쥬르": {
+  "file": "logos/58e6a0e976-f.webp",
+  "src": "https://www.tlj.co.kr/static/images/common/sns_tlj_logo.jpg",
+  "px": 199
  },
  "로스터리락온": {
   "file": "logos/3eb8a0e197.webp",
@@ -323,6 +333,11 @@
   "file": "logos/f7d7aa7102-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/d6/ba/ca/d6baca38-fe86-0621-4cc5-8de917b55077/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "브레댄코": {
+  "file": "logos/8e359eabc6-f.webp",
+  "src": "https://www.breadnco.kr/wp-content/uploads/2019/09/favicon_120-1.png",
+  "px": 120
  },
  "브루다커피": {
   "file": "logos/a7bdfa724e-f.webp",
@@ -489,10 +504,20 @@
   "src": "https://cafeartisee.com/icons-2da2944fede54285473056d90e31d474/apple-touch-icon-1024x1024.png",
   "px": 1024
  },
+ "알레그리아": {
+  "file": "logos/ded671c322-f.webp",
+  "src": "https://alegriamall.com/web/upload/pwa/icon-7c2f08ba60685a6c4d2b6f256c382d26.png",
+  "px": 512
+ },
  "앙호두": {
   "file": "logos/c1c27fafdb-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/98/a5/31/98a53160-790a-f276-ef06-f3c861803f08/AnghoduAppIcon-0-0-1x_U007emarketing-0-11-0-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "앤티앤스": {
+  "file": "logos/ef0628e2e3.webp",
+  "src": "https://www.auntieannes.co.kr/img/intro_logo.png",
+  "px": 212
  },
  "어랏커피": {
   "file": "logos/240b136e3f-f.webp",
@@ -548,6 +573,11 @@
   "file": "logos/5b3df75e47-f.webp",
   "src": "http://wayocoffee.com/images/thumbnail.png",
   "px": 449
+ },
+ "와플대학": {
+  "file": "logos/914dd475e9.webp",
+  "src": "https://www.waffleuniv.com/upload/site_config/65542ee823e24.png",
+  "px": 192
  },
  "요거트월드": {
   "file": "logos/616bd2213a-f.webp",
@@ -918,6 +948,16 @@
   "file": "logos/18f637ee7d-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/2d/e8/2f/2de82f4a-4226-ad7e-551e-b64060460da6/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "파리바게뜨": {
+  "file": "logos/8fa7bff7b7.webp",
+  "src": "https://d2afncas1tel3t.cloudfront.net/wp-content/uploads/2019/09/cropped-PB_favicon-192x192.png",
+  "px": 192
+ },
+ "파리크라상": {
+  "file": "logos/cb3aab990a.webp",
+  "src": "https://ecimg.cafe24img.com/pg299b34409484036/baekih1001/web/upload/kment/images/main_logo_c.png",
+  "px": 135
  },
  "파스쿠찌": {
   "file": "logos/06b9583d12-f.webp",

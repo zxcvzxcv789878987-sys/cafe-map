@@ -3,7 +3,7 @@
 import csv, sys, re, json, collections, difflib, os
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from brands import BRANDS, KAKAO_BRAND
+from brands import BRANDS, KAKAO_BRAND, BAKERY
 
 workdir, outpath, license_files = sys.argv[1], sys.argv[2], sys.argv[3:]
 csv.field_size_limit(10**9)
@@ -551,7 +551,7 @@ if os.path.exists(places_path):
         if hit and hit[2] in taken:
             add['카카오 장소가 이미 지도에 있음'] += 1
             continue
-        if not hit and b < 0:
+        if not hit and (b < 0 or BRANDS[b][0] in BAKERY):   # 빵집, 도넛 브랜드는 카카오가 카페로 본 매장만
             add['카카오에서 카페로 확인 안 됨'] += 1
             continue
         # 지역: 상가정보 건물이 있으면 그 행정동, 없으면 가장 가까운 카페의 행정동
