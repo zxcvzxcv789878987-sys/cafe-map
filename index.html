@@ -6772,7 +6772,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var info = el('div', 'fsec'), ul = el('ul', 'mlist');
     info.style.borderBottom = '0';
     info.appendChild(el('div', 'ftitle', '지도 자료'));
-    ['카페 ' + fmt(N) + '곳', '카페 목록: 소상공인시장진흥공단 상가정보', '넓이와 개업: 행정안전부 인허가 자료', '지역 경계: 통계청 SGIS (vuski/admdongkor)', '법정동 이름과 범위: 국토교통부 브이월드 법정구역정보'].forEach(function (t) { ul.appendChild(el('li', null, t)); });
+    ['카페 ' + fmt(N) + '곳', '카페 목록: 소상공인시장진흥공단 상가(상권)정보', '카페 이름: 소상공인시장진흥공단 상가(상권)정보와 행정안전부 지방행정 인허가 데이터(휴게음식점, 제과점영업, 일반음식점)에 등록된 이름이라 간판이나 카카오맵과 다를 수 있어요', '넓이와 개업: 행정안전부 지방행정 인허가 데이터', '지역 경계: 통계청 SGIS (vuski/admdongkor)', '법정동 이름과 범위: 국토교통부 브이월드 법정구역정보'].forEach(function (t) { ul.appendChild(el('li', null, t)); });
     // 배경 지도의 출처 표시(예전에는 지도 구석의 i 단추에 있었다). 자료를 쓰는 조건이라 링크와 함께 남긴다.
     var li = el('li', null, '배경 지도: ');
     [['OpenFreeMap', 'https://openfreemap.org/'], ['© OpenMapTiles', 'https://www.openmaptiles.org/'], ['© OpenStreetMap contributors', 'https://www.openstreetmap.org/copyright']].forEach(function (x, n) {
