@@ -920,6 +920,10 @@ if os.path.exists(places_path):
                 return 0.0
             if a == b:
                 return 1.0
+            # 숫자가 다르면 다른 매장이다('용산아이파크몰1f'와 '용산아이파크몰6f', '1호점'과 '2호점').
+            da, db = re.findall(r'\d+', a), re.findall(r'\d+', b)
+            if da and db and da != db:
+                return 0.5
             if len(a) >= 2 and len(b) >= 2 and (a in b or b in a):
                 return 0.9
             return difflib.SequenceMatcher(None, a, b).ratio()
@@ -992,8 +996,31 @@ if os.path.exists(places_path):
                     return next(iter(c4.values())), '주소(도로명과 건물번호로 맞춤)'
             if hi in kalt and kalt[hi] in bld4:
                 return bld4[kalt[hi]], '카카오 주소'
+            # 상가정보 건물 목록에 없는 건물(가게가 인허가에만 올라 있는 곳): 같은 주소 인허가의 공공 좌표를 쓴다. 행정동은 가장 가까운 카페의 것.
+            for k4 in (h[5], kalt.get(hi)):
+                for c in lic_all.get(k4, ()) if k4 else ():
+                    if c[8] is None or c[9] is None or c[8] <= 0:
+                        continue
+                    la4, ln4 = tm_wgs.to_wgs(c[8], c[9])
+                    if not (33 < la4 < 39 and 124 < ln4 < 132):
+                        continue
+                    nb, bd = None, 1501
+                    for la, ln, i, _ in near(have, la4, ln4, 1500):
+                        d = dist(la, ln, la4, ln4)
+                        if d < bd:
+                            nb, bd = i, d
+                    if nb is None:
+                        continue
+                    gi, dn = inv_dong[dongs[nb]]
+                    si, sg = inv_sgg[gi]
+                    sd4 = inv_sido[si]
+                    road4 = re.sub(r'\s*[,(].*$', '', c[6]).strip()
+                    return [road4, sd4, sg, dn, ln4, la4], '인허가 좌표'
             return None, ''
 
+        inv_sido = {v: k for k, v in sido_ix.items()}
+        inv_sgg = {v: k for k, v in sgg_ix.items()}
+        inv_dong = {v: k for k, v in dong_ix.items()}
         read_bld(need4, True)
         # 주소로 건물을 못 찾은 매장은 카카오 도로명주소로 다시 찾는다
         for hi, h in enumerate(hq_rows):
@@ -1055,7 +1082,8 @@ if os.path.exists(places_path):
             h = hq_rows[hi]
             bf = brand_free(norm(h[1]), h[0])
             g = grp4[(h[0], pos4[hi][0][0])]
-            if any(branch_sim(bf, bf2) >= 0.7 for bf2 in g):
+            # 이름이 같거나 한쪽이 다른 쪽을 품고(부산시민회관과 시민회관), 숫자도 같을 때만 같은 매장으로 본다('롯데동탄'과 '롯데시네마동탄'은 다르다).
+            if any(branch_sim(bf, bf2) >= 0.9 for bf2 in g):
                 st4['본사 목록에 같은 매장이 두 줄(같은 건물, 비슷한 이름)'] += 1
                 audit4[hi] = ('본사 목록에 같은 매장이 두 줄(같은 건물, 비슷한 이름)', '')
                 del pos4[hi]
