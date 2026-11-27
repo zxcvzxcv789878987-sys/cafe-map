@@ -1,4 +1,9 @@
 {
+ "30초커피": {
+  "file": "logos/cead31d272-f.webp",
+  "src": "https://cdn.imweb.me/upload/S202009247d6a20e363a09/3afe23dd03c7e.png",
+  "px": 694
+ },
  "감성커피": {
   "file": "logos/8f868f3d85.webp",
   "src": "https://gamsungcoffee.com/favicon.ico?favicon.57dc3956.ico",
@@ -139,6 +144,11 @@
   "src": "https://cdn.imweb.me/thumbnail/20240705/1e466ebdf8f7a.png",
   "px": 196
  },
+ "로스터리락온": {
+  "file": "logos/3eb8a0e197.webp",
+  "src": "https://cdn.imweb.me/upload/S202304261a27bcb12eb07/5315a6e38c738.png",
+  "px": 2701
+ },
  "만랩커피": {
   "file": "logos/9caa20e3d6-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/a5/fa/08/a5fa08ce-f662-2011-c559-c9c96211377d/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg",
@@ -269,6 +279,11 @@
   "src": "https://www.blushaak.co.kr/images/logo/logo-icon.png",
   "px": 826
  },
+ "비엔나커피하우스": {
+  "file": "logos/6041cc54bd-f.webp",
+  "src": "https://viennacoffeehouse.co.kr/assets/favicon/apple-icon-180x180.png",
+  "px": 173
+ },
  "빈이커피": {
   "file": "logos/2ea3652e1f-f.webp",
   "src": "https://cdn.imweb.me/thumbnail/20210821/bcecbe443366e.png",
@@ -344,6 +359,11 @@
   "src": "https://xn--7y2br6n8lkd8d.com/images/thumbnail.png",
   "px": 337
  },
+ "시나본": {
+  "file": "logos/ce262c49e9-f.webp",
+  "src": "https://www.cinnabon.kr/img/thumbnail/20260807/5e64a2f2d8095.png",
+  "px": 196
+ },
  "쓰리엑스라지커피": {
   "file": "logos/ea00d4dbca.webp",
   "src": "http://www.3x-largecoffee.co.kr/img_up/shop_pds/ateam91185/build/option/logo1709638119.png",
@@ -368,6 +388,11 @@
   "file": "logos/9f201dca7a.webp",
   "src": "https://ecimg.cafe24img.com/pg1596b03687416058/americantrailer/web/upload/category/logo/v2_ca12a441d472c3c56bd5f6433ae3be94_eDmAFaAd5T_top.jpg",
   "px": 505
+ },
+ "아몽즈커피": {
+  "file": "logos/8a41f425ea.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20250704/8003f8d548d6a.png",
+  "px": 196
  },
  "아이캔커피": {
   "file": "logos/9b066ca513-f.webp",
@@ -564,6 +589,11 @@
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/7c/5e/15/7c5e15e6-b2e5-ba73-679c-9c117c66053d/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg",
   "px": 512
  },
+ "카페인24": {
+  "file": "logos/d99a2da72c-f.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20251027/88b40e0bdd97c.png",
+  "px": 196
+ },
  "카페인중독": {
   "file": "logos/e9eafb53d8-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/74/24/3e/74243ec7-b9d2-9ba9-881a-77b896838bd9/AppIcon-0-0-1x_U007emarketing-0-6-0-85-220.png/512x512bb.jpg",
@@ -758,6 +788,11 @@
   "file": "logos/d3462d0b4b.webp",
   "src": "https://cafeplus82.com/kor/favicon.ico",
   "px": 32
+ },
+ "플루800": {
+  "file": "logos/90dea37e60.webp",
+  "src": "https://xn--800-hf8mt93i.kr/web/upload/category/logo/26259a7dc3ada2e03c1dacbe39af9d8a_5_top.jpg",
+  "px": 80
  },
  "피에스타7": {
   "file": "logos/774b5ec317-f.webp",
