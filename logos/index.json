@@ -4,6 +4,11 @@
   "src": "https://gamsungcoffee.com/favicon.ico?favicon.57dc3956.ico",
   "px": 346
  },
+ "고더커피": {
+  "file": "logos/7e09ca0d68.webp",
+  "src": "https://cdn.imweb.me/upload/S2023050337809bed78de9/7414bd20d71c1.png",
+  "px": 512
+ },
  "고망고": {
   "file": "logos/03e24db7a3-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/5a/a3/03/5aa30337-f7cc-0d25-76d8-cb8e53f59da7/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg",
@@ -14,6 +19,21 @@
   "src": "https://www.gong-cha.co.kr/favicon/android-chrome-512x512.png",
   "px": 512
  },
+ "과일에반하다": {
+  "file": "logos/a34326250f-f.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20230613/1221c3ab65470.png",
+  "px": 196
+ },
+ "그라찌에": {
+  "file": "logos/d53f1ca67f.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20250908/7fa7983b5a303.png",
+  "px": 196
+ },
+ "그레이핍플": {
+  "file": "logos/5e73c2edc6-f.webp",
+  "src": "https://www.graypipple.com/asset/img/og_image.jpg",
+  "px": 295
+ },
  "나우커피": {
   "file": "logos/3b281fc1da-f.webp",
   "src": "https://play-lh.googleusercontent.com/F_buLtZaZexnh6ddaIF88QeH4nFaw4qksAw1wMnsMYlBn3k_7Z7_g_4hPGw4xw_bTF9De52h0LbJ2Ypg_ZhencA=s512",
@@ -23,6 +43,11 @@
   "file": "logos/4f3192db46-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/8b/97/9e/8b979e1b-61c6-6c02-182d-4d7a2c74d160/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "달롱도르": {
+  "file": "logos/5b8f642d4e-f.webp",
+  "src": "http://dallondor.com/images/sns_link.png",
+  "px": 133
  },
  "달리는커피": {
   "file": "logos/ba6c697ea7-f.webp",
@@ -49,6 +74,11 @@
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/63/eb/7b/63eb7bfb-881c-bfd1-885a-b1538eac826e/AppIcon-0-0-1x_U007emarketing-0-7-0-85-220.png/512x512bb.jpg",
   "px": 512
  },
+ "더치앤빈": {
+  "file": "logos/6572362171-f.webp",
+  "src": "https://cdn.imweb.me/upload/S202504150567039164095/e143ae0ce40c9.png",
+  "px": 512
+ },
  "더카페": {
   "file": "logos/4247869ae6-f.webp",
   "src": "https://thecaffeopen.com/ogimg.jpg",
@@ -68,6 +98,11 @@
   "file": "logos/82c6535cfe-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/a3/04/a2/a304a2f3-85a6-29cd-7e07-34d0dd900333/AppIcon-0-0-1x_U007emarketing-0-11-0-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "떠기다방": {
+  "file": "logos/15164f2c9a.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20240705/1e466ebdf8f7a.png",
+  "px": 196
  },
  "만랩커피": {
   "file": "logos/9caa20e3d6-f.webp",
@@ -169,6 +204,11 @@
   "src": "https://static.wixstatic.com/media/92c24c_3d6f00eba69d499894a25846039375a8~mv2.png",
   "px": 148
  },
+ "빙수당": {
+  "file": "logos/f244620d30-f.webp",
+  "src": "http://bingsudang.kr/images/thumbnail.png",
+  "px": 680
+ },
  "빽다방": {
   "file": "logos/7b25f69f3d.webp",
   "src": "https://paikdabang.com/favicon.png",
@@ -178,6 +218,11 @@
   "file": "logos/7d0e30cfeb-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/75/89/ed/7589ed0e-14d9-8288-ce89-c8f343be0abe/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "사실빙": {
+  "file": "logos/47627dfd93-f.webp",
+  "src": "https://sasilbing.com/images/thumbnail.jpg",
+  "px": 480
  },
  "설빙": {
   "file": "logos/4ea05ec7d1-f.webp",
@@ -198,6 +243,16 @@
   "file": "logos/73f75c041a.webp",
   "src": "https://www.starbucks.co.kr/favicon.ico",
   "px": 256
+ },
+ "쓰리엑스라지커피": {
+  "file": "logos/ea00d4dbca.webp",
+  "src": "http://www.3x-largecoffee.co.kr/img_up/shop_pds/ateam91185/build/option/logo1709638119.png",
+  "px": 60
+ },
+ "아덴블랑제리": {
+  "file": "logos/fe1f6543d0.webp",
+  "src": "http://aden-cafe.com/theme/design/template/main/images/logo_top01.png",
+  "px": 127
  },
  "아리스타커피": {
   "file": "logos/25a9bf5b25-f.webp",
@@ -223,6 +278,11 @@
   "file": "logos/c1c27fafdb-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/98/a5/31/98a53160-790a-f276-ef06-f3c861803f08/AnghoduAppIcon-0-0-1x_U007emarketing-0-11-0-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "에이바우트커피": {
+  "file": "logos/b894568f32-f.webp",
+  "src": "https://a-boutcoffee.com/images/thumbnail.jpg",
+  "px": 824
  },
  "엔제리너스": {
   "file": "logos/c92c608072-f.webp",
@@ -289,6 +349,11 @@
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/37/20/79/3720793b-7e9d-347c-d346-060b0eb9c074/AppIcon-0-0-1x_U007epad-0-11-0-85-220.png/512x512bb.jpg",
   "px": 512
  },
+ "청솔로9": {
+  "file": "logos/13b6cd0147.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20240829/1086a8f8601f6.png",
+  "px": 196
+ },
  "청자다방": {
   "file": "logos/4b181bd0d3-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/8a/e1/20/8ae12007-4420-7bd3-6016-0ed8d8ca4a3e/CheongJaDaBangAppIcon-0-0-1x_U007ephone-0-1-0-sRGB-85-220.png/512x512bb.jpg",
@@ -339,6 +404,11 @@
   "src": "https://kustomcoffee.co.kr/web/upload/share-image-1-c396d8be2c740167d8ef44ff5ee22673.png",
   "px": 628
  },
+ "커피나인": {
+  "file": "logos/631bb94cbc-f.webp",
+  "src": "https://framerusercontent.com/images/iAWWnWzL4Mc2PGCyA47nb5Kxwi0.png",
+  "px": 375
+ },
  "커피니": {
   "file": "logos/00ce21ff64.webp",
   "src": "https://www.google.com/s2/favicons?sz=128&domain=coffeenie.co.kr",
@@ -358,6 +428,11 @@
   "file": "logos/1898f64f0e-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/15/91/ec/1591ecf9-5fc9-c2d5-b0b5-81cb150eb041/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "커피볶는시골커피": {
+  "file": "logos/0c2d1df179.webp",
+  "src": "https://cigolcoffee.com/common/images/og_image.png",
+  "px": 630
  },
  "커피빈": {
   "file": "logos/9ffc234a0d-f.webp",
@@ -384,6 +459,16 @@
   "src": "https://composecoffee.com/files/attach/xeicon/favicon.dark.ico?t=1788901166",
   "px": 476
  },
+ "콩카페": {
+  "file": "logos/557fc632e4-f.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20250722/70bb8aabdb009.png",
+  "px": 196
+ },
+ "쿼드커피": {
+  "file": "logos/7757a874d3.webp",
+  "src": "https://www.quadcoffee.co.kr:443/superboard/data/siteconfig/20260402103551_69cdc7f71361a_9138a17fda85a462543c480ce495fd40cce659dd.png",
+  "px": 512
+ },
  "크레이저": {
   "file": "logos/0e9dfc4fa1-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/7c/38/b0/7c38b0a3-a23c-0caf-0586-f31afd6ad00c/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/512x512bb.jpg",
@@ -403,6 +488,11 @@
   "file": "logos/2029108205-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/ec/a6/f6/eca6f663-8770-a78e-ed2f-5c81b1590fb6/AppIcon-0-0-1x_U007ephone-0-11-0-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "텍사스파파크레페": {
+  "file": "logos/aabe27f083-f.webp",
+  "src": "https://texaspapa.co.kr/assets/img/apple-touch-icon.png",
+  "px": 152
  },
  "텐퍼센트커피": {
   "file": "logos/2b5b8a2df4.webp",
@@ -488,5 +578,10 @@
   "file": "logos/ff8906e470-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/64/09/10/640910d5-1400-3e49-3c1f-896d9f3935c0/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "히스피": {
+  "file": "logos/b394cf4df1.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20260120/391cf2f65b42d.png",
+  "px": 196
  }
 }
