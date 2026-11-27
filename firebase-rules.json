@@ -22,6 +22,9 @@
             "t": {
               ".validate": "newData.val() === now"
             },
+            "w": {
+              ".validate": "newData.val() === 'n'"
+            },
             "$other": {
               ".validate": false
             }
@@ -72,9 +75,9 @@
       "feedback": {
         "$id": {
           ".write": "!data.exists() || (auth != null && !newData.exists() && data.child('u').val() === auth.uid)",
-          ".validate": "newData.hasChildren(['k', 'm', 't'])",
+          ".validate": "newData.hasChildren(['k', 'm', 't']) && (newData.child('k').val() !== 'cafe' || newData.hasChild('u'))",
           "k": {
-            ".validate": "newData.isString() && newData.val().matches(/^(bug|idea|etc|report)$/)"
+            ".validate": "newData.isString() && newData.val().matches(/^(bug|idea|etc|report|cafe)$/)"
           },
           "m": {
             ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 1500"
@@ -111,6 +114,9 @@
           },
           "t": {
             ".validate": "newData.val() === now"
+          },
+          "ok": {
+            ".validate": "newData.val() === 0 || newData.val() === 1"
           },
           "$other": {
             ".validate": false
