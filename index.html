@@ -1999,83 +1999,102 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   var brandGroup = D.brands.map(function (b) { return G_OF[b[1]]; });
   var INITIAL_FIX = { '커피에반하다': '반', '카페051': '5', '메가MGC커피': '메', '읍천리382': '읍', '플러스82': '플', '디저트39': '디' };
   var brandInitial = D.brands.map(function (b) { return INITIAL_FIX[b[0]] || b[0].replace(/^(더|카페|커피)(?=.)/, '').charAt(0); });
-  // 브랜드 아이콘 주소. 그 브랜드의 공식 사이트 아이콘이나 공식 앱 아이콘을 인터넷에서 그때그때 불러온다(파일로 복사해 두지 않는다).
-  // 선명한 것만 골랐다. 주소를 못 찾았거나 16픽셀짜리밖에 없는 브랜드, 불러오기에 실패한 브랜드는 첫 글자 아이콘으로 나온다.
+  // 브랜드 로고 파일. 공식 앱 아이콘, 공식 사이트 아이콘이나 로고를 한 번 받아 logos/에 작은 그림(192px)으로 둔다(사용자 2026-11-27).
+  // 예전에는 남의 사이트에서 그때그때 불러와서 흐리거나, 사이트가 바뀌면 엉뚱한 그림이 나왔다(블루샥). 이 표는 '데이터 만들기/logos.py'가 logos/index.json으로 쓴다.
+  // 이름이 -f.webp로 끝나는 것은 앱 아이콘처럼 네모 가득 색이 찬 그림이라 동그라미에 꽉 채운다. 표에 없는 브랜드는 첫 글자 아이콘으로 나온다.
   var BRAND_ICON = {
-    '감성커피': 'https://gamsungcoffee.com/favicon.ico?favicon.57dc3956.ico',
-    '공차': 'https://www.gong-cha.co.kr/favicon/android-chrome-512x512.png',
-    '나이스카페인클럽': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/8b/97/9e/8b979e1b-61c6-6c02-182d-4d7a2c74d160/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg',
-    '달콤커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/9b/93/41/9b934102-2951-07d0-57ab-5e648892156e/AppIcon-0-0-1x_U007emarketing-0-8-0-0-85-220.png/512x512bb.jpg',
-    '댄싱컵': 'https://dancingcup.co.kr/images/favi.ico',
-    '더리터': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/c1/0e/bd/c10ebde0-99d6-3cbb-48d2-81b67eec6f92/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg',
-    '더벤티': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/63/eb/7b/63eb7bfb-881c-bfd1-885a-b1538eac826e/AppIcon-0-0-1x_U007emarketing-0-7-0-85-220.png/512x512bb.jpg',
-    '드롭탑': 'https://framerusercontent.com/images/ht8OraWVX8dphvQwY0AY918akW4.png',
-    '디저트39': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/a3/04/a2/a304a2f3-85a6-29cd-7e07-34d0dd900333/AppIcon-0-0-1x_U007emarketing-0-11-0-85-220.png/512x512bb.jpg',
-    '만랩커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/a5/fa/08/a5fa08ce-f662-2011-c559-c9c96211377d/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg',
-    '매머드커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/17/a2/73/17a273e4-8081-0b34-e82d-8c3f4d702773/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg',
-    '매스커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/bc/63/fe/bc63fed4-89d1-3d3b-b07f-ea47a123b4d6/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg',
-    '메가MGC커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/6a/31/d6/6a31d670-d28a-7ce7-9197-d52b8c3892cd/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg',
-    '모리커피': 'https://cdn.imweb.me/upload/S2021073187c966d5c639d/19fc9c9b5020e.ico',
-    '바나타이거': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/03/16/ec/0316ec02-6b41-9ef8-4b9e-3b9d20e41667/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg',
-    '바나프레소': 'https://banapresso.com/apple-touch-icon.png',
-    '백억커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/f9/d8/f3/f9d8f356-6966-3545-0023-72d72f0ed3b0/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg',
-    '벌크커피': 'https://www.bulkcoffee.co.kr/wp-content/uploads/2023/07/bulkcoffee_favicon.png',
-    '벤티프레소': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/e2/b4/d6/e2b4d6e9-0b6b-8b35-abc5-8691cc9e8f8b/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg',
-    '블루보틀': 'https://kr.bluebottlecoffee.com/cdn/shop/files/bbck-favicon.png?crop=center&height=48&v=1724386983&width=48',
-    '블루샥': 'https://www.blushaak.co.kr/favicon.ico?favicon.0b3bf435.ico',
-    '빽다방': 'https://paikdabang.com/favicon.png',
-    '설빙': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/ed/2b/3e/ed2b3e6b-7631-68de-55f1-afed729801a1/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg',
-    '스타벅스': 'https://www.starbucks.co.kr/favicon.ico',
-    '아마스빈': 'https://is1-ssl.mzstatic.com/image/thumb/Purple124/v4/76/a1/4a/76a14acc-749f-adda-453c-ba018bba49fd/AppIcon-0-0-1x_U007emarketing-0-0-0-5-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-0.png/512x512bb.jpg',
-    '아임일리터': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/38/bd/8b/38bd8b16-26b4-8f77-035e-e7421747c33b/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg',
-    '아티제': 'https://cafeartisee.com/icons-2da2944fede54285473056d90e31d474/apple-touch-icon-1024x1024.png',
-    '요거프레소': 'https://www.google.com/s2/favicons?sz=128&domain=yogerpresso.co.kr',
-    '요아정': 'https://yoajung.co.kr/images/yoajungfavi.ico',
-    '우지커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/e9/d2/29/e9d22920-bdb6-73ed-c28b-d6abe6c95cb9/oozy_coffee_appicon-0-0-1x_U007ephone-0-1-0-sRGB-85-220.png/512x512bb.jpg',
-    '원유로스페셜티': 'https://cdn.imweb.me/thumbnail/20220526/70420f83c9239.png',
-    '이디야': 'https://ediya.com/images/ico/favicon.ico',
-    '쥬씨': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/7c/16/3f/7c163ffb-a720-6019-5130-ba07dbceef99/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg',
-    '천씨씨커피': 'https://1000cccoffee.com/images/favi.ico',
-    '청자다방': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/8a/e1/20/8ae12007-4420-7bd3-6016-0ed8d8ca4a3e/CheongJaDaBangAppIcon-0-0-1x_U007ephone-0-1-0-sRGB-85-220.png/512x512bb.jpg',
-    '카페051': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/a7/c4/14/a7c41470-be72-359b-d410-083d2dc5298d/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg',
-    '카페게이트': 'https://cdn.imweb.me/thumbnail/20250410/a3328609595d0.png',
-    '카페베네': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/54/ba/c7/54bac73f-6d65-4899-3ffb-b7bad55d39c2/AppIcon-0-0-1x_U007emarketing-0-11-0-85-220.png/512x512bb.jpg',
-    '카페봄봄': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/7c/5e/15/7c5e15e6-b2e5-ba73-679c-9c117c66053d/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg',
-    '카페인중독': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/74/24/3e/74243ec7-b9d2-9ba9-881a-77b896838bd9/AppIcon-0-0-1x_U007emarketing-0-6-0-85-220.png/512x512bb.jpg',
-    '카페일리터': 'https://cafe1liter.com/favicon.ico',
-    '커피니': 'https://www.google.com/s2/favicons?sz=128&domain=coffeenie.co.kr',
-    '커피마마': 'https://coffeemama.co.kr/favicon32.ico',
-    '커피명가': 'https://www.google.com/s2/favicons?sz=128&domain=myungga.com',
-    '커피베이': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/15/91/ec/1591ecf9-5fc9-c2d5-b0b5-81cb150eb041/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg',
-    '커피빈': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/50/4b/7e/504b7eeb-2c37-379e-ec2e-3a69ab37fd6b/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/512x512bb.jpg',
-    '커피사피엔스': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/bc/6b/c8/bc6bc831-9e8a-673a-1ca0-143cf4e52583/AppIcon-0-0-1x_U007emarketing-0-11-0-85-220.png/512x512bb.jpg',
-    '커피에반하다': 'https://coffeebanhada.com/image/touch.png',
-    '커피온리': 'https://static.wixstatic.com/media/5993f5_d322725ab616421080e5dace19f87bef%7Emv2.jpg/v1/fill/w_192%2Ch_192%2Clg_1%2Cusm_0.66_1.00_0.01/5993f5_d322725ab616421080e5dace19f87bef%7Emv2.jpg',
-    '컴포즈커피': 'https://composecoffee.com/files/attach/xeicon/favicon.dark.ico?t=1788901166',
-    '탐앤탐스': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/53/c3/94/53c39434-0e0c-2002-1c53-a0ce6608e2dd/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg',
-    '테라로사': 'https://www.google.com/s2/favicons?sz=128&domain=terarosa.com',
-    '테라커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/ec/a6/f6/eca6f663-8770-a78e-ed2f-5c81b1590fb6/AppIcon-0-0-1x_U007ephone-0-11-0-85-220.png/512x512bb.jpg',
-    '텐퍼센트커피': 'https://tenpercentcoffee.com/images/logo20261014.ico?v=20261022',
-    '투썸플레이스': 'https://www.google.com/s2/favicons?sz=128&domain=twosome.co.kr',
-    '트리플에이커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/05/a0/c8/05a0c848-af61-6528-186e-97fca50cb52f/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg',
-    '파스쿠찌': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/ab/83/5f/ab835ffe-0b69-5975-732f-22b2fef02f75/AppIcon-0-0-1x_U007emarketing-0-8-0-0-85-220.png/512x512bb.jpg',
-    '포트캔커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/13/91/0c/13910c0f-efba-0f90-3a29-b2a42300f217/AppIcon_portcancoffee-0-0-1x_U007ephone-0-1-0-sRGB-85-220.png/512x512bb.jpg',
-    '폴바셋': 'https://www.google.com/s2/favicons?sz=128&domain=baristapaulbassett.co.kr',
-    '플러스82': 'https://cafeplus82.com/kor/favicon.ico',
-    '하삼동커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/90/97/b0/9097b00a-a104-3c7b-a579-a27e48ac8969/AppIcon-0-0-1x_U007emarketing-0-7-0-85-220.png/512x512bb.jpg',
-    '하이오커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/91/08/d2/9108d2c9-97e2-c4b9-2eb8-28e142e8db6d/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg',
-    '할리스': 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/57/89/93/5789936e-d4f7-ef08-bd94-132d774bf21a/AppIcon-0-0-1x_U007emarketing-0-3-0-85-220.png/512x512bb.jpg',
-    '해쉬커피': 'https://cdn.imweb.me/thumbnail/20260716/7c8aedc60ba7d.png',
-    '핸즈커피': 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/db/5e/61/db5e61c2-edd9-4260-aad0-6d1450ef51d2/AppIcon-0-0-1x_U007emarketing-0-11-0-85-220.png/512x512bb.jpg'
+    '감성커피': 'logos/8f868f3d85.webp',
+    '고망고': 'logos/03e24db7a3-f.webp',
+    '공차': 'logos/6f990abb80.webp',
+    '나이스카페인클럽': 'logos/4f3192db46-f.webp',
+    '달콤커피': 'logos/70e33c9f30-f.webp',
+    '댄싱컵': 'logos/77d35217aa-f.webp',
+    '더리터': 'logos/f018d56fe7-f.webp',
+    '더벤티': 'logos/96350051ab-f.webp',
+    '드롭탑': 'logos/5a375cb738.webp',
+    '디저트39': 'logos/82c6535cfe-f.webp',
+    '만랩커피': 'logos/9caa20e3d6-f.webp',
+    '매머드커피': 'logos/2f3239771e-f.webp',
+    '매스커피': 'logos/efb404d010-f.webp',
+    '메가MGC커피': 'logos/38cbb2f455-f.webp',
+    '모리커피': 'logos/62e7575ba5.webp',
+    '몬스터HNM커피': 'logos/0465d3d642-f.webp',
+    '바나타이거': 'logos/9d636bd738-f.webp',
+    '바나프레소': 'logos/c91f869513.webp',
+    '백억커피': 'logos/5a26882aa3-f.webp',
+    '벌크커피': 'logos/281d22823a.webp',
+    '벤티프레소': 'logos/9d6576fdca-f.webp',
+    '브런치빈': 'logos/f7d7aa7102-f.webp',
+    '브루다커피': 'logos/a7bdfa724e-f.webp',
+    '블루보틀': 'logos/204b647449.webp',
+    '블루샥': 'logos/b81994564a.webp',
+    '빽다방': 'logos/7b25f69f3d.webp',
+    '사과당': 'logos/7d0e30cfeb-f.webp',
+    '설빙': 'logos/4ea05ec7d1-f.webp',
+    '쉬즈베이글': 'logos/36cd42fdc7-f.webp',
+    '스타벅스': 'logos/73f75c041a.webp',
+    '아리스타커피': 'logos/25a9bf5b25-f.webp',
+    '아마스빈': 'logos/a81d412b41-f.webp',
+    '아임일리터': 'logos/cab55d74a4-f.webp',
+    '아티제': 'logos/d8e7edd582.webp',
+    '앙호두': 'logos/c1c27fafdb-f.webp',
+    '영커피': 'logos/7456c8f1c4-f.webp',
+    '요거프레소': 'logos/32e5437a6f.webp',
+    '요아정': 'logos/2bfd8707ca-f.webp',
+    '우지커피': 'logos/321bd57b12-f.webp',
+    '원유로스페셜티': 'logos/c9677778b5.webp',
+    '이디야': 'logos/e1f684a083.webp',
+    '쥬씨': 'logos/22d3b88f60-f.webp',
+    '차백도': 'logos/cf586e4bcc-f.webp',
+    '천씨씨커피': 'logos/84802750f9-f.webp',
+    '청자다방': 'logos/4b181bd0d3-f.webp',
+    '카페051': 'logos/9a89cc59c3-f.webp',
+    '카페16온스': 'logos/f681959318-f.webp',
+    '카페게이트': 'logos/148fae9bf2.webp',
+    '카페베네': 'logos/a16b80dbc1-f.webp',
+    '카페보스': 'logos/40de112fad-f.webp',
+    '카페봄봄': 'logos/736e5f6ddd-f.webp',
+    '카페인중독': 'logos/e9eafb53d8-f.webp',
+    '카페일리터': 'logos/8b1c08c0ca.webp',
+    '커피니': 'logos/00ce21ff64.webp',
+    '커피마마': 'logos/9888b36ad4.webp',
+    '커피명가': 'logos/f9ce0c235c-f.webp',
+    '커피베이': 'logos/1898f64f0e-f.webp',
+    '커피빈': 'logos/9ffc234a0d-f.webp',
+    '커피사피엔스': 'logos/05882e0838-f.webp',
+    '커피에반하다': 'logos/4cf3b9b9a5.webp',
+    '커피온리': 'logos/e16105cd68.webp',
+    '컴포즈커피': 'logos/dd97e42f87.webp',
+    '크레이저': 'logos/0e9dfc4fa1-f.webp',
+    '탐앤탐스': 'logos/a0eee0ea1e-f.webp',
+    '테라로사': 'logos/336f89ebbb.webp',
+    '테라커피': 'logos/2029108205-f.webp',
+    '텐퍼센트커피': 'logos/2b5b8a2df4.webp',
+    '투썸플레이스': 'logos/84295fc74b.webp',
+    '트리플에이커피': 'logos/7cafd66568-f.webp',
+    '파란만잔': 'logos/18f637ee7d-f.webp',
+    '파스쿠찌': 'logos/06b9583d12-f.webp',
+    '포트캔커피': 'logos/088782eddd-f.webp',
+    '폴바셋': 'logos/ab606b3646.webp',
+    '플러스82': 'logos/d3462d0b4b.webp',
+    '피에스타7': 'logos/774b5ec317-f.webp',
+    '하삼동커피': 'logos/1fcab3fb22-f.webp',
+    '하이오커피': 'logos/33ceb591f3-f.webp',
+    '할리스': 'logos/ab65055ccf-f.webp',
+    '해쉬커피': 'logos/d16f42dbaa.webp',
+    '핸즈커피': 'logos/70cdd05ac8-f.webp',
+    '헤이키커피': 'logos/4cfc16a805-f.webp',
+    '홍콩다방': 'logos/ff8906e470-f.webp'
   };
   function iconUrl(j) { return BRAND_ICON[D.brands[j][0]] || ''; }
+  function iconFull(u) { return /-f\.webp$/.test(u); }
   var brandImg = D.brands.map(function (b, j) {
     var u = iconUrl(j);
     if (!u) return null;
     var im = new Image();
     im.onload = function () { im.ok = true; if (typeof requestDraw === 'function') requestDraw(); };
     // 앱 아이콘은 네모 가득 색이 차 있어서 동그라미에 꽉 채우고, 사이트 아이콘은 모서리가 잘리지 않게 안쪽에 넣는다.
-    im.full = /mzstatic/.test(u);
+    im.full = iconFull(u);
     im.src = u;
     return im;
   });
@@ -4338,7 +4357,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var inner = on ? t.on.replace(/\{C\}/g, c[0]).replace(/\{T\}/g, c[1]).replace('{I}', ini) : t.off;
     var u = on && withIcon ? iconUrl(j) : '';
     if (u) {
-      var bg = DEX_BADGE[D.brands[j][1]] || DEX_BADGE.P, id = 'dxk' + (++dexClip), full = /mzstatic/.test(u), r = bg[2], ir = full ? r - .45 : r * .72;
+      var bg = DEX_BADGE[D.brands[j][1]] || DEX_BADGE.P, id = 'dxk' + (++dexClip), full = iconFull(u), r = bg[2], ir = full ? r - .45 : r * .72;
       u = u.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
       inner += '<g class="dxb"><circle cx="' + bg[0] + '" cy="' + bg[1] + '" r="' + r + '" fill="#FFFFFF" stroke="' + c[0] + '" stroke-width=".9"/>'
         + '<clipPath id="' + id + '"><circle cx="' + bg[0] + '" cy="' + bg[1] + '" r="' + (r - .45) + '"/></clipPath>'
@@ -6062,7 +6081,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (!u) { if (j < 0) p.textContent = letter; else p.appendChild(fxIcon('charb')); return p; }
     var im = el('img'); im.alt = ''; im.loading = 'lazy'; im.src = u;
     im.addEventListener('error', function () { p.classList.remove('logo', 'full'); p.textContent = ''; p.appendChild(fxIcon('charb')); });
-    p.classList.add('logo'); if (/mzstatic/.test(u)) p.classList.add('full'); p.appendChild(im);
+    p.classList.add('logo'); if (iconFull(u)) p.classList.add('full'); p.appendChild(im);
     return p;
   }
   function pinEl(i) {
