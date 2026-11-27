@@ -49,6 +49,11 @@
   "src": "https://greekberry.kr/img/og.png",
   "px": 750
  },
+ "그릭씨네요거트집": {
+  "file": "logos/9ed113ea19.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20260201/e6ccf4b19dce1.png",
+  "px": 196
+ },
  "금커피별빙수": {
   "file": "logos/cca17bbe3e.webp",
   "src": "https://cdn.imweb.me/thumbnail/20200831/907e444beceba.png",
@@ -68,6 +73,11 @@
   "file": "logos/c012bfbb80.webp",
   "src": "https://cdn.imweb.me/thumbnail/20240805/4dbef3eff90c4.png",
   "px": 196
+ },
+ "노티드": {
+  "file": "logos/ada038daac.webp",
+  "src": "https://images.squarespace-cdn.com/content/v1/67a011b337bb6d47b00fc842/ac76cbe1-934d-4cfc-a41e-d111d1e1720c/favicon.ico?format=100w",
+  "px": 100
  },
  "달롱도르": {
   "file": "logos/5b8f642d4e-f.webp",
@@ -269,6 +279,11 @@
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/b8/d1/42/b8d14270-5770-e4d1-96c7-d5d716a7e4c3/AppIcon-0-0-1x_U007emarketing-0-11-0-85-220.png/512x512bb.jpg",
   "px": 512
  },
+ "블레스롤": {
+  "file": "logos/02522cb58b-f.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20260828/c2ba9442fe910.png",
+  "px": 196
+ },
  "블루보틀": {
   "file": "logos/204b647449.webp",
   "src": "https://kr.bluebottlecoffee.com/cdn/shop/files/bbck-favicon.png?crop=center&height=48&v=1724386983&width=48",
@@ -298,6 +313,11 @@
   "file": "logos/f244620d30-f.webp",
   "src": "http://bingsudang.kr/images/thumbnail.png",
   "px": 680
+ },
+ "빨콩커피": {
+  "file": "logos/fe0e79fa71.webp",
+  "src": "https://www.redbeens.co.kr/favi/android-icon-192x192.png",
+  "px": 192
  },
  "빽다방": {
   "file": "logos/7b25f69f3d.webp",
@@ -428,6 +448,11 @@
   "file": "logos/3fdb9b4cdd-f.webp",
   "src": "http://avendutch.com/img/kakaotalk_img.png",
   "px": 348
+ },
+ "에브리커피": {
+  "file": "logos/a0d4a436dc.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20220113/15c08a742d8ba.png",
+  "px": 196
  },
  "에이바우트커피": {
   "file": "logos/b894568f32-f.webp",
@@ -684,6 +709,16 @@
   "src": "https://coffeeinryu.com:443/superboard/data/siteconfig/20240911160953_66e142412f5dd_bb5ed23764143acb8cc262d40288568f0346f3c1.jpg",
   "px": 585
  },
+ "커피특별시": {
+  "file": "logos/777a1c5206-f.webp",
+  "src": "https://xn--bm3bm5i7vlezd3wd.com/theme/coffeecity/img/ogp.png",
+  "px": 240
+ },
+ "커피홀베이커리": {
+  "file": "logos/d2b1e0ba65.webp",
+  "src": "https://www.coffeehole.co.kr/images/meta_img.png",
+  "px": 400
+ },
  "컴포즈커피": {
   "file": "logos/dd97e42f87.webp",
   "src": "https://composecoffee.com/files/attach/xeicon/favicon.dark.ico?t=1788901166",
@@ -708,6 +743,11 @@
   "file": "logos/0e9dfc4fa1-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/7c/38/b0/7c38b0a3-a23c-0caf-0586-f31afd6ad00c/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "타타스베이글": {
+  "file": "logos/3bbe83c77a.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20251127/fc7fb13bcac62.png",
+  "px": 196
  },
  "탐앤탐스": {
   "file": "logos/a0eee0ea1e-f.webp",
