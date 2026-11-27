@@ -565,6 +565,12 @@ body.osh-on #toast { z-index: 95; }
 .obgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; margin: 8px 0 6px; border-radius: 14px; overflow: hidden; }
 .obgc { position: relative; display: block; aspect-ratio: 1 / 1; background: var(--surface-2); overflow: hidden; }
 .obgc img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bview { position: fixed; inset: 0; z-index: 80; background: var(--surface); display: flex; flex-direction: column; transform: translateY(100%); transition: transform .24s cubic-bezier(.2, .8, .2, 1); }
+.bview.on { transform: none; }
+.bvhd { flex: none; display: flex; align-items: center; gap: 6px; height: 52px; padding: env(safe-area-inset-top, 0px) 12px 0 6px; border-bottom: 1px solid var(--line); }
+.bvhd b { flex: 1; min-width: 0; font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bvext { flex: none; font-size: 13px; font-weight: 700; color: #4c3fc4; text-decoration: none; padding: 8px 4px; }
+.bview iframe { flex: 1; width: 100%; border: 0; background: var(--surface-2); }
 .obgm { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(20, 23, 28, .45); color: #fff; font-size: 16px; font-weight: 800; }
 .oshdel { margin-top: 10px; align-self: center; padding: 8px; background: none; border: 0; font-size: 13.5px; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
 .obmore { align-self: stretch; height: 44px; margin-top: 4px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-size: 14px; font-weight: 700; color: var(--ink); }
@@ -9594,6 +9600,26 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       .then(function (r) { if (!r.ok) throw new Error('blog'); return r.json(); })
       .then(function (list) { blogMem[c] = list || []; done(blogMem[c]); }, function () { done(null); });
   }
+  // 블로그 글을 앱 안에서 보기(사용자 2026-11-28: 사진을 크게, 그 글의 사진 전부를 보고 싶다).
+  //  사진을 따로 가져오지 않고 블로그 글 화면을 그대로 띄운다(카카오맵 탭과 같은 방식). 네이버 블로그는 휴대폰용 주소로 연다.
+  //  네이버 블로그가 아니면(티스토리 등 안에 띄울 수 없는 곳이 있어서) 새 창으로 연다.
+  function openBlogView(url, name) {
+    var m = /^https?:\/\/(m\.)?blog\.naver\.com\//.test(url);
+    if (!m) { window.open(url, '_blank', 'noopener'); return; }
+    var murl = url.replace(/^https?:\/\/(m\.)?blog\.naver\.com\//, 'https://m.blog.naver.com/');
+    var old = $('bview'); if (old) old.remove();
+    var o = el('div', 'bview'), hd = el('div', 'bvhd'), fr = document.createElement('iframe');
+    o.id = 'bview'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', name + ' 블로그 글');
+    var x = btn('ib', null, function () { o.classList.remove('on'); setTimeout(function () { o.remove(); }, 220); });
+    x.setAttribute('aria-label', '닫기'); x.appendChild(icon('x'));
+    hd.appendChild(x); hd.appendChild(el('b', null, name));
+    var ext = document.createElement('a'); ext.className = 'bvext'; ext.href = url; ext.target = '_blank'; ext.rel = 'noopener noreferrer'; ext.textContent = '네이버에서 열기';
+    hd.appendChild(ext);
+    fr.title = name + ' 블로그 글'; fr.src = murl; fr.referrerPolicy = 'no-referrer';
+    fr.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox');
+    o.appendChild(hd); o.appendChild(fr); document.body.appendChild(o);
+    requestAnimationFrame(function () { o.classList.add('on'); });
+  }
   function blogFill(box, list) {
     box.textContent = '';
     var hd = el('div', 'obhd'); hd.appendChild(el('h2', null, '블로그 후기')); box.appendChild(hd);
@@ -9606,6 +9632,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       pics.slice(0, cnt).forEach(function (x, n) {
         var a = document.createElement('a'); a.className = 'obgc'; a.href = x.u; a.target = '_blank'; a.rel = 'noopener noreferrer';
         a.setAttribute('aria-label', x.b + '의 블로그 글 사진');
+        a.addEventListener('click', function (e) { if (a.getAttribute('href') === '#') return; e.preventDefault(); openBlogView(x.u, x.b); });
         var im = document.createElement('img'); im.src = x.p; im.alt = ''; im.loading = 'lazy'; im.referrerPolicy = 'no-referrer'; im.onerror = function () { im.remove(); };
         a.appendChild(im);
         if (n === cnt - 1 && pics.length > cnt) {
@@ -9622,6 +9649,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       rows.textContent = '';
       list.slice(0, shown).forEach(function (x) {
         var a = document.createElement('a'); a.className = 'obp'; a.href = x.u; a.target = '_blank'; a.rel = 'noopener noreferrer';
+        a.addEventListener('click', function (e) { e.preventDefault(); openBlogView(x.u, x.b); });
         var th = el('span', 'obth');
         if (x.p) { var im = document.createElement('img'); im.src = x.p; im.alt = ''; im.loading = 'lazy'; im.referrerPolicy = 'no-referrer'; im.onerror = function () { im.remove(); }; th.appendChild(im); }
         a.appendChild(th);
