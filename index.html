@@ -416,6 +416,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .dh.tabbed { padding-top: 14px; padding-bottom: 0; padding-left: 8px; align-items: stretch; }
 .dh.tabbed .dtabs { flex: 1; min-width: 0; padding: 0; border-top: 0; }
 .dh.tabbed .dtab { height: 48px; white-space: nowrap; }
+.dtabs.one .dtab { flex: none; padding: 0 14px; color: var(--ink); font-weight: 800; border-bottom-color: var(--pri); }
+.dtabs.one { flex: 1; }
 .dh.tabbed .ib { align-self: center; margin-bottom: 3px; }
 .otop .opin { width: 34px; height: 34px; margin-top: 1px; }
 .dtab { flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 14.5px; font-weight: 600; color: var(--ink-3); background: none; border-bottom: 3px solid transparent; }
@@ -9155,7 +9157,6 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     //  종류 글자(프랜차이즈, 개인카페)는 그 카드에서는 적지 않는다.
     var h = el('div', 'dh'), kd = el('span', 'kd', GROUPS[g].label);
     kd.style.color = 'var(' + GROUPS[g].css + ')';
-    if (!pid) { h.appendChild(pinEl(i)); h.appendChild(kd); }
     sheetDrag(h);
     var dl = el('dl', 'facts'), addr = fullAddr(i);
     function fact(k) { dl.appendChild(el('dt', null, k)); var dd = el('dd'); dl.appendChild(dd); return dd; }
@@ -9439,6 +9440,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var refit = function () {};
     var body = null, tabs = null, ours = null;
     // 이 카페로 바로 오는 링크 보내기. 폰에서는 공유 창을 띄우고, 컴퓨터에서는 주소를 복사한다.
+    // 카페지도 정보 탭에 넘기는 일들. kakao: 카카오맵 탭으로(카카오맵에 없는 카페는 null).
+    var oursActs = function (kakao) {
+      return { rec: rec, outlet: omEl, share: doShare, kakao: kakao, fix: function () { bGone[0].click(); },
+        want: function () { bWant.click(); }, memo: bMemo ? function () { bMemo.click(); } : null };
+    };
     var doShare = function () {
       var base = location.protocol === 'file:' ? 'https://zxcvzxcv789878987-sys.github.io/cafe-map/' : location.origin + location.pathname;
       var url = base + '#c=' + cidOf(i);
@@ -9466,13 +9472,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
           omEl = castSet ? el('section', 'omod') : null;
           if (omEl) fillOutlet(omEl);
           ours.textContent = '';
-          ours.appendChild(cafeOurs(i, {
-            rec: rec, outlet: omEl, share: doShare,
-            want: function () { bWant.click(); },
-            memo: bMemo ? function () { bMemo.click(); } : null,
-            kakao: function () { showTab(false); },
-            fix: function () { bGone[0].click(); }
-          }));
+          ours.appendChild(cafeOurs(i, oursActs(function () { showTab(false); })));
           ours.scrollTop = 0;
         }
       };
@@ -9482,17 +9482,17 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       showTab(P.ktab !== i);
       panel.setAttribute('data-embed', '');
     } else {
-      // 카카오맵에 없는 카페: 띄울 화면이 없으므로 이름과 내용을 카드에 바로 적고, 없다는 것만 알린다.
-      panel.removeAttribute('data-embed');
-      body = el('div', 'scroll');
-      var d = el('div', 'detail');
-      d.appendChild(el('h1', null, D.name[i]));
-      d.appendChild(el('p', 'none', '카카오맵에 없는 카페예요.'));
-      d.appendChild(dl); d.appendChild(rec);
-      body.appendChild(d);
+      // 카카오맵에 없는 카페(사용자 2026-11-28): 카카오맵 탭 없이 카페지도 정보만. 모습은 탭이 있는 카드와 같다.
+      body = el('div', 'dbody'); ours = el('div', 'dours'); body.appendChild(ours);
+      tabs = el('div', 'dtabs one');
+      var t1 = el('div', 'dtab o', '카페지도 정보'); t1.setAttribute('aria-selected', 'true'); tabs.appendChild(t1);
+      omEl = castSet ? el('section', 'omod') : null;
+      if (omEl) fillOutlet(omEl);
+      ours.appendChild(cafeOurs(i, oursActs(null)));
+      h.classList.add('tabbed'); h.appendChild(tabs);
+      panel.setAttribute('data-embed', '');
     }
-    // 공유: 탭이 있는 카드는 카페지도 정보 안(이름 오른쪽, 찜 옆)에 있다. 카카오맵에 없는 카페만 머리줄에.
-    if (!pid) { var sh = btn('ib', null, doShare); sh.setAttribute('aria-label', '이 카페 링크 공유'); sh.title = '링크 공유'; sh.appendChild(icon('share')); h.appendChild(sh); }
+    // 공유는 카페지도 정보 안(이름 오른쪽, 찜 옆)에 있다.
     // 닫기는 늘 x(사용자 2026-11-28). 목록에서 들어왔으면 닫을 때 그 목록으로 돌아간다.
     if (back) {
       var bk = btn('ib back', null, back);
@@ -9603,9 +9603,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     ad.appendChild(icon('pin')); ad.appendChild(el('span', null, shortAddr(i) + (fl > 0 ? ', ' + fl + '층' : fl < 0 ? ', 지하' : '')));
     var rt = btn('oroute', null, function () { openRoute(i); }); rt.appendChild(icon('route')); rt.appendChild(document.createTextNode('길찾기'));
     ad.appendChild(rt); basic.appendChild(ad);
-    var hr = btn('ohrs', null, act.kakao);
-    hr.appendChild(icon('clock')); hr.appendChild(el('span', null, '영업시간, 전화번호')); hr.appendChild(el('span', 'k', '카카오맵 탭에서 보기')); hr.appendChild(icon('right'));
-    basic.appendChild(hr);
+    if (act.kakao) {
+      var hr = btn('ohrs', null, act.kakao);
+      hr.appendChild(icon('clock')); hr.appendChild(el('span', null, '영업시간, 전화번호')); hr.appendChild(el('span', 'k', '카카오맵 탭에서 보기')); hr.appendChild(icon('right'));
+      basic.appendChild(hr);
+    }
     var myMemo = act.memo && (XP.memo || {})[cidOf(i)];
     if (myMemo) { var ml = btn('omemol', null, act.memo); ml.appendChild(memoPic()); ml.appendChild(el('span', null, myMemo.m)); ml.setAttribute('aria-label', '내 메모: ' + myMemo.m + ', 눌러서 고치기'); basic.appendChild(ml); }
     w.appendChild(basic);
@@ -9670,19 +9672,25 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 머리줄을 톡 누르면 반과 전체를 오간다. 그 밖의 카드는 내리면 닫히기만 한다.
   var nudged = false;      // 카페지도 정보 탭을 이번에 연 뒤로 한 번 강조했는가
   function sheetDrag(h) {
-    var on = false, y0 = 0, dy = 0, t0 = 0, base = 0, two = false;
-    h.addEventListener('pointerdown', function (e) {
-      if (e.target.closest('button, a')) return;
-      if (!mobile.matches) return;
-      on = true; y0 = e.clientY; dy = 0; t0 = e.timeStamp;
-      two = twoStage();
-      base = two ? snapOffset(snap) : 0;
+    var on = false, y0 = 0, dy = 0, t0 = 0, base = 0, two = false, soft = false, moved = false;
+    // 탭 위에서 시작해도 끌린다(사용자 2026-11-28: 카드가 잘 안 올라간다). 탭은 8px 넘게 움직여야 끌기로 보고, 톡 누르면 탭이 바뀐다.
+    var grab = function (e) {
       try { h.setPointerCapture(e.pointerId); } catch (err) { /* 잡지 못해도 계속한다 */ }
       panel.classList.remove('rise'); panel.style.transition = 'none';
+    };
+    h.addEventListener('pointerdown', function (e) {
+      var tab = e.target.closest('.dtab');
+      if (e.target.closest('button, a') && !tab) return;
+      if (!mobile.matches) return;
+      on = true; y0 = e.clientY; dy = 0; t0 = e.timeStamp; soft = !!tab; moved = false;
+      two = twoStage();
+      base = two ? snapOffset(snap) : 0;
+      if (!soft) grab(e);
     });
     h.addEventListener('pointermove', function (e) {
       if (!on) return;
       dy = e.clientY - y0;
+      if (soft && !moved) { if (Math.abs(dy) < 8) return; moved = true; grab(e); }
       if (!two && dy < 0) dy = 0;
       panel.style.transform = 'translateY(' + Math.max(0, base + dy) + 'px)';
     });
@@ -9693,6 +9701,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     function end(e) {
       if (!on) return;
       on = false;
+      if (soft && !moved) return;      // 탭을 톡 누름: 탭이 바뀐다
+      if (soft) { var stop = function (ev) { ev.stopPropagation(); ev.preventDefault(); }; h.addEventListener('click', stop, { capture: true, once: true }); setTimeout(function () { h.removeEventListener('click', stop, true); }, 400); }
       var v = dy / Math.max(1, e.timeStamp - t0), down = dy > 110 || (v > .6 && dy > 30), up = dy < -70 || (v < -.6 && dy < -30);
       if (!two) {
         if (down) return shut();
