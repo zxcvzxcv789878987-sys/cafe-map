@@ -59,6 +59,11 @@
   "src": "https://cdn.imweb.me/thumbnail/20200831/907e444beceba.png",
   "px": 196
  },
+ "꿀스커피": {
+  "file": "logos/9beddf027e.webp",
+  "src": "http://www.ggulscoffee.com/theme/daontheme_business08/html/image/top_logo_m.png",
+  "px": 48
+ },
  "나우커피": {
   "file": "logos/3b281fc1da-f.webp",
   "src": "https://play-lh.googleusercontent.com/F_buLtZaZexnh6ddaIF88QeH4nFaw4qksAw1wMnsMYlBn3k_7Z7_g_4hPGw4xw_bTF9De52h0LbJ2Ypg_ZhencA=s512",
@@ -73,6 +78,11 @@
   "file": "logos/c012bfbb80.webp",
   "src": "https://cdn.imweb.me/thumbnail/20240805/4dbef3eff90c4.png",
   "px": 196
+ },
+ "남영댁커피24": {
+  "file": "logos/16075d0b81.webp",
+  "src": "http://남영댁커피24.com/img/ogimg.png",
+  "px": 740
  },
  "노티드": {
   "file": "logos/ada038daac.webp",
@@ -243,6 +253,11 @@
   "file": "logos/14719e01e6.webp",
   "src": "https://cdn.imweb.me/thumbnail/20240710/abf0f4f3b2a9f.png",
   "px": 196
+ },
+ "베브릿지": {
+  "file": "logos/5fdb324a61-f.webp",
+  "src": "https://cdn.imweb.me/upload/S20211110d9b8360bd4728/ba542f778f6e6.png",
+  "px": 640
  },
  "벤티프레소": {
   "file": "logos/9d6576fdca-f.webp",
@@ -714,6 +729,11 @@
   "src": "https://xn--bm3bm5i7vlezd3wd.com/theme/coffeecity/img/ogp.png",
   "px": 240
  },
+ "커피팡": {
+  "file": "logos/527ea8edb6.webp",
+  "src": "https://xn--ve7bo1fg1b.com/images/logo/android-chrome-512x512.png",
+  "px": 512
+ },
  "커피홀베이커리": {
   "file": "logos/d2b1e0ba65.webp",
   "src": "https://www.coffeehole.co.kr/images/meta_img.png",
@@ -754,6 +774,11 @@
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/53/c3/94/53c39434-0e0c-2002-1c53-a0ce6608e2dd/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg",
   "px": 512
  },
+ "탭플레이": {
+  "file": "logos/3b59e238ff.webp",
+  "src": "http://www.taplay.co.kr/img_up/shop_pds/taplay11/etc/favicon_android_5121719972627.png",
+  "px": 328
+ },
  "테라로사": {
   "file": "logos/336f89ebbb.webp",
   "src": "https://terarosa.com/common/img/thum.png",
@@ -773,6 +798,11 @@
   "file": "logos/2b5b8a2df4.webp",
   "src": "https://tenpercentcoffee.com/images/logo20261014.ico?v=20261022",
   "px": 256
+ },
+ "투빅커피": {
+  "file": "logos/68581de5af.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20230530/9e1e897a25984.png",
+  "px": 196
  },
  "투썸플레이스": {
   "file": "logos/84295fc74b.webp",
@@ -854,6 +884,11 @@
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/90/97/b0/9097b00a-a104-3c7b-a579-a27e48ac8969/AppIcon-0-0-1x_U007emarketing-0-7-0-85-220.png/512x512bb.jpg",
   "px": 512
  },
+ "하이빙수": {
+  "file": "logos/6f23a8d64f.webp",
+  "src": "https://highbingsu.com:443/superboard/data/siteconfig/20260910170425_6aa264892e560_bb7b4296d8391e817aaac3bac4ddce0dcc7b5959.png",
+  "px": 100
+ },
  "하이오커피": {
   "file": "logos/33ceb591f3-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/91/08/d2/9108d2c9-97e2-c4b9-2eb8-28e142e8db6d/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg",
@@ -879,10 +914,20 @@
   "src": "https://cdn.imweb.me/thumbnail/20260716/7c8aedc60ba7d.png",
   "px": 196
  },
+ "해이커피": {
+  "file": "logos/3490aa9568-f.webp",
+  "src": "http://www.haycoffee.co.kr/img_up/shop_pds/haycoffee/etc/favicon_android_5121671429005.png",
+  "px": 512
+ },
  "핸즈커피": {
   "file": "logos/70cdd05ac8-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/db/5e/61/db5e61c2-edd9-4260-aad0-6d1450ef51d2/AppIcon-0-0-1x_U007emarketing-0-11-0-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "헤리턴스": {
+  "file": "logos/18fc816a67-f.webp",
+  "src": "https://heritancecafe.kr/images/ogimg.jpg",
+  "px": 437
  },
  "헤이키커피": {
   "file": "logos/4cfc16a805-f.webp",
