@@ -9635,7 +9635,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   function cafeBlog(i, done) {
     var c = cidOf(i);
     if (blogMem[c]) { done(blogMem[c]); return; }
-    fetch(BLOG_API + '?v=2&q=' + encodeURIComponent(D.name[i]) + '&a=' + encodeURIComponent(blogAreas(i).join(',')))
+    // 브랜드 이름(b)과 도로명 주소의 길 이름, 건물 번호(r)도 보낸다. 서버가 블로그 글의 지도 카드(장소 이름 + 주소)로 이 카페 글을 알아본다(사용자 2026-11-28).
+    var bj = D.brand[i], rd = /(\S+(?:로|길))\s*(\d+)(?:-\d+)?$/.exec(fullAddr(i));
+    fetch(BLOG_API + '?v=2&q=' + encodeURIComponent(D.name[i]) + '&a=' + encodeURIComponent(blogAreas(i).join(',')) +
+      (bj >= 0 ? '&b=' + encodeURIComponent(D.brands[bj][0]) : '') + (rd ? '&r=' + encodeURIComponent(rd[1] + ' ' + rd[2]) : ''))
       .then(function (r) { if (!r.ok) throw new Error('blog'); return r.json(); })
       .then(function (d) { var v = Array.isArray(d) ? { p: d, i: [] } : { p: d.p || [], i: d.i || [] }; blogMem[c] = v; done(v); }, function () { done(null); });
   }
