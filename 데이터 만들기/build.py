@@ -377,7 +377,25 @@ if os.path.exists(places_path):
         for i, j in d2.items():
             dups[bread_ix[i]] = bread_ix[j]
         addr_matched |= set(bread_ix[i] for i in a2)
-    new_xy = {i: (places[pid][4], places[pid][3]) for i, pid in out.items()}
+    # 건물 주소만으로 지은 짝 가운데 이름이 전혀 다른 것은 푼다(사용자 2026-11-28: 같은 건물의 '버거웍스'가 카페 '하슬라가배'의 카카오 장소를 차지했다).
+    # '카페', '커피' 같은 말을 뗀 두 이름에 같은 두 글자가 하나도 없으면 전혀 다른 이름으로 본다. 푼 줄은 아래에서 이름으로 물은 답(kakao_kw)으로 다시 찾고,
+    # 카카오에 같은 이름이 카페 아닌 곳(햄버거 등)으로 있으면 뒤의 '카페가 아닌 곳 빼기'에서 빠진다.
+    def bigrams(s):
+        return set(s[k:k + 2] for k in range(len(s) - 1))
+
+    addr_unpaired = set()
+    for i in sorted(addr_matched):
+        if i in bread or i not in out:
+            continue
+        a0 = BARE.sub('', norm(names[i]))
+        k0 = BARE.sub('', norm(places[out[i]][0]))
+        if len(a0) >= 2 and len(k0) >= 2 and not (bigrams(a0) & bigrams(k0)):
+            del out[i]
+            addr_matched.discard(i)
+            addr_unpaired.add(i)
+    kstat['건물 주소로 짝 찾음'] -= len(addr_unpaired)
+    kstat['건물 주소로 지은 짝인데 이름이 전혀 달라 풂'] = len(addr_unpaired)
+    new_xy ={i: (places[pid][4], places[pid][3]) for i, pid in out.items()}
     for i, pid in out.items():
         kid[i] = int(pid)
         kcat[i] = places[pid][5]
@@ -479,6 +497,24 @@ if os.path.exists(places_path):
         for i, w in why.items():
             f.write('%s' % '	'.join((w, names[i], roads[i])) + chr(10))
     drop.update(why)
+    if addr_unpaired:
+        au = collections.Counter()
+        for i in addr_unpaired:
+            if i in why:
+                au['카카오에서 카페 아닌 곳으로 확인돼 뺌'] += 1
+            elif i in drop:
+                au['다른 까닭으로 빠짐'] += 1
+            elif kid[i]:
+                au['이름으로 물어 제 짝을 찾음'] += 1
+            elif '%s@%d,%d' % (names[i], pub_lats[i], pub_lngs[i]) not in kw:
+                au['아직 이름으로 안 물어봄'] += 1
+            else:
+                au['카카오에 없어 공공 이름으로 둠'] += 1
+        print('주소로만 짝지었다가 푼 곳', len(addr_unpaired), dict(au))
+        with open(os.path.join(workdir, 'addr_unpaired.tsv'), 'w', encoding='utf-8') as f:
+            f.write('우리 이름\t도로명\t한 일\n')
+            for i in sorted(addr_unpaired):
+                f.write('\t'.join((names[i], roads[i], why.get(i, '빠짐' if i in drop else '이름으로 찾음' if kid[i] else '카카오 짝 없이 둠'))) + '\n')
 
     # 3-1. 인허가에만 있고 카페 목록(상가정보)에는 없는 카페를 더한다(사용자 2026-11-27: 블루보틀이 지도에 1곳뿐이다).
     #   블루보틀처럼 일반음식점(업태 기타, 경양식 등)으로 허가받은 카페가 많다. 2-1은 최근 열두 달, 업태 까페만 보므로 이런 곳이 빠졌다.
@@ -824,6 +860,379 @@ if os.path.exists(places_path):
             drop.add(i)
             dup3 += 1
     print('같은 가게가 두 줄이라 뺀 브랜드 매장', dup3)
+
+    # 3-4. 브랜드 본사가 홈페이지에 올린 공식 매장 목록(작업/hq/<브랜드>.csv)으로 빠진 매장을 채운다(사용자 2026-11-28: 모든 브랜드 본사 목록으로 채우자).
+    #   파일 첫 줄은 '매장명,도로명주소,출처,받은날'. 파일 이름은 brands.py의 표시 이름이다.
+    #   (1) 본사 매장의 도로명주소로 상가정보 건물(작업/buildings.csv)을 찾는다. 공개 좌표와 행정동은 이 건물 것을 쓴다.
+    #       주소로 못 찾으면 같은 시군구에 있는 같은 브랜드, 같은 지점 이름의 카카오 장소의 도로명주소로 건물을 찾는다(카카오는 주소 확인에만 쓴다).
+    #   (2) 지도의 같은 브랜드 매장과 짝을 짓는다. 같은 건물(건물 좌표 30m 안)이 먼저, 그다음 200m 안의 비슷한 지점 이름. 한 매장은 한 번만 짝이 된다.
+    #       그래도 남은 본사 매장은 150m 안에 짝 없는 같은 브랜드 매장이 있으면 이름만 다른 같은 가게로 본다(두 줄로 찍히지 않게).
+    #   (3) 짝이 없는 본사 매장을 넣는다. 이름은 '브랜드 + 본사 매장명'(매장명에 브랜드가 있으면 그대로).
+    #       카카오의 같은 브랜드 매장(같은 주소, 없으면 200m 안 비슷한 지점 이름)은 장소 번호와 내 컴퓨터용 좌표에만 쓴다. 카카오 이름은 쓰지 않는다.
+    #       빵집, 도넛 브랜드는 카카오가 카페로 분류한 매장만 넣는다(대부분 빵만 파는 가게라서).
+    #   (4) 지도에는 있는데 본사 목록에 없는 매장은 작업/hq_not_in_list.tsv에 적고, 카카오에도 없으면 숨긴다(아래). 본사 매장마다 한 일은 작업/hq_audit.tsv.
+    hq_dir = os.path.join(workdir, 'hq')
+    hq_files = sorted(fn for fn in os.listdir(hq_dir) if fn.endswith('.csv') and not fn.startswith('_')) if os.path.isdir(hq_dir) else []
+    if hq_files:
+        bix = {n: j for j, (n, _, _) in enumerate(BRANDS)}
+        bix_n = {norm(n): j for j, (n, _, _) in enumerate(BRANDS)}
+        SGG_TOK = re.compile(r'\S+(?:시|군|구)$')
+
+        def brand_free(n, j):
+            """norm 한 이름에서 브랜드 글자를 떼고 지점 이름만 남긴다."""
+            for p in sorted((p.lstrip('^').partition('!')[0] for p in BRANDS[j][2]), key=len, reverse=True) + [norm(BRANDS[j][0])]:
+                if p and p in n:
+                    n = n.replace(p, '', 1)
+                    break
+            return n
+
+        def road_parse(ad):
+            """본사 주소에서 (시도 묶음 또는 None, '도로명|건물번호')를 뽑는다. 시도가 빠진 주소, '142번길'처럼 띄어 쓴 도로명,
+            '백호2길23-13'처럼 붙여 쓴 건물번호, '지하 112'도 읽는다."""
+            t = [x for x in re.split(r'[\s,]+', ad.replace('(', ' (')) if x]
+            u = []
+            for x in t:
+                if u and ((re.match(r'^\d+번[가-힣]?길$', x) and u[-1].endswith(('로', '길')))
+                          or (re.match(r'^\d+길$', x) and re.match(r'^[가-힣]{2,}$', u[-1]) and not u[-1].endswith(('시', '군', '구', '읍', '면', '동')))):
+                    u[-1] += x
+                    continue
+                m = re.match(r'^(.+(?:로|길))(\d+(?:-\d+)?)$', x)
+                if m:
+                    u += [m.group(1), m.group(2)]
+                    continue
+                u.append(x)
+            u = [x for x in u if x != '지하']
+            for i in range(len(u) - 1):
+                if i and u[i].startswith('('):
+                    break
+                if u[i].endswith(('로', '길')) and len(u[i]) >= 2:
+                    m = NUM.match(u[i + 1])
+                    if m:
+                        sd = sido_code(u[0]) if i >= 1 and any(u[0].startswith(k) for k in SIDO) else None
+                        return sd, u[i] + '|' + m.group(1)
+            return None, None
+
+        JIBUN = re.compile(r'(\S+?(?:동|리|가))\s*(\d+(?:-\d+)?)(?:번지)?(?=[\s,]|$)')
+
+        def branch_sim(a, b):
+            a, b = re.sub(r'점$', '', a), re.sub(r'점$', '', b)
+            if not a or not b:
+                return 0.0
+            if a == b:
+                return 1.0
+            if len(a) >= 2 and len(b) >= 2 and (a in b or b in a):
+                return 0.9
+            return difflib.SequenceMatcher(None, a, b).ratio()
+
+        hq_rows = []        # [브랜드 번호, 매장명, 도로명주소, 출처, 받은날, 주소 키]
+        hq_bad = collections.Counter()
+        for fn in hq_files:
+            bn = fn[:-4]
+            j = bix.get(bn, bix_n.get(norm(bn), -1))
+            if j < 0:
+                print('3-4: 브랜드 이름을 몰라 건너뜀', fn)
+                continue
+            seen4 = set()
+            with open(os.path.join(hq_dir, fn), encoding='utf-8-sig', newline='') as f:
+                for r4 in csv.DictReader(f):
+                    nm4 = (r4.get('매장명') or '').strip()
+                    ad4 = re.sub(r'\s+', ' ', (r4.get('도로명주소') or '').strip())
+                    if not nm4 or not ad4:
+                        hq_bad['매장명이나 주소가 빈 줄'] += 1
+                        continue
+                    key4 = (norm(nm4), addr_key(ad4) or ad4)
+                    if key4 in seen4:
+                        hq_bad['같은 매장이 두 줄(본사 목록)'] += 1
+                        continue
+                    seen4.add(key4)
+                    hq_rows.append([j, nm4, ad4, (r4.get('출처') or '').strip(), (r4.get('받은날') or '').strip(), addr_key(ad4), road_parse(ad4)])
+        hq_brands = sorted(set(h[0] for h in hq_rows))
+        # 카카오의 브랜드 매장(브랜드별)
+        kby = collections.defaultdict(list)
+        for pid, j in kbrand.items():
+            kby[j].append(pid)
+        # 주소로 건물을 못 찾을 때를 위해 '도로명|건물번호'로도 건물을 모은다.
+        def rn_of(k):
+            p4 = k.split('|')
+            return p4[1].split(' ')[-1] + '|' + p4[2]
+
+        need4 = set(h[5] for h in hq_rows if h[5])
+        road_num = set(h[6][1] for h in hq_rows if h[6][1])
+        bld4, bld4_rn = {}, collections.defaultdict(list)
+
+        def read_bld(keys, with_rn):
+            with open(os.path.join(workdir, 'buildings.csv'), encoding='utf-8', newline='') as f:
+                r4 = csv.reader(f)
+                next(r4)
+                for row in r4:
+                    kk = addr_key(row[0])
+                    if not kk:
+                        continue
+                    if kk in keys and kk not in bld4:
+                        bld4[kk] = row
+                    if with_rn and rn_of(kk) in road_num:
+                        bld4_rn[rn_of(kk)].append(row)
+
+        kalt = {}
+
+        def find_bld(hi, h):
+            if h[5] and h[5] in bld4:
+                return bld4[h[5]], '주소'
+            sd, rn = h[6]
+            if rn:
+                # 시도나 시군구 쓰는 법이 달라 키가 안 맞는 경우(인천 구 개편, 시도를 빼고 쓴 주소 등):
+                # 같은 도로명, 건물번호의 건물을 모아 시도가 같고, 시군구 이름이 본사 주소에 든 곳이 하나뿐이면 그것.
+                # 시군구 이름이 맞는 곳이 없으면 그 시도(시도를 안 쓴 주소는 전국)에 그 도로명, 건물번호가 한 곳뿐일 때만 그것.
+                c0 = [row for row in bld4_rn.get(rn, ()) if sd is None or sido_code(row[1]) == sd]
+                c4 = {(row[1], row[2]): row for row in c0 if row[2] and all(t in h[2] for t in row[2].split())}
+                if len(c4) == 1:
+                    return next(iter(c4.values())), '주소(시군구로 맞춤)'
+                c4 = {(row[1], row[2]): row for row in c0}
+                if len(c4) == 1:
+                    return next(iter(c4.values())), '주소(도로명과 건물번호로 맞춤)'
+            if hi in kalt and kalt[hi] in bld4:
+                return bld4[kalt[hi]], '카카오 주소'
+            return None, ''
+
+        read_bld(need4, True)
+        # 주소로 건물을 못 찾은 매장은 카카오 도로명주소로 다시 찾는다
+        for hi, h in enumerate(hq_rows):
+            if find_bld(hi, h)[0] is not None:
+                continue
+            toks = [t for t in h[2].replace('(', ' (').split() if SGG_TOK.match(t)]
+            # 지번 주소(봉곡동 236-10)는 카카오의 같은 브랜드 장소 가운데 지번이 같은 곳이 하나뿐이면 그 도로명주소를 쓴다.
+            jm = JIBUN.search(h[2]) if not h[6][1] else None
+            if jm:
+                jw = jm.group(1) + ' ' + jm.group(2)
+                c4 = [pid for pid in kby.get(h[0], ()) if (' ' + (places[pid][2] or '') + ' ').find(' ' + jw + ' ') >= 0
+                      and (not toks or any(t in places[pid][2] for t in toks))]
+                if len(c4) == 1:
+                    ka4 = addr_key(places[c4[0]][1] or '')
+                    if ka4:
+                        kalt[hi] = ka4
+                        continue
+            bf = brand_free(norm(h[1]), h[0])
+            best, bs, two = None, 0.0, False
+            for pid in kby.get(h[0], ()):
+                v = places[pid]
+                if not toks or not any(t in (v[1] or '') + ' ' + (v[2] or '') for t in toks):
+                    continue
+                s = branch_sim(bf, brand_free(norm(v[0]), h[0]))
+                if s >= 0.9:
+                    if best is not None and s == bs:
+                        two = True
+                    if s > bs:
+                        best, bs, two = pid, s, False
+            if best and not two:
+                ka4 = addr_key(places[best][1] or '')
+                if ka4:
+                    kalt[hi] = ka4
+        if set(kalt.values()) - set(bld4):
+            read_bld(set(kalt.values()) - set(bld4), False)
+
+
+        allb4 = collections.defaultdict(list)      # 지금 지도에 있는 본사 목록 브랜드의 매장(공개 좌표)
+        hqb = set(hq_brands)
+        before4 = collections.Counter()
+        for i in range(len(names)):
+            if i not in drop and bidx[i] in hqb:
+                allb4[cell(pub_lats[i] / 1e5, pub_lngs[i] / 1e5)].append((pub_lats[i] / 1e5, pub_lngs[i] / 1e5, i, brand_free(norm(names[i]), bidx[i])))
+                before4[bidx[i]] += 1
+        st4 = collections.Counter()
+        audit4 = [None] * len(hq_rows)
+        pos4 = {}
+        pairs = []
+        for hi, h in enumerate(hq_rows):
+            row, how = find_bld(hi, h)
+            if not row:
+                st4['건물을 못 찾아 안 넣음'] += 1
+                audit4[hi] = ('건물을 못 찾아 안 넣음', '')
+                continue
+            pos4[hi] = (row, how)
+        # 본사 목록에 같은 매장이 두 줄로 올라 있는 곳(같은 건물, 비슷한 지점 이름: '부산시민회관점'과 '시민회관점')은 한 줄만 쓴다.
+        grp4 = collections.defaultdict(list)
+        for hi in sorted(pos4):
+            h = hq_rows[hi]
+            bf = brand_free(norm(h[1]), h[0])
+            g = grp4[(h[0], pos4[hi][0][0])]
+            if any(branch_sim(bf, bf2) >= 0.7 for bf2 in g):
+                st4['본사 목록에 같은 매장이 두 줄(같은 건물, 비슷한 이름)'] += 1
+                audit4[hi] = ('본사 목록에 같은 매장이 두 줄(같은 건물, 비슷한 이름)', '')
+                del pos4[hi]
+                continue
+            g.append(bf)
+        # 짝 순서: 같은 건물의 비슷한 이름, 200m 안 비슷한 이름, 같은 건물의 다른 이름. 본사 목록에 주소가 잘못 적힌 줄이 같은 건물의 다른 매장을 먼저 차지하지 않게 한다.
+        for hi, (row, how) in pos4.items():
+            h = hq_rows[hi]
+            bla, bln = float(row[5]), float(row[4])
+            bf = brand_free(norm(h[1]), h[0])
+            for la, ln, i, hn in near(allb4, bla, bln, 200):
+                if bidx[i] != h[0]:
+                    continue
+                d = dist(la, ln, bla, bln)
+                ns = branch_sim(bf, hn)
+                if ns >= 0.7:
+                    pairs.append((0 if d <= 30 else 1, -ns, d, hi, i))
+                elif d <= 30:
+                    pairs.append((2, -ns, d, hi, i))
+        matched_h, matched_m = {}, {}
+        for kind, _ns, d, hi, i in sorted(pairs):
+            if hi in matched_h or i in matched_m:
+                continue
+            matched_h[hi], matched_m[i] = (i, 0 if kind == 2 else kind), hi
+        for hi in pos4:
+            if hi in matched_h:
+                continue
+            row = pos4[hi][0]
+            bla, bln = float(row[5]), float(row[4])
+            best, bd = None, 151
+            for la, ln, i, hn in near(allb4, bla, bln, 150):
+                if bidx[i] == hq_rows[hi][0] and i not in matched_m:
+                    d = dist(la, ln, bla, bln)
+                    if d < bd:
+                        best, bd = i, d
+            if best is not None:
+                matched_h[hi], matched_m[best] = (best, 2), hi
+        KIND = ('같은 건물에 있음', '200m 안 비슷한 이름으로 있음', '150m 안 같은 브랜드로 있음(이름만 다름)')
+        for hi, (i, kind) in matched_h.items():
+            st4[KIND[kind]] += 1
+            audit4[hi] = (KIND[kind], names[i])
+        taken4 = set(str(kid[i]) for i in range(len(names)) if i not in drop and kid[i])
+        kaddr4 = collections.defaultdict(list)
+        for j in hqb:
+            for pid in kby.get(j, ()):
+                ka4 = addr_key(places[pid][1] or '')
+                if ka4:
+                    kaddr4[ka4].append(pid)
+        kgrid4 = collections.defaultdict(list)
+        for j in hqb:
+            for pid in kby.get(j, ()):
+                v = places[pid]
+                kgrid4[cell(v[4], v[3])].append((v[4], v[3], pid, j))
+        n0 = len(names)
+        # 본사 목록에 같은 지점이 주소만 달리 두 번 올라 있는 곳('공영로 75'와 '공영로 76', 지번과 도로명)을 알아보려고 지점 이름별로 모은다.
+        by_name4 = collections.defaultdict(list)
+        for hi in pos4:
+            by_name4[(hq_rows[hi][0], re.sub(r'점$', '', brand_free(norm(hq_rows[hi][1]), hq_rows[hi][0])))].append(hi)
+        done4 = set(matched_h)
+        for hi, (row, how) in pos4.items():
+            if hi in matched_h:
+                continue
+            j, nm4, ad4 = hq_rows[hi][0], hq_rows[hi][1], hq_rows[hi][2]
+            bla, bln = float(row[5]), float(row[4])
+            bf = brand_free(norm(nm4), j)
+            twin = [hi2 for hi2 in by_name4[(j, re.sub(r'점$', '', bf))] if hi2 != hi and hi2 in done4
+                    and dist(float(pos4[hi2][0][5]), float(pos4[hi2][0][4]), bla, bln) <= 500]
+            if twin:
+                st4['본사 목록에 같은 지점이 주소만 달리 두 줄(안 넣음)'] += 1
+                audit4[hi] = ('본사 목록에 같은 지점이 주소만 달리 두 줄(500m 안)', '')
+                continue
+            kk = addr_key(row[0])
+            # 카카오 짝: 같은 도로명주소의 같은 브랜드 장소, 없으면 200m 안 비슷한 지점 이름. 아직 지도의 다른 줄이 차지하지 않은 것만.
+            hit = None
+            c4 = [pid for pid in set(kaddr4.get(kk, []) + kaddr4.get(hq_rows[hi][5], [])) if kbrand[pid] == j and pid not in taken4]
+            if c4:
+                hit = max(c4, key=lambda pid: branch_sim(bf, brand_free(norm(places[pid][0]), j)))
+            else:
+                bs = 0.7
+                for la, ln, pid, jj in near(kgrid4, bla, bln, 200):
+                    if jj == j and pid not in taken4:
+                        s = branch_sim(bf, brand_free(norm(places[pid][0]), j))
+                        if s >= bs:
+                            hit, bs = pid, s
+            # 같은 건물에 같은 브랜드 매장이 이미 있는데 카카오에서 따로 확인되지 않으면 넣지 않는다(본사 목록의 주소 오류나 겹친 줄일 수 있다).
+            same_b = [hn for _, _, i, hn in near(allb4, bla, bln, 30) if bidx[i] == j]
+            if hit and same_b:
+                # 카카오 장소가 이 본사 매장의 이름과 비슷하고, 같은 건물의 기존 매장 이름과는 달라야 따로 있는 매장으로 본다.
+                kbf = brand_free(norm(places[hit][0]), j)
+                if branch_sim(bf, kbf) < 0.7 or any(branch_sim(kbf, hn) >= 0.7 for hn in same_b):
+                    hit = None
+            if not hit and same_b:
+                st4['같은 건물에 같은 브랜드가 있고 카카오로 확인 안 됨(안 넣음)'] += 1
+                audit4[hi] = ('같은 건물에 같은 브랜드가 이미 있고 카카오로 확인 안 됨', '')
+                continue
+            if not hit and BRANDS[j][0] in BAKERY:
+                st4['빵집 브랜드라 카카오 카페로 확인될 때만 넣음(안 넣음)'] += 1
+                audit4[hi] = ('빵집 브랜드인데 카카오 카페로 확인 안 됨', '')
+                continue
+            sido, sgg, dong = row[1], row[2] or row[1], row[3] or '기타'
+            si = sido_ix.setdefault(sido, len(sido_ix))
+            gi = sgg_ix.setdefault((si, sgg), len(sgg_ix))
+            di = dong_ix.setdefault((gi, dong), len(dong_ix))
+            road = row[0]
+            pre = row[1] + ' ' + row[2] + ' '
+            if road.startswith(pre):
+                road = road[len(pre):]
+            disp4 = nm4 if (brand_of(norm(nm4)) == j or norm(BRANDS[j][0]) in norm(nm4)) else BRANDS[j][0] + ' ' + nm4
+            # 넓이와 문 연 달: 같은 주소의 같은 브랜드 영업 중 인허가가 있으면 그것.
+            lc = next((c for c in lic_all.get(kk, ()) if c[1] == j), None) if kk else None
+            fm4 = FLOOR.search(ad4)
+            names.append(disp4); bidx.append(j); dongs.append(di); roads.append(road)
+            areas.append(0 if not lc or lc[3] == '뷔페식' else round(lc[4]))
+            floors.append(0 if not fm4 else -1 if fm4.group(1) else int(fm4.group(2)))
+            since.append(lc[2] if lc else 0); closed.append(False); ltypes.append(lc[3] if lc else '')
+            pub_lats.append(round(bla * 1e5)); pub_lngs.append(round(bln * 1e5))
+            if hit:
+                v = places[hit]
+                kcat.append(v[5]); kid.append(int(hit)); in_kakao.append(1); taken4.add(hit)
+                lats.append(round(v[4] * 1e5)); lngs.append(round(v[3] * 1e5))
+                st4['새로 넣음(카카오로 확인)'] += 1
+                audit4[hi] = ('넣음(카카오로 확인, 건물은 %s로 찾음)' % how, disp4)
+            else:
+                kcat.append(None); kid.append(0); in_kakao.append(0)
+                lats.append(round(bla * 1e5)); lngs.append(round(bln * 1e5))
+                st4['새로 넣음(카카오에 없음)'] += 1
+                audit4[hi] = ('넣음(카카오에 없음, 건물은 %s로 찾음)' % how, disp4)
+            allb4[cell(bla, bln)].append((bla, bln, len(names) - 1, bf))
+            done4.add(hi)
+        print('본사 공식 목록으로 채움(3-4)', len(hq_files), '개 브랜드', len(hq_rows), '매장', dict(st4), dict(hq_bad))
+        with open(os.path.join(workdir, 'hq_audit.tsv'), 'w', encoding='utf-8') as f:
+            f.write('브랜드\t본사 매장명\t본사 주소\t한 일\t지도 이름\t출처\n')
+            for hi, h in enumerate(hq_rows):
+                a = audit4[hi]
+                f.write('\t'.join((BRANDS[h[0]][0], h[1], h[2], a[0], a[1], h[3])) + '\n')
+        # 지도에는 있는데 본사 목록에 없는 매장(사용자 2026-11-28 기준):
+        #   카카오에도 같은 브랜드 매장으로 없으면 숨긴다(문 닫았을 가능성이 크다). 카카오에 있으면 지도에 둔다.
+        #   본사 목록의 지점 이름과 같으면(본사 주소를 못 읽었거나 주소가 달라 짝을 못 지은 곳) 숨기지 않는다.
+        #   받은 본사 목록이 지도 매장 수의 절반이 안 되는 브랜드는 목록이 덜 받힌 것일 수 있어 숨기지 않는다.
+        hq_cnt = collections.Counter(h[0] for h in hq_rows)
+        hq_names = collections.defaultdict(set)
+        for h in hq_rows:
+            hq_names[h[0]].add(re.sub(r'점$', '', brand_free(norm(h[1]), h[0])))
+        thin = set(j for j in hqb if hq_cnt[j] < before4[j] * 0.5)
+        if thin:
+            print('3-4: 본사 목록이 지도 매장 수의 절반이 안 돼 숨기지 않는 브랜드', [BRANDS[j][0] for j in thin])
+        nin, hid4 = collections.Counter(), collections.Counter()
+        with open(os.path.join(workdir, 'hq_not_in_list.tsv'), 'w', encoding='utf-8') as f:
+            f.write('브랜드\t지도 이름\t도로명\t카카오 장소 번호\t한 일\n')
+            for i in range(len(names)):
+                if i >= n0 or i in drop or bidx[i] not in hqb or i in matched_m:
+                    continue
+                j = bidx[i]
+                nin[j] += 1
+                if kid[i] and kbrand.get(str(kid[i])) == j:
+                    memo = '본사 목록에 없음, 카카오에는 있어 지도에 둠'
+                elif re.sub(r'점$', '', brand_free(norm(names[i]), j)) in hq_names[j]:
+                    memo = '본사 목록에 같은 지점 이름이 있어 지도에 둠(주소로 짝을 못 지음)'
+                elif j in thin:
+                    memo = '본사 목록이 덜 받혔을 수 있어 지도에 둠'
+                elif not any(re.sub(r'^(?:카페|까페|cafe)', '', norm(names[i])).startswith(p) or norm(names[i]).startswith(p)
+                             for p in [q.lstrip('^').partition('!')[0] for q in BRANDS[j][2]] + [norm(BRANDS[j][0])] if p):
+                    # '고모리커피공장'의 '모리커피'처럼 이름 가운데에 브랜드 글자가 우연히 든 다른 가게일 수 있다.
+                    memo = '이름이 브랜드로 시작하지 않아 다른 가게일 수 있어 지도에 둠'
+                else:
+                    memo = '본사 목록에도 카카오에도 없어 숨김(문 닫았을 수 있음)'
+                    drop.add(i)
+                    hid4[j] += 1
+                f.write('\t'.join((BRANDS[j][0], names[i], roads[i], str(kid[i] or ''), memo)) + '\n')
+        print('본사 목록에도 카카오에도 없어 숨긴 매장', sum(hid4.values()))
+        after4 = collections.Counter(bidx[i] for i in range(len(names)) if i not in drop and bidx[i] in hqb)
+        with open(os.path.join(workdir, 'hq_report.tsv'), 'w', encoding='utf-8') as f:
+            f.write('브랜드\t전\t본사 목록\t지금\t본사 목록에 없는 지도 매장\t그중 숨김\n')
+            for j in sorted(hqb, key=lambda j: -hq_cnt[j]):
+                f.write('%s\t%d\t%d\t%d\t%d\t%d\n' % (BRANDS[j][0], before4[j], hq_cnt[j], after4[j], nin[j], hid4[j]))
+        print('지도에 있는데 본사 목록에 없는 매장', sum(nin.values()))
+
     with open(os.path.join(workdir, 'brand_audit.tsv'), 'w', encoding='utf-8') as f:
         f.write('브랜드\t카카오 이름\t카카오 주소\t빠졌던 이유\t한 일\n')
         for a in audit:
