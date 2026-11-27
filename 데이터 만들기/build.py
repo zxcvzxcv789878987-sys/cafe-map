@@ -3,7 +3,7 @@
 import csv, sys, re, json, collections, difflib, os
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from brands import BRANDS
+from brands import BRANDS, KAKAO_BRAND
 
 workdir, outpath, license_files = sys.argv[1], sys.argv[2], sys.argv[3:]
 csv.field_size_limit(10**9)
@@ -591,6 +591,22 @@ if os.path.exists(places_path):
             add['브랜드, 카카오에 없지만 넣음'] += 1
         have[cell(pla, pln)].append((pla, pln, len(names) - 1, n))
     print('인허가에서 더한 카페(3-1)', dict(add))
+
+    # 3-2. 카카오가 체인으로 분류한 카페는 상호명이 달라도 그 브랜드로 본다(예: 공공데이터에는 "요거트아이스크림의정석 OO점"으로만 있는 요아정).
+    bname = {re.sub(r'[^0-9a-z가-힣]', '', n.lower()): j for j, (n, _, _) in enumerate(BRANDS)}
+    kb = collections.Counter()
+    for i in range(len(names)):
+        if i in drop or bidx[i] >= 0 or not kid[i]:
+            continue
+        v = places.get(str(kid[i]))
+        if not v or not v[5].startswith('음식점 > 카페'):
+            continue
+        last = v[5].split(' > ')[-1]
+        j = bname.get(re.sub(r'[^0-9a-z가-힣]', '', KAKAO_BRAND.get(last, last).lower()), -1)
+        if j >= 0:
+            bidx[i] = j
+            kb[BRANDS[j][0]] += 1
+    print('카카오 분류로 브랜드를 정한 카페', sum(kb.values()), kb.most_common(12))
     print('카카오 좌표', dict(kstat))
     print('카카오 좌표로 바꾼 카페', len(new_xy), '두 줄이라 한 줄로 합친 카페', len(dups))
 if drop:
