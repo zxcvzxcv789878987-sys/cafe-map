@@ -431,6 +431,34 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .oroute { flex: none; height: 38px; padding: 0 14px 0 11px; border-radius: 999px; border: 0; background: var(--pri); color: var(--on-pri); font-size: 13.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; margin-top: 2px; }
 .oroute svg.i { width: 16px; height: 16px; }
 .oin .rec { border-top: 0; padding: 14px; border-radius: 16px; border: 1px solid var(--line); }
+.otop .opin { width: 40px; height: 40px; }
+.ostat { display: grid; grid-template-columns: 1fr 1fr; border-radius: 16px; background: color-mix(in srgb, var(--pri) 8%, var(--surface)); padding: 14px 4px; }
+.ostat.one { grid-template-columns: 1fr; }
+.ostat > div { text-align: center; display: flex; flex-direction: column; gap: 3px; }
+.ostat > div + div { border-left: 1px solid color-mix(in srgb, var(--pri) 18%, var(--surface)); }
+.ostat b { font-size: 19px; font-weight: 800; color: #4c3fc4; letter-spacing: -.3px; }
+.ostat span { font-size: 12px; color: var(--ink-2); }
+.obonus { display: flex; flex-direction: column; gap: 6px; padding: 11px 14px; border-radius: 14px; background: #fff4cc; }
+.obonus[hidden], .obline[hidden], .osec[hidden] { display: none; }
+.obline { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; color: #7a5600; }
+.obean { width: 18px; height: 18px; flex: none; }
+.obean svg { width: 100%; height: 100%; display: block; }
+.osec { display: flex; flex-direction: column; }
+.osec h2 { margin: 0 0 4px; }
+.oli { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 14.5px; color: var(--ink); }
+.osec > .oli:last-child, .osec > div:last-child > .oli:last-child { border-bottom: 0; }
+.oli > svg.i { width: 20px; height: 20px; color: var(--ink-2); }
+.otx2 { flex: 1; min-width: 0; line-height: 1.45; overflow-wrap: anywhere; }
+.otx2 em { font-style: normal; color: var(--ink-2); }
+.odist { flex: none; font-size: 13.5px; font-weight: 700; }
+button.oli { width: 100%; padding: 11px 0; margin: 0; background: none; color: var(--ink); text-align: left; font: inherit; font-size: 14.5px; border-left: 0; border-right: 0; border-top: 0; border-radius: 0; }
+.oli .odex { flex: none; font-size: 13.5px; font-weight: 700; color: #4c3fc4; }
+.oli > svg.i:last-child { width: 16px; height: 16px; color: var(--ink-3); }
+.osame { display: flex; gap: 8px; overflow-x: auto; margin: 4px -18px 0; padding: 2px 18px; scrollbar-width: none; }
+.osame::-webkit-scrollbar { display: none; }
+.osc { flex: none; width: 118px; padding: 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; align-items: flex-start; gap: 8px; text-align: left; }
+.osc b { max-width: 100%; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.osc span { font-size: 12.5px; color: var(--ink-2); }
 .oonly[hidden], .orow[hidden] { display: none; }
 .oonly { border-radius: 16px; background: color-mix(in srgb, var(--pri) 7%, var(--surface)); padding: 14px 14px 16px; display: flex; flex-direction: column; gap: 12px; }
 .oin h2 { margin: 0; font-size: 15.5px; font-weight: 800; color: var(--ink); }
@@ -2036,7 +2064,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4.500 7h15M4.500 12h15M4.500 17h15"/></symbol>
   <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3.500l2 5.900 5.900 2-5.900 2-2 5.900-2-5.900-5.900-2 5.900-2z"/></symbol>
   <symbol id="i-flag" viewBox="0 0 24 24"><path d="M6 21V4.500M6 5h11l-2.300 3.750L17 12.500H6"/></symbol>
-  <symbol id="i-route" viewBox="0 0 24 24"><path d="M12 3 21 12l-9 9-9-9z"/><path d="M9 14.500v-2.500a1 1 0 0 1 1-1h4.500M12.800 9l1.900 2-1.900 2"/></symbol>
+  <symbol id="i-subway" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="14" rx="4"/><path d="M5 11h14M9 14h.01M15 14h.01M8 21l2-4M16 21l-2-4"/></symbol><symbol id="i-bus" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="15" rx="3"/><path d="M4 10h16M8 14.500h.01M16 14.500h.01M7 18v2M17 18v2"/></symbol><symbol id="i-car" viewBox="0 0 24 24"><path d="M5 16v-5l2-5h10l2 5v5M5 16h14M5 16v2M19 16v2M7.500 13h.01M16.500 13h.01M5 11h14"/></symbol><symbol id="i-bld" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="1.500"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></symbol><symbol id="i-card" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2.500"/><path d="M3 10h18M7 14.500h3"/></symbol><symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.500" cy="8.500" r="1.300"/></symbol><symbol id="i-route" viewBox="0 0 24 24"><path d="M12 3 21 12l-9 9-9-9z"/><path d="M9 14.500v-2.500a1 1 0 0 1 1-1h4.500M12.800 9l1.900 2-1.900 2"/></symbol>
   <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3M8 7l4-4 4 4M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"/></symbol>
   <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.010M4 12h.010M4 18h.010"/></symbol>
   <symbol id="i-podium" viewBox="0 0 24 24"><path d="M9 20V9.500h6V20M3.500 20v-6.500H9M15 15h5.500v5M2.500 20h19M12 3.500l.900 1.800 2 .300-1.450 1.400.350 2-1.800-.950-1.800.950.350-2L9.100 5.600l2-.300z"/></symbol>
@@ -9171,7 +9199,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       xs();
       // 카페지도 정보 탭의 "아직 콘센트 기록이 없어요" 줄은 기록이 생기면 숨긴다(묶음에 남은 줄이 없으면 묶음도).
       var op = ours && ours.querySelector('.oplug');
-      if (op) { op.hidden = ny + nn > 0; var oo = op.parentNode; oo.hidden = !oo.querySelector('.orow:not([hidden])'); }
+      if (op) { op.hidden = ny + nn > 0; var oo = op.parentNode; oo.hidden = !oo.querySelector('.obline:not([hidden])'); }
     }
     function store() {
       if (myO[i] !== 1) myC[i] = 0;
@@ -9239,55 +9267,92 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     else if ((notVotes[i] || 0) >= 2) panel.appendChild(el('div', 'gonebar', '카페가 아니라는 신고 ' + notVotes[i] + '명'));
     panel.appendChild(body);
   }
-  // 카페지도 정보 탭의 내용(우리 자료만). 자료가 없는 칸은 숨긴다. act.rec: 카드의 콘센트 기록 칸(찜, 메모, 신고 포함).
+  // 카페지도 정보 탭의 내용(우리 자료만, 2026-11-28 사용자와 정한 시안). 자료가 없는 줄은 숨긴다. act.rec: 카드의 콘센트 기록 칸(찜, 메모, 신고 포함).
+  //  맨 위(로고, 이름, 동네와 거리, 길찾기) → 숫자 두 칸(매장 넓이, 문 연 지) → 원두 보너스 띠 → 콘센트 기록 → 찾아가기(지하철, 버스, 주차장) →
+  //  매장(주소, 건물, 지역화폐, 브랜드) → 같은 건물의 카페. 찾아가기와 건물, 지역화폐는 info/<번호 앞 두 글자>.json(데이터 방이 매달 만듦)에서 읽는다.
+  var infoCache = {};
+  function cafeInfo(i, done) {
+    var c = cidOf(i), f = c.slice(0, 2);
+    if (infoCache[f]) { done(infoCache[f][c] || null); return; }
+    fetch('info/' + f + '.json').then(function (r) { if (!r.ok) throw new Error('info'); return r.json(); })
+      .then(function (o) { infoCache[f] = o || {}; done(infoCache[f][c] || null); }, function () { done(null); });
+  }
   function cafeOurs(i, act) {
     var w = el('div', 'oin'), v = votes[i] || [0, 0, 0, 0, 0];
-    // 이름과 찜
+    // 맨 위: 이름 앞에 지도의 점과 같은 로고, 오른쪽에 길찾기
     var top = el('div', 'otop'), tl = el('div', 'otl');
-    // 가게 이름 앞에 지도의 점과 같은 로고(브랜드 로고, 개인카페는 커피잔). 이름이 두 줄이 되어도 로고는 첫 줄 옆에 있다.
     var lg = pinEl(i); lg.classList.add('opin'); top.appendChild(lg);
     tl.appendChild(el('h1', null, D.name[i]));
     var sub = [D.dong[D.dongOf[i]][0]], dt = distText(i); if (dt) sub.push('여기서 ' + dt);
     tl.appendChild(el('div', 'osub', sub.join(', ')));
-    // 이름 오른쪽에 길찾기(찜은 아래 콘센트 기록 칸에 있다)
     var bg = btn('oroute', null, function () { openRoute(i); }); bg.appendChild(icon('route')); bg.appendChild(document.createTextNode('길찾기'));
     top.appendChild(tl); top.appendChild(bg); w.appendChild(top);
-    // 콘센트 기록: 자리 고르기, 찜, 메모, 신고. 카드가 쥔 칸을 그대로 옮겨 붙인다.
+    // 숫자 두 칸: 매장 넓이, 문 연 지(카페지도에만 있는 정보). 아는 것만.
+    var ym = D.since ? D.since[i] : 0, ago = monthsAgo(i), stat = el('div', 'ostat');
+    var cell = function (big, small) { var c = el('div'); c.appendChild(el('b', null, big)); c.appendChild(el('span', null, small)); stat.appendChild(c); };
+    if (D.area[i] > 0) cell(pyeong(D.area[i]) + '평', D.area[i] >= S.bigPy * PYEONG ? '매장 넓이, 대형' : '매장 넓이');
+    if (ym) cell(ago < 1 ? '1달 안' : ago < 12 ? ago + '개월' : Math.floor(ago / 12) + '년', '문 연 지');
+    if (stat.firstChild) { stat.classList.toggle('one', !stat.children[1]); w.appendChild(stat); }
+    // 원두 보너스 띠(노랑): 아무도 기록하지 않은 카페, 새로 연 카페, 오랜만의 기록을 기다리는 카페
+    var bon = el('div', 'obonus');
+    var bline = function (text, cls) { var l = el('div', 'obline' + (cls ? ' ' + cls : '')), b = el('span', 'obean'); b.innerHTML = BEAN_SVG; l.appendChild(b); l.appendChild(el('span', null, text)); bon.appendChild(l); };
+    if (!(v[0] + v[1] + (myO[i] ? 1 : 0))) bline('처음 기록하면 원두를 2배로 받아요', 'oplug');
+    if (ago >= 0 && ago < 12) bline('새로 연 카페라 기록하면 원두 +500');
+    else if (staleCafe(i)) bline('오랜만에 기록하면 원두 +500');
+    if (bon.firstChild) w.appendChild(bon);
+    // 콘센트 기록: 카드가 쥔 칸을 그대로 옮겨 붙인다.
     if (act.rec) w.appendChild(act.rec);
-    // 카페지도에만 있는 정보
-    var only = el('section', 'oonly'), rows = 0;
-    only.appendChild(el('h2', null, '카페지도에만 있는 정보'));
-    var row = function (pic, title, note, extra) {
-      var r = el('div', 'orow'), ic = el('span', 'oic'), tx = el('div', 'otx');
-      ic.appendChild(fxIcon(pic)); tx.appendChild(el('b', null, title)); if (note) tx.appendChild(el('small', null, note));
-      if (extra) tx.appendChild(extra);
-      r.appendChild(ic); r.appendChild(tx); only.appendChild(r); rows++;
+    // 찾아가기와 매장: 자료 파일을 받은 뒤 채운다(같은 파일은 한 번만 받는다).
+    var go = el('section', 'osec'), shop = el('section', 'osec');
+    go.hidden = true; w.appendChild(go); w.appendChild(shop);
+    var line = function (box, ic, text, note, right) {
+      var r = el('div', 'oli'), tx = el('div', 'otx2');
+      r.appendChild(icon(ic)); tx.appendChild(document.createTextNode(text));
+      if (note) tx.appendChild(el('em', null, ' ' + note));
+      r.appendChild(tx); if (right) r.appendChild(right);
+      box.appendChild(r); return r;
     };
-    var ym = D.since ? D.since[i] : 0, ago = monthsAgo(i);
-    if (ym) row('cal', Math.floor(ym / 100) + '년 ' + (ym % 100) + '월에 문 열었어요', ago < 12 ? '문 연 지 ' + (ago < 1 ? '한 달이 안 된' : ago + '개월 된') + ' 새 카페예요' : '문 연 지 ' + Math.floor(ago / 12) + '년 넘었어요');
-    if (D.area[i] > 0) row('town', '매장 넓이 ' + pyeong(D.area[i]) + '평', '약 ' + fmt(D.area[i]) + '㎡' + (D.area[i] >= S.bigPy * PYEONG ? ', 대형 카페예요' : ''));
-    // 기록 수는 위 콘센트 기록 칸에 나오니, 여기에는 아무도 기록하지 않은 카페의 보너스만 적는다.
-    if (!(v[0] + v[1] + (myO[i] ? 1 : 0))) { row('plug', '아직 콘센트 기록이 없어요', '처음 기록하면 원두를 2배로 받아요'); only.lastChild.classList.add('oplug'); }
-    if (ago >= 0 && ago < 12) row('shop', '새로 연 카페예요', '콘센트를 기록하면 +500 원두를 더 받아요');
-    else if (staleCafe(i)) row('stamp', '오랜만의 기록을 기다리는 카페예요', '6개월 넘게 기록이 없어요. 기록하면 +500 원두를 더 받아요');
-    if (rows) w.appendChild(only);
-    // 기본 정보: 주소와 층, 브랜드
-    var base = el('section', 'obase'); base.appendChild(el('h2', null, '기본 정보'));
-    var fl = D.floor[i], addr = fullAddr(i) + (fl > 0 ? ' ' + fl + '층' : fl < 0 ? ' 지하' : '');
-    var ar = el('div', 'oline'); ar.appendChild(el('span', null, addr));
-    base.appendChild(ar);
-    // 브랜드: 누르면 브랜드 도감의 그 브랜드 칸으로(사용자 2026-11-28 정함)
-    if (D.brand[i] >= 0) { var brw = btn('oline obrand', null, function () { openDex(D.brand[i]); }); brw.appendChild(el('span', null, '브랜드 ' + D.brands[D.brand[i]][0])); brw.appendChild(el('small', null, '도감에서 보기')); brw.appendChild(icon('right')); base.appendChild(brw); }
-    w.appendChild(base);
-    // 같은 건물의 카페
-    var same = [];
-    // 같은 건물: 도로명 주소가 같은 곳(점 자리는 카카오 실제 자리로 옮겨질 수 있어 좌표로는 못 가린다).
-    var myAddr = fullAddr(i);
+    var meter = function (m) { return el('span', 'odist', m >= 1000 ? (Math.round(m / 100) / 10) + 'km' : Math.round(m) + 'm'); };
+    shop.appendChild(el('h2', null, '매장'));
+    var fl = D.floor[i];
+    line(shop, 'pin', fullAddr(i) + (fl > 0 ? ' ' + fl + '층' : fl < 0 ? ' 지하' : ''));
+    var shopTail = el('div'); shop.appendChild(shopTail);
+    if (D.brand[i] >= 0) {
+      var br = btn('oli', null, function () { openDex(D.brand[i]); });
+      br.appendChild(icon('tag')); br.appendChild(el('div', 'otx2', D.brands[D.brand[i]][0]));
+      br.appendChild(el('span', 'odex', '도감')); br.appendChild(icon('right'));
+      shop.appendChild(br);
+    }
+    cafeInfo(i, function (x) {
+      if (!x || !w.isConnected && !w.parentNode) return;
+      if (x.s || x.b || x.p) {
+        go.appendChild(el('h2', null, '찾아가기'));
+        if (x.s) line(go, 'subway', x.s[0], null, meter(x.s[1]));
+        if (x.b) line(go, 'bus', /정류장$/.test(x.b[0]) ? x.b[0] : x.b[0] + ' 정류장', null, meter(x.b[1]));
+        if (x.p) line(go, 'car', /주차/.test(x.p[0]) ? x.p[0] : x.p[0] + ' 주차장', { '무료': '무료', '유료': '유료', '혼합': '무료와 유료' }[x.p[2]] || '', meter(x.p[1]));
+        go.hidden = false;
+      }
+      // 건물(건축물대장): 승강기는 있을 때만 적는다.
+      var bits = [];
+      if (x.e) bits.push('승강기 있음');
+      if (x.c > 0) bits.push('주차 ' + x.c + '대');
+      if (x.y) bits.push(x.y + '년 지은 건물');
+      if (bits.length) line(shopTail, 'bld', bits.join(', '));
+      if (x.m) line(shopTail, 'card', '지역화폐 가맹점');
+    });
+    // 같은 건물의 카페: 도로명 주소가 같은 곳(점 자리는 카카오 실제 자리로 옮겨질 수 있어 좌표로는 못 가린다). 옆으로 넘기는 작은 카드.
+    var same = [], myAddr = fullAddr(i);
     for (var j = 0; j < N; j++) if (j !== i && D.road[j] === D.road[i] && !removed[j] && !dabang[j] && fullAddr(j) === myAddr) same.push(j);
     if (same.length) {
-      var sb = el('section', 'olist'); sb.appendChild(el('h2', null, '같은 건물의 카페 ' + same.length + '곳'));
-      same.slice(0, 6).forEach(function (j2) { sb.appendChild(cafeRow(j2, false, 'detail')); });
-      w.appendChild(sb);
+      var sb = el('section', 'osec'); sb.appendChild(el('h2', null, '같은 건물의 카페 ' + same.length + '곳'));
+      var rail = el('div', 'osame');
+      same.slice(0, 12).forEach(function (j2) {
+        var c = btn('osc', null, function () { selectCafe(j2, true, 'detail'); });
+        c.appendChild(pinEl(j2)); c.appendChild(el('b', null, D.name[j2]));
+        c.appendChild(el('span', null, D.area[j2] > 0 ? pyeong(D.area[j2]) + '평' : '넓이 모름'));
+        rail.appendChild(c);
+      });
+      sb.appendChild(rail); w.appendChild(sb);
     }
     return w;
   }
