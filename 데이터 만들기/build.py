@@ -461,6 +461,22 @@ if os.path.exists(places_path):
     # 이름만 봐도 카페가 아닌 말. 뒤의 것(골프, 교회 등)은 "골프장 안 카페"처럼 지점 이름일 수 있어서 카페라는 말이 없을 때만 뺀다.
     STRONG_NAME = re.compile(r'호프|포차|부동산|공인중개|당구|노래|pc방|피씨방|편의점|만화카페|키즈카페|보드게임|보드카페|스터디카페|독서실|웨딩|뷔페|학원|네일|식당')
     WEAK_NAME = re.compile(r'골프|스크린|교회|헤어|미용|모텔|펜션|세탁|약국|치킨')
+    # PC방, 노래방, 당구장, 스크린골프 같은 여가시설(사용자 2026-11-28: 인제 '벙커피씨토랑'은 PC방).
+    #  이름에 카페라는 말이 있어도 뺀다('지니피씨카페'). 브랜드 매장은 위에서 건너뛴다('긱스타앤빽다방'은 PC방 안의 빽다방이라 남긴다).
+    #  '커피씨'(커피+씨), '도프DPC커피', 'mipC.D'처럼 다른 글자에 붙은 피씨, PC는 PC방으로 보지 않는다.
+    #  '에프피씨씨', '씨피씨에스'처럼 회사 이름 가운데 든 피씨도 PC방으로 보지 않는다. 피씨로 끝나는 이름('이피씨')과 피씨방, 피씨카페 같은 말만 본다.
+    PC_NAME = re.compile(r'(?<!커)피씨$|(?:피씨|피시|pc)(?:방|카페|까페|토랑|존|룸|클럽|게임|채널)|피시방|(?<![a-z])pc(?![a-z])|노래연습|노래방|코인노래|오락실|멀티방|게임방')
+    LEISURE_KAKAO = re.compile(r'게임방|PC방|노래방|노래연습|오락실|멀티방|만화|보드카페|당구|스크린골프|골프연습|골프존|볼링')
+    ce7_xy = collections.defaultdict(list)       # 카카오 카페(음식점 > 카페)의 자리. 그 자리에 카페가 없는지 보는 데 쓴다.
+    for v in places.values():
+        if v[5].startswith('음식점 > 카페') and not NOT_CAFE_KAKAO.search(v[5]):
+            ce7_xy[(int(v[4] / 0.002), int(v[3] / 0.002))].append((v[4], v[3]))
+
+    def ce7_within(la, ln, m):
+        c0 = (int(la / 0.002), int(ln / 0.002))
+        return any(((y - la) * 111000) ** 2 + ((x - ln) * 88000) ** 2 <= m * m
+                   for a in (-1, 0, 1) for b in (-1, 0, 1) for y, x in ce7_xy.get((c0[0] + a, c0[1] + b), ()))
+
     why = {}
     unmatched = 0
     for i in range(len(names)):
@@ -469,6 +485,19 @@ if os.path.exists(places_path):
         nm = names[i].lower()
         cafe_word = CAFE_WORD.search(nm) and not BAR_WORD.search(nm)
         k = kcat[i]
+        if PC_NAME.search(nm.replace(' ', '')):
+            why[i] = '이름(PC방, 노래방 등)'; continue
+        # 카카오가 카페로 분류한 곳과, 건물 주소로만 지은 짝(아래에서 짝을 푼다. 벌툰, 풀덤 같은 만화카페)은 기존 규칙대로
+        if k is not None and LEISURE_KAKAO.search(k) and not OK_KAKAO.search(k) and i not in addr_matched:
+            why[i] = '카카오 분류: ' + k.split(' > ')[-1]; continue
+        if k is None:
+            # 카카오 짝이 없는 줄: 이름으로 물어 둔 답에서 30m 안에 여가시설이 있고, 그 자리에 카카오 카페가 없으면 뺀다.
+            docs = kw.get('%s@%d,%d' % (names[i], pub_lats[i], pub_lngs[i])) or []
+            la, ln = pub_lats[i] / 1e5, pub_lngs[i] / 1e5
+            near_bad = [cat for _p, _n, _r, x, y, cat in docs if LEISURE_KAKAO.search(cat)
+                        and ((y - la) * 111000) ** 2 + ((x - ln) * 88000) ** 2 <= 900]
+            if near_bad and not ce7_within(la, ln, 30):
+                why[i] = '그 자리 카카오 장소: ' + near_bad[0].split(' > ')[-1]; continue
         if k is not None:
             if OK_KAKAO.search(k) and not NOT_CAFE_KAKAO.search(k):
                 continue
@@ -1399,6 +1428,10 @@ if os.path.exists(places_path):
         if bidx[i] >= 0 or brand_of(old.replace(' ', '')) >= 0:
             brand5[act] += 1
         audit5.append((act, old, roads[i], new_name, pid_set))
+    # 3-1, 3-3에서 뒤늦게 더한 줄에도 PC방 이름 규칙을 한 번 더 건다('팽피시카페 사동점'). 브랜드 매장은 그대로 둔다.
+    pc_late = [i for i in range(len(names)) if i not in drop and bidx[i] < 0 and PC_NAME.search(names[i].lower().replace(' ', ''))]
+    drop.update(pc_late)
+    print('뒤늦게 더한 줄 가운데 PC방 이름이라 뺀 곳', len(pc_late), [names[i] for i in pc_late][:10])
     print('카카오에도 인허가에도 없던 카페(3-5)', sum(st5.values()), dict(st5), '그중 브랜드', dict(brand5))
     with open(os.path.join(workdir, 'nokakao_audit.tsv'), 'w', encoding='utf-8') as f:
         f.write('한 일\t우리 이름\t도로명\t바꾼 이름(인허가)\t카카오 장소 번호\n')
