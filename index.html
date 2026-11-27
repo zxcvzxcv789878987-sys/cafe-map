@@ -139,6 +139,9 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 .row .name { font-weight: 650; font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row .meta { font-size: 12.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .row .meta > span + span { margin-left: 9px; }
+/* 검색 결과에서 찾은 글자(2026-11-28): 이름은 보라로, 주소는 진하게 */
+.row .name b.hl { font-weight: 800; color: var(--pri); }
+.row .meta b.hl { font-weight: 700; color: var(--ink); }
 .fsec output .onote { display: block; margin-top: 2px; font-size: 12px; font-weight: 500; color: var(--ink-3); }
 .facts dd .bigmark { display: inline-flex; align-items: center; gap: 1px; padding: 1px 6px 1px 8px; border: 1px solid #c9c2f7; border-radius: 999px; background: none; color: #6a5ae0; font: inherit; font-size: 12.5px; font-weight: 650; cursor: pointer; }
 .facts dd .bigmark svg { width: 13px; height: 13px; }
@@ -8278,17 +8281,37 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var m = Math.hypot(mx[i] - myLoc.x, my[i] - myLoc.y) * 40075016 * Math.cos(D.lat[i] / 1e5 * Math.PI / 180);
     return m < 950 ? Math.round(m / 10) * 10 + 'm' : (m / 1000).toFixed(1) + 'km';
   }
-  function cafeRow(i, withRegion, from) {
-    var r = btn('row'), b = D.brand[i], body = el('span', 'body');
+  // 찾은 글자(words)를 굵게 칠한 글자 묶음. 검색 결과에서 왜 나왔는지 보이게(사용자 2026-11-28).
+  function hlText(str, words) {
+    var f = document.createDocumentFragment(), low = str.toLowerCase(), marks = new Uint8Array(str.length), k, w, at;
+    (words || []).forEach(function (wd) { if (!wd) return; at = low.indexOf(wd); while (at >= 0) { for (k = at; k < at + wd.length; k++) marks[k] = 1; at = low.indexOf(wd, at + wd.length); } });
+    for (k = 0; k < str.length;) {
+      w = k; while (w < str.length && marks[w] === marks[k]) w++;
+      var part = str.slice(k, w);
+      if (marks[k]) f.appendChild(el('b', 'hl', part)); else f.appendChild(document.createTextNode(part));
+      k = w;
+    }
+    return f;
+  }
+  // hl: 검색 글자(굵게 칠함). byAddr: 주소로 찾은 카페라 동 대신 도로명 주소(찾은 글자가 든 쪽)를 보여 준다.
+  function cafeRow(i, withRegion, from, hl, byAddr) {
+    var r = btn('row'), b = D.brand[i], body = el('span', 'body'), nmEl = el('span', 'name');
     r.appendChild(pinEl(i));
-    body.appendChild(el('span', 'name', D.name[i]));
+    if (hl) nmEl.appendChild(hlText(D.name[i], hl)); else nmEl.textContent = D.name[i];
+    body.appendChild(nmEl);
     var bits = [];
     if (S.bonus === 'new' && D.since && D.since[i]) bits.push(Math.floor(D.since[i] / 100) % 100 + '년 ' + (D.since[i] % 100) + '월 개업');
     if (D.area[i] > 0) bits.push(pyeong(D.area[i]) + '평');
-    bits.push(withRegion ? regPath(dongReg[D.dongOf[i]]) : D.dong[D.dongOf[i]][0]);
+    var place = withRegion ? regPath(dongReg[D.dongOf[i]]) : D.dong[D.dongOf[i]][0];
+    if (byAddr && D.road[i] && hl && hl.some(function (wd) { return D.road[i].toLowerCase().indexOf(wd) >= 0; })) {
+      // 도로명만 있으면 어느 도시인지 몰라서 시군구를 앞에 붙인다(예: 강릉시 하슬라로 27).
+      var rp = regPath(dongReg[D.dongOf[i]]).split(' ');
+      place = (rp.length > 2 ? rp.slice(1, -1).join(' ') + ' ' : '') + D.road[i];
+    }
+    bits.push(hl ? hlText(place, hl) : place);
     var dt = distText(i); if (dt) bits.push(dt);
     // 개업, 넓이, 동, 거리는 점으로 잇지 않고 칸마다 띄어 놓는다.
-    var meta = el('span', 'meta'); bits.forEach(function (x) { meta.appendChild(el('span', null, x)); }); body.appendChild(meta);
+    var meta = el('span', 'meta'); bits.forEach(function (x) { var sp = el('span'); if (typeof x === 'string') sp.textContent = x; else sp.appendChild(x); meta.appendChild(sp); }); body.appendChild(meta);
     r.appendChild(body);
     if (outlet[i] === 1) { var t = el('span', 'tag'); t.appendChild(fxIcon('mi_plug')); t.title = '콘센트 좌석이 있다고 기록된 곳'; r.appendChild(t); }
     r.addEventListener('click', function () { selectCafe(i, true, from); });
@@ -8467,21 +8490,32 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       });
       lg.slice(0, regs.length ? 3 : 5).forEach(function (i) { sc.appendChild(legalRow(i)); });
     }
-    var found = [];
+    // 카페: 이름에 찾은 글자가 다 든 곳(이름으로 찾은 카페)을 먼저, 동네나 도로명 주소까지 합쳐야 맞는 곳(주소로 찾은 카페)을 그 아래 따로.
+    //  찾은 글자는 이름과 주소에서 굵게 칠한다(사용자 2026-11-28: "하슬"로 찾았는데 왜 트라디시옹이 나왔는지 몰랐다. 주소가 하슬라로).
+    var found = [], byName = [], byAddr = [];
     if (joined.length >= 2) {
       if (!flat) { flat = new Array(N); for (k = 0; k < N; k++) flat[k] = (D.name[k] + ' ' + regPath(dongReg[D.dongOf[k]]) + ' ' + D.road[k]).toLowerCase(); }
       var ct = map.getCenter(), cx = (ct.lng + 180) / 360, cy = mercY(ct.lat);
       for (k = 0; k < N; k++) {
         ok = true;
         for (w = 0; w < words.length; w++) if (flat[k].indexOf(words[w]) < 0) { ok = false; break; }
-        if (ok) found.push([(mx[k] - cx) * (mx[k] - cx) + (my[k] - cy) * (my[k] - cy), k]);
+        if (!ok) continue;
+        var nmLow = D.name[k].toLowerCase(), inName = true;
+        for (w = 0; w < words.length; w++) if (nmLow.indexOf(words[w]) < 0) { inName = false; break; }
+        var it = [(mx[k] - cx) * (mx[k] - cx) + (my[k] - cy) * (my[k] - cy), k];
+        found.push(it); (inName ? byName : byAddr).push(it);
       }
-      found.sort(function (p, q) { return p[0] - q[0]; });
+      byName.sort(function (p, q) { return p[0] - q[0]; }); byAddr.sort(function (p, q) { return p[0] - q[0]; });
     }
-    if (found.length) {
-      sc.appendChild(el('div', 'sec', '카페 ' + fmt(found.length) + '곳'));
-      found.slice(0, 40).forEach(function (f) { sc.appendChild(cafeRow(f[1], true, 'search')); });
-      if (found.length > 40) sc.appendChild(el('p', 'note', '지도 가운데에서 가까운 40곳이에요. 동네 이름을 함께 입력하면 더 좁혀져요.'));
+    if (byName.length) {
+      sc.appendChild(el('div', 'sec', '이름으로 찾은 카페 ' + fmt(byName.length) + '곳'));
+      byName.slice(0, 40).forEach(function (f) { sc.appendChild(cafeRow(f[1], true, 'search', words)); });
+      if (byName.length > 40) sc.appendChild(el('p', 'note', '지도 가운데에서 가까운 40곳이에요. 동네 이름을 함께 입력하면 더 좁혀져요.'));
+    }
+    if (byAddr.length) {
+      sc.appendChild(el('div', 'sec', '주소로 찾은 카페 ' + fmt(byAddr.length) + '곳'));
+      byAddr.slice(0, byName.length ? 20 : 40).forEach(function (f) { sc.appendChild(cafeRow(f[1], true, 'search', words, true)); });
+      if (byAddr.length > (byName.length ? 20 : 40)) sc.appendChild(el('p', 'note', '지도 가운데에서 가까운 ' + (byName.length ? 20 : 40) + '곳이에요. 동네 이름을 함께 입력하면 더 좁혀져요.'));
     }
     if (!regs.length && !found.length && !lg.length) {
       var e = el('div', 'empty');
