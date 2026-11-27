@@ -560,6 +560,12 @@ button.oli { width: 100%; padding: 11px 0; margin: 0; background: none; color: v
 .oshgo { margin-top: 12px; height: 54px; border-radius: 14px; border: 0; background: var(--pri); color: var(--on-pri); font-size: 16.5px; font-weight: 800; }
 .oshgo:disabled { background: var(--surface-2); color: var(--ink-3); }
 .oshnote { margin: 12px 0 0; text-align: center; font-size: 13px; color: var(--ink-2); }
+body.osh-on #toast { z-index: 95; }
+.oshbox { touch-action: none; }
+.obgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; margin: 8px 0 6px; border-radius: 14px; overflow: hidden; }
+.obgc { position: relative; display: block; aspect-ratio: 1 / 1; background: var(--surface-2); overflow: hidden; }
+.obgc img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.obgm { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(20, 23, 28, .45); color: #fff; font-size: 16px; font-weight: 800; }
 .oshdel { margin-top: 10px; align-self: center; padding: 8px; background: none; border: 0; font-size: 13.5px; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
 .obmore { align-self: stretch; height: 44px; margin-top: 4px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-size: 14px; font-weight: 700; color: var(--ink); }
 .oonly[hidden], .orow[hidden] { display: none; }
@@ -9240,7 +9246,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     }
     // 있어요/없어요와 자리 물음 대신, 방문 인증 줄과 단추 넷(자리 셋, 없어요)을 보여 준다. 방문 인증 전에는 투표 단추가 눌리지 않는다.
     // 방문 인증은 로그인한 뒤 카페 근처에서만 된다. 투표 단추를 누르면 진짜 콘센트 투표(v2/seats)로 저장되고 XP도 같이 받는다.
-    var xs = function () {}, castSet = null, removeMine = null;
+    var xs = function () {}, castSet = null, removeMine = null, nearCheck = null, castChecked = null;
     if (XP_ON && loginOn) {
       r1.hidden = true; more.hidden = true;
       var locating = false, xk = cidOf(i);
@@ -9314,6 +9320,25 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
           if (devOwner(xk) && devOwner(xk) !== who.u) { toast('이 폰에서는 이 카페에 다른 계정으로 이미 기록했어요'); return; }
           checkNear(i, function () { devClaim(xk); markNear(i); applySet(o, bits); done(); }, busy);
         }, 'vote');
+      };
+      // 기록하기 창에서 자리를 처음 고를 때 미리 확인한다(사용자 2026-11-28: 기록하기를 눌러야 안내가 나와서 늦다).
+      nearCheck = function (ok) {
+        if (locating) return;
+        var busy = function (on) { locating = on; if (on) toast('위치 확인 중'); };
+        needLogin(function () {
+          if (navigator.onLine === false) eggFound('offline2');
+          if ((!myO[i] || canRevote(i)) && dayFull(i)) { dayFullBox(); return; }
+          if (myO[i] && !canRevote(i)) { ok(); return; }
+          if (!canRevote(i) && beenNear(i)) { ok(); return; }
+          if (!myO[i] && devOwner(xk) && devOwner(xk) !== who.u) { toast('이 폰에서는 이 카페에 다른 계정으로 이미 기록했어요'); return; }
+          checkNear(i, ok, busy);
+        }, 'vote');
+      };
+      // 미리 확인을 통과한 뒤 기록하기: 위치를 다시 묻지 않고 적는다.
+      castChecked = function (o, bits, done) {
+        if (canRevote(i)) { applySet(o, bits, true); done(); return; }
+        if (!myO[i]) devClaim(xk);
+        markNear(i); applySet(o, bits); done();
       };
       // 내 기록 지우기: 첫 콘센트 기록이면 먼저 묻는다(firstUndo).
       removeMine = function () {
@@ -9404,29 +9429,32 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       }
     }
     // 기록하기 창: 자리 셋(여러 개 고르기)과 콘센트가 없어요. 받을 원두를 한 줄에 하나씩 보여 준다.
+    //  처음 고를 때 카페 근처인지 확인하고(안 되면 바로 알림), 아래로 끌거나 바깥을 누르면 닫힌다(사용자 2026-11-28).
     function outletSheet() {
       var old = $('osheet'); if (old) old.remove();
-      var re = canRevote(i), mo = re ? 0 : myO[i], selO = mo, selB = mo === 1 ? myC[i] : 0;
+      var re = canRevote(i), mo = re ? 0 : myO[i], selO = mo, selB = mo === 1 ? myC[i] : 0, okd = !!mo && !re;
       var o = el('div', 'osh'), sh = el('div', 'oshbox');
       o.id = 'osheet'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '콘센트 기록하기');
-      var close = function () { o.classList.remove('on'); setTimeout(function () { o.remove(); }, 230); };
+      var close = function () { o.classList.remove('on'); document.body.classList.remove('osh-on'); sh.style.transform = ''; setTimeout(function () { o.remove(); }, 230); };
       o.addEventListener('click', function (e) { if (e.target === o) close(); });
       sh.appendChild(el('span', 'oshgrab'));
       sh.appendChild(el('h2', null, '어느 자리에 콘센트가 있나요?'));
       sh.appendChild(el('p', 'oshsub', '여러 개 골라도 돼요'));
+      // 처음 고를 때만 확인하고, 통과하면 고른 것을 바로 반영한다.
+      var pick = function (fn) { if (okd) { fn(); show(); return; } nearCheck(function () { okd = true; fn(); show(); }); };
       var grid = el('div', 'oshgrid');
       var opts = CHAIRS.map(function (c) {
-        var b = btn('oshop', null, function () { if (selO !== 1) { selO = 1; selB = 0; } selB ^= c[2]; if (!selB) selO = 0; show(); });
+        var b = btn('oshop', null, function () { pick(function () { if (selO !== 1) { selO = 1; selB = 0; } selB ^= c[2]; if (!selB) selO = 0; }); });
         var ck = el('span', 'oshck'); ck.appendChild(icon('check')); b.appendChild(ck);
         var sp = el('span', 'omseat'); sp.innerHTML = SEAT_SVG[c[0]]; b.appendChild(sp); b.appendChild(el('span', null, c[1]));
         grid.appendChild(b); return [b, c];
       });
       sh.appendChild(grid);
-      var none = btn('oshnone', '콘센트가 없어요', function () { if (selO === -1) selO = 0; else { selO = -1; selB = 0; } show(); });
+      var none = btn('oshnone', '콘센트가 없어요', function () { pick(function () { if (selO === -1) selO = 0; else { selO = -1; selB = 0; } }); });
       sh.appendChild(none);
       var rw = outletReward();
       if (rw.length) { var gb = goldBox(rw); gb.classList.add('oshgold'); sh.appendChild(gb); }
-      var go = btn('oshgo', '기록하기', function () { if (!selO) return; castSet(selO, selB, close); });
+      var go = btn('oshgo', '기록하기', function () { if (!selO) return; if (okd) castChecked(selO, selB, close); else castSet(selO, selB, close); });
       sh.appendChild(go);
       if (mo) sh.appendChild(btn('oshdel', '내 기록 지우기', function () { close(); removeMine(); }));
       else sh.appendChild(el('p', 'oshnote', '카페 안에 있을 때만 기록할 수 있어요'));
@@ -9435,7 +9463,20 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         none.classList.toggle('on', selO === -1); none.setAttribute('aria-pressed', String(selO === -1));
         go.disabled = !selO || (!!mo && selO === mo && (selO !== 1 || selB === myC[i]));
       }
-      o.appendChild(sh); document.body.appendChild(o); show();
+      // 아래로 끌면 닫힌다(단추 위에서 시작한 것은 단추를 누른 것으로 둔다).
+      var dragOn = false, dy0 = 0, ddy = 0;
+      sh.addEventListener('pointerdown', function (e) {
+        if (e.target.closest('button')) return;
+        dragOn = true; dy0 = e.clientY; ddy = 0; sh.style.transition = 'none';
+        try { sh.setPointerCapture(e.pointerId); } catch (err) { /* 그대로 둔다 */ }
+      });
+      sh.addEventListener('pointermove', function (e) { if (!dragOn) return; ddy = Math.max(0, e.clientY - dy0); sh.style.transform = 'translateY(' + ddy + 'px)'; });
+      var dragEnd = function () {
+        if (!dragOn) return; dragOn = false; sh.style.transition = '';
+        if (ddy > 80) close(); else sh.style.transform = '';
+      };
+      sh.addEventListener('pointerup', dragEnd); sh.addEventListener('pointercancel', dragEnd);
+      o.appendChild(sh); document.body.appendChild(o); document.body.classList.add('osh-on'); show();
       requestAnimationFrame(function () { o.classList.add('on'); });
     }
     sync();
@@ -9535,7 +9576,27 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   function blogFill(box, list) {
     box.textContent = '';
     var hd = el('div', 'obhd'); hd.appendChild(el('h2', null, '블로그 후기')); box.appendChild(hd);
-    var shown = 3, rows = el('div', 'obrows'); box.appendChild(rows);
+    var shown = 3, rows = el('div', 'obrows');
+    // 블로그 사진 바둑판: 사진이 있는 글의 작은 대표 사진을 세 칸씩(3장 이상일 때). 6장을 넘으면 마지막 칸에 남은 수.
+    //  사진은 검색이 준 작은 크기 그대로, 누르면 그 블로그 글이 열린다(저작권: 작게, 원본으로 이어 주기).
+    var pics = list.filter(function (x) { return x.p; });
+    if (pics.length >= 3) {
+      var gd = el('div', 'obgrid'), cnt = pics.length >= 6 ? 6 : 3;
+      pics.slice(0, cnt).forEach(function (x, n) {
+        var a = document.createElement('a'); a.className = 'obgc'; a.href = x.u; a.target = '_blank'; a.rel = 'noopener noreferrer';
+        a.setAttribute('aria-label', x.b + '의 블로그 글 사진');
+        var im = document.createElement('img'); im.src = x.p; im.alt = ''; im.loading = 'lazy'; im.referrerPolicy = 'no-referrer'; im.onerror = function () { im.remove(); };
+        a.appendChild(im);
+        if (n === cnt - 1 && pics.length > cnt) {
+          a.appendChild(el('span', 'obgm', '+' + (pics.length - cnt)));
+          a.href = '#'; a.removeAttribute('target');
+          a.addEventListener('click', function (e) { e.preventDefault(); shown = list.length; draw(); rows.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
+        }
+        gd.appendChild(a);
+      });
+      box.appendChild(gd);
+    }
+    box.appendChild(rows);
     var draw = function () {
       rows.textContent = '';
       list.slice(0, shown).forEach(function (x) {
