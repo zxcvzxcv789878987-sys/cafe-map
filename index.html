@@ -1162,6 +1162,12 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   #panel { left: 0 !important; right: 0; top: auto !important; bottom: 0; width: auto !important; max-height: 62% !important; border-radius: 20px 20px 0 0; }
   #panel[data-kind=region], #panel[data-kind=filter], #panel[data-kind=search], #panel[data-kind=list] { max-height: 74% !important; }
   #panel[data-kind=detail][data-embed], #panel[data-kind=list] { max-height: 94% !important; }
+  /* 검색 결과는 검색창 바로 아래에서 내려온다. 아래에 두면 아이폰 키보드에 가려져서 한두 곳이면 안 나온 줄 알았다(사용자 2026-11-28).
+     높이는 키보드 위까지(--vvh: 화면에서 키보드를 뺀 높이, --srchTop: 검색창 아래, 둘 다 JS가 맞춘다). */
+  #panel[data-kind=search] { top: var(--srchTop, 112px) !important; bottom: auto; margin: 0 10px; border-radius: 18px; max-height: calc(var(--vvh, 100vh) - var(--srchTop, 112px) - 10px) !important; }
+  #panel.rise[data-kind=search] { animation: cardUp .22s cubic-bezier(.2, .8, .2, 1); }
+  #panel[data-kind=search] .ph { padding-top: 12px; }
+  #panel[data-kind=search] .ph::before { display: none; }
   /* 목록 카드도 카페 카드처럼 전체 높이로 만들어 두고 아래로 밀어서 반만 보이게 한다. */
   #panel[data-kind=list] { height: 100%; }
   /* 폰의 카드는 모두 같은 방식이다: 윗줄에 손잡이 막대가 있고, 윗줄을 잡고 끌어내리면 닫힌다. X 단추는 두지 않는다. */
@@ -8613,7 +8619,15 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     clearTimeout(qTimer);
     qTimer = setTimeout(function () { if (v) { if (P.kind === 'search') renderPanel(); else openPanel('search'); } else if (P.kind === 'search') closePanel(); }, 140);
   });
-  $('q').addEventListener('focus', function () { legalLoad(); if (this.value.trim() && P.kind !== 'search') openPanel('search'); });
+  // 검색 결과 판의 자리: 검색창 바로 아래부터 키보드 위까지. 키보드가 오르내리면 visualViewport가 알려 준다.
+  function syncSearchBox() {
+    var vv = window.visualViewport, h = vv ? vv.height + vv.offsetTop : innerHeight, r = ($('q').closest('.search') || $('q')).getBoundingClientRect();
+    document.documentElement.style.setProperty('--vvh', Math.round(h) + 'px');
+    document.documentElement.style.setProperty('--srchTop', Math.round(r.bottom + 8) + 'px');
+  }
+  if (window.visualViewport) { visualViewport.addEventListener('resize', syncSearchBox); visualViewport.addEventListener('scroll', syncSearchBox); }
+  window.addEventListener('resize', syncSearchBox); syncSearchBox();
+  $('q').addEventListener('focus', function () { syncSearchBox(); legalLoad(); if (this.value.trim() && P.kind !== 'search') openPanel('search'); });
   $('qClear').addEventListener('click', function () { $('q').value = ''; this.hidden = true; if (P.kind === 'search') closePanel(); $('q').focus(); });
 
   // ----- 지역 고르기 -----
