@@ -871,6 +871,7 @@ if os.path.exists(places_path):
     #       카카오의 같은 브랜드 매장(같은 주소, 없으면 200m 안 비슷한 지점 이름)은 장소 번호와 내 컴퓨터용 좌표에만 쓴다. 카카오 이름은 쓰지 않는다.
     #       빵집, 도넛 브랜드는 카카오가 카페로 분류한 매장만 넣는다(대부분 빵만 파는 가게라서).
     #   (4) 지도에는 있는데 본사 목록에 없는 매장은 작업/hq_not_in_list.tsv에 적고, 카카오에도 없으면 숨긴다(아래). 본사 매장마다 한 일은 작업/hq_audit.tsv.
+    hq_ok = set()       # 본사 목록에 있는 매장(짝지은 지도 매장과 새로 넣은 매장). 3-5에서 숨기지 않는다.
     hq_dir = os.path.join(workdir, 'hq')
     hq_files = sorted(fn for fn in os.listdir(hq_dir) if fn.endswith('.csv') and not fn.startswith('_')) if os.path.isdir(hq_dir) else []
     if hq_files:
@@ -1213,6 +1214,7 @@ if os.path.exists(places_path):
                 audit4[hi] = ('넣음(카카오에 없음, 건물은 %s로 찾음)' % how, disp4)
             allb4[cell(bla, bln)].append((bla, bln, len(names) - 1, bf))
             done4.add(hi)
+        hq_ok = set(matched_m) | set(range(n0, len(names)))
         print('본사 공식 목록으로 채움(3-4)', len(hq_files), '개 브랜드', len(hq_rows), '매장', dict(st4), dict(hq_bad))
         with open(os.path.join(workdir, 'hq_audit.tsv'), 'w', encoding='utf-8') as f:
             f.write('브랜드\t본사 매장명\t본사 주소\t한 일\t지도 이름\t출처\n')
@@ -1260,6 +1262,148 @@ if os.path.exists(places_path):
             for j in sorted(hqb, key=lambda j: -hq_cnt[j]):
                 f.write('%s\t%d\t%d\t%d\t%d\t%d\n' % (BRANDS[j][0], before4[j], hq_cnt[j], after4[j], nin[j], hid4[j]))
         print('지도에 있는데 본사 목록에 없는 매장', sum(nin.values()))
+
+    # 3-5. 카카오에도 인허가에도 없는 카페(카카오 장소 번호도, 문 연 달도 없는 곳)를 정리한다(사용자 2026-11-28: "무조건 가장 정확해야지").
+    #   상가정보에만 남은 문 닫은 가게가 많다(수원 파장로 113 아키리아커피스페이스: 코너드커피로 바뀐 뒤 문 닫음). 본사 목록에 있는 매장은 건드리지 않는다.
+    #   (1) 그 자리(같은 도로명주소, 또는 공공 좌표 30m 안)의 카카오 카페와, 이름으로 물은 답(kakao_kw) 가운데 150m 안의 먹고 마시는 곳을 본다.
+    #   (2) 이름이 비슷한 카카오 장소가 있으면 같은 가게로 보고 둔다(오타, 회사 이름이 붙은 이름 등). 장소 번호를 붙인다.
+    #       그 장소를 지도의 다른 줄이 이미 차지했으면 같은 가게가 두 줄인 것이라 이 줄을 숨긴다.
+    #   (3) 그 자리에 이름이 다른 카페만 있으면 가게가 바뀐 것으로 본다. 같은 주소의 영업 중 인허가에 그 카페가 있으면
+    #       이 줄을 인허가 이름, 넓이, 문 연 달로 바꾼다(카카오 이름은 쓰지 않는다). 인허가에도 없으면 옛 가게로 보고 숨긴다.
+    #       인허가의 그 카페가 이미 지도의 다른 줄로 있으면 이 줄은 숨긴다.
+    #   (4) 그 자리에 카카오 카페가 하나도 없고 이름으로 물어도 안 나오면 숨긴다.
+    #   카카오에서 본 이름, 주소는 어디에도 남기지 않는다. 한 일은 작업/nokakao_audit.tsv(우리 이름, 인허가 이름, 장소 번호만).
+    inv_sido5 = {v: k for k, v in sido_ix.items()}
+    inv_sgg5 = {v: k for k, v in sgg_ix.items()}
+    inv_dong5 = {v: k for k, v in dong_ix.items()}
+
+    def row_key(i):
+        gi, _dn = inv_dong5[dongs[i]]
+        si, sg = inv_sgg5[gi]
+        sd = inv_sido5[si]
+        r0 = roads[i]
+        return addr_key(r0 if r0.startswith(sd) else sd + ' ' + ('' if sg == sd else sg + ' ') + r0)
+
+    def bigram_dice(a, b):
+        ga, gb = set(a[k:k + 2] for k in range(len(a) - 1)), set(b[k:k + 2] for k in range(len(b) - 1))
+        return 2 * len(ga & gb) / (len(ga) + len(gb)) if ga and gb else 0.0
+
+    def head_of(raw):
+        """지점 이름(마지막 '...점')을 떼고 카페, 커피 같은 말을 뺀 상호."""
+        t = raw.split()
+        if len(t) >= 2 and t[-1].endswith('점'):
+            t = t[:-1]
+        return BARE.sub('', norm(' '.join(t)))
+
+    def same_shop(raw, b, pid, kname):
+        """우리 이름 raw(브랜드 b)와 카카오 장소 pid(이름 kname)가 같은 가게인가."""
+        jb = kbrand.get(pid, -1)
+        if b >= 0 and jb >= 0:
+            return jb == b
+        a, k = norm(raw), norm(kname)
+        if not a or not k:
+            return False
+        if a == k:
+            return True
+        if not head_of(raw) or not head_of(kname):
+            return False      # '카페', '더카페점'처럼 상호가 없는 이름은 똑같을 때만(아무 'OO카페'와 짝지어지지 않게)
+        if brand_shop_ok(a, k) or brand_shop_ok(k, a):
+            return True
+        if jb >= 0:
+            return False      # 카카오 쪽만 브랜드 매장이면 우리 이름에 그 브랜드가 보여야 한다('명동커피'와 '블루보틀 명동')
+        ha, hk = head_of(raw), head_of(kname)
+        s, l = (ha, hk) if len(ha) <= len(hk) else (hk, ha)
+        if len(s) >= 2 and s in l:
+            return True       # '서원컴퍼니풀덤 전대점'과 '풀덤 전남대점'
+        return bigram_dice(ha, hk) >= 0.5
+
+    taken5 = {}
+    live_at = collections.defaultdict(list)
+    live_xy = collections.defaultdict(list)       # 지금 남은 카페의 공공 좌표
+    for i in range(len(names)):
+        if i in drop:
+            continue
+        live_xy[cell(pub_lats[i] / 1e5, pub_lngs[i] / 1e5)].append((pub_lats[i] / 1e5, pub_lngs[i] / 1e5, i))
+        if kid[i]:
+            taken5[str(kid[i])] = i
+        k5 = row_key(i)
+        if k5:
+            live_at[k5].append(i)
+    st5, brand5 = collections.Counter(), collections.Counter()
+    audit5 = []
+    for i in range(len(names)):
+        if i in drop or kid[i] or since[i] or i in hq_ok or i in bread:
+            continue
+        la, ln = pub_lats[i] / 1e5, pub_lngs[i] / 1e5
+        k5 = row_key(i)
+        docs = kw.get('%s@%d,%d' % (names[i], pub_lats[i], pub_lngs[i]))
+        if docs is None:
+            st5['아직 이름으로 안 물어봐서 둠'] += 1
+            continue
+        info = {}
+        for it in list(kaddr.get(k5, ()) if k5 else ()) + list(near(kgrid, la, ln, 30)):
+            v = places[it[2]]
+            info[it[2]] = (v[4], v[3], v[5], v[0])
+        spot = list(info)          # 그 자리의 카카오 카페
+        for pid, pn, _r, x, y, cat in docs:
+            if pid not in info and cat.startswith('음식점') and not KBAD.search(cat) and dist(y, x, la, ln) <= 150:
+                info[pid] = (y, x, cat, pn)
+        same = [pid for pid in info if same_shop(names[i], bidx[i], pid, info[pid][3])]
+        old, new_name, pid_set = names[i], '', ''
+        if same:
+            free = [pid for pid in same if pid not in taken5]
+            if free:
+                pid = min(free, key=lambda p: dist(info[p][0], info[p][1], la, ln))
+                kid[i], kcat[i], in_kakao[i] = int(pid), info[pid][2], 1
+                lats[i], lngs[i] = round(info[pid][0] * 1e5), round(info[pid][1] * 1e5)
+                taken5[pid] = i
+                pid_set = pid
+                act = '같은 가게로 보고 둠(카카오 장소 번호 붙임)'
+            else:
+                drop.add(i)
+                act = '같은 가게가 지도에 이미 있어 숨김'
+        elif spot:
+            lc, lpid = None, None
+            for c in lic_all.get(k5, ()) if k5 else ():
+                hit5 = [pid for pid in spot if same_shop(c[5], c[1], pid, info[pid][3])]
+                if hit5:
+                    lc, lpid = c, hit5[0]
+                    break
+            if lc is None:
+                drop.add(i)
+                act = '그 자리에 이름이 다른 카페만 있고 인허가에 없어 숨김(옛 가게)'
+            elif any(j != i and j not in drop and (similar(norm(names[j]), lc[0]) >= 0.6 or (lc[1] >= 0 and bidx[j] == lc[1]))
+                     for j in set(live_at.get(k5, ())) | set(it[2] for it in near(live_xy, la, ln, 50))):
+                # 같은 주소 또는 50m 안(주소에 읍면을 쓰고 안 쓰는 차이로 키가 다른 줄: '광혜원면 장기길 45'와 '장기길 45')
+                drop.add(i)
+                act = '바뀐 가게가 이미 지도에 있어 숨김'
+            else:
+                ym = lc[2]
+                for cn, cb, cy in closed_all.get(k5, ()):
+                    if cy and cy < ym and ((lc[1] >= 0 and cb == lc[1]) or (lc[1] < 0 and similar(lc[0], cn) >= 0.6)):
+                        ym = cy     # 같은 자리, 같은 이름으로 허가를 새로 받은 가게는 처음 허가 달을 쓴다(2번과 같은 규칙)
+                names[i] = new_name = lc[5]
+                bidx[i] = brand_of(lc[5].replace(' ', ''))
+                since[i], ltypes[i] = ym, lc[3]
+                areas[i] = 0 if lc[3] == '뷔페식' else round(lc[4])
+                if lpid not in taken5:
+                    kid[i], kcat[i], in_kakao[i] = int(lpid), info[lpid][2], 1
+                    lats[i], lngs[i] = round(info[lpid][0] * 1e5), round(info[lpid][1] * 1e5)
+                    taken5[lpid] = i
+                    pid_set = lpid
+                act = '가게가 바뀌어 인허가 이름으로 바꿈'
+        else:
+            drop.add(i)
+            act = '그 자리에 카카오 카페가 없어 숨김'
+        st5[act] += 1
+        if bidx[i] >= 0 or brand_of(old.replace(' ', '')) >= 0:
+            brand5[act] += 1
+        audit5.append((act, old, roads[i], new_name, pid_set))
+    print('카카오에도 인허가에도 없던 카페(3-5)', sum(st5.values()), dict(st5), '그중 브랜드', dict(brand5))
+    with open(os.path.join(workdir, 'nokakao_audit.tsv'), 'w', encoding='utf-8') as f:
+        f.write('한 일\t우리 이름\t도로명\t바꾼 이름(인허가)\t카카오 장소 번호\n')
+        for a in audit5:
+            f.write('\t'.join(a) + '\n')
 
     with open(os.path.join(workdir, 'brand_audit.tsv'), 'w', encoding='utf-8') as f:
         f.write('브랜드\t카카오 이름\t카카오 주소\t빠졌던 이유\t한 일\n')
