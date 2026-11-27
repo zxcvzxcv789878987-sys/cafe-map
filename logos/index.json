@@ -99,6 +99,11 @@
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/63/eb/7b/63eb7bfb-881c-bfd1-885a-b1538eac826e/AppIcon-0-0-1x_U007emarketing-0-7-0-85-220.png/512x512bb.jpg",
   "px": 512
  },
+ "더착한커피": {
+  "file": "logos/fa41612488.webp",
+  "src": "https://xn--9m1by48b62bvxjse.com/wp-content/uploads/2021/07/cropped-logo01-1-1-192x192.png",
+  "px": 192
+ },
  "더치앤빈": {
   "file": "logos/6572362171-f.webp",
   "src": "https://cdn.imweb.me/upload/S202504150567039164095/e143ae0ce40c9.png",
@@ -108,6 +113,11 @@
   "file": "logos/4247869ae6-f.webp",
   "src": "https://thecaffeopen.com/ogimg.jpg",
   "px": 375
+ },
+ "데니스커피": {
+  "file": "logos/6bf1c0ff1c.webp",
+  "src": "http://deniscoffee.alldaycafe.kr/images/main/logo.png",
+  "px": 66
  },
  "데이롱카페": {
   "file": "logos/4326747295-f.webp",
@@ -229,6 +239,11 @@
   "src": "https://static.wixstatic.com/media/8f80f7_0e0c00cb6a8546db8fa8c6864dd0a05c%7Emv2.png/v1/fill/w_192%2Ch_192%2Clg_1%2Cusm_0.66_1.00_0.01/8f80f7_0e0c00cb6a8546db8fa8c6864dd0a05c%7Emv2.png",
   "px": 192
  },
+ "볼트빈": {
+  "file": "logos/b42c15617e.webp",
+  "src": "https://www.voltbean.co.kr/img/favicon.png",
+  "px": 100
+ },
  "봉명동내커피": {
   "file": "logos/40faf522b9.webp",
   "src": "https://www.xn--220bq3dn1huxcd07aowi.com/images_2025/bmdnc_logo_footer.webp",
@@ -253,6 +268,11 @@
   "file": "logos/b81994564a.webp",
   "src": "https://www.blushaak.co.kr/images/logo/logo-icon.png",
   "px": 826
+ },
+ "빈이커피": {
+  "file": "logos/2ea3652e1f-f.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20210821/bcecbe443366e.png",
+  "px": 196
  },
  "빙동댕": {
   "file": "logos/a7fcdbcfd2.webp",
@@ -359,6 +379,11 @@
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/38/bd/8b/38bd8b16-26b4-8f77-035e-e7421747c33b/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg",
   "px": 512
  },
+ "아토커피": {
+  "file": "logos/cbdca1a3ee-f.webp",
+  "src": "https://attocoffee.kr/theme/planmaker/favicon/android-icon-192x192.png",
+  "px": 192
+ },
  "아티제": {
   "file": "logos/d8e7edd582.webp",
   "src": "https://cafeartisee.com/icons-2da2944fede54285473056d90e31d474/apple-touch-icon-1024x1024.png",
@@ -413,6 +438,11 @@
   "file": "logos/3d650655b5.webp",
   "src": "https://cdn.imweb.me/thumbnail/20230620/805792d7e36aa.png",
   "px": 196
+ },
+ "와요커피": {
+  "file": "logos/5b3df75e47-f.webp",
+  "src": "http://wayocoffee.com/images/thumbnail.png",
+  "px": 449
  },
  "요거트월드": {
   "file": "logos/616bd2213a-f.webp",
@@ -753,6 +783,11 @@
   "file": "logos/33ceb591f3-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/91/08/d2/9108d2c9-97e2-c4b9-2eb8-28e142e8db6d/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "하프커피익스프레스": {
+  "file": "logos/0c2f7307dd-f.webp",
+  "src": "https://www.halffcoffee.com/apple-icon.png?apple-icon.14udbukwuaoaj.png?dpl=dpl_EQ9RtKbZbMgeAi4XcnAHsvME3ppk",
+  "px": 180
  },
  "할리스": {
   "file": "logos/ab65055ccf-f.webp",
