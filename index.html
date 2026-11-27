@@ -7908,7 +7908,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 폐업이나 카페 아님 제보가 반영되면(운영자가 지우기로 정하면) 그 전에 제보한 사람마다 3,000 원두(사용자 2026-11-28). 카페마다 한 번(XP.gw).
   var GONE_XP = 3000;
   function goneReward() {
-    if (!XP_ON || !xpReady || !signedIn()) return;
+    // 운영자는 자기가 보내고 자기가 반영한 제보로 원두를 받지 않는다(사용자 2026-11-28, 이미 받은 한 번은 그대로).
+    if (!XP_ON || !xpReady || !signedIn() || isAdmin()) return;
     var items = [], now = Date.now();
     XP.gw = XP.gw || {};
     myGoneList().forEach(function (x) {
@@ -7933,7 +7934,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 반영된 내 제보의 원두를 준다. 서버의 내 원두를 받아 온 뒤에만(그 전에는 이미 받았는지 알 수 없어서).
   var xpReady = false, fbLast = null;
   function cafeReward(list) {
-    if (!XP_ON || !xpReady || !signedIn() || !list) return;
+    if (!XP_ON || !xpReady || !signedIn() || !list || isAdmin()) return;
     var items = [], now = Date.now();
     XP.rw = XP.rw || {};
     list.forEach(function (x) {
