@@ -4487,7 +4487,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     bon.appendChild(icon('gift')); bon.appendChild(el('span', null, '새 동네 보너스')); bon.appendChild(el('b', null, nDong + '/' + nx + '동')); bon.appendChild(icon('right'));
     bon.setAttribute('aria-label', '새 동네 보너스 현황, 다음 목표 ' + nx + '동');
     if (!who) box.appendChild(bon);
-    var nav = el('div', 'dmnav'), bBack = btn('nbtn', null, function () { if (cur >= 0) go(rParent[cur]); }), bHome = btn('nbtn', null, function () { go(-1); });
+    var nav = el('div', 'dmnav'), bBack = btn('nbtn', null, function () { if (cur >= 0) go(rParent[cur]); }), bHome = btn('nbtn', null, function () { go(-1, true); });
     bBack.appendChild(icon('back')); bBack.appendChild(el('span', 't', '뒤로')); bBack.setAttribute('aria-label', '뒤로');
     bHome.appendChild(icon('home')); bHome.appendChild(el('span', 't', '처음부터')); bHome.setAttribute('aria-label', '처음부터');
     nav.appendChild(bBack); nav.appendChild(bHome); nav.hidden = true; box.appendChild(nav);
@@ -4621,13 +4621,17 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (isDone(cur)) { where.classList.add('done'); where.appendChild(dmStar()); where.appendChild(document.createTextNode(rName[cur] + ' 완성')); }
       else where.appendChild(document.createTextNode(regPath(cur)));
     }
-    function go(rk) {
+    // slow: 처음부터 단추. 앱의 처음부터와 같은 날아가기(1.2~2초). 지역 이름표를 누를 때는 0.6초.
+    function go(rk, slow) {
       cur = rk; hideCard();
       var bb = rk < 0 ? KOREA : regBounds(rk), cam = dm.cameraForBounds(bb, { padding: pad(), maxZoom: 14.5 });
       leafZ = cam ? cam.zoom : DM_DEEP;
       // 구 안에서는 안 간 동 이름도 그 배율부터 적는다.
       if (dm.getLayer('dm-lab')) dm.setLayerZoomRange('dm-lab', dmLeafLevel(rk) ? Math.min(DM_DEEP, leafZ - .4) : DM_DEEP, 24);
-      dm.fitBounds(bb, { padding: pad(), duration: 600, maxZoom: 14.5 });
+      if (slow && cam) {
+        var p0 = dm.project(cam.center), w0 = dm.getContainer();
+        dm.flyTo({ center: cam.center, zoom: cam.zoom, duration: flyMs(cam.zoom - dm.getZoom(), Math.hypot(p0.x - w0.clientWidth / 2, p0.y - w0.clientHeight / 2) / Math.max(1, w0.clientWidth)), curve: 1.2, essential: true });
+      } else dm.fitBounds(bb, { padding: pad(), duration: 600, maxZoom: 14.5 });
       renderPills(); showWhere();
       if (D.ldk && dmLeafLevel(rk)) addSgg(gOf(regPath(rk)));
     }
@@ -4756,6 +4760,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var nr = nearestPass();
     if (!nr) return;
     if (P.kind) closePanel();
+    setFollow(false);
     if (!pass[nr.i]) { S.reg = -1; changed(); }
     var i = nr.i, ll = [D.lng[i] / 1e5, D.lat[i] / 1e5], z = Math.max(map.getZoom(), 15.5), dur = flyMsTo(ll, z), H = map.getContainer().clientHeight;
     liveHoldOn(dur + 1000);
@@ -8450,6 +8455,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // ----- 지역 고르기 -----
   var regBrowse = -1;
   function setRegion(r, fly) {
+    // 지역을 고르거나 처음부터, 전국 지도로 가면 내 위치 따라가기를 끈다. 안 그러면 위치가 들어올 때마다 지도가 내 위치로 끌려온다(사용자 2026-11-28 버그).
+    setFollow(false);
     legalSel = -1;
     S.reg = r; hoverPill = -1; S.showAll = false; sel = -1;
     changed();
@@ -8736,7 +8743,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var off = mobile.matches ? [0, -H * .2] : [180, 0];
     var hiddenByCard = mobile.matches ? pt.y > H * .42 : (pt.x < 470 && pt.y < H - 40);   // 컴퓨터의 카드는 왼쪽 14px부터 440px 폭
     var outside = pt.x < 40 || pt.x > W - 40 || pt.y < (mobile.matches ? 130 : 90) || pt.y > H - 40;
-    if (pan || outside || hiddenByCard || z < 13) map.easeTo({ center: [D.lng[i] / 1e5, D.lat[i] / 1e5], zoom: Math.max(z, pan ? 15.5 : 13.5), offset: off, duration: 500 });
+    if (pan || outside || hiddenByCard || z < 13) { setFollow(false); map.easeTo({ center: [D.lng[i] / 1e5, D.lat[i] / 1e5], zoom: Math.max(z, pan ? 15.5 : 13.5), offset: off, duration: 500 }); }
     openPanel('detail'); requestDraw();
   }
   // 카페 카드. 머리줄(이름, 단추) 아래를 카카오맵의 그 가게 화면으로 꽉 채운다.
@@ -9161,9 +9168,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   map.on('dragstart', function () { if (follow) setFollow(false); });
   $('locate').addEventListener('click', function () { startHeading(true); setFollow(true); locateMe(); });
   // 날아가는 시간: 배율이 많이 바뀔수록, 멀수록 오래. 사용자 2026-11-27: 앱을 열 때, 내 위치 단추, 처음 안내가 끝날 때 너무 빠르다(1.6초에서 5.5초로 늘림).
-  //  2026-11-28 사용자: 조금 느리다. 같은 모양으로 25% 빠르게, 가장 길어도 3초(1.2초에서 3초).
-  //  쓰는 곳: 앱을 열 때, 내 위치 단추, 처음 안내, 가까운 곳, 전국 지도, 처음부터 단추. 지역 고르기, 검색, 카드 열기, 걷는 길은 0.5~0.6초 그대로.
-  function flyMs(dz, far) { return Math.round(Math.max(1200, Math.min(3000, .75 * (1100 + 480 * Math.abs(dz) + 380 * Math.min(far || 0, 6))))); }
+  //  2026-11-28 사용자: 조금 느리다. 같은 모양으로 25% 빠르게, 가장 길어도 2초(1.2초에서 2초).
+  //  쓰는 곳: 앱을 열 때, 내 위치 단추, 처음 안내, 가까운 곳, 전국 지도, 처음부터 단추(새 동네 지도의 처음부터도). 지역 고르기, 검색, 카드 열기, 걷는 길은 0.5~0.6초 그대로.
+  function flyMs(dz, far) { return Math.round(Math.max(1200, Math.min(2000, .75 * (1100 + 480 * Math.abs(dz) + 380 * Math.min(far || 0, 6))))); }
   function flyMsTo(ll, z) {
     var p0 = map.project(ll), box = map.getContainer();
     return flyMs(z - map.getZoom(), Math.hypot(p0.x - box.clientWidth / 2, p0.y - box.clientHeight / 2) / Math.max(1, box.clientWidth));
