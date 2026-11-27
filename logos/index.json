@@ -124,6 +124,11 @@
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/6a/31/d6/6a31d670-d28a-7ce7-9197-d52b8c3892cd/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg",
   "px": 512
  },
+ "메가후르츠": {
+  "file": "logos/eab140560f-f.webp",
+  "src": "https://megafruits.co.kr/ogimg.jpg",
+  "px": 218
+ },
  "모리커피": {
   "file": "logos/62e7575ba5.webp",
   "src": "https://cdn.imweb.me/upload/S2021073187c966d5c639d/19fc9c9b5020e.ico",
@@ -149,6 +154,11 @@
   "src": "https://banapresso.com/apple-touch-icon.png",
   "px": 192
  },
+ "바빈스커피": {
+  "file": "logos/283019005c.webp",
+  "src": "http://babeanscoffee.com/theme/babeans/img/pc/comm/logo.png",
+  "px": 55
+ },
  "발도스커피": {
   "file": "logos/e30e641f01-f.webp",
   "src": "http://valdos.co.kr/w/img/admin/logo200.png",
@@ -173,6 +183,11 @@
   "file": "logos/9d6576fdca-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/e2/b4/d6/e2b4d6e9-0b6b-8b35-abc5-8691cc9e8f8b/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "복고다방": {
+  "file": "logos/f374967e2a.webp",
+  "src": "https://static.wixstatic.com/media/8f80f7_0e0c00cb6a8546db8fa8c6864dd0a05c%7Emv2.png/v1/fill/w_192%2Ch_192%2Clg_1%2Cusm_0.66_1.00_0.01/8f80f7_0e0c00cb6a8546db8fa8c6864dd0a05c%7Emv2.png",
+  "px": 192
  },
  "봉명동내커피": {
   "file": "logos/40faf522b9.webp",
@@ -219,10 +234,20 @@
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/75/89/ed/7589ed0e-14d9-8288-ce89-c8f343be0abe/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg",
   "px": 512
  },
+ "사랑해베이글": {
+  "file": "logos/50d48811e5.webp",
+  "src": "https://ilovebagel.co.kr/theme/basic/img/footer_logo_2.png",
+  "px": 161
+ },
  "사실빙": {
   "file": "logos/47627dfd93-f.webp",
   "src": "https://sasilbing.com/images/thumbnail.jpg",
   "px": 480
+ },
+ "사운즈커피": {
+  "file": "logos/7ddc7a19dd-f.webp",
+  "src": "https://cdn.imweb.me/upload/S202311200270e2baf9f7d/fd533003d57cc.png",
+  "px": 356
  },
  "설빙": {
   "file": "logos/4ea05ec7d1-f.webp",
@@ -233,6 +258,11 @@
   "file": "logos/616f95d759.webp",
   "src": "https://www.selecto.co.kr/assets/images/main/logo.png",
   "px": 90
+ },
+ "소미담": {
+  "file": "logos/256f6871fc-f.webp",
+  "src": "https://cdn.imweb.me/upload/S202406122497531425c26/80ffce586978a.png",
+  "px": 1159
  },
  "쉬즈베이글": {
   "file": "logos/36cd42fdc7-f.webp",
@@ -264,6 +294,11 @@
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple124/v4/76/a1/4a/76a14acc-749f-adda-453c-ba018bba49fd/AppIcon-0-0-1x_U007emarketing-0-0-0-5-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-0.png/512x512bb.jpg",
   "px": 512
  },
+ "아메리칸트레일러": {
+  "file": "logos/9f201dca7a.webp",
+  "src": "https://ecimg.cafe24img.com/pg1596b03687416058/americantrailer/web/upload/category/logo/v2_ca12a441d472c3c56bd5f6433ae3be94_eDmAFaAd5T_top.jpg",
+  "px": 505
+ },
  "아임일리터": {
   "file": "logos/cab55d74a4-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/38/bd/8b/38bd8b16-26b4-8f77-035e-e7421747c33b/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg",
@@ -293,6 +328,16 @@
   "file": "logos/7456c8f1c4-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/84/ef/eb/84efeb8b-386a-9528-4f13-9a3834a11461/youngcoffeeAppIcon-0-0-1x_U007ephone-0-1-0-sRGB-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "옐로우캔": {
+  "file": "logos/839003b865-f.webp",
+  "src": "https://xn--2o2bp4w0naq6w.com/meta_img.jpg",
+  "px": 170
+ },
+ "오가다": {
+  "file": "logos/ad605542a6.webp",
+  "src": "http://ogadanew.cafe24.com/wp-content/uploads/2019/11/mb_logo.png",
+  "px": 32
  },
  "요거트월드": {
   "file": "logos/616bd2213a-f.webp",
@@ -343,6 +388,11 @@
   "file": "logos/cf586e4bcc-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/d1/10/12/d110127c-9dee-3998-a51b-602871c2889f/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "차차커피코": {
+  "file": "logos/737928172c.webp",
+  "src": "https://chachacoffeeco.com/file/654550424",
+  "px": 256
  },
  "천씨씨커피": {
   "file": "logos/84802750f9-f.webp",
@@ -399,6 +449,11 @@
   "src": "https://cafe1liter.com/favicon.ico",
   "px": 144
  },
+ "카페프리헷": {
+  "file": "logos/4154dde9d1.webp",
+  "src": "https://www.cafefrihet.com/img/layout/logo.png",
+  "px": 46
+ },
  "커스텀커피": {
   "file": "logos/bc92a5b112.webp",
   "src": "https://kustomcoffee.co.kr/web/upload/share-image-1-c396d8be2c740167d8ef44ff5ee22673.png",
@@ -413,6 +468,11 @@
   "file": "logos/00ce21ff64.webp",
   "src": "https://www.google.com/s2/favicons?sz=128&domain=coffeenie.co.kr",
   "px": 128
+ },
+ "커피로드뷰": {
+  "file": "logos/3cc82d9a66.webp",
+  "src": "http://www.coffeeroadview.com/favicon/android-icon-192x192.png",
+  "px": 192
  },
  "커피마마": {
   "file": "logos/9888b36ad4.webp",
@@ -443,6 +503,11 @@
   "file": "logos/05882e0838-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/bc/6b/c8/bc6bc831-9e8a-673a-1ca0-143cf4e52583/AppIcon-0-0-1x_U007emarketing-0-11-0-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "커피스미스": {
+  "file": "logos/551840ccff.webp",
+  "src": "http://coffeesmith.co.kr/wp/wp-content/uploads/2015/06/logo-240px.png",
+  "px": 49
  },
  "커피에반하다": {
   "file": "logos/4cf3b9b9a5.webp",
@@ -534,6 +599,16 @@
   "src": "https://www.google.com/s2/favicons?sz=128&domain=baristapaulbassett.co.kr",
   "px": 128
  },
+ "퐁치커피익스프레스": {
+  "file": "logos/eb5f0358f4.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20230202/163e0fd50f36e.png",
+  "px": 196
+ },
+ "프랭크커핀바": {
+  "file": "logos/39ac82da94-f.webp",
+  "src": "http://frankcoffinbar.net/images/thumbnail.png",
+  "px": 780
+ },
  "플러스82": {
   "file": "logos/d3462d0b4b.webp",
   "src": "https://cafeplus82.com/kor/favicon.ico",
@@ -543,6 +618,11 @@
   "file": "logos/774b5ec317-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/6b/87/f8/6b87f876-6fe0-7cc5-8b93-1513d0315994/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "픽베이크": {
+  "file": "logos/4e8c426706.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20250526/3cd408e38890a.png",
+  "px": 196
  },
  "하삼동커피": {
   "file": "logos/1fcab3fb22-f.webp",
