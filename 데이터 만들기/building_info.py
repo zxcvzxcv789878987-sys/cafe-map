@@ -103,32 +103,45 @@ def ask(lot):
 
 todo = [l for l in lots if l not in raw]
 print('남은 건물', len(todo), '이번에 받을 최대', MAX, flush=True)
-done = fail = 0
-last = time.time()
-for lot in todo[:MAX]:
+# 한 건에 1~2초 걸리는 서버라서 동시에 몇 건씩 묻는다(--workers, 기본 4). 서버에 무리를 주지 않게 크게 늘리지 않는다.
+import threading, concurrent.futures
+WORKERS = int(sys.argv[sys.argv.index('--workers') + 1]) if '--workers' in sys.argv else 4
+stop_ev = threading.Event()
+cnt = collections.Counter()
+
+
+def one(lot):
+    if stop_ev.is_set():
+        return lot, None
     for t in range(3):
         try:
-            raw[lot] = ask(lot)
-            done += 1
-            break
+            return lot, ask(lot)
         except OverflowError:
-            print('하루 한도에 닿아 멈춘다. 내일 다시 돌리면 이어서 받는다.', flush=True)
-            todo = []
-            break
+            if not stop_ev.is_set():
+                print('하루 한도에 닿아 멈춘다. 내일 다시 돌리면 이어서 받는다.', flush=True)
+            stop_ev.set()
+            return lot, None
         except Exception:
             time.sleep(2 * (t + 1))
-    else:
-        fail += 1
-        if fail >= 50 and fail > done:
-            print('서버가 계속 실패해서 멈춘다(나중에 다시 돌리면 이어서 받는다).', flush=True)
-            break
-    if not todo:
-        break
-    if time.time() - last > 60:
-        save()
-        last = time.time()
-        print('받는 중', done, '실패', fail, flush=True)
-    time.sleep(0.05)
+    return lot, None
+
+
+last = time.time()
+with concurrent.futures.ThreadPoolExecutor(WORKERS) as ex:
+    for lot, items in ex.map(one, todo[:MAX]):
+        if items is not None:
+            raw[lot] = items
+            cnt['done'] += 1
+        elif not stop_ev.is_set():
+            cnt['fail'] += 1
+            if cnt['fail'] >= 50 and cnt['fail'] > cnt['done']:
+                print('서버가 계속 실패해서 멈춘다(나중에 다시 돌리면 이어서 받는다).', flush=True)
+                stop_ev.set()
+        if time.time() - last > 60:
+            save()
+            last = time.time()
+            print('받는 중', cnt['done'], '실패', cnt['fail'], flush=True)
+done, fail = cnt['done'], cnt['fail']
 save()
 print('이번에 받음', done, '실패', fail, '받아 둔 건물', len(raw), '/', len(lots), flush=True)
 
