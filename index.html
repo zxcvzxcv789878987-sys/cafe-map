@@ -443,6 +443,9 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .obase, .olist, .onear { display: flex; flex-direction: column; gap: 8px; }
 .oline { display: flex; align-items: center; gap: 10px; font-size: 14.5px; line-height: 1.5; padding: 4px 0; overflow-wrap: anywhere; }
 .oline > span { flex: 1; min-width: 0; }
+.obrand { width: 100%; background: none; color: inherit; text-align: left; font: inherit; font-size: 14.5px; }
+.obrand small { flex: none; font-size: 12.5px; color: var(--ink-3); }
+.obrand svg.i { flex: none; width: 16px; height: 16px; color: var(--ink-3); }
 .ocopy { flex: none; height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
 .olist .row { padding-left: 0; padding-right: 0; }
 .ogrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -9279,7 +9282,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var ar = el('div', 'oline'); ar.appendChild(el('span', null, addr));
     var cp = btn('ocopy', '복사', function () { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(addr).then(function () { toast('주소를 복사했어요'); }, function () { toast(addr); }); else toast(addr); });
     ar.appendChild(cp); base.appendChild(ar);
-    if (D.brand[i] >= 0) base.appendChild(el('div', 'oline', '브랜드 ' + D.brands[D.brand[i]][0]));
+    // 브랜드: 누르면 브랜드 도감의 그 브랜드 칸으로(사용자 2026-11-28 정함)
+    if (D.brand[i] >= 0) { var brw = btn('oline obrand', null, function () { openDex(D.brand[i]); }); brw.appendChild(el('span', null, '브랜드 ' + D.brands[D.brand[i]][0])); brw.appendChild(el('small', null, '도감에서 보기')); brw.appendChild(icon('right')); base.appendChild(brw); }
     w.appendChild(base);
     // 같은 건물의 카페
     var same = [];
