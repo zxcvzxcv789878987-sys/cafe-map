@@ -14,6 +14,11 @@
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/5a/a3/03/5aa30337-f7cc-0d25-76d8-cb8e53f59da7/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg",
   "px": 512
  },
+ "고품격커피공장": {
+  "file": "logos/8b0cb670f3-f.webp",
+  "src": "https://gpkcoffee.com/web/upload/honghong/mainlogo2.jpg",
+  "px": 250
+ },
  "공차": {
   "file": "logos/6f990abb80.webp",
   "src": "https://www.gong-cha.co.kr/favicon/android-chrome-512x512.png",
@@ -73,6 +78,11 @@
   "file": "logos/77d35217aa-f.webp",
   "src": "https://dancingcup.co.kr/images/thumbnail.png",
   "px": 462
+ },
+ "더노벰버라운지": {
+  "file": "logos/fe9e02aceb-f.webp",
+  "src": "https://static.wixstatic.com/media/21fe1e_a8fc677c29e743478f3f91417af921b9%7Emv2.png/v1/fill/w_192%2Ch_192%2Clg_1%2Cusm_0.66_1.00_0.01/21fe1e_a8fc677c29e743478f3f91417af921b9%7Emv2.png",
+  "px": 192
  },
  "더리터": {
   "file": "logos/f018d56fe7-f.webp",
@@ -324,6 +334,11 @@
   "src": "https://ecimg.cafe24img.com/pg1596b03687416058/americantrailer/web/upload/category/logo/v2_ca12a441d472c3c56bd5f6433ae3be94_eDmAFaAd5T_top.jpg",
   "px": 505
  },
+ "아이캔커피": {
+  "file": "logos/9b066ca513-f.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20230129/21a25111965bf.png",
+  "px": 196
+ },
  "아임일리터": {
   "file": "logos/cab55d74a4-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/38/bd/8b/38bd8b16-26b4-8f77-035e-e7421747c33b/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg",
@@ -403,6 +418,11 @@
   "file": "logos/c9677778b5.webp",
   "src": "https://cdn.imweb.me/thumbnail/20220526/70420f83c9239.png",
   "px": 196
+ },
+ "위치커피": {
+  "file": "logos/cb834386aa-f.webp",
+  "src": "http://위치커피.com/img/logo.png",
+  "px": 368
  },
  "읍천리382": {
   "file": "logos/597a1c8c06-f.webp",
@@ -659,6 +679,11 @@
   "src": "https://cdn.imweb.me/thumbnail/20230202/163e0fd50f36e.png",
   "px": 196
  },
+ "푸르파파": {
+  "file": "logos/05fecd8a66-f.webp",
+  "src": "https://storage.googleapis.com/cr-resource/image/a770e3db674115c02240d09c2aa71ddd/purpapa/650/f64f2abb83f43492d30d9431e5ff6e8d.png?_1795778476",
+  "px": 507
+ },
  "프랭크커핀바": {
   "file": "logos/39ac82da94-f.webp",
   "src": "http://frankcoffinbar.net/images/thumbnail.png",
@@ -693,6 +718,11 @@
   "file": "logos/ab65055ccf-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/57/89/93/5789936e-d4f7-ef08-bd94-132d774bf21a/AppIcon-0-0-1x_U007emarketing-0-3-0-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "해머스미스커피": {
+  "file": "logos/57d2cb3779.webp",
+  "src": "https://cdn.imweb.me/upload/S201801175a5ee5d1b558f/5c7f5a0ae8d09.png",
+  "px": 630
  },
  "해쉬커피": {
   "file": "logos/d16f42dbaa.webp",
