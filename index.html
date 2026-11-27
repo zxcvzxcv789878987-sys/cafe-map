@@ -9869,7 +9869,17 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (!navigator.geolocation) { toast('이 기기에서는 위치를 확인할 수 없어요'); return; }
     // 실시간으로 받아 둔 위치가 15초 안의 것이면 기다리지 않고 바로 간다(새로 받으면 2초쯤 걸린다).
     if (lastFix && Date.now() - lastFix.t < 15000) { gotHere(lastFix.p); return; }
-    navigator.geolocation.getCurrentPosition(gotHere, function () { setFollow(false); toast('위치를 확인하지 못했어요. 위치 권한을 허용해 주세요'); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 });
+    // 못 받았을 때(사용자 2026-11-28: 갑자기 위치 권한 허용해 주세요만 뜬다): 까닭을 나눈다.
+    //  권한이 꺼짐(1)이면 그렇게 알리고, 실내라 GPS가 늦거나(3 시간 초과) 못 찾으면(2) 정확도를 낮춰 한 번 더 받는다.
+    var fail = function (er) {
+      setFollow(false);
+      if (er && er.code === 1) toast('위치 권한이 꺼져 있어요. 설정에서 위치를 허용해 주세요');
+      else toast('위치를 찾지 못했어요. 휴대폰 위치가 켜져 있는지 확인해 주세요');
+    };
+    navigator.geolocation.getCurrentPosition(gotHere, function (er) {
+      if (er && er.code === 1) { fail(er); return; }
+      navigator.geolocation.getCurrentPosition(gotHere, fail, { enableHighAccuracy: false, timeout: 15000, maximumAge: 120000 });
+    }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 });
     function gotHere(p) {
       lastFix = { p: p, t: Date.now() };
       var ll = [p.coords.longitude, p.coords.latitude];
