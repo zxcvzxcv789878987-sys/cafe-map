@@ -9160,8 +9160,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 손으로 지도를 밀면 따라가기를 끈다(확대, 축소는 따라가기를 그대로 둔다).
   map.on('dragstart', function () { if (follow) setFollow(false); });
   $('locate').addEventListener('click', function () { startHeading(true); setFollow(true); locateMe(); });
-  // 날아가는 시간: 배율이 많이 바뀔수록, 멀수록 오래(1.6초에서 5.5초). 사용자 2026-11-27: 앱을 열 때, 내 위치 단추, 처음 안내가 끝날 때 너무 빠르다.
-  function flyMs(dz, far) { return Math.round(Math.max(1600, Math.min(5500, 1100 + 480 * Math.abs(dz) + 380 * Math.min(far || 0, 6)))); }
+  // 날아가는 시간: 배율이 많이 바뀔수록, 멀수록 오래. 사용자 2026-11-27: 앱을 열 때, 내 위치 단추, 처음 안내가 끝날 때 너무 빠르다(1.6초에서 5.5초로 늘림).
+  //  2026-11-28 사용자: 조금 느리다, 전체적으로 살짝 올리자. 같은 모양으로 25% 빠르게, 가장 길어도 4초(1.2초에서 4초).
+  function flyMs(dz, far) { return Math.round(Math.max(1200, Math.min(4000, .75 * (1100 + 480 * Math.abs(dz) + 380 * Math.min(far || 0, 6))))); }
   function flyMsTo(ll, z) {
     var p0 = map.project(ll), box = map.getContainer();
     return flyMs(z - map.getZoom(), Math.hypot(p0.x - box.clientWidth / 2, p0.y - box.clientHeight / 2) / Math.max(1, box.clientWidth));
