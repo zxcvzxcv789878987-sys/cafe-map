@@ -34,6 +34,11 @@
   "src": "https://www.graypipple.com/asset/img/og_image.jpg",
   "px": 295
  },
+ "금커피별빙수": {
+  "file": "logos/cca17bbe3e.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20200831/907e444beceba.png",
+  "px": 196
+ },
  "나우커피": {
   "file": "logos/3b281fc1da-f.webp",
   "src": "https://play-lh.googleusercontent.com/F_buLtZaZexnh6ddaIF88QeH4nFaw4qksAw1wMnsMYlBn3k_7Z7_g_4hPGw4xw_bTF9De52h0LbJ2Ypg_ZhencA=s512",
@@ -43,6 +48,11 @@
   "file": "logos/4f3192db46-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/8b/97/9e/8b979e1b-61c6-6c02-182d-4d7a2c74d160/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "날쌘카페": {
+  "file": "logos/c012bfbb80.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20240805/4dbef3eff90c4.png",
+  "px": 196
  },
  "달롱도르": {
   "file": "logos/5b8f642d4e-f.webp",
@@ -134,6 +144,11 @@
   "src": "https://cdn.imweb.me/upload/S2021073187c966d5c639d/19fc9c9b5020e.ico",
   "px": 256
  },
+ "몬도커피츄러스": {
+  "file": "logos/27a4979ff6.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20260814/901e6e2dfd222.png",
+  "px": 196
+ },
  "몬스터HNM커피": {
   "file": "logos/0465d3d642-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/de/d3/b0/ded3b0e5-92d0-1bd3-bb3d-e79c6e4a0b2e/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg",
@@ -159,6 +174,11 @@
   "src": "http://babeanscoffee.com/theme/babeans/img/pc/comm/logo.png",
   "px": 55
  },
+ "반달커피": {
+  "file": "logos/ee8fd3e2cd-f.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20240115/7fdfce87374f3.png",
+  "px": 196
+ },
  "발도스커피": {
   "file": "logos/e30e641f01-f.webp",
   "src": "http://valdos.co.kr/w/img/admin/logo200.png",
@@ -183,6 +203,11 @@
   "file": "logos/9d6576fdca-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/e2/b4/d6/e2b4d6e9-0b6b-8b35-abc5-8691cc9e8f8b/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "보난자커피": {
+  "file": "logos/0343ec4ac2-f.webp",
+  "src": "https://cdn.imweb.me/thumbnail/20240715/56229766b7dbe.png",
+  "px": 196
  },
  "복고다방": {
   "file": "logos/f374967e2a.webp",
@@ -314,6 +339,16 @@
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/98/a5/31/98a53160-790a-f276-ef06-f3c861803f08/AnghoduAppIcon-0-0-1x_U007emarketing-0-11-0-85-220.png/512x512bb.jpg",
   "px": 512
  },
+ "어랏커피": {
+  "file": "logos/240b136e3f-f.webp",
+  "src": "https://storage.googleapis.com/cr-resource/image/7bbd9c81a7f7a319bfe693b7deef95dc/alotcoffee/650/fb16d69b7c0ed26c22bf401f508ea1f5.jpg?_1795778320",
+  "px": 242
+ },
+ "어벤더치": {
+  "file": "logos/3fdb9b4cdd-f.webp",
+  "src": "http://avendutch.com/img/kakaotalk_img.png",
+  "px": 348
+ },
  "에이바우트커피": {
   "file": "logos/b894568f32-f.webp",
   "src": "https://a-boutcoffee.com/images/thumbnail.jpg",
@@ -374,10 +409,20 @@
   "src": "https://xn--382-v18me95c8ph.com/img/dakdonggari/og_img.png",
   "px": 557
  },
+ "이공커피": {
+  "file": "logos/80e2c9e50d-f.webp",
+  "src": "https://www.yigongcoffee.com/og-image.jpg",
+  "px": 697
+ },
  "이디야": {
   "file": "logos/e1f684a083.webp",
   "src": "https://ediya.com/images/ico/favicon.ico",
   "px": 256
+ },
+ "잠바주스": {
+  "file": "logos/8d381791ff.webp",
+  "src": "https://www.jambajuice.co.kr/resources/img/layout/logo.png",
+  "px": 65
  },
  "쥬씨": {
   "file": "logos/22d3b88f60-f.webp",
@@ -519,10 +564,20 @@
   "src": "https://static.wixstatic.com/media/5993f5_d322725ab616421080e5dace19f87bef%7Emv2.jpg/v1/fill/w_192%2Ch_192%2Clg_1%2Cusm_0.66_1.00_0.01/5993f5_d322725ab616421080e5dace19f87bef%7Emv2.jpg",
   "px": 192
  },
+ "커피인류": {
+  "file": "logos/0c838ae3d7-f.webp",
+  "src": "https://coffeeinryu.com:443/superboard/data/siteconfig/20240911160953_66e142412f5dd_bb5ed23764143acb8cc262d40288568f0346f3c1.jpg",
+  "px": 585
+ },
  "컴포즈커피": {
   "file": "logos/dd97e42f87.webp",
   "src": "https://composecoffee.com/files/attach/xeicon/favicon.dark.ico?t=1788901166",
   "px": 476
+ },
+ "컵넛": {
+  "file": "logos/50271f283c-f.webp",
+  "src": "https://cupnut.co.kr/_public/images2/common/link_banner.png",
+  "px": 180
  },
  "콩카페": {
   "file": "logos/557fc632e4-f.webp",
