@@ -1216,7 +1216,8 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   #chips::-webkit-scrollbar { display: none; }
   #panel { left: 0 !important; right: 0; top: auto !important; bottom: 0; width: auto !important; max-height: 62% !important; border-radius: 20px 20px 0 0; }
   #panel[data-kind=region], #panel[data-kind=filter], #panel[data-kind=search], #panel[data-kind=list] { max-height: 74% !important; }
-  #panel[data-kind=detail][data-embed], #panel[data-kind=list] { max-height: 94% !important; }
+  /* 끝까지 올린 카드(카페 카드, 목록)는 검색창 바로 아래까지만(사용자 2026-11-28: 검색창을 가려 답답하다). --srchTop은 검색창 아래 8px. */
+  #panel[data-kind=detail][data-embed], #panel[data-kind=list] { max-height: calc(100% - var(--srchTop, 64px)) !important; }
   /* 검색 결과는 검색창 바로 아래에서 내려온다. 아래에 두면 아이폰 키보드에 가려져서 한두 곳이면 안 나온 줄 알았다(사용자 2026-11-28).
      높이는 키보드 위까지(--vvh: 화면에서 키보드를 뺀 높이, --srchTop: 검색창 아래, 둘 다 JS가 맞춘다). */
   #panel[data-kind=search] { top: var(--srchTop, 112px) !important; bottom: auto; margin: 0 10px; border-radius: 18px; max-height: calc(var(--vvh, 100vh) - var(--srchTop, 112px) - 10px) !important; }
