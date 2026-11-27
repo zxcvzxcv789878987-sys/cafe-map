@@ -7929,6 +7929,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     TG.dec[f] = { d: 1, t: now - D1 };
     return TG;
   }
+  // 시험 모드에서 화면을 다듬어 볼 카페: 브랜드, 문 연 달, 대형 넓이, 같은 건물 카페, 정류장, 주차장, 지역화폐가 다 있는 곳.
+  function testFullCafe() { for (var q = 0; q < N; q++) if (D.name[q] === '스타벅스 용산전자랜드') return q; return -1; }
   function testMock(url, m) {
     var path = url.replace(/^https:\/\/[^/]+/, '').split('?')[0];
     if (/googleapis\.com/.test(url)) return {};
@@ -7950,6 +7952,15 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         return o;
       }
       if (path === '/v2/fbreply.json') return testFb().replies;
+      // 콘센트 기록: 자료가 다 있는 카페(스타벅스 용산전자랜드)에 여러 사람의 기록을 넣어 화면을 다듬어 본다(사용자 2026-11-28).
+      if (path === '/v2/seats.json') {
+        var sv = {}, si = testFullCafe();
+        if (si >= 0) {
+          var ago = function (d) { return Date.now() - d * 86400000; };
+          sv[cidOf(si)] = { p0: { o: 1, c: 'ws', t: ago(2) }, p1: { o: 1, c: 'w', t: ago(5) }, p2: { o: 1, c: 'wn', t: ago(9) }, p3: { o: 1, c: 's', t: ago(14) }, p4: { o: -1, t: ago(20) }, p5: { o: 1, c: 'w', t: ago(31) } };
+        }
+        return sv;
+      }
       if (path === '/v2/gone.json') return testGone().all;
       var mp = path.match(/^\/v2\/pub\/([^/]+)(\/n)?\.json$/);
       if (mp) {
@@ -8089,6 +8100,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         ['바꿨어요 창', function () { doneBox('cup', '닉네임을 바꿨어요', XP.nick || '시험 쿼카', true); }]
       ]],
       ['지도', [
+        ['자료가 다 있는 카페 (스타벅스 용산전자랜드)', function () { var fi = testFullCafe(); if (fi < 0) { toast('그 카페를 못 찾았어요'); return; } if (P.kind) closePanel(true); selectCafe(fi, true); }],
         ['내 위치 캐릭터 (가짜 위치, 방향 돌기)', function () {
           var c = map.getCenter(); meMarker([c.lng, c.lat]);
           var d = 0, t = setInterval(function () { d += 30; onHeading({ webkitCompassHeading: d % 360 }); if (d >= 720) clearInterval(t); }, 250);
@@ -9261,7 +9273,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     w.appendChild(base);
     // 같은 건물의 카페
     var same = [];
-    for (var j = 0; j < N; j++) if (j !== i && D.lat[j] === D.lat[i] && D.lng[j] === D.lng[i] && !removed[j] && !dabang[j]) same.push(j);
+    // 같은 건물: 도로명 주소가 같은 곳(점 자리는 카카오 실제 자리로 옮겨질 수 있어 좌표로는 못 가린다).
+    var myAddr = fullAddr(i), sameOf = {};
+    for (var j = 0; j < N; j++) if (j !== i && D.road[j] === D.road[i] && !removed[j] && !dabang[j] && fullAddr(j) === myAddr) { same.push(j); sameOf[j] = 1; }
     if (same.length) {
       var sb = el('section', 'olist'); sb.appendChild(el('h2', null, '같은 건물의 카페 ' + same.length + '곳'));
       same.slice(0, 6).forEach(function (j2) { sb.appendChild(cafeRow(j2, false, 'detail')); });
@@ -9270,7 +9284,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     // 근처 비슷한 카페: 같은 종류(프랜차이즈, 저가커피, 개인카페)에서 가까운 넷, 1km 안. 콘센트 기록이 있으면 먼저.
     var near = [], kx = Math.cos(D.lat[i] / 1e5 * Math.PI / 180);
     for (var k = 0; k < N; k++) {
-      if (k === i || removed[k] || dabang[k] || grp[k] !== grp[i] || (D.lat[k] === D.lat[i] && D.lng[k] === D.lng[i])) continue;
+      if (k === i || removed[k] || dabang[k] || grp[k] !== grp[i] || sameOf[k]) continue;
       var dy = (D.lat[k] - D.lat[i]) / 1e5, dx = (D.lng[k] - D.lng[i]) / 1e5 * kx, m = Math.sqrt(dx * dx + dy * dy) * 111320;
       if (m <= 1000) near.push([m - (outlet[k] === 1 ? 300 : 0), k, m]);
     }
