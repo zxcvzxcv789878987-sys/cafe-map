@@ -2672,12 +2672,12 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     for (var k = 0; k < NR; k++) if (regPath(k) === saved.reg) { S.reg = k; return; }
   })();
   // 콘센트 좌석 기록. 자료가 어디에도 없어서, 쓰는 사람들이 카페를 눌러 직접 적고 그 기록을 모두가 같이 본다.
-  //   o: 1 콘센트 좌석 있음, -1 없음.  c: 콘센트가 있는 자리의 종류 글자들(w 벽면 소파, s 바테이블 의자, n 일반 의자)
+  //   o: 1 콘센트 좌석 있음, -1 없음.  c: 콘센트가 있는 자리의 종류 글자들(w 벽면 의자, s 바테이블 의자, n 일반 의자)
   // 내가 적은 것(myO, myC)은 이 기기에 저장하고, 서버가 정해져 있으면(share.js) 서버에도 올린다.
   // 지도와 필터는 모두의 기록을 모은 결과(outlet, chair)를 쓴다.
   // 콘센트가 있는 자리가 어떤 자리인가: [저장하는 글자, 화면 이름, 비트, votes 안의 자리, 설명].
-  // 벽면 소파(벽에 붙은 긴 소파), 바테이블 의자(창가 같은 곳의 높은 의자), 일반 의자(옮길 수 있는 보통 의자). 콘센트가 드문 일반 의자를 맨 뒤에 둔다.
-  var CHAIRS = [['w', '벽면 소파', 2, 3, '벽에 붙어 고정된 긴 소파'], ['s', '바테이블 의자', 4, 4, '높은 바 테이블의 의자. 보통 창가에 있다'], ['n', '일반 의자', 1, 2, '자리를 자유롭게 옮길 수 있는 보통 의자']];
+  // 벽면 의자(벽과 하나로 붙은 긴 의자), 바테이블 의자(창가 같은 곳의 높은 의자), 일반 의자(옮길 수 있는 보통 의자). 콘센트가 드문 일반 의자를 맨 뒤에 둔다.
+  var CHAIRS = [['w', '벽면 의자', 2, 3, '벽과 하나로 붙어 있는 긴 의자'], ['s', '바테이블 의자', 4, 4, '높은 바 테이블의 의자. 보통 창가에 있다'], ['n', '일반 의자', 1, 2, '자리를 자유롭게 옮길 수 있는 보통 의자']];
   var outlet = new Int8Array(N), chair = new Uint8Array(N), myO = new Int8Array(N), myC = new Uint8Array(N);
   var votes = {};      // 다른 사람들의 기록을 카페별로 센 것. 카페 번호 -> [있음, 없음, 일반 의자, 벽면 고정, 스탠드형]
   function chairBits(str) { var m = 0; CHAIRS.forEach(function (c) { if ((str || '').indexOf(c[0]) >= 0) m |= c[2]; }); return m; }
@@ -6962,7 +6962,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
     bd.className = 'xbadge pic'; bd.appendChild(fxStill('plug')); hd.appendChild(bd); hd.appendChild(el('h2', null, '기록한 사람 ' + list.length + '명')); box.appendChild(hd);
     list.sort(function (a, b) { return (b.t || 0) - (a.t || 0); });
-    var ll = el('div', 'xll'), names = { w: '벽면 소파', s: '바테이블 의자', n: '일반 의자' };
+    var ll = el('div', 'xll'), names = { w: '벽면 의자', s: '바테이블 의자', n: '일반 의자' };
     list.forEach(function (x, n) {
       var r = el('div', 'xli'), l = el('span'), rt = el('span', 'rt'), nm = el('span', 'rs', x.me ? '나' : x.admin ? '운영자' : '사용자 ' + (list.length - n));
       l.appendChild(nm);
@@ -9296,9 +9296,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     // 원두 보너스 띠(노랑): 아무도 기록하지 않은 카페, 새로 연 카페, 오랜만의 기록을 기다리는 카페
     var bon = el('div', 'obonus');
     var bline = function (text, cls) { var l = el('div', 'obline' + (cls ? ' ' + cls : '')), b = el('span', 'obean'); b.innerHTML = BEAN_SVG; l.appendChild(b); l.appendChild(el('span', null, text)); bon.appendChild(l); };
-    if (!(v[0] + v[1] + (myO[i] ? 1 : 0))) bline('처음 기록하면 원두를 2배로 받아요', 'oplug');
-    if (ago >= 0 && ago < 12) bline('새로 연 카페라 기록하면 원두 +500');
-    else if (staleCafe(i)) bline('오랜만에 기록하면 원두 +500');
+    if (!(v[0] + v[1] + (myO[i] ? 1 : 0))) bline('첫 기록 2배', 'oplug');
+    if (ago >= 0 && ago < 12) bline('새로 연 카페 +500');
+    else if (staleCafe(i)) bline('오랜만의 기록 +500');
     if (bon.firstChild) w.appendChild(bon);
     // 콘센트 기록: 카드가 쥔 칸을 그대로 옮겨 붙인다.
     if (act.rec) w.appendChild(act.rec);
