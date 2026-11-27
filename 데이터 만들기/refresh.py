@@ -152,6 +152,9 @@ if bad:
             shutil.copy2(b, f)
     stop(bad + '. 예전 파일로 되돌렸다.')
 json.dump(state, open(STATE_PATH, 'w', encoding='utf-8'), ensure_ascii=False)
+# 카페 카드의 '카페지도 정보' 탭 자료(가까운 버스정류장, 지하철역, 주차장, 지역화폐 가맹점, 건축물대장). info/*.json
+say('   카페 주변 정보 만들기')
+run('cafe_info.py', '--fetch')
 
 # 6. 올리기
 if NO_PUSH:
@@ -160,7 +163,7 @@ else:
     say('6. 깃허브에 올리기')
     def git(*a):
         return subprocess.run(['git'] + list(a), cwd=ROOT, capture_output=True, text=True, encoding='utf-8', errors='replace')
-    git('add', 'cafes.js')
+    git('add', 'cafes.js', 'info')
     if git('diff', '--cached', '--quiet').returncode == 0:
         say('   바뀐 것이 없다.')
     else:
