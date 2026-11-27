@@ -477,7 +477,9 @@ button.oli { width: 100%; padding: 11px 0; margin: 0; background: none; color: v
 .otags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; }
 .obig { display: inline-flex; align-items: center; gap: 6px; padding: 2px 0; background: none; border: 0; font: inherit; cursor: pointer; }
 .obig .py { font-size: 13px; color: var(--ink-2); }
-.otag { font-size: 12px; font-weight: 700; border-radius: 6px; padding: 3px 7px; }
+.otag { display: inline-flex; align-items: center; height: 24px; box-sizing: border-box; font-size: 12px; font-weight: 700; line-height: 1; border-radius: 6px; padding: 0 8px; white-space: nowrap; }
+.otags.wide { margin: -10px 0 0 56px; flex-wrap: nowrap; }
+.obig .py { line-height: 24px; white-space: nowrap; }
 .otag.big { color: #4c3fc4; background: color-mix(in srgb, var(--pri) 10%, var(--surface)); }
 .otag.new { color: #1e6b30; background: #e6f4ea; }
 .oacts { flex: none; display: flex; margin: -4px -8px 0 0; }
@@ -9848,7 +9850,6 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       tags.appendChild(big);
     }
     if (ago >= 0 && ago < 12) tags.appendChild(el('span', 'otag new', '새로 연 카페'));
-    if (tags.firstChild) tl.appendChild(tags);
     top.appendChild(tl);
     var acts = el('div', 'oacts');
     var actBtn = function (cls, pic, label, fn) { var b = btn('oact ' + cls, null, fn); b.appendChild(pic); b.appendChild(el('span', null, label)); acts.appendChild(b); return b; };
@@ -9857,6 +9858,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (act.memo) actBtn('omemo', memoPic(), '메모', act.memo);
     actBtn('oshare', icon('share'), '공유', act.share);
     top.appendChild(acts); w.appendChild(top);
+    // 평수와 표시는 이름 아래 한 줄로 넓게(이름 칸이 좁아 줄이 밀리고 높이가 어긋났다. 사용자 2026-11-28).
+    if (tags.firstChild) { tags.classList.add('wide'); w.appendChild(tags); }
     // 주소와 길찾기 한 줄, 그 아래 영업시간과 전화번호(공식 자료가 없어 앱 안의 카카오맵 탭으로 넘긴다), 내 메모
     var basic = el('div', 'obasic'), fl = D.floor[i], ad = el('div', 'oaddr');
     ad.appendChild(icon('pin')); ad.appendChild(el('span', null, shortAddr(i) + (fl > 0 ? ', ' + fl + '층' : fl < 0 ? ', 지하' : '')));
