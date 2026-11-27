@@ -4627,7 +4627,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       leafZ = cam ? cam.zoom : DM_DEEP;
       // 구 안에서는 안 간 동 이름도 그 배율부터 적는다.
       if (dm.getLayer('dm-lab')) dm.setLayerZoomRange('dm-lab', dmLeafLevel(rk) ? Math.min(DM_DEEP, leafZ - .4) : DM_DEEP, 24);
-      dm.fitBounds(bb, { padding: pad(), duration: 650, maxZoom: 14.5 });
+      dm.fitBounds(bb, { padding: pad(), duration: 600, maxZoom: 14.5 });
       renderPills(); showWhere();
       if (D.ldk && dmLeafLevel(rk)) addSgg(gOf(regPath(rk)));
     }
@@ -9161,8 +9161,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   map.on('dragstart', function () { if (follow) setFollow(false); });
   $('locate').addEventListener('click', function () { startHeading(true); setFollow(true); locateMe(); });
   // 날아가는 시간: 배율이 많이 바뀔수록, 멀수록 오래. 사용자 2026-11-27: 앱을 열 때, 내 위치 단추, 처음 안내가 끝날 때 너무 빠르다(1.6초에서 5.5초로 늘림).
-  //  2026-11-28 사용자: 조금 느리다, 전체적으로 살짝 올리자. 같은 모양으로 25% 빠르게, 가장 길어도 4초(1.2초에서 4초).
-  function flyMs(dz, far) { return Math.round(Math.max(1200, Math.min(4000, .75 * (1100 + 480 * Math.abs(dz) + 380 * Math.min(far || 0, 6))))); }
+  //  2026-11-28 사용자: 조금 느리다. 같은 모양으로 25% 빠르게, 가장 길어도 3초(1.2초에서 3초).
+  //  쓰는 곳: 앱을 열 때, 내 위치 단추, 처음 안내, 가까운 곳, 전국 지도, 처음부터 단추. 지역 고르기, 검색, 카드 열기, 걷는 길은 0.5~0.6초 그대로.
+  function flyMs(dz, far) { return Math.round(Math.max(1200, Math.min(3000, .75 * (1100 + 480 * Math.abs(dz) + 380 * Math.min(far || 0, 6))))); }
   function flyMsTo(ll, z) {
     var p0 = map.project(ll), box = map.getContainer();
     return flyMs(z - map.getZoom(), Math.hypot(p0.x - box.clientWidth / 2, p0.y - box.clientHeight / 2) / Math.max(1, box.clientWidth));
@@ -9238,7 +9239,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   });
   favRender();
   // 처음부터: 전국으로 돌아가면서 필터, 새로 오픈, 찜도 모두 푼다.
-  $('navHome').addEventListener('click', function () { resetAll(); closePanel(); goRegion(-1); });
+  // 처음부터: 필터를 풀고 전국으로. 내 위치 단추와 같은 날아가기(사용자 2026-11-28, 예전에는 0.6초).
+  $('navHome').addEventListener('click', function () { resetAll(); goKoreaSlow(); });
   $('zin').addEventListener('click', function () { userMove = true; map.zoomIn(); });
   $('zout').addEventListener('click', function () { userMove = true; map.zoomOut(); });
   // ----- 첫 사용 안내(2026-11-27 다시 만듦. 사용자: 실제 판을 열고 실제 단추를 보여 주면서, 틀리지 않게) -----
