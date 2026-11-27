@@ -156,6 +156,9 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 .ask .btn { flex: none; background: var(--pri); color: var(--on-pri); }
 .empty { padding: 28px 24px 30px; text-align: center; color: var(--ink-2); display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .empty b { font-size: 15px; color: var(--ink); }
+/* 이 화면에 없을 때의 두 단추(2026-11-28): 가장 가까운 곳 보기, 전국 지도로 보기 */
+.emptygo { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 4px; }
+.emptygo .btn small { margin-left: 6px; font-weight: 600; opacity: .75; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 16px; border-radius: 11px; font-weight: 650; font-size: 14px; background: var(--surface-2); text-decoration: none; color: var(--ink); }
 .btn:hover { background: var(--line); }
 .btn.pri { background: var(--pri); color: var(--on-pri); }
@@ -933,6 +936,9 @@ button.xlink .xbadge.qna { --pri: #1c7ed6; --pri2: #74c0fc; }
 /* 설정의 내 기록 공개 아래 세 가지: 들여 쓰고 조금 작게(2026-11-28) */
 .pubsub { display: flex; flex-direction: column; gap: 12px; margin-top: -4px; padding-left: 16px; border-left: 2px solid var(--line); margin-left: 4px; }
 .pubsub .switch { font-size: 14px; font-weight: 600; color: var(--ink-2); }
+.pubsub .switch input { width: 34px; height: 20px; }
+.pubsub .switch input::after { width: 16px; height: 16px; }
+.pubsub .switch input:checked::after { transform: translateX(14px); }
 /* 사람 창의 동네 지도, 도감 줄(2026-11-28) */
 .pssee:empty { display: none; }
 .pssee .xrow small { margin-left: 7px; color: var(--ink-3); font-size: 12px; font-weight: 600; }
@@ -2308,6 +2314,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   var grp = new Uint8Array(N), dabang = new Uint8Array(N), score = new Uint8Array(N);
   var mx = new Float64Array(N), my = new Float64Array(N);
   var pass = new Uint8Array(N), mark = new Int8Array(N);
+  // fpass: 지역을 빼고 조건(필터, 찜, 보너스)만 맞는 카페. 이 화면에 없을 때 가장 가까운 곳과 전국 수를 찾는 데 쓴다.
+  var fpass = new Uint8Array(N), fTotal = 0;
   var brandCount = new Int32Array(D.brands.length);
   function mercY(lat) { var s = Math.sin(lat * Math.PI / 180); return 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI); }
   function mercToLngLat(x, y) { return [x * 360 - 180, Math.atan(Math.sinh(Math.PI * (1 - 2 * y))) * 180 / Math.PI]; }
@@ -4683,6 +4691,18 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     return out;
   }
   // 가장 가까운 매장: 10분 안에 잡은 내 위치가 있으면 거기서, 없으면 지도 가운데에서
+  // 조건에 맞는 카페 중 가장 가까운 곳: 10분 안에 받은 내 위치가 있으면 거기서, 없으면 지도 가운데에서.
+  function nearestPass() {
+    var me = !!(lastFix && Date.now() - lastFix.t < 600000), c = me ? null : map.getCenter();
+    var la = me ? lastFix.p.coords.latitude : c.lat, lo = me ? lastFix.p.coords.longitude : c.lng;
+    var kx = Math.cos(la * Math.PI / 180), best = -1, bd = Infinity, i, dy, dx, d;
+    for (i = 0; i < N; i++) {
+      if (!fpass[i]) continue;
+      dy = D.lat[i] / 1e5 - la; dx = (D.lng[i] / 1e5 - lo) * kx; d = dy * dy + dx * dx;
+      if (d < bd) { bd = d; best = i; }
+    }
+    return best < 0 ? null : { i: best, m: Math.sqrt(bd) * 111320, me: me };
+  }
   function dexNear(j) {
     var me = !!(lastFix && Date.now() - lastFix.t < 600000), c = me ? null : map.getCenter();
     var la = me ? lastFix.p.coords.latitude : c.lat, lo = me ? lastFix.p.coords.longitude : c.lng;
@@ -5269,7 +5289,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     for (k = 0; k < regMask.length; k++) { regMask[k] = S.reg < 0 || !S.outline ? 1 : 0; for (r = dongReg[k]; r >= 0 && !regMask[k]; r = rParent[r]) if (r === S.reg) regMask[k] = 1; }
     rCnt.fill(0); rSx.fill(0); rSy.fill(0);
     var wantChair = chairBits(Object.keys(S.chairs).join(''));
-    var anySel = nKeys(S.cats) + nKeys(S.brands) > 0, minArea = S.bigPy * PYEONG, n = 0;
+    var anySel = nKeys(S.cats) + nKeys(S.brands) > 0, minArea = S.bigPy * PYEONG, n = 0, fn = 0;
     for (i = 0; i < N; i++) {
       var b = D.brand[i];
       // 옛날식 다방은 늘 뺀다.
@@ -5282,8 +5302,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (ok && removed[i] === 1) ok = false;
       if (ok) { r = dongReg[D.dongOf[i]]; rCnt[r]++; rSx[r] += mx[i]; rSy[r] += my[i]; }
       pass[i] = ok && regMask[D.dongOf[i]] ? 1 : 0;
+      fpass[i] = ok ? 1 : 0; if (ok) fn++;
       if (pass[i]) n++;
     }
+    fTotal = fn;
     // 부모 칸은 늘 자식보다 번호가 작다. 뒤에서부터 더해 올라간다.
     for (k = NR - 1; k >= 0; k--) { r = rParent[k]; if (r >= 0) { rCnt[r] += rCnt[k]; rSx[r] += rSx[k]; rSy[r] += rSy[k]; } }
     totalPass = n;
@@ -8159,7 +8181,24 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (!cnt) {
       var e = el('div', 'empty');
       e.appendChild(el('b', null, wantOnly && !totalPass ? '아직 찜한 곳이 없어요' : '이 화면에는 조건에 맞는 카페가 없어요'));
-      e.appendChild(el('span', null, totalPass ? '지도를 옮기거나 축소해 보세요. 조건에 맞는 카페는 모두 ' + fmt(totalPass) + '곳이에요.' : '조건을 줄여 보세요.'));
+      e.appendChild(el('span', null, totalPass ? '지도를 옮기거나 축소해 보세요. 조건에 맞는 카페는 모두 ' + fmt(totalPass) + '곳이에요.' : fTotal ? '고른 지역에는 없지만 다른 지역에는 있어요.' : '조건을 줄여 보세요.'));
+      // 이 화면에는 없지만 다른 곳에는 있으면(사용자 2026-11-28): 가장 가까운 곳으로 가거나 전국 지도에서 본다.
+      if (fTotal) {
+        var nr = nearestPass(), two = el('div', 'emptygo');
+        if (nr) {
+          var gb = btn('btn sm pri', null, function () {
+            if (!pass[nr.i]) { S.reg = -1; changed(); }   // 고른 지역 밖이면 지역을 풀고 그 카페로 간다
+            selectCafe(nr.i, true);
+          });
+          gb.appendChild(document.createTextNode('가장 가까운 곳 보기'));
+          gb.appendChild(el('small', null, nr.m >= 1000 ? (Math.round(nr.m / 100) / 10) + 'km' : (Math.round(nr.m / 10) * 10) + 'm'));
+          two.appendChild(gb);
+        }
+        var kb = btn('btn sm', null, function () { closePanel(); goRegion(-1); });
+        kb.appendChild(document.createTextNode('전국 지도로 보기')); kb.appendChild(el('small', null, fmt(fTotal) + '곳'));
+        two.appendChild(kb);
+        e.appendChild(two);
+      }
       if (anyFilter() || S.seen !== 'all' || S.bonus) e.appendChild(btn('btn sm', '필터 초기화', function () { resetAll(); changed(); }));
       sc.appendChild(e); return;
     }
