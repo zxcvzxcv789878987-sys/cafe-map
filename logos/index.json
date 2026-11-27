@@ -14,6 +14,11 @@
   "src": "https://www.gong-cha.co.kr/favicon/android-chrome-512x512.png",
   "px": 512
  },
+ "나우커피": {
+  "file": "logos/3b281fc1da-f.webp",
+  "src": "https://play-lh.googleusercontent.com/F_buLtZaZexnh6ddaIF88QeH4nFaw4qksAw1wMnsMYlBn3k_7Z7_g_4hPGw4xw_bTF9De52h0LbJ2Ypg_ZhencA=s512",
+  "px": 512
+ },
  "나이스카페인클럽": {
   "file": "logos/4f3192db46-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/8b/97/9e/8b979e1b-61c6-6c02-182d-4d7a2c74d160/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg",
@@ -37,6 +42,11 @@
  "더벤티": {
   "file": "logos/96350051ab-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/63/eb/7b/63eb7bfb-881c-bfd1-885a-b1538eac826e/AppIcon-0-0-1x_U007emarketing-0-7-0-85-220.png/512x512bb.jpg",
+  "px": 512
+ },
+ "데이롱카페": {
+  "file": "logos/4326747295-f.webp",
+  "src": "https://play-lh.googleusercontent.com/gywn3ObuAzznDxdrHusPh6dqAH0FCNkcjf5Cx3laXgGnOdQN3uJAXnawIvzJqugZixvLedkWhXzEdrABk2gT3A=s512",
   "px": 512
  },
  "드롭탑": {
@@ -173,6 +183,11 @@
   "file": "logos/c1c27fafdb-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/98/a5/31/98a53160-790a-f276-ef06-f3c861803f08/AnghoduAppIcon-0-0-1x_U007emarketing-0-11-0-85-220.png/512x512bb.jpg",
   "px": 512
+ },
+ "엔제리너스": {
+  "file": "logos/c92c608072-f.webp",
+  "src": "https://img.lotteeatz.com/assets/images/main/brandlogo_angelinus.png",
+  "px": 426
  },
  "영커피": {
   "file": "logos/7456c8f1c4-f.webp",
@@ -352,6 +367,11 @@
  "파스쿠찌": {
   "file": "logos/06b9583d12-f.webp",
   "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/ab/83/5f/ab835ffe-0b69-5975-732f-22b2fef02f75/AppIcon-0-0-1x_U007emarketing-0-8-0-0-85-220.png/512x512bb.jpg",
+  "px": 512
+ },
+ "팔공티": {
+  "file": "logos/18416e5a9a-f.webp",
+  "src": "https://play-lh.googleusercontent.com/RQBke_Ya0CrX9J_AT0TbWh5bgWN9Pv3x9zG4-dFvwjfhmg72g24epNZiyhiBAdGN35tq_HSJ0hAfPYnAT6HZhw=s512",
   "px": 512
  },
  "포트캔커피": {
