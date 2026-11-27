@@ -6214,10 +6214,6 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (row) acc.appendChild(row);
       sc.appendChild(acc);
     }
-    // 사용법(2026-11-27): 지도 점 보는 법과 콘센트 기록하는 법, 처음 안내 다시 보기. 처음 쓰는 사람이 찾기 쉽게 계정 바로 아래에 둔다.
-    var gsec = el('div', 'fsec'), gur = btn('xrow xlink', null, function () { openGuide(true); }), gub = el('span', 'xbadge pic mn');
-    gub.appendChild(fxStill('mi_etc')); gur.appendChild(gub); gur.appendChild(el('span', null, '사용법')); gur.appendChild(icon('right'));
-    gsec.appendChild(gur); sc.appendChild(gsec);
     // 내 레벨과 모은 XP, 그리고 보상 체계(무엇을 하면 몇 XP인지, 어디까지 받았는지). 로그인하지 않았으면 레벨 대신 안내만 둔다.
     if (XP_ON && loginOn) {
       var xsec = el('div', 'fsec'), xl = el('div', 'xlv'), xtop = el('div', 'top');
@@ -6346,7 +6342,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var tr = btn('xrow xlink', null, function () { location.href = location.pathname + '?test'; }), tbd = el('span', 'xbadge pic mn');
       tbd.appendChild(fxStill('mi_test')); tr.appendChild(tbd); tr.appendChild(el('span', null, '시험 모드')); tr.appendChild(icon('right')); fbRows.push(tr);
     }
-    fb.appendChild(fr); fbRows.forEach(function (r) { fb.appendChild(r); }); sc.appendChild(fb);
+    // 사용법(2026-11-27): 지도 점 보는 법과 콘센트 기록하는 법, 처음 안내 다시 보기. 문의하기 바로 위(사용자 2026-11-27, 예전에는 계정 바로 아래).
+    var gur = btn('xrow xlink', null, function () { openGuide(true); }), gub = el('span', 'xbadge pic mn');
+    gub.appendChild(fxStill('mi_etc')); gur.appendChild(gub); gur.appendChild(el('span', null, '사용법')); gur.appendChild(icon('right'));
+    fb.appendChild(gur); fb.appendChild(fr); fbRows.forEach(function (r) { fb.appendChild(r); }); sc.appendChild(fb);
     var info = el('div', 'fsec'), ul = el('ul', 'mlist');
     info.style.borderBottom = '0';
     info.appendChild(el('div', 'ftitle', '지도 자료'));
@@ -8678,7 +8677,16 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       t: '콘센트 기록', m: '그 카페에 있을 때 기록할 수 있어요.',
       steps: ['콘센트 기록을 눌러요', '콘센트가 있는 자리를 모두 골라요 (없으면 없어요)', '기록하면 원두를 받아요 (로그인 필요)'] },
     // 마지막: 메뉴 설명은 하지 않고 사용법 줄만 밝힌다(사용자: 메뉴를 말하는지 사용법을 말하는지 헷갈린다).
-    { enter: function () { if (P.kind !== 'menu') { if (P.kind) closePanel(true); $('menuBtn').click(); } return P.kind === 'menu'; }, side: coachSideBelow,
+    { enter: function () {
+        if (P.kind !== 'menu') { if (P.kind) closePanel(true); $('menuBtn').click(); }
+        if (P.kind !== 'menu') return false;
+        // 사용법 줄이 문의하기 바로 위(메뉴 아래쪽)라 그냥 두면 화면 맨 바닥에 걸린다(사용자: 맨 바닥에 보여 주면 안 좋다). 메뉴 안을 내려 판 가운데쯤에 둔다.
+        var rows = panel.querySelectorAll('.xrow'), sc = panel.querySelector('.scroll');
+        for (var k = 0; k < rows.length; k++) if (rows[k].textContent.trim() === '사용법' && sc) {
+          var sr = sc.getBoundingClientRect(), rr = rows[k].getBoundingClientRect();
+          sc.scrollTop += (rr.top + rr.height / 2) - (sr.top + sr.height * .45);
+        }
+        return true; }, side: coachSideBelow,
       at: function () { var rows = panel.querySelectorAll('.xrow'); for (var k = 0; k < rows.length; k++) if (rows[k].textContent.trim() === '사용법') return [rows[k]]; return [$('menuBtn')]; },
       t: '사용법', m: '이 안내는 메뉴의 사용법에서 다시 볼 수 있어요.' }
   ];
