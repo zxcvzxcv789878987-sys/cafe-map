@@ -354,13 +354,19 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .prow .pin { flex: none; }
 .prow span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* 처음 열 때 자료를 받는 동안 보이는 표시 */
-/* 앱을 열 때 잠깐 보이는 시작 화면(사용자 2026-11-27: 인스타, 네이버, 카카오맵처럼). 흰 바탕 가운데 앱 아이콘, 아래에 이름.
-   적어도 0.9초 보이고, 자료를 다 읽으면 서서히 사라진다(cafeSplashDone). */
-#splash { position: fixed; inset: 0; z-index: 9999; background: #fff; display: grid; place-items: center; transition: opacity .35s ease; }
-#splash img { width: 104px; height: 104px; border-radius: 26px; box-shadow: 0 8px 24px rgba(80, 60, 200, .18); }
-#splash b { position: absolute; left: 0; right: 0; bottom: calc(48px + env(safe-area-inset-bottom, 0px)); text-align: center; font: 700 17px/1 "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", sans-serif; letter-spacing: -.2px; color: #6A5AE0; }
+/* 앱을 열 때 잠깐 보이는 시작 화면(사용자 2026-11-27: 인스타, 네이버, 카카오맵처럼).
+   보라 바탕 가운데 우리 컵 캐릭터를 크게, 바로 아래 흰 글씨 "카페지도"(캐릭터라 작으면 한순간에 다 못 본 느낌이라 크게).
+   아이콘 그림(icon-512.png)의 바탕이 이 보라(#6A5AE0)와 같아서 그림 테두리가 보이지 않는다.
+   적어도 0.9초 보이고, 자료를 다 읽으면 서서히 사라진다(cafeSplashDone).
+   흔들림 막기(사용자: 가끔 글자와 아이콘이 튀었다가 제자리로 간다): 자리는 작은 화면 높이(100svh)에 맞추고, 글자는 폰에 이미 있는 글꼴로 쓰고,
+   안의 것은 CSS 움직임으로 0.1초 뒤에 나타난다(무거운 자료를 읽는 동안에도 멈추지 않게 타이머를 쓰지 않는다). */
+#splash { position: fixed; inset: 0; z-index: 9999; background: #6A5AE0; transition: opacity .35s ease; }
+#splash .in { position: absolute; left: 0; right: 0; top: 0; height: 100vh; height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; animation: spIn .2s ease .1s both; }
+@keyframes spIn { from { opacity: 0; } to { opacity: 1; } }
+#splash img { display: block; width: 288px; height: 288px; margin-top: -24px; }
+#splash b { margin-top: -30px; font: 800 32px/1.1 -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif; letter-spacing: -.5px; color: #fff; }
 #splash.out { opacity: 0; pointer-events: none; }
-@media (prefers-reduced-motion: reduce) { #splash { transition: none; } }
+@media (prefers-reduced-motion: reduce) { #splash { transition: none; } #splash .in { animation: none; } }
 #loading { position: absolute; inset: 0; z-index: 60; background: #f4f3f0; overflow: hidden; }
 #loading[hidden] { display: none; }
 .sk { position: absolute; border-radius: 14px; background: #fff; box-shadow: var(--sh-1); overflow: hidden; }
@@ -1841,7 +1847,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
 </style>
 </head>
 <body>
-<div id="splash" aria-hidden="true"><img src="icon-512.png" alt=""><b>카페지도</b></div>
+<div id="splash" aria-hidden="true"><div class="in"><img src="icon-512.png" alt="" width="288" height="288"><b>카페지도</b></div></div>
 <script>
 // 시작 화면: 자료를 다 읽었을 때(또는 켜다가 막혔을 때) 부른다. 너무 빨리 끝나도 0.9초는 보여 준다. 혹시 못 불러도 10초 뒤에는 내린다.
 (function () {
