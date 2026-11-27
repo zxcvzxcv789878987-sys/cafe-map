@@ -527,8 +527,9 @@ button.oli { width: 100%; padding: 11px 0; margin: 0; background: none; color: v
 .omtile.off { background: var(--surface-2); }
 .omtile.off b { color: var(--ink-3); }
 .omtile.off .omseat svg { opacity: .4; filter: grayscale(1); }
-.omtile.mine { box-shadow: inset 0 0 0 2px var(--pri); }
-.ommk { position: absolute; top: 6px; right: 6px; font-size: 10.5px; font-weight: 800; color: #fff; background: var(--pri); border-radius: 6px; padding: 1px 5px; }
+/* 내 기록 칸: 따로 표시 없이 보라 테두리, 조금 진한 칸 색, 숫자를 "나 포함 3명"으로(2026-11-28 시안 다). 이름은 .mine(다른 곳 스타일)과 겹치지 않게 .my */
+.omtile.my { box-shadow: inset 0 0 0 2px var(--pri); background: color-mix(in srgb, var(--pri) 13%, var(--surface)); }
+.omtile.my b { font-size: 14px; }
 .omseat { width: 30px; height: 30px; display: block; }
 .omseat svg { width: 100%; height: 100%; display: block; }
 .omnote { margin-top: 10px; font-size: 13.5px; color: var(--ink-2); }
@@ -9471,10 +9472,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (tot) {
         var tl = el('div', 'omtiles');
         CHAIRS.forEach(function (c) {
-          var mine = (mc & c[2]) !== 0, n = v[c[3]] + (mine ? 1 : 0), t = el('div', 'omtile' + (n ? '' : ' off') + (mine ? ' mine' : ''));
-          if (mine) t.appendChild(el('span', 'ommk', '내 기록'));
+          var mine = (mc & c[2]) !== 0, n = v[c[3]] + (mine ? 1 : 0), t = el('div', 'omtile' + (n ? '' : ' off') + (mine ? ' my' : ''));
           var sp = el('span', 'omseat'); sp.innerHTML = SEAT_SVG[c[0]]; t.appendChild(sp);
-          t.appendChild(el('span', 'omname', c[1])); t.appendChild(el('b', null, n + '명'));
+          t.appendChild(el('span', 'omname', c[1])); t.appendChild(el('b', null, (mine ? '나 포함 ' : '') + n + '명'));
           tl.appendChild(t);
         });
         box.appendChild(tl);
