@@ -333,7 +333,7 @@ if os.path.exists(bld_path):
             info[i]['e'] = e
         if y:
             info[i]['y'] = y
-        if c is not None:
+        if y and c is not None:      # 사용승인 연도가 빈 건물은 기록이 부실해서 주차 0대도 믿지 않는다
             info[i]['c'] = c
         stat['건축물대장'] += 1
     print('건축물대장 붙은 카페', stat['건축물대장'], flush=True)
