@@ -1,6 +1,7 @@
 # 카페가 든 건물의 건축물대장(건축HUB getBrTitleInfo)을 받아 승객용 승강기 수, 사용승인 연도, 건물 주차 대수를 모은다.
 # 하루 한도가 있어 여러 날 나눠 받는다. 받은 것은 작업/info_src/bld_raw.json에 쌓이고, 다시 돌리면 이어서 받는다.
-# 사용법: python -I -X utf8 building_info.py [--max 9000]
+# 사용법: python -I -X utf8 building_info.py [--max 9000] [--workers 2]
+#   매달 refresh.py가 부른다: 새 카페의 건물을 받고, 열두 달 지난 건물을 조금씩 다시 받는다.
 #   끝나면 작업/info_src/bld.json({카페 이름표: [승강기, 사용승인 연도, 주차 대수]})을 만든다. cafe_info.py가 이것을 info/*.json에 붙인다.
 # 지번은 상가정보의 건물관리번호(법정동코드 10자리, 대지 1 또는 산 2, 번 4자리, 지 4자리)에서 얻는다.
 # 카페 목록의 도로명주소와 같은 건물(도로명, 건물번호)의 상가정보 줄을 찾아 쓴다. 못 찾은 카페는 빠진다.
@@ -71,11 +72,19 @@ print('지번을 찾은 카페', len(cafe_lot), '/', len(D['name']), '건물(지
 
 # 2. 받기(이어서)
 raw = json.load(open(RAW, encoding='utf-8')) if os.path.exists(RAW) else {}
+# 건물마다 받은 달(YYYYMM). 열두 달이 지난 건물은 다시 받아서 승강기, 주차 대수 변화를 따라간다. 날짜가 없는 옛 기록은 이번 달로 친다.
+DATE = os.path.join(SRC, 'bld_date.json')
+got_ym = json.load(open(DATE, encoding='utf-8')) if os.path.exists(DATE) else {}
+NOW_YM = int(time.strftime('%Y%m'))
+for l in raw:
+    got_ym.setdefault(l, NOW_YM)
 
 
 def save():
     json.dump(raw, open(RAW + '.tmp', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
     os.replace(RAW + '.tmp', RAW)
+    json.dump(got_ym, open(DATE + '.tmp', 'w', encoding='utf-8'), separators=(',', ':'))
+    os.replace(DATE + '.tmp', DATE)
 
 
 def ask(lot):
@@ -101,8 +110,15 @@ def ask(lot):
     return out
 
 
+def months_ago(ym):
+    return (NOW_YM // 100 * 12 + NOW_YM % 100) - (ym // 100 * 12 + ym % 100)
+
+
+# 아직 안 받은 건물(새로 생긴 카페의 건물 포함)이 먼저, 그다음 열두 달이 지난 건물을 오래된 것부터.
 todo = [l for l in lots if l not in raw]
-print('남은 건물', len(todo), '이번에 받을 최대', MAX, flush=True)
+old = sorted((l for l in lots if l in raw and months_ago(got_ym.get(l, NOW_YM)) >= 12), key=lambda l: got_ym.get(l, NOW_YM))
+print('남은 건물', len(todo), '다시 받을 오래된 건물', len(old), '이번에 받을 최대', MAX, flush=True)
+todo += old
 # 한 건에 1~2초 걸리는 서버라서 동시에 몇 건씩 묻는다(--workers, 기본 4). 서버에 무리를 주지 않게 크게 늘리지 않는다.
 import threading, concurrent.futures
 WORKERS = int(sys.argv[sys.argv.index('--workers') + 1]) if '--workers' in sys.argv else 4
@@ -131,6 +147,7 @@ with concurrent.futures.ThreadPoolExecutor(WORKERS) as ex:
     for lot, items in ex.map(one, todo[:MAX]):
         if items is not None:
             raw[lot] = items
+            got_ym[lot] = NOW_YM
             cnt['done'] += 1
         elif not stop_ev.is_set():
             cnt['fail'] += 1

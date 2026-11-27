@@ -154,6 +154,8 @@ if bad:
 json.dump(state, open(STATE_PATH, 'w', encoding='utf-8'), ensure_ascii=False)
 # 카페 카드의 '카페지도 정보' 탭 자료(가까운 버스정류장, 지하철역, 주차장, 지역화폐 가맹점, 건축물대장). info/*.json
 say('   카페 주변 정보 만들기')
+# 건축물대장: 새 카페의 건물과 열두 달 지난 건물을 한 번에 5,000곳까지(서버가 느려 한 시간쯤). 다 못 받으면 다음 달에 이어 받는다.
+run('building_info.py', '--max', '5000', '--workers', '2')
 run('cafe_info.py', '--fetch')
 
 # 6. 올리기
