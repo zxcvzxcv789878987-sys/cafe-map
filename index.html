@@ -4750,12 +4750,26 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     return out;
   }
   // 가장 가까운 매장: 10분 안에 잡은 내 위치가 있으면 거기서, 없으면 지도 가운데에서
-  // 가장 가까운 곳으로 간다. 고른 지역 밖이면 지역을 풀고 그 카페 카드를 연다.
+  // 가장 가까운 곳으로 간다. 고른 지역 밖이면 지역을 풀고, 내 위치 단추처럼 천천히 날아가(flyMs) 도착하면 그 카페 카드를 연다.
+  //  (사용자 2026-11-28: 휙 넘어가서 너무 빠르다, 다른 곳 속도와 맞춰라)
   function goNearest() {
     var nr = nearestPass();
     if (!nr) return;
+    if (P.kind) closePanel();
     if (!pass[nr.i]) { S.reg = -1; changed(); }
-    selectCafe(nr.i, true);
+    var i = nr.i, ll = [D.lng[i] / 1e5, D.lat[i] / 1e5], z = Math.max(map.getZoom(), 15.5), dur = flyMsTo(ll, z), H = map.getContainer().clientHeight;
+    liveHoldOn(dur + 1000);
+    map.flyTo({ center: ll, zoom: z, offset: mobile.matches ? [0, -H * .2] : [180, 0], duration: dur, curve: 1.2, essential: true });
+    setTimeout(function () { selectCafe(i); }, dur + 80);
+  }
+  // 전국 지도로 간다. 처음부터 단추와 같은 곳(전국)이지만 내 위치 단추처럼 천천히 날아간다.
+  function goKoreaSlow() {
+    if (P.kind) closePanel();
+    setRegion(-1, false);
+    var cam = map.cameraForBounds(KOREA, { padding: fitPad() });
+    if (!cam) { map.fitBounds(KOREA, { padding: fitPad(), duration: 1600 }); return; }
+    var dur = flyMsTo(cam.center, cam.zoom);
+    map.flyTo({ center: cam.center, zoom: cam.zoom, bearing: 0, duration: dur, curve: 1.2, essential: true });
   }
   // 조건에 맞는 카페 중 가장 가까운 곳: 10분 안에 받은 내 위치가 있으면 거기서, 없으면 지도 가운데에서.
   function nearestPass() {
@@ -8192,7 +8206,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         ng.appendChild(el('div', 'ngt', '이 화면에는 없어요'));
         ng.appendChild(el('div', 'ngs', sub));
         var two = el('div', 'ngb');
-        var ck = btn(null, '전국 지도', function () { if (P.kind) closePanel(); goRegion(-1); });
+        var ck = btn(null, '전국 지도', goKoreaSlow);
         var cn = btn('pri', '가까운 곳', goNearest);
         if (dist) cn.appendChild(el('small', null, dist));
         cn.setAttribute('aria-label', '가장 가까운 곳 보기' + (dist ? ', ' + dist : ''));
@@ -8266,7 +8280,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
           gb.appendChild(el('small', null, nr.m >= 1000 ? (Math.round(nr.m / 100) / 10) + 'km' : (Math.round(nr.m / 10) * 10) + 'm'));
           two.appendChild(gb);
         }
-        var kb = btn('btn sm', null, function () { closePanel(); goRegion(-1); });
+        var kb = btn('btn sm', null, goKoreaSlow);
         kb.appendChild(document.createTextNode('전국 지도로 보기')); kb.appendChild(el('small', null, fmt(fTotal) + '곳'));
         two.insertBefore(kb, two.firstChild);
         e.appendChild(two);
