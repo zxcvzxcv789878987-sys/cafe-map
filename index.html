@@ -429,6 +429,10 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 /* 아래쪽: 개수 단추, 지도 단추 */
 #count { position: absolute; z-index: 15; left: 50%; bottom: 22px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 18px; border-radius: 999px; background: var(--pri); color: var(--on-pri); font-weight: 650; box-shadow: var(--sh-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
 #count:hover { opacity: .9; }
+/* 이 화면에 없을 때 개수 단추 위의 칩 둘(2026-11-28). 카드나 판이 열려 있으면 숨긴다. */
+#nogo { position: absolute; z-index: 15; left: 50%; bottom: 74px; transform: translateX(-50%); display: flex; gap: 8px; }
+#nogo[hidden], .sheet-open #nogo { display: none; }
+#nogo .chip .fxs { width: 17px; height: 17px; }
 #count svg.i { width: 16px; height: 16px; }
 #ctrl { position: absolute; right: 14px; bottom: 44px; z-index: 15; display: flex; flex-direction: column; gap: 8px; }
 #nav { position: absolute; z-index: 15; right: 66px; bottom: 44px; display: flex; gap: 8px; }
@@ -1948,6 +1952,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
   </div>
   <section id="panel" hidden></section>
   <button id="count" type="button" hidden></button>
+  <div id="nogo" hidden></div>
   <div id="nav" hidden>
     <button class="nbtn" id="navAll" type="button" aria-pressed="false" hidden></button>
     <span class="npair">
@@ -4691,6 +4696,13 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     return out;
   }
   // 가장 가까운 매장: 10분 안에 잡은 내 위치가 있으면 거기서, 없으면 지도 가운데에서
+  // 가장 가까운 곳으로 간다. 고른 지역 밖이면 지역을 풀고 그 카페 카드를 연다.
+  function goNearest() {
+    var nr = nearestPass();
+    if (!nr) return;
+    if (!pass[nr.i]) { S.reg = -1; changed(); }
+    selectCafe(nr.i, true);
+  }
   // 조건에 맞는 카페 중 가장 가까운 곳: 10분 안에 받은 내 위치가 있으면 거기서, 없으면 지도 가운데에서.
   function nearestPass() {
     var me = !!(lastFix && Date.now() - lastFix.t < 600000), c = me ? null : map.getCenter();
@@ -8124,6 +8136,14 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var c = $('count'), txt = vc ? '이 화면 ' + fmt(vc) + '곳' : '이 화면에는 없어요';
     // 시 안으로 들어왔을 때부터 보여 준다. 전국이나 도 단위에서는 목록이 쓸모가 없다.
     c.hidden = !inCity(S.reg) && S.seen !== 'want';   // 찜한 곳만 볼 때는 전국에서도 목록을 열 수 있어야 한다.
+    // 이 화면에는 없지만 다른 곳에는 있으면, 개수 단추 바로 위에 칩 둘(사용자 2026-11-28): 가장 가까운 곳 보기, 전국 지도로 보기.
+    var ng = $('nogo'), showNg = !c.hidden && !vc && fTotal > 0;
+    if (showNg && !ng.firstChild) {
+      var cn = btn('chip', null, goNearest); cn.appendChild(fxIcon('mi_pin')); cn.appendChild(el('span', null, '가장 가까운 곳')); cn.setAttribute('aria-label', '가장 가까운 곳 보기');
+      var ck = btn('chip', null, function () { if (P.kind) closePanel(); goRegion(-1); }); ck.appendChild(fxIcon('mi_map')); ck.appendChild(el('span', null, '전국 지도')); ck.setAttribute('aria-label', '전국 지도로 보기');
+      ng.appendChild(cn); ng.appendChild(ck);
+    }
+    ng.hidden = !showNg;
     if (c.dataset.t === txt) return;
     c.dataset.t = txt; c.textContent = '';
     c.appendChild(icon('list')); c.appendChild(el('span', null, txt));
@@ -8186,10 +8206,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (fTotal) {
         var nr = nearestPass(), two = el('div', 'emptygo');
         if (nr) {
-          var gb = btn('btn sm pri', null, function () {
-            if (!pass[nr.i]) { S.reg = -1; changed(); }   // 고른 지역 밖이면 지역을 풀고 그 카페로 간다
-            selectCafe(nr.i, true);
-          });
+          var gb = btn('btn sm pri', null, goNearest);
           gb.appendChild(document.createTextNode('가장 가까운 곳 보기'));
           gb.appendChild(el('small', null, nr.m >= 1000 ? (Math.round(nr.m / 100) / 10) + 'km' : (Math.round(nr.m / 10) * 10) + 'm'));
           two.appendChild(gb);
