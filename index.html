@@ -7112,10 +7112,23 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     busKeyStr = ''; busRefresh();   // 지도의 정류장 하트를 바로 고친다
     if (P.kind === 'list' && S.seen === 'want') renderPanel();
   }
+  // 정류장으로 지도를 옮긴 뒤(움직임이 끝나면) 정류장 창을 연다(사용자 2026-11-28: 찜한 정류장을 누르면 이동이 끝나고 창이 열리게).
+  //  목록 판은 먼저 닫아 지도가 보이게 하고, 이미 그 자리면 바로 연다.
+  function busFlyThen(ll, open) {
+    if (P.kind) closePanel();
+    setFollow(false);
+    var z = Math.max(map.getZoom(), 17), c = map.getCenter();
+    if (Math.abs(c.lng - ll[0]) < 1e-5 && Math.abs(c.lat - ll[1]) < 1e-5 && Math.abs(map.getZoom() - z) < .01) { open(); return; }
+    var done = false, go = function () { if (done) return; done = true; open(); };
+    // 이동을 먼저 시작하고 그다음 끝 신호를 기다린다. 판을 닫으며 생긴 지도 움직임이 이 이동에 끊기면서 보내는 끝 신호를 받지 않으려고.
+    map.flyTo({ center: ll, zoom: z, duration: 600 });
+    map.once('moveend', go);
+    setTimeout(go, 1500);   // moveend가 오지 않을 때(움직임이 끊기는 등)
+  }
   function busFavRow(f) {
     var row = btn('row'), body = el('span', 'body'), pin = el('span', 'pin'); pin.style.setProperty('--c', 'var(--surface-2)'); pin.style.setProperty('--t', 'var(--ink-2)'); pin.appendChild(icon('bus'));
     row.appendChild(pin); body.appendChild(el('span', 'name', f[2])); body.appendChild(el('span', 'meta', f[5] ? '정류장 번호 ' + f[5] : '버스정류장')); row.appendChild(body);
-    row.addEventListener('click', function () { setFollow(false); map.flyTo({ center: [f[1] / 1e5, f[0] / 1e5], zoom: Math.max(map.getZoom(), 17), duration: 600 }); busTap(f); });
+    row.addEventListener('click', function () { busFlyThen([f[1] / 1e5, f[0] / 1e5], function () { busTap(f); }); });
     return row;
   }
   // ----- 노선 보기(2026-11-28) -----
@@ -9523,9 +9536,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var k = o[2][0], j = o[2][1];
     busLoad([k], function () {
       var st = (busTiles[k] || [])[j]; if (!st) return;
-      setFollow(false);
-      map.flyTo({ center: [st[1] / 1e5, st[0] / 1e5], zoom: Math.max(map.getZoom(), 17), duration: 600 });
-      busTap(st);
+      busFlyThen([st[1] / 1e5, st[0] / 1e5], function () { busTap(st); });
     });
   }
   function busRow(o) {
