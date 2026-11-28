@@ -11251,15 +11251,27 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       }
     };
     fill();
-    // 아래로 끌면 닫힌다.
-    var dragOn = false, dy0 = 0, ddy = 0;
+    // 아래로 끌면 닫힌다. 누른 정류장, 반대편 정류장 칸(단추) 위에서 시작해도 끌린다(사용자 2026-11-28).
+    //  그 칸은 8px 넘게 움직여야 끌기로 보고, 톡 누르면 칸이 바뀐다. 끌고 난 뒤의 눌림은 막는다.
+    var dragOn = false, dy0 = 0, ddy = 0, soft = false, moved = false, pid = 0;
     sh.addEventListener('pointerdown', function (e) {
-      if (e.target.closest('button') || e.target.closest('.alist')) return;
-      dragOn = true; dy0 = e.clientY; ddy = 0; sh.style.transition = 'none';
-      try { sh.setPointerCapture(e.pointerId); } catch (err) { /* 그대로 둔다 */ }
+      var segBtn = e.target.closest('.nshseg button');
+      if ((e.target.closest('button') && !segBtn) || e.target.closest('.alist')) return;
+      dragOn = true; dy0 = e.clientY; ddy = 0; soft = !!segBtn; moved = false; pid = e.pointerId;
+      if (!soft) { sh.style.transition = 'none'; try { sh.setPointerCapture(e.pointerId); } catch (err) { /* 그대로 둔다 */ } }
     });
-    sh.addEventListener('pointermove', function (e) { if (!dragOn) return; ddy = Math.max(0, e.clientY - dy0); sh.style.transform = 'translateY(' + ddy + 'px)'; });
-    var dragEnd = function () { if (!dragOn) return; dragOn = false; sh.style.transition = ''; if (ddy > 80) close(); else sh.style.transform = ''; };
+    sh.addEventListener('pointermove', function (e) {
+      if (!dragOn) return;
+      var dy = e.clientY - dy0;
+      if (soft && !moved) { if (Math.abs(dy) < 8) return; moved = true; sh.style.transition = 'none'; try { sh.setPointerCapture(pid); } catch (err) { /* 그대로 */ } }
+      ddy = Math.max(0, dy); sh.style.transform = 'translateY(' + ddy + 'px)';
+    });
+    var dragEnd = function () {
+      if (!dragOn) return; dragOn = false;
+      if (soft && !moved) return;   // 칸을 톡 누름
+      if (soft) { var stop = function (ev) { ev.stopPropagation(); ev.preventDefault(); }; sh.addEventListener('click', stop, { capture: true, once: true }); setTimeout(function () { sh.removeEventListener('click', stop, true); }, 400); }
+      sh.style.transition = ''; if (ddy > 80) close(); else sh.style.transform = '';
+    };
     sh.addEventListener('pointerup', dragEnd); sh.addEventListener('pointercancel', dragEnd);
     o.appendChild(sh); document.body.appendChild(o); document.body.classList.add('osh-on');
     if (was) { o.classList.add('now', 'on'); requestAnimationFrame(function () { o.classList.remove('now'); }); }
