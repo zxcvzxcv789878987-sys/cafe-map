@@ -10509,16 +10509,6 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   function thumbRun() { while (thumbBusy < 4 && thumbQ.length) { var f = thumbQ.shift(); thumbBusy++; f(function () { thumbBusy--; thumbRun(); }); } }
   function outletYes(i) { var v = votes[i] || [0, 0]; return (v[0] || 0) + (myO[i] === 1 ? 1 : 0); }
   function outletNo(i) { var v = votes[i] || [0, 0]; return (v[1] || 0) + (myO[i] === -1 ? 1 : 0); }
-  // 목록의 작은 사진: 카드를 연 적 있는 카페는 그 블로그 사진을, 아니면 중계 서버에 사진 한 장만 묻는다(th=1, 카카오 검색 2번). 줄이 화면에 보일 때만 묻는다.
-  function thumbFetch(i, done) {
-    var c = cidOf(i);
-    if (c in thumbMem) { done(thumbMem[c]); return; }
-    var bj = D.brand[i], rd = /(\S+(?:로|길))\s*(\d+)(?:-\d+)?$/.exec(fullAddr(i));
-    fetch(BLOG_API + '?v=2&th=1&q=' + encodeURIComponent(D.name[i]) + '&a=' + encodeURIComponent(blogAreas(i).join(',')) +
-      (bj >= 0 ? '&b=' + encodeURIComponent(D.brands[bj][0]) : '') + (rd ? '&r=' + encodeURIComponent(rd[1] + ' ' + rd[2]) : ''))
-      .then(function (r) { if (!r.ok) throw new Error('thumb'); return r.json(); })
-      .then(function (d) { var x = d && d.i && d.i[0] || null; if (x && hidePics[x.i]) x = null; thumbMem[c] = x; done(x); }, function () { done(null); });
-  }
   function hereThumb(i, th) {
     th.appendChild(pinEl(i));
     var put = function (x) {
@@ -10536,7 +10526,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (!thumbIO) return;
     // 가벼운 사진 한 장 찾기(th=1)는 작은 카페 사진을 대부분 못 찾아서(사용자 2026-11-28: 로고도 사진도 안 나온다), 카드와 같은 블로그 찾기를 쓴다.
     //  찾은 결과는 blogMem에 남아 그 카드를 열 때 다시 찾지 않는다.
-    th._load = function () { thumbQ.push(function (next) { cafeBlog(i, function (d) { put(d && d.p.length ? blogPics(d.p, d.i).pics[0] : null); next(); }); }); thumbRun(); };
+    th._load = function () { thumbQ.push(function (next) { cafeThumb(i, function (x) { put(x); next(); }); }); thumbRun(); };
     thumbIO.observe(th);
   }
   function hereRow(i) {
@@ -12093,15 +12083,42 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var d1 = dn[0].replace(/[0-9.]+/g, '').replace(/(동|가|읍|면|리)$/, ''); if (d1.length >= 2 && a.indexOf(d1) < 0) a.push(d1);
     return a;
   }
+  // 블로그 v3(2026-11-28 사용자 원칙: 그 카페 글의 사진만, 그 안에서 사진은 최대한 많이). 서버가 글마다 그 카페 글인지 가린다.
+  //  보내는 것: 이름(q), 검색에 붙일 지역(a), 제목에서 찾을 우리 지역 낱말(ar: 시도, 시군구, 동, 도로명, 900m 안 지하철역), 브랜드(b), 도로명과 번호(r),
+  //  인허가 달(s, 그보다 오래된 글은 같은 이름의 예전 가게일 수 있다), 우리 자료에서 같은 이름 카페 수(u).
+  var nameDup = null;
+  function normName(t) { return String(t).replace(/[\s\p{P}\p{S}_]+/gu, '').toLowerCase(); }
+  function blogQuery(i) {
+    if (!nameDup) { nameDup = {}; for (var k = 0; k < N; k++) { var nk = normName(D.name[k]); nameDup[nk] = (nameDup[nk] || 0) + 1; } }
+    var dn = D.dong[D.dongOf[i]], sg = D.sgg[dn[1]], sido = D.sido[sg[1]], toks = [SIDO_SHORT[sido] || String(sido).slice(0, 2)];
+    String(sg[0]).split(' ').forEach(function (t) { var u = t.replace(/(특별자치시|특별시|광역시|시|군|구)$/, ''); if (u.length >= 2) toks.push(u); });
+    var d0 = dn[0].replace(/[0-9.]+/g, ''), d1 = d0.replace(/(동|가|읍|면|리)$/, '');
+    if (d1.length >= 2) toks.push(d1); if (d0.length >= 2) toks.push(d0);
+    var rd = /(\S+(?:로|길))\s*(\d+)(?:-\d+)?$/.exec(fullAddr(i)); if (rd) toks.push(rd[1]);
+    var la = D.lat[i] / 1e5, lo = D.lng[i] / 1e5;
+    SUBWAY.forEach(function (a) { if (Math.abs(a[1] / 1e5 - la) > .01 || Math.abs(a[0] / 1e5 - lo) > .013) return; if (distM(la, lo, a[1] / 1e5, a[0] / 1e5) < 900) toks.push(String(a[2]).replace(/역$/, '')); });
+    toks = toks.filter(function (x, n, arr) { return x && x.length >= 2 && arr.indexOf(x) === n; }).slice(0, 14);
+    var bj = D.brand[i];
+    return '?v=3&q=' + encodeURIComponent(D.name[i]) + '&a=' + encodeURIComponent(blogAreas(i).join(',')) + '&ar=' + encodeURIComponent(toks.join(',')) +
+      (bj >= 0 ? '&b=' + encodeURIComponent(D.brands[bj][0]) : '') + (rd ? '&r=' + encodeURIComponent(rd[1] + ' ' + rd[2]) : '') +
+      '&s=' + ((D.since && D.since[i]) || 0) + '&u=' + (nameDup[normName(D.name[i])] || 1);
+  }
   function cafeBlog(i, done) {
     var c = cidOf(i);
     if (blogMem[c]) { done(blogMem[c]); return; }
-    // 브랜드 이름(b)과 도로명 주소의 길 이름, 건물 번호(r)도 보낸다. 서버가 블로그 글의 지도 카드(장소 이름 + 주소)로 이 카페 글을 알아본다(사용자 2026-11-28).
-    var bj = D.brand[i], rd = /(\S+(?:로|길))\s*(\d+)(?:-\d+)?$/.exec(fullAddr(i));
-    fetch(BLOG_API + '?v=2&q=' + encodeURIComponent(D.name[i]) + '&a=' + encodeURIComponent(blogAreas(i).join(',')) +
-      (bj >= 0 ? '&b=' + encodeURIComponent(D.brands[bj][0]) : '') + (rd ? '&r=' + encodeURIComponent(rd[1] + ' ' + rd[2]) : ''))
+    fetch(BLOG_API + blogQuery(i))
       .then(function (r) { if (!r.ok) throw new Error('blog'); return r.json(); })
       .then(function (d) { var v = Array.isArray(d) ? { p: d, i: [] } : { p: d.p || [], i: d.i || [] }; blogMem[c] = v; done(v); }, function () { done(null); });
+  }
+  // 목록(이 화면 N곳)의 작은 사진: 가벼운 찾기(m=th, 카카오 검색 3번: 글 2, 사진 1). 같은 규칙으로 그 카페 글의 사진만 고른다.
+  //  카드를 열면 그때 전체 찾기(cafeBlog)를 한다. 하루 검색 한도(블로그, 사진 각 3만 번)를 아끼려는 것.
+  function cafeThumb(i, done) {
+    var c = cidOf(i);
+    if (blogMem[c]) { done(blogPics(blogMem[c].p, blogMem[c].i).pics[0] || null); return; }
+    if (c in thumbMem) { done(thumbMem[c]); return; }
+    fetch(BLOG_API + blogQuery(i) + '&m=th')
+      .then(function (r) { if (!r.ok) throw new Error('thumb'); return r.json(); })
+      .then(function (d) { var x = d && d.p ? blogPics(d.p, d.i || []).pics[0] || null : null; thumbMem[c] = x; done(x); }, function () { done(null); });
   }
   // 블로그 글을 앱 안에서 보기(사용자 2026-11-28: 사진을 크게, 그 글의 사진 전부를 보고 싶다).
   //  사진을 따로 가져오지 않고 블로그 글 화면을 그대로 띄운다(카카오맵 탭과 같은 방식). 네이버 블로그는 휴대폰용 주소로 연다.
@@ -12241,7 +12258,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var best = -1;
     imgs.some(function (x, k) { if (picSized(x, 'w966') && x.w >= 600) { best = k; return true; } return false; });
     if (best > 0) imgs = [imgs[best]].concat(imgs.slice(0, best), imgs.slice(best + 1));
-    var pics = imgs.length ? imgs : list.filter(function (x) { return x.p; }).map(function (x) { return { s: x.p, i: x.p, u: x.u, t: x.t, b: x.b }; });
+    var pics = imgs.length ? imgs : list.filter(function (x) { return x.p && x.e !== 0; }).map(function (x) { return { s: x.p, i: x.p, u: x.u, t: x.t, b: x.b }; });   // 대표 사진도 그 카페 글(e)만
     return { imgs: imgs, pics: pics };
   }
   // 카드 맨 위 사진 줄(2026-11-28 시안 A, 네이버와 카카오처럼): 큰 칸 하나와 작은 칸 둘. 더 있으면 마지막 칸에 +N.
