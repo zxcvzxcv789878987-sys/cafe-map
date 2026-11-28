@@ -276,6 +276,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .trlive { flex: none; display: inline-flex; align-items: center; gap: 1px; height: 32px; padding: 0 8px 0 12px; border: 0; border-radius: 999px; background: var(--surface-2); font-size: 13px; font-weight: 700; color: var(--ink); }
 .trlive svg.i { width: 15px; height: 15px; }
 .trmsg { padding: 14px; border-radius: 14px; background: var(--surface-2); font-size: 14.5px; line-height: 1.5; text-align: center; }
+.trmsg div { margin-top: 2px; font-size: 13px; color: var(--ink-2); }
 .rtsrc { margin: -4px 0 0; text-align: center; font-size: 11.5px; color: var(--ink-3); }
 .rtsrc a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .rtbig .rtkind { font-size: 13px; font-weight: 700; color: #6a5ae0; }
@@ -11134,7 +11135,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
           map.fitBounds([[x0, y0], [x1, y1]], { padding: pad, maxZoom: 17, duration: 600 });
           P.cafe = i; sel = i; P.prev = 'detail';
           openPanel('route');
-        }).catch(function () { toast('걷는 길을 찾지 못했어요. 카카오맵으로 열게요'); window.open(extRoute(i).href, '_blank'); });
+        }).catch(function () { routeFail(cafeDest(i), 'walk', from); });   // 못 찾으면 못 찾음 판(사용자 2026-11-28: 새 창을 저절로 열지 않는다)
       });
     };
     if (lastFix && Date.now() - lastFix.t < 15000) go(lastFix.p);
@@ -11152,9 +11153,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     toast(car ? '차 길을 찾는 중' : '걷는 길을 찾는 중');
     myFix().then(function (me) {
       meMarker(me); startWatch();
-      return (car ? driveFetch(me, to) : walkFetch(me, to)).then(function (rt) { var c = rt.coords.slice(); c.unshift(me); c.push(to); return { c: c, rt: rt, me: me }; });
+      return (car ? driveFetch(me, to) : walkFetch(me, to)).then(function (rt) { var c = rt.coords.slice(); c.unshift(me); c.push(to); return { c: c, rt: rt, me: me }; }, function () { return { fail: true, me: me }; });
     }).then(function (d) {
       if (tok !== meTok) return;
+      if (d.fail) { routeFail(dest, mode, d.me); return; }
       drawRoute(d.c, d.me);
       if (car) {
         if (map.getLayer('walk')) map.setPaintProperty('walk', 'line-color', '#2f6fdf');
@@ -11203,16 +11205,33 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   function trSegColor(g) { return g.m === 'S' ? subLineColor((g.n || [])[0]) : g.m === 'B' ? busColorOf((g.v || []).join(' ')) : '#6a5ae0'; }
   function trMin(sec) { var m = Math.max(1, Math.round(sec / 60)); return m >= 60 ? Math.floor(m / 60) + '시간' + (m % 60 ? ' ' + (m % 60) + '분' : '') : m + '분'; }
   function trFare(f) { return f == null ? '' : Array.isArray(f) ? fmt(f[0]) + '~' + fmt(f[1]) + '원' : fmt(f) + '원'; }
-  // 카카오맵(네이버를 고른 폰은 네이버지도) 대중교통 길찾기로 넘기는 단추
-  function extTransit(me, dest) {
+  // 카카오맵(네이버를 고른 폰은 네이버지도) 길찾기로 넘기는 단추. mode: 'walk' 걷는 길, 'car' 차 길, 'transit' 대중교통.
+  //  내 위치를 모르면(me 없음) 도착지만 넣는다.
+  function extRouteBy(mode, me, dest) {
     var nm = encodeURIComponent(dest.name), a = el('a', 'btn ext');
     var naver = mobile.matches && S.nav === 'naver';
-    a.href = naver ? 'nmap://route/public?slat=' + me[1] + '&slng=' + me[0] + '&sname=' + encodeURIComponent('내 위치') + '&dlat=' + dest.to[1] + '&dlng=' + dest.to[0] + '&dname=' + nm + '&appname=' + encodeURIComponent(location.hostname || 'cafemap')
-      : 'https://map.kakao.com/link/by/traffic/' + encodeURIComponent('내 위치') + ',' + me[1] + ',' + me[0] + '/' + encodeURIComponent(dest.name.replace(/,/g, ' ')) + ',' + dest.to[1] + ',' + dest.to[0];
+    var nv = { walk: 'walk', car: 'car', transit: 'public' }[mode], kk = { walk: 'walk', car: 'car', transit: 'traffic' }[mode];
+    var to = encodeURIComponent(dest.name.replace(/,/g, ' ')) + ',' + dest.to[1] + ',' + dest.to[0];
+    a.href = naver ? 'nmap://route/' + nv + '?' + (me ? 'slat=' + me[1] + '&slng=' + me[0] + '&sname=' + encodeURIComponent('내 위치') + '&' : '') + 'dlat=' + dest.to[1] + '&dlng=' + dest.to[0] + '&dname=' + nm + '&appname=' + encodeURIComponent(location.hostname || 'cafemap')
+      : me ? 'https://map.kakao.com/link/by/' + kk + '/' + encodeURIComponent('내 위치') + ',' + me[1] + ',' + me[0] + '/' + to : 'https://map.kakao.com/link/to/' + to;
     if (naver) a.addEventListener('click', function () { setTimeout(function () { if (!document.hidden) toast('네이버지도 앱이 열리지 않았어요. 메뉴의 환경설정에서 길찾기 앱을 바꿀 수 있어요'); }, 1800); });
     else { a.target = '_blank'; a.rel = 'noopener'; }
-    a.textContent = (naver ? '네이버지도' : '카카오맵') + '에서 대중교통 보기';
+    a.textContent = (naver ? '네이버지도' : '카카오맵') + '에서 ' + ({ walk: '걷는 길', car: '차 길', transit: '대중교통' }[mode]) + ' 보기';
     return a;
+  }
+  function extTransit(me, dest) { return extRouteBy('transit', me, dest); }
+  // 길을 못 찾았을 때(사용자 2026-11-28: 어디서나 같게): 길 판은 그대로 열고, 탭 아래에 못 찾았다는 안내와 카카오맵 단추.
+  //  새 창을 저절로 열지 않는다. 다른 탭(대중교통, 차로)을 눌러 볼 수 있다.
+  function routeFail(dest, mode, me) {
+    clearRoute(); mePin(dest);
+    routeInfo = { i: dest.cafe >= 0 ? dest.cafe : -1, dist: 0, min: 0, fail: mode, me: me || null,
+      to: { name: dest.name, kind: dest.kind, fromMe: true, mode: mode, dest: dest, back: dest.back, fee: dest.fee, open: dest.open } };
+    setFollow(false);
+    sel = dest.cafe >= 0 ? dest.cafe : -1; P.cafe = dest.cafe >= 0 ? dest.cafe : P.cafe; P.prev = null;
+    openPanel('route'); requestDraw();
+    var pts = me ? [me, dest.to] : [dest.to, dest.to], x0 = Math.min(pts[0][0], pts[1][0]), x1 = Math.max(pts[0][0], pts[1][0]), y0 = Math.min(pts[0][1], pts[1][1]), y1 = Math.max(pts[0][1], pts[1][1]);
+    var pad = mobile.matches ? { top: 130, bottom: Math.round(Math.max(window.innerHeight * .36, panel.offsetHeight + 24)), left: 40, right: 60 } : { top: 96, bottom: 70, left: 420, right: 80 };
+    map.fitBounds([[x0, y0], [x1, y1]], { padding: pad, maxZoom: 15, duration: 600 });
   }
   function transitTo(dest) {
     if (!navigator.geolocation) { toast('이 기기에서는 위치를 확인할 수 없어요'); return; }
@@ -11372,6 +11391,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       });
       sc.appendChild(mseg);
       if (r.transit) { renderTransit(sc, r); panel.appendChild(sc); return; }
+      if (r.fail) {
+        var fm = el('div', 'trmsg'); fm.appendChild(el('b', null, r.fail === 'car' ? '차 길을 찾지 못했어요' : '걷는 길을 찾지 못했어요'));
+        fm.appendChild(el('div', null, '다른 탭을 눌러 보거나 카카오맵에서 보세요'));
+        sc.appendChild(fm); sc.appendChild(extRouteBy(r.fail, r.me, r.to.dest)); panel.appendChild(sc); return;
+      }
     }
     if (r.cafeMode) {
       var seg = el('div', 'nshseg rtseg'); seg.setAttribute('role', 'tablist');
@@ -12170,9 +12194,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var tok = ++parkGoTok, to = mercToLngLat(mx[i], my[i]);
       toast('차 길을 찾는 중');
       myFix().then(function (me) {
-        return driveFetch(me, to).then(function (rt) { var c = rt.coords.slice(); c.unshift(me); c.push(to); return { c: c, rt: rt, me: me }; });
+        return driveFetch(me, to).then(function (rt) { var c = rt.coords.slice(); c.unshift(me); c.push(to); return { c: c, rt: rt, me: me }; }, function () { return { fail: true, me: me }; });
       }).then(function (d) {
         if (tok !== parkGoTok) return;
+        if (d.fail) { routeFail(cafeDest(i), 'car', d.me); return; }
         drawRoute(d.c, d.me);
         // 차 길은 파란 줄(걷는 길 보라와 구분)
         if (map.getLayer('walk')) map.setPaintProperty('walk', 'line-color', '#2f6fdf');
