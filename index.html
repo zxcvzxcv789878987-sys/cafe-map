@@ -419,6 +419,15 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .dtabs.one .dtab { flex: none; padding: 0 14px; color: var(--ink); font-weight: 800; border-bottom-color: var(--pri); }
 .dtabs.one { flex: 1; }
 .dh.tabbed .ib { align-self: center; margin-bottom: 3px; }
+/* 탭 줄을 없앤 머리줄(2026-11-28): 정보를 볼 때는 손잡이만 남은 얇은 줄, 카카오맵을 볼 때는 뒤로 단추와 닫기 */
+.dh.slim { padding: 14px 0 0; min-height: 0; }
+.dh.slim .hx { display: none; }
+.dh .dkback { flex: none; align-self: center; height: 36px; padding: 0 12px 0 6px; border: 0; border-radius: 18px; background: var(--surface-2); display: inline-flex; align-items: center; gap: 2px; font-size: 14px; font-weight: 700; color: var(--ink); }
+.dh .dkback svg.i { width: 18px; height: 18px; }
+.dh .dklab { flex: 1; align-self: center; font-size: 15px; color: var(--ink-2); margin-left: 4px; }
+.dh .dkback[hidden], .dh .dklab[hidden] { display: none; }
+.dh.tabbed:not(.slim) { padding-bottom: 8px; }
+.oact.oclose svg.i { width: 20px; height: 20px; }
 .otop .opin { width: 34px; height: 34px; margin-top: 1px; }
 .dtab { flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 14.5px; font-weight: 600; color: var(--ink-3); background: none; border-bottom: 3px solid transparent; }
 .dtab[aria-selected=true] { color: var(--ink); font-weight: 800; border-bottom-color: var(--pri); }
@@ -483,7 +492,7 @@ button.oli { width: 100%; padding: 11px 0; margin: 0; background: none; color: v
 .otag.big { color: #4c3fc4; background: color-mix(in srgb, var(--pri) 10%, var(--surface)); }
 .otag.new { color: #1e6b30; background: #e6f4ea; }
 .oacts { flex: none; display: flex; margin: -4px -8px 0 0; }
-.oact { width: 44px; height: 52px; padding: 0; background: none; border: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--ink); font-size: 11px; font-weight: 600; }
+.oact { width: 40px; height: 40px; padding: 0; background: none; border: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--ink); font-size: 11px; font-weight: 600; }
 .oact svg.i { width: 22px; height: 22px; }
 .oact.ohw[aria-pressed=true] svg.i { color: #F8312F; fill: #F8312F; }
 /* 메모 아이콘은 안쪽을 회색으로 칠하지 않고 흰색으로(사용자 2026-11-28: 메모만 회색이라 튄다) */
@@ -9595,7 +9604,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     // 이 카페로 바로 오는 링크 보내기. 폰에서는 공유 창을 띄우고, 컴퓨터에서는 주소를 복사한다.
     // 카페지도 정보 탭에 넘기는 일들. kakao: 카카오맵 탭으로(카카오맵에 없는 카페는 null).
     var oursActs = function (kakao) {
-      return { rec: rec, outlet: omEl, share: doShare, kakao: kakao, fix: function () { bGone[0].click(); },
+      return { rec: rec, outlet: omEl, share: doShare, kakao: kakao, close: back, fix: function () { bGone[0].click(); },
         want: function () { bWant.click(); }, memo: bMemo ? function () { bMemo.click(); } : null };
     };
     var doShare = function () {
@@ -9613,11 +9622,16 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       fr.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms');
       body = el('div', 'dbody'); body.appendChild(fr);
       ours = el('div', 'dours'); body.appendChild(ours);
-      tabs = el('div', 'dtabs'); tabs.setAttribute('role', 'tablist');
+      // 탭 줄은 없앤다(사용자 2026-11-28: 자리를 너무 쓴다). 탭 단추는 안내(코치)가 쓰므로 숨긴 채 둔다.
+      //  카카오맵은 정보 안의 "영업시간, 메뉴, 후기" 줄로 들어가고, 카카오맵을 볼 때 머리줄에 "카페지도 정보" 뒤로 단추가 생긴다.
+      tabs = el('div', 'dtabs'); tabs.setAttribute('role', 'tablist'); tabs.hidden = true;
       var tabBtn = function (label, cls, on) { var b = btn('dtab ' + cls, label, null); b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(on)); tabs.appendChild(b); return b; };
       var tO = tabBtn('카페지도 정보', 'o', true), tK = tabBtn('카카오맵', 'k', false);
+      var kback = btn('dkback', null, function () { showTab(true); }); kback.appendChild(icon('back')); kback.appendChild(document.createTextNode('카페지도 정보'));
+      var klab = el('b', 'dklab', '카카오맵');
       var showTab = function (o2) {
         tK.setAttribute('aria-selected', String(!o2)); tO.setAttribute('aria-selected', String(o2));
+        h.classList.toggle('slim', o2); kback.hidden = o2; klab.hidden = o2;
         P.ktab = o2 ? -1 : i;
         if (!o2 && !fr.getAttribute('src')) fr.src = 'https://place.map.kakao.com/' + pid;
         fr.hidden = o2; ours.hidden = !o2;
@@ -9631,24 +9645,24 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       };
       tK.addEventListener('click', function () { showTab(false); });
       tO.addEventListener('click', function () { showTab(true); });
-      h.classList.add('tabbed'); h.appendChild(tabs);
+      h.classList.add('tabbed'); h.appendChild(tabs); h.appendChild(kback); h.appendChild(klab);
       showTab(P.ktab !== i);
       panel.setAttribute('data-embed', '');
     } else {
       // 카카오맵에 없는 카페(사용자 2026-11-28): 카카오맵 탭 없이 카페지도 정보만. 모습은 탭이 있는 카드와 같다.
       body = el('div', 'dbody'); ours = el('div', 'dours'); body.appendChild(ours);
-      tabs = el('div', 'dtabs one');
+      tabs = el('div', 'dtabs one'); tabs.hidden = true;
       var t1 = el('div', 'dtab o', '카페지도 정보'); t1.setAttribute('aria-selected', 'true'); tabs.appendChild(t1);
       omEl = castSet ? el('section', 'omod') : null;
       if (omEl) fillOutlet(omEl);
       ours.appendChild(cafeOurs(i, oursActs(null)));
-      h.classList.add('tabbed'); h.appendChild(tabs);
+      h.classList.add('tabbed', 'slim'); h.appendChild(tabs);
       panel.setAttribute('data-embed', '');
     }
     // 공유는 카페지도 정보 안(이름 오른쪽, 찜 옆)에 있다.
     // 닫기는 늘 x(사용자 2026-11-28). 목록에서 들어왔으면 닫을 때 그 목록으로 돌아간다.
     if (back) {
-      var bk = btn('ib back', null, back);
+      var bk = btn('ib back hx', null, back);
       bk.setAttribute('aria-label', '닫기'); bk.title = '닫기'; bk.appendChild(icon('x')); h.appendChild(bk);
     }
     panel.appendChild(h);
@@ -10034,11 +10048,14 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (ago >= 0 && ago < 12) tags.appendChild(el('span', 'otag new', '새로 연 카페'));
     top.appendChild(tl);
     var acts = el('div', 'oacts');
-    var actBtn = function (cls, pic, label, fn) { var b = btn('oact ' + cls, null, fn); b.appendChild(pic); b.appendChild(el('span', null, label)); acts.appendChild(b); return b; };
+    // 찜, 메모, 공유는 글자 없이 그림만(사용자 2026-11-28). 이름은 aria-label로.
+    var actBtn = function (cls, pic, label, fn) { var b = btn('oact ' + cls, null, fn); b.appendChild(pic); b.setAttribute('aria-label', label); b.title = label; acts.appendChild(b); return b; };
     var memoPic = function () { var t = document.createElement('span'); t.innerHTML = MEMO_SVG; return t.firstChild; };
     var hw = actBtn('ohw', icon('heart'), '찜', act.want); hw.setAttribute('aria-pressed', String(want[i] === 1));
     if (act.memo) actBtn('omemo', memoPic(), '메모', act.memo);
     actBtn('oshare', icon('share'), '공유', act.share);
+    // 닫기는 이름 줄 맨 끝(따로 한 줄을 쓰지 않게, 사용자 2026-11-28)
+    if (act.close) actBtn('oclose', icon('x'), '닫기', act.close);
     top.appendChild(acts); w.appendChild(top);
     // 평수와 표시는 이름 아래 한 줄로 넓게(이름 칸이 좁아 줄이 밀리고 높이가 어긋났다. 사용자 2026-11-28).
     if (tags.firstChild) { tags.classList.add('wide'); w.appendChild(tags); }
@@ -10519,7 +10536,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       t: '지도의 점', m: '점 색은 카페 종류예요. 가까이 보면 브랜드 카페는 점 안에 로고가 보여요.' },
     { enter: function () { return coachCard(true); }, side: coachSideAbove,
       at: function () { return [panel.querySelector('.dours .omgo') || panel.querySelector('.dours .omfix') || panel.querySelector('.dours .omod') || panel.querySelector('.dours .rec')]; },
-      extra: function () { return [panel.querySelector('.dtabs .dtab.o')]; },
+      extra: function () { return []; },
       t: '콘센트 기록', m: '그 카페에 있을 때 하루 3곳까지 기록할 수 있어요.',
       steps: ['카드의 콘센트 기록하기를 눌러요', '콘센트가 있는 자리를 모두 골라요 (없으면 콘센트가 없어요)', '기록하면 원두를 받아요 (로그인 필요)'] },
     // 마지막: 메뉴 설명은 하지 않고 사용법 줄만 밝힌다(사용자: 메뉴를 말하는지 사용법을 말하는지 헷갈린다).
