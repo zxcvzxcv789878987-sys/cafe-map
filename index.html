@@ -10014,7 +10014,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     return g;
   }
   // 카페지도 정보 탭의 내용(2026-11-28 시안, 카카오맵과 비교해 정함). 자료가 없는 줄은 숨긴다.
-  //  이름 줄(로고, 평수와 표시, 찜 메모 공유) → 주소와 길찾기 → 메뉴, 별점, 방문 후기(앱 안의 카카오맵 탭으로) → 콘센트 → 블로그 후기 →
+  //  이름 줄(로고, 평수와 표시, 찜 메모 공유) → 주소와 길찾기 → 영업시간, 메뉴, 후기(앱 안의 카카오맵 탭으로) → 콘센트 → 블로그 후기 →
   //  근처(버스정류장, 주차장) → 편의(지역화폐, 승강기, 건물 주차장) → 같은 건물의 카페 → 정보 수정 제안.
   //  act: outlet 콘센트 칸(없으면 rec), want 찜, memo 메모(이스터 에그를 연 사람만), share 공유, kakao 카카오맵 탭으로, fix 정보 수정 제안.
   function cafeOurs(i, act) {
@@ -10049,8 +10049,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     ad.appendChild(rt); basic.appendChild(ad);
     if (act.kakao) {
       var hr = btn('ohrs', null, act.kakao);
-      // 카카오맵 탭이 우리보다 나은 것(메뉴, 별점, 방문 후기)을 적는다(사용자 2026-11-28: 영업시간, 전화번호는 빼고).
-      hr.appendChild(icon('chat')); hr.appendChild(el('span', null, '메뉴, 별점, 방문 후기')); hr.appendChild(el('span', 'k', '카카오맵 탭에서 보기')); hr.appendChild(icon('right'));
+      // 카카오맵 탭에서 볼 것: 영업시간과, 카카오맵이 우리보다 나은 메뉴, 후기(사용자 2026-11-28: 전화번호만 뺀다. 카페에 전화할 일은 드물다).
+      hr.appendChild(icon('clock')); hr.appendChild(el('span', null, '영업시간, 메뉴, 후기')); hr.appendChild(el('span', 'k', '카카오맵 탭에서 보기')); hr.appendChild(icon('right'));
       basic.appendChild(hr);
     }
     var myMemo = act.memo && (XP.memo || {})[cidOf(i)];
