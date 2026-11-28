@@ -601,6 +601,9 @@ button.oli { width: 100%; padding: 11px 0; margin: 0; background: none; color: v
 body.osh-on #toast { z-index: 95; }
 .oshbox { touch-action: none; }
 .obgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; margin: 8px 0 6px; border-radius: 14px; overflow: hidden; }
+.obgrid.n1 { grid-template-columns: minmax(0, 1fr); }
+.obgrid.n1 .obgc { aspect-ratio: 16 / 9; }
+.obgrid.n2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .obgc { position: relative; display: block; aspect-ratio: 1 / 1; background: var(--surface-2); overflow: hidden; }
 .obgc img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .bview { position: fixed; inset: 0; z-index: 84; background: var(--surface); display: flex; flex-direction: column; transform: translateY(100%); transition: transform .24s cubic-bezier(.2, .8, .2, 1); }
@@ -9943,15 +9946,16 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     //  이미지 검색 사진이 모자라면 글마다 대표 사진을 쓴다. 누르면 크게 보는 창(옆으로 넘김, 아래에 출처 블로그).
     // 아주 작은 그림(이모티콘, 스티커, 아이콘)은 뺀다.
     imgs = (imgs || []).filter(function (x) { return (x.w || 0) >= 400 && (x.h || 0) >= 300 && !hidePics[x.i]; });
-    var pics = imgs.length >= 3 ? imgs : list.filter(function (x) { return x.p; }).map(function (x) { return { s: x.p, i: x.p, u: x.u, t: x.t, b: x.b }; });
+    // 사진이 1~2장뿐이어도 보여 준다(사용자 2026-11-28). 실린 사진이 없으면 글 대표 사진으로.
+    var pics = imgs.length ? imgs : list.filter(function (x) { return x.p; }).map(function (x) { return { s: x.p, i: x.p, u: x.u, t: x.t, b: x.b }; });
     // +N을 누르면 따로 창을 열지 않고 이 칸 안에서 아래로 모두 펼친다(사용자 2026-11-28).
-    if (pics.length >= 3) {
-      var gd = el('div', 'obgrid'), all = false, fold = btn('obfold', null, function () { all = false; drawGrid(); gd.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
+    if (pics.length) {
+      var gd = el('div', 'obgrid' + (pics.length === 1 ? ' n1' : pics.length === 2 ? ' n2' : '')), all = false, fold = btn('obfold', null, function () { all = false; drawGrid(); gd.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
       fold.appendChild(document.createTextNode('사진 접기')); fold.appendChild(icon('down')); fold.hidden = true;
       var drawGrid = function () {
         gd.textContent = '';
         fold.hidden = !all;
-        var cnt = all ? pics.length : pics.length >= 6 ? 6 : 3;
+        var cnt = all ? pics.length : pics.length >= 6 ? 6 : Math.min(3, pics.length);
         pics.slice(0, cnt).forEach(function (x, n) {
           var more = !all && n === cnt - 1 && pics.length > cnt;
           var a = btn('obgc', null, function () { if (more) { all = true; drawGrid(); } else openPhotoView(pics, n, title, drawGrid); });
@@ -9961,7 +9965,6 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
           if (more) a.appendChild(el('span', 'obgm', '+' + (pics.length - cnt)));
           gd.appendChild(a);
         });
-        if (pics.length < 3) gd.remove();
       };
       drawGrid();
       box.appendChild(gd); box.appendChild(fold);
@@ -10011,7 +10014,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     return g;
   }
   // 카페지도 정보 탭의 내용(2026-11-28 시안, 카카오맵과 비교해 정함). 자료가 없는 줄은 숨긴다.
-  //  이름 줄(로고, 평수와 표시, 찜 메모 공유) → 주소와 길찾기 → 영업시간, 전화번호(앱 안의 카카오맵 탭으로) → 콘센트 → 블로그 후기 →
+  //  이름 줄(로고, 평수와 표시, 찜 메모 공유) → 주소와 길찾기 → 메뉴, 별점, 방문 후기(앱 안의 카카오맵 탭으로) → 콘센트 → 블로그 후기 →
   //  근처(버스정류장, 주차장) → 편의(지역화폐, 승강기, 건물 주차장) → 같은 건물의 카페 → 정보 수정 제안.
   //  act: outlet 콘센트 칸(없으면 rec), want 찜, memo 메모(이스터 에그를 연 사람만), share 공유, kakao 카카오맵 탭으로, fix 정보 수정 제안.
   function cafeOurs(i, act) {
@@ -10046,7 +10049,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     ad.appendChild(rt); basic.appendChild(ad);
     if (act.kakao) {
       var hr = btn('ohrs', null, act.kakao);
-      hr.appendChild(icon('clock')); hr.appendChild(el('span', null, '영업시간, 전화번호')); hr.appendChild(el('span', 'k', '카카오맵 탭에서 보기')); hr.appendChild(icon('right'));
+      // 카카오맵 탭이 우리보다 나은 것(메뉴, 별점, 방문 후기)을 적는다(사용자 2026-11-28: 영업시간, 전화번호는 빼고).
+      hr.appendChild(icon('chat')); hr.appendChild(el('span', null, '메뉴, 별점, 방문 후기')); hr.appendChild(el('span', 'k', '카카오맵 탭에서 보기')); hr.appendChild(icon('right'));
       basic.appendChild(hr);
     }
     var myMemo = act.memo && (XP.memo || {})[cidOf(i)];
