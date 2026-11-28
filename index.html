@@ -3431,7 +3431,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     };
     grp('길 안내', [
       ['걷는 길과 차 길', links([['카카오맵', 'https://map.kakao.com/'], ['TMAP', 'https://tmapapi.tmapmobility.com/'], ['© openrouteservice.org by HeiGIT', 'https://openrouteservice.org/'], ['Geoapify', 'https://www.geoapify.com/'], ['FOSSGIS', 'https://routing.openstreetmap.de/']])],
-      ['대중교통 길', '카카오맵, 서울특별시 대중교통환승경로 조회 서비스, ODsay(powered by www.ODsay.com)'],
+      ['대중교통 길', '카카오맵, 서울특별시 대중교통환승경로 조회 서비스, TMAP, ODsay(powered by www.ODsay.com)'],
       ['버스 노선 모양', '각 버스정보의 노선 좌표, 없는 곳은 Geoapify']
     ]);
     grp('배경 지도', [['지도 그림', links([['OpenFreeMap', 'https://openfreemap.org/'], ['© OpenMapTiles', 'https://www.openmaptiles.org/'], ['© OpenStreetMap contributors', 'https://www.openstreetmap.org/copyright']])]]);
@@ -11395,6 +11395,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     sc.appendChild(extTransit(T.me, dest));
     var cr = el('p', 'rtsrc');
     if (r.src === 'seoul') cr.appendChild(document.createTextNode('대중교통 길 안내 서울특별시(지도 위 선은 타는 곳과 내리는 곳을 곧게 이은 것)'));
+    else if (r.src === 'tmap') { cr.appendChild(document.createTextNode('대중교통 길 안내 ')); var a4 = el('a', null, 'TMAP'); a4.href = 'https://tmapapi.tmapmobility.com/'; a4.target = '_blank'; a4.rel = 'noopener'; cr.appendChild(a4); }
     else if (r.src === 'odsay') { cr.appendChild(document.createTextNode('대중교통 길 안내 powered by ')); var a3 = el('a', null, 'www.ODsay.com'); a3.href = 'https://www.odsay.com/'; a3.target = '_blank'; a3.rel = 'noopener'; cr.appendChild(a3); }
     else { cr.appendChild(document.createTextNode('대중교통 길 안내 ')); var a2 = el('a', null, '카카오맵'); a2.href = 'https://map.kakao.com/'; a2.target = '_blank'; a2.rel = 'noopener'; cr.appendChild(a2); }
     sc.appendChild(cr);
