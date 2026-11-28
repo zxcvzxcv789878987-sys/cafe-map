@@ -253,8 +253,29 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 /* 카드 맨 아래에 붙어 있는 단추 줄(필터의 적용하기) */
 /* 걷는 길 판 */
 .rtbody { padding: 6px 18px calc(18px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 14px; }
-.nshseg.rtseg { margin: 0 0 14px; }
+.nshseg.rtseg { margin: 0 0 14px; grid-template-columns: repeat(3, 1fr); }   /* 걸어서, 대중교통, 차로 */
 .rtbig { display: flex; align-items: baseline; gap: 8px; }
+/* 대중교통 판(2026-11-28): 경로 줄을 누르면 지도에 그 경로, 펼친 줄에는 구간과 도착 정보 단추 */
+.trlist { display: flex; flex-direction: column; gap: 8px; margin-top: -4px; }
+.trrow { display: flex; flex-direction: column; align-items: stretch; gap: 6px; width: 100%; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 14px; background: var(--surface); text-align: left; color: var(--ink); }
+.trrow.on { border-color: #6a5ae0; background: rgba(106, 90, 224, .05); }
+.trtop { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.trtop b { font-size: 21px; font-weight: 800; letter-spacing: -.02em; }
+.trtop span { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.trrides { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; font-size: 14px; font-weight: 700; }
+.trrides i { font-style: normal; color: var(--ink-3); font-weight: 500; }
+.trride { display: inline-flex; align-items: center; gap: 3px; }
+.trride svg.i { width: 15px; height: 15px; }
+.trsteps { display: flex; flex-direction: column; gap: 2px; margin: -2px 0 4px; padding: 4px 6px 4px 10px; }
+.trstep { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.trstep:last-child { border-bottom: 0; }
+.trstep .trdot { flex: none; width: 10px; height: 10px; margin-top: 5px; border-radius: 50%; background: #6a5ae0; }
+.trstep.walk .trdot { background: none; border: 2.5px solid #6a5ae0; width: 6px; height: 6px; }
+.trtxt { flex: 1; min-width: 0; font-size: 13.5px; line-height: 1.45; color: var(--ink-2); }
+.trtxt b { display: block; font-size: 15px; font-weight: 800; }
+.trlive { flex: none; display: inline-flex; align-items: center; gap: 1px; height: 32px; padding: 0 8px 0 12px; border: 0; border-radius: 999px; background: var(--surface-2); font-size: 13px; font-weight: 700; color: var(--ink); }
+.trlive svg.i { width: 15px; height: 15px; }
+.trmsg { padding: 14px; border-radius: 14px; background: var(--surface-2); font-size: 14.5px; line-height: 1.5; text-align: center; }
 .rtsrc { margin: -4px 0 0; text-align: center; font-size: 11.5px; color: var(--ink-3); }
 .rtsrc a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .rtbig .rtkind { font-size: 13px; font-weight: 700; color: #6a5ae0; }
@@ -11003,7 +11024,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (nearMk2) { nearMk2.remove(); nearMk2 = null; }
     parkAlts.forEach(function (m) { m.remove(); }); parkAlts = [];
     if (parkZoomFn) { map.off('zoom', parkZoomFn); parkZoomFn = null; document.body.classList.remove('pk-far'); }
-    ['drive', 'drive-edge'].forEach(function (id) { if (map.getLayer && map.getLayer(id)) map.removeLayer(id); });
+    ['drive', 'drive-edge', 'transit-pt', 'transit-line', 'transit-edge'].forEach(function (id) { if (map.getLayer && map.getLayer(id)) map.removeLayer(id); });
+    ['transit', 'transit-pt'].forEach(function (id) { if (map.getSource && map.getSource(id)) map.removeSource(id); });
     if (map.getSource && map.getSource('drive')) map.removeSource('drive');
     if (map.getLayer && map.getLayer('walk-start')) map.removeLayer('walk-start');
     if (map.getSource && map.getSource('walk-start')) map.removeSource('walk-start');
@@ -11138,13 +11160,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         if (map.getLayer('walk')) map.setPaintProperty('walk', 'line-color', '#2f6fdf');
         if (map.getLayer('walk-start')) map.setPaintProperty('walk-start', 'circle-stroke-color', '#2f6fdf');
       }
-      if (nearMk) nearMk.remove();
-      if (nearMk2) { nearMk2.remove(); nearMk2 = null; }
-      var pin = document.createElement('button'), pic = el('span', 'ic'); pin.type = 'button'; pin.className = 'nearpin'; pic.style.background = ME_COL[dest.ic] || ME_COL.bus;
-      pic.appendChild(icon(dest.ic || 'bus')); pin.appendChild(pic); pin.appendChild(el('b', null, dest.name)); pin.style.pointerEvents = 'auto';
-      pin.setAttribute('aria-label', dest.name + (dest.ic === 'subway' ? ' 곧 도착하는 열차 보기' : dest.ic === 'park' ? ' 주차장 정보 보기' : ' 곧 도착하는 버스 보기'));
-      pin.addEventListener('click', function (e) { e.stopPropagation(); (dest.open || dest.back)(); });
-      nearMk = new maplibregl.Marker({ element: pin, anchor: 'left', offset: [-19, 0] }).setLngLat(to).addTo(map);
+      mePin(dest);
       var rt = d.rt;
       routeInfo = { i: -1, dist: Math.round(rt.dist), min: car ? Math.max(1, Math.round((rt.sec || 0) / 60)) : walkMin(rt.dist), src: rt.src,
         to: { name: dest.name, kind: dest.kind, fromMe: true, carOnly: car, mode: car ? 'car' : 'walk', dest: dest, back: dest.back, fee: dest.fee, open: dest.open } };
@@ -11161,6 +11177,159 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       else toast(car ? '차 길을 찾지 못했어요. 잠시 뒤에 다시 눌러 주세요' : '걷는 길을 찾지 못했어요. 잠시 뒤에 다시 눌러 주세요');
     });
   }
+  // 목적지 표시(정류장, 역, 주차장). 카페는 지도에 카페 점이 크게 그려지므로 따로 두지 않는다.
+  function mePin(dest) {
+    if (nearMk) { nearMk.remove(); nearMk = null; }
+    if (nearMk2) { nearMk2.remove(); nearMk2 = null; }
+    if (dest.cafe >= 0) return;
+    var pin = document.createElement('button'), pic = el('span', 'ic'); pin.type = 'button'; pin.className = 'nearpin'; pic.style.background = ME_COL[dest.ic] || ME_COL.bus;
+    pic.appendChild(icon(dest.ic || 'bus')); pin.appendChild(pic); pin.appendChild(el('b', null, dest.name)); pin.style.pointerEvents = 'auto';
+    pin.setAttribute('aria-label', dest.name + (dest.ic === 'subway' ? ' 곧 도착하는 열차 보기' : dest.ic === 'park' ? ' 주차장 정보 보기' : ' 곧 도착하는 버스 보기'));
+    pin.addEventListener('click', function (e) { e.stopPropagation(); (dest.open || dest.back)(); });
+    nearMk = new maplibregl.Marker({ element: pin, anchor: 'left', offset: [-19, 0] }).setLngLat(dest.to).addTo(map);
+  }
+  // ----- 대중교통 길(2026-11-28 사용자: 길찾기 통일, 대중교통 탭) -----
+  //  중계 서버 /transit(카카오 대중교통, 안 되면 서울시 환승경로)에서 경로 몇 가지를 받아, 걸리는 시간 순으로 판에 보이고
+  //  고른 경로를 지도에 그린다: 걷는 구간은 보라, 버스와 지하철은 노선 색. 타는 곳마다 동그라미를 찍는다.
+  //  구간을 펼치면 타는 정류장(역)의 실시간 도착을 바로 열 수 있다.
+  var subColMap = null;
+  function subLineColor(name) {
+    if (!subColMap) { subColMap = {}; SUBWAY.forEach(function (a) { (a[3] || []).forEach(function (l) { if (l[0] && l[1] && !subColMap[l[0]]) subColMap[l[0]] = l[1]; }); }); }
+    name = String(name || '');
+    if (subColMap[name]) return subColMap[name];
+    var k = Object.keys(subColMap).filter(function (x) { return name.indexOf(x) >= 0 || x.indexOf(name) >= 0; })[0];
+    return k ? subColMap[k] : '#3d5bf5';
+  }
+  function trSegColor(g) { return g.m === 'S' ? subLineColor((g.n || [])[0]) : g.m === 'B' ? busColorOf((g.v || []).join(' ')) : '#6a5ae0'; }
+  function trMin(sec) { var m = Math.max(1, Math.round(sec / 60)); return m >= 60 ? Math.floor(m / 60) + '시간' + (m % 60 ? ' ' + (m % 60) + '분' : '') : m + '분'; }
+  function trFare(f) { return f == null ? '' : Array.isArray(f) ? fmt(f[0]) + '~' + fmt(f[1]) + '원' : fmt(f) + '원'; }
+  // 카카오맵(네이버를 고른 폰은 네이버지도) 대중교통 길찾기로 넘기는 단추
+  function extTransit(me, dest) {
+    var nm = encodeURIComponent(dest.name), a = el('a', 'btn ext');
+    var naver = mobile.matches && S.nav === 'naver';
+    a.href = naver ? 'nmap://route/public?slat=' + me[1] + '&slng=' + me[0] + '&sname=' + encodeURIComponent('내 위치') + '&dlat=' + dest.to[1] + '&dlng=' + dest.to[0] + '&dname=' + nm + '&appname=' + encodeURIComponent(location.hostname || 'cafemap')
+      : 'https://map.kakao.com/link/by/traffic/' + encodeURIComponent('내 위치') + ',' + me[1] + ',' + me[0] + '/' + encodeURIComponent(dest.name.replace(/,/g, ' ')) + ',' + dest.to[1] + ',' + dest.to[0];
+    if (naver) a.addEventListener('click', function () { setTimeout(function () { if (!document.hidden) toast('네이버지도 앱이 열리지 않았어요. 메뉴의 환경설정에서 길찾기 앱을 바꿀 수 있어요'); }, 1800); });
+    else { a.target = '_blank'; a.rel = 'noopener'; }
+    a.textContent = (naver ? '네이버지도' : '카카오맵') + '에서 대중교통 보기';
+    return a;
+  }
+  function transitTo(dest) {
+    if (!navigator.geolocation) { toast('이 기기에서는 위치를 확인할 수 없어요'); return; }
+    var tok = ++meTok;
+    toast('대중교통 길을 찾는 중');
+    myFix().then(function (me) {
+      meMarker(me); startWatch();
+      var u = BUS_API.replace(/\/bus$/, '/transit') + '?f=' + me[0].toFixed(5) + ',' + me[1].toFixed(5) + '&t=' + dest.to[0].toFixed(5) + ',' + dest.to[1].toFixed(5);
+      return fetch(u).then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j || {}, me: me }; }); }, function () { return { ok: false, j: {}, me: me }; });
+    }).then(function (d) {
+      if (tok !== meTok) return;
+      var routes = d.j.r || [];
+      var err = !d.ok ? (d.j.q ? 'quota' : 'fail') : (!routes.length ? 'none' : '');
+      clearRoute();
+      routeInfo = { i: dest.cafe >= 0 ? dest.cafe : -1, dist: 0, min: 0, src: d.j.src || 'kakao', transit: { r: routes, sel: 0, open: 0, me: d.me, err: err },
+        to: { name: dest.name, kind: dest.kind, fromMe: true, mode: 'transit', dest: dest, back: dest.back, fee: dest.fee, open: dest.open } };
+      setFollow(false);
+      sel = dest.cafe >= 0 ? dest.cafe : -1; P.prev = null;
+      if (routes.length) drawTransit(0, true);
+      else { mePin(dest); requestDraw(); }
+      openPanel('route');
+      if (routes.length) transitFit();
+    }, function (er) {
+      if (tok !== meTok) return;
+      if (er && er.code === 1) locDenied('대중교통 길을 보려면');
+      else toast('대중교통 길을 찾지 못했어요. 잠시 뒤에 다시 눌러 주세요');
+    });
+  }
+  function transitCoords(k) {
+    var T = routeInfo.transit, x = T.r[k], c = [T.me];
+    x.s.forEach(function (g) { (g.p || []).forEach(function (q) { c.push(q); }); });
+    c.push(routeInfo.to.dest.to);
+    return c;
+  }
+  function transitFit() {
+    var c = transitCoords(routeInfo.transit.sel), x0 = 180, y0 = 90, x1 = -180, y1 = -90;
+    c.forEach(function (q) { if (q[0] < x0) x0 = q[0]; if (q[0] > x1) x1 = q[0]; if (q[1] < y0) y0 = q[1]; if (q[1] > y1) y1 = q[1]; });
+    var pad = mobile.matches ? { top: 130, bottom: Math.round(Math.max(window.innerHeight * .4, panel.offsetHeight + 24)), left: 40, right: 60 } : { top: 96, bottom: 70, left: 420, right: 80 };
+    map.fitBounds([[x0, y0], [x1, y1]], { padding: pad, maxZoom: 16, duration: 600 });
+  }
+  function drawTransit(k, noFit) {
+    var T = routeInfo.transit, x = T.r[k]; if (!x) return;
+    T.sel = k;
+    drawRoute(transitCoords(k), T.me);
+    mePin(routeInfo.to.dest);
+    var segs = [], pts = [];
+    x.s.forEach(function (g) {
+      if (g.m === 'W' || !g.p || g.p.length < 2) return;
+      var col = trSegColor(g);
+      segs.push({ type: 'Feature', properties: { c: col }, geometry: { type: 'LineString', coordinates: g.p } });
+      pts.push({ type: 'Feature', properties: { c: col }, geometry: { type: 'Point', coordinates: g.p[0] } });
+      pts.push({ type: 'Feature', properties: { c: col }, geometry: { type: 'Point', coordinates: g.p[g.p.length - 1] } });
+    });
+    map.addSource('transit', { type: 'geojson', data: { type: 'FeatureCollection', features: segs } });
+    map.addSource('transit-pt', { type: 'geojson', data: { type: 'FeatureCollection', features: pts } });
+    map.addLayer({ id: 'transit-edge', type: 'line', source: 'transit', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 14 } });
+    map.addLayer({ id: 'transit-line', type: 'line', source: 'transit', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'c'], 'line-width': 9 } });
+    map.addLayer({ id: 'transit-pt', type: 'circle', source: 'transit-pt', paint: { 'circle-radius': 6, 'circle-color': '#ffffff', 'circle-stroke-color': ['get', 'c'], 'circle-stroke-width': 3.5 } });
+    requestDraw();
+    if (!noFit) transitFit();
+  }
+  // 대중교통 판: 경로 목록. 고른 경로는 펼쳐서 구간마다 보여 주고, 버스, 지하철 구간에는 타는 곳의 실시간 도착 단추.
+  function renderTransit(sc, r) {
+    var T = r.transit, dest = r.to.dest;
+    if (T.err) {
+      var msg = T.err === 'quota' ? '오늘 앱 안에서 볼 수 있는 대중교통 길을 다 썼어요' : T.err === 'none' ? '가까워서 대중교통 길이 없어요. 걸어서를 눌러 보세요' : '대중교통 길을 찾지 못했어요';
+      var e = el('div', 'trmsg'); e.appendChild(el('b', null, msg)); sc.appendChild(e);
+      sc.appendChild(extTransit(T.me, dest));
+      return;
+    }
+    var list = el('div', 'trlist');
+    T.r.slice(0, 6).forEach(function (x, k) {
+      var on = k === T.sel, row = btn('trrow' + (on ? ' on' : ''), null, function () { if (on) return; drawTransit(k); renderPanel(); });
+      row.setAttribute('aria-pressed', String(on));
+      var top = el('div', 'trtop'), walk = 0;
+      x.s.forEach(function (g) { if (g.m === 'W') walk += g.sec || 0; });
+      top.appendChild(el('b', null, trMin(x.t)));
+      var info = [trFare(x.f), x.x ? '갈아타기 ' + x.x + '번' : '바로 가기', walk ? '걷기 ' + trMin(walk) : ''].filter(Boolean).join(', ');
+      top.appendChild(el('span', null, info));
+      row.appendChild(top);
+      var rides = el('div', 'trrides');
+      x.s.filter(function (g) { return g.m !== 'W'; }).forEach(function (g, n) {
+        if (n) rides.appendChild(el('i', null, '→'));
+        var rd = el('span', 'trride'); rd.style.color = trSegColor(g);
+        rd.appendChild(icon(g.m === 'S' ? 'subway' : 'bus'));
+        rd.appendChild(document.createTextNode((g.n || []).slice(0, 2).join(', ') + ((g.n || []).length > 2 ? ' 외' : '')));
+        rides.appendChild(rd);
+      });
+      row.appendChild(rides);
+      list.appendChild(row);
+      if (on) {
+        var steps = el('div', 'trsteps');
+        x.s.forEach(function (g) {
+          if (g.m === 'W') { if ((g.d || 0) < 30) return; var w = el('div', 'trstep walk'); w.appendChild(el('span', 'trdot')); w.appendChild(el('div', 'trtxt', '걷기 ' + trMin(g.sec || 0) + ' (' + (g.d >= 1000 ? (Math.round(g.d / 100) / 10) + 'km' : Math.round(g.d) + 'm') + ')')); steps.appendChild(w); return; }
+          var st = el('div', 'trstep'), dot = el('span', 'trdot'), col = trSegColor(g); dot.style.background = col; st.appendChild(dot);
+          var tx = el('div', 'trtxt'), nm = el('b', null, (g.n || []).slice(0, 3).join(', ')); nm.style.color = col; tx.appendChild(nm);
+          tx.appendChild(el('div', null, (g.a || '타는 곳') + '에서 타고' + (g.c ? ' ' + g.c + (g.m === 'S' ? '개 역' : '정거장') : '') + ', ' + (g.b || '내리는 곳') + '에서 내려요'));
+          st.appendChild(tx);
+          var live = btn('trlive', null, function () {
+            var at = g.p && g.p[0]; if (!at) return;
+            if (g.m === 'S') { var sn = subNearest(at, 700); if (sn) subSheet(sn[0]); else toast('그 역을 찾지 못했어요'); return; }
+            busNearest(at, function (s0) { if (s0) nearSheet(-1, 'b', busTuple(s0)); else toast('그 정류장을 찾지 못했어요'); });
+          });
+          live.appendChild(document.createTextNode('도착 정보')); live.appendChild(icon('right'));
+          st.appendChild(live);
+          steps.appendChild(st);
+        });
+        list.appendChild(steps);
+      }
+    });
+    sc.appendChild(list);
+    sc.appendChild(extTransit(T.me, dest));
+    var cr = el('p', 'rtsrc');
+    if (r.src === 'seoul') cr.appendChild(document.createTextNode('대중교통 길 안내 서울특별시(지도 위 선은 타는 곳과 내리는 곳을 곧게 이은 것)'));
+    else { cr.appendChild(document.createTextNode('대중교통 길 안내 ')); var a2 = el('a', null, '카카오맵'); a2.href = 'https://map.kakao.com/'; a2.target = '_blank'; a2.rel = 'noopener'; cr.appendChild(a2); }
+    sc.appendChild(cr);
+  }
   // 지도에서 누른 정류장(역) 창의 길찾기: 내 위치에서 걸어서. y: 정류장 창의 한 줄, back: 그 창을 다시 연다. ic: 'subway'면 역.
   function stopRouteFromMe(y, back, ic) {
     meRouteTo({ to: [y[3] / 1e5, y[2] / 1e5], name: y[0], ic: ic || 'bus', kind: ic === 'subway' ? 's' : 'b', back: back }, 'walk');
@@ -11169,6 +11338,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   function routing() { return P.kind === 'route' && !!routeInfo; }
   // 걷는 길 판이 열려 있고 "다른 카페 숨기기"가 켜져 있으면 그 도착 카페 번호, 아니면 -1
   function routeOnlyIdx() { return S.routeOnly && routing() ? routeInfo.i : -1; }
+  // 카페를 대중교통 길의 목적지로: 지도에 찍힌 카페 점 자리, 뒤로는 카페 카드.
+  function cafeDest(i) {
+    return { to: mercToLngLat(mx[i], my[i]), name: D.name[i], ic: 'cafe', kind: 'c', cafe: i,
+      back: function () { sel = i; P.cafe = i; openPanel('detail'); requestDraw(); } };
+  }
   function renderRoute() {
     var r = routeInfo; if (!r) { closePanel(); return; }
     var ttl = r.to ? (r.to.fromMe ? '내 위치에서 ' + r.to.name : r.to.carOnly ? D.name[r.i] : r.to.car ? r.to.name + ' 거쳐 카페' : r.to.rev ? r.to.name + '에서 카페' : '카페에서 ' + r.to.name) : D.name[r.i];
@@ -11183,20 +11357,27 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     // 카페 길찾기(사용자 2026-11-28): 걸어서, 차로를 고르고, 차로는 그 아래에서 주차장까지(주차장 거쳐 걸어서 카페), 카페 앞까지를 고른다.
     //  500m 안에 주차장이 없으면 아래 고르기 없이 카페 앞까지.
     // 내 위치에서 정류장, 역, 주차장까지: 카페와 같은 걸어서, 차로 탭(사용자 2026-11-28: 길찾기 통일).
+    //  탭 셋(사용자 2026-11-28): 걸어서, 대중교통, 차로. 카페는 걸어서, 차로가 카페 전용 길(카카오 매장 자리, 주차장까지)을 쓴다.
+    var MODES = [['walk', '걸어서'], ['transit', '대중교통'], ['car', '차로']];
+    var goMode = function (dest, m) {
+      if (dest.cafe >= 0) { if (m === 'walk') openRoute(dest.cafe); else if (m === 'car') cafeCar(dest.cafe, 'park'); else transitTo(dest); return; }
+      if (m === 'transit') transitTo(dest); else meRouteTo(dest, m);
+    };
     if (r.to && r.to.fromMe && r.to.dest) {
       var mseg = el('div', 'nshseg rtseg'); mseg.setAttribute('role', 'tablist');
-      [['walk', '걸어서'], ['car', '차로']].forEach(function (z) {
+      MODES.forEach(function (z) {
         var on = r.to.mode === z[0];
-        var mb = btn(null, null, function () { if (!on) meRouteTo(r.to.dest, z[0]); });
+        var mb = btn(null, null, function () { if (!on) goMode(r.to.dest, z[0]); });
         mb.setAttribute('role', 'tab'); mb.setAttribute('aria-selected', String(on)); mb.appendChild(el('b', null, z[1])); mseg.appendChild(mb);
       });
       sc.appendChild(mseg);
+      if (r.transit) { renderTransit(sc, r); panel.appendChild(sc); return; }
     }
     if (r.cafeMode) {
       var seg = el('div', 'nshseg rtseg'); seg.setAttribute('role', 'tablist');
-      [['walk', '걸어서'], ['car', '차로']].forEach(function (z) {
-        var on = (z[0] === 'walk') === (r.cafeMode === 'walk');
-        var sb = btn(null, null, function () { if (on) return; if (z[0] === 'walk') openRoute(r.i); else cafeCar(r.i, 'park'); });
+      MODES.forEach(function (z) {
+        var on = z[0] === 'walk' ? r.cafeMode === 'walk' : z[0] === 'car' ? r.cafeMode !== 'walk' : false;
+        var sb = btn(null, null, function () { if (!on) goMode(cafeDest(r.i), z[0]); });
         sb.setAttribute('role', 'tab'); sb.setAttribute('aria-selected', String(on)); sb.appendChild(el('b', null, z[1])); seg.appendChild(sb);
       });
       sc.appendChild(seg);
