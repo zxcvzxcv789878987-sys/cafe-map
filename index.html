@@ -548,6 +548,33 @@ button.oli { width: 100%; padding: 11px 0; margin: 0; background: none; color: v
 .nsharr .tm i { font-style: normal; font-size: 13px; color: var(--ink-2); }
 .nsharr .tm b { font-variant-numeric: tabular-nums; }
 .nsharr .rt.off .no { opacity: .55; }
+.nsharr .rt.tap { cursor: pointer; }
+/* 노선 창(2026-11-28): 세로 한 줄 노선도 */
+.rshd { margin-top: 14px; display: flex; align-items: center; gap: 10px; }
+.rshd .rback { flex: none; width: 36px; height: 36px; margin-left: -8px; display: grid; place-items: center; color: var(--ink); }
+.rshd .rback svg.i { width: 22px; height: 22px; }
+.rshd .no, #rbar .no { flex: none; min-width: 48px; height: 26px; border-radius: 7px; display: grid; place-items: center; color: #fff; font-size: 14px; font-weight: 800; padding: 0 8px; box-sizing: border-box; white-space: nowrap; }
+.rshd .rtt { min-width: 0; display: flex; flex-direction: column; }
+.rshd .rtt b { font-size: 17px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rshd .rtt span { font-size: 12.5px; color: var(--ink-2); }
+.rvl { position: relative; margin-top: 12px; padding-top: 6px; border-top: 1px solid var(--line); max-height: 52vh; overflow-y: auto; overscroll-behavior: contain; --rc: #6a5ae0; }
+.rvl .msg { padding: 14px 0 4px; font-size: 14px; color: var(--ink-2); }
+.rvl .rs { position: relative; display: flex; align-items: center; min-height: 40px; padding-left: 40px; }
+.rvl .rs .ln { position: absolute; left: 17px; top: 0; bottom: 0; width: 4px; background: var(--rc); opacity: .35; }
+.rvl .rs.first .ln { top: 50%; }
+.rvl .rs.last .ln { bottom: 50%; }
+.rvl .rs .dt { position: absolute; left: 13px; top: 50%; width: 12px; height: 12px; margin-top: -6px; border-radius: 50%; background: var(--surface); border: 2px solid var(--rc); box-sizing: border-box; }
+.rvl .rs .nm { flex: 1; min-width: 0; font-size: 14.5px; color: var(--ink); }
+.rvl .rs .nm em { font-style: normal; margin-left: 6px; font-size: 11.5px; font-weight: 700; color: var(--ink-2); }
+.rvl .rs.me .nm { font-weight: 800; }
+.rvl .rs.me .dt { width: 18px; height: 18px; left: 10px; margin-top: -9px; background: var(--rc); border: 3px solid var(--surface); box-shadow: 0 0 0 2px var(--rc); }
+.rvl .rs .bi { position: absolute; left: 6px; top: 50%; width: 26px; height: 26px; margin-top: -13px; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 2px 5px rgba(0, 0, 0, .25); }
+.rvl .rs .bi svg.i { width: 16px; height: 16px; color: #fff; }
+#rbar { position: fixed; z-index: 25; left: 50%; transform: translateX(-50%); top: calc(118px + env(safe-area-inset-top, 0px)); display: flex; align-items: center; gap: 2px; padding: 4px 4px 4px 6px; border-radius: 14px; background: var(--surface); box-shadow: 0 4px 14px rgba(0, 0, 0, .18); max-width: calc(100% - 32px); box-sizing: border-box; }
+#rbar .rbo { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 2px 4px; }
+#rbar .rbo b { font-size: 14px; font-weight: 750; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#rbar .rbx { flex: none; width: 34px; height: 34px; display: grid; place-items: center; color: var(--ink-2); }
+#rbar .rbx svg.i { width: 18px; height: 18px; }
 .nsharr .tm b { font-size: 14px; font-weight: 800; color: #d6336c; }
 .nsharr .tm span { font-size: 12px; color: var(--ink-2); }
 .nsharr .tm em { font-style: normal; font-size: 12px; font-weight: 700; }
@@ -6964,6 +6991,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     });
   }
   map.on('moveend', busRefresh);
+  if (TEST) window.testView = function () { return map.getBounds().toArray(); };
   if (TEST) window.testBus = function () { var sc = map.getSource('lm-busstops'); return { z: map.getZoom(), layer: !!map.getLayer('lm-bus'), src: !!sc, same: sc === busSrc, n: busFC.features.length, keys: busKeyStr, img: map.hasImage('ic-bus') }; };
   // 지도 모양을 다시 입히면(setStyle) 자료 칸이 새로 생기므로 받아 둔 정류장을 다시 넣는다.
   map.on('styledata', function () { var s3 = map.getSource('lm-busstops'); if (s3 && s3 !== busSrc) { busSrc = s3; s3.setData(busFC); busKeyStr = ''; busRefresh(); } });
@@ -7022,6 +7050,74 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     row.appendChild(pin); body.appendChild(el('span', 'name', f[2])); body.appendChild(el('span', 'meta', f[5] ? '정류장 번호 ' + f[5] : '버스정류장')); row.appendChild(body);
     row.addEventListener('click', function () { setFollow(false); map.flyTo({ center: [f[1] / 1e5, f[0] / 1e5], zoom: Math.max(map.getZoom(), 17), duration: 600 }); busTap(f); });
     return row;
+  }
+  // ----- 노선 보기(2026-11-28) -----
+  // 버스 줄을 누르면 그 노선의 정류장을 세로 한 줄로 보여 주고(지금 버스가 있는 곳, 이 정류장, 회차 표시), 지도로 노선보기를 누르면 전체 경로를 지도에 그린다.
+  //  자료는 중계 서버 /route(경기도 노선 조회, 서울시 노선정보조회, TAGO 노선 정보와 각 버스위치정보).
+  var routeBar = null;
+  function routeSheet(z, y, col, back) {
+    var old = $('nsheet'), was = !!old && old.classList.contains('on'); if (old) old.remove();
+    var o = el('div', 'osh'), sh = el('div', 'oshbox rsheet');
+    o.id = 'nsheet'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', z[0] + '번 노선');
+    var close = function () { o.classList.remove('on'); document.body.classList.remove('osh-on'); setTimeout(function () { o.remove(); }, 230); };
+    o.addEventListener('click', function (e) { if (e.target === o) close(); });
+    sh.appendChild(el('span', 'oshgrab'));
+    var hd = el('div', 'rshd'), bk = btn('rback', null, back); bk.setAttribute('aria-label', '정류장으로 돌아가기'); bk.appendChild(icon('back')); hd.appendChild(bk);
+    var no = el('span', 'no', z[0]); no.style.background = col; hd.appendChild(no);
+    var tt = el('div', 'rtt'); tt.appendChild(el('b', null, z[5] ? z[5] + '행' : z[0] + '번')); if (z[3]) tt.appendChild(el('span', null, z[3])); hd.appendChild(tt);
+    sh.appendChild(hd);
+    var list = el('div', 'rvl'); list.appendChild(el('div', 'msg', '노선을 불러오는 중')); sh.appendChild(list);
+    var mb = btn('nshmap', null, null); mb.appendChild(icon('map')); mb.appendChild(document.createTextNode('지도로 노선보기')); mb.disabled = true; sh.appendChild(mb);
+    o.appendChild(sh); document.body.appendChild(o); document.body.classList.add('osh-on');
+    if (was) { o.classList.add('now', 'on'); requestAnimationFrame(function () { o.classList.remove('now'); }); } else requestAnimationFrame(function () { o.classList.add('on'); });
+    fetch(BUS_API.replace(/\/bus$/, '/route') + '?c=' + encodeURIComponent(y[5]) + '&r=' + encodeURIComponent(z[9]) + '&n=' + encodeURIComponent(y[4] || '') + '&a=' + encodeURIComponent(y[6] || ''))
+      .then(function (r) { if (!r.ok) throw new Error('route'); return r.json(); })
+      .then(function (d) {
+        if (!list.isConnected) return;
+        list.textContent = '';
+        if (!d.s || !d.s.length) { list.appendChild(el('div', 'msg', d.err ? '이 노선의 정류장 정보를 불러오지 못했어요' : '노선 정보가 없어요')); return; }
+        var me = d.me || z[10] || 0, buses = {}, meEl = null;
+        (d.b || []).forEach(function (q) { buses[q] = (buses[q] || 0) + 1; });
+        list.style.setProperty('--rc', col);
+        d.s.forEach(function (q, k) {
+          var r = el('div', 'rs' + (q[3] === me ? ' me' : '') + (k === 0 ? ' first' : '') + (k === d.s.length - 1 ? ' last' : ''));
+          r.appendChild(el('span', 'ln')); r.appendChild(el('span', 'dt'));
+          var nm = el('span', 'nm', q[0]); if (q[4]) nm.appendChild(el('em', null, '회차')); r.appendChild(nm);
+          // 버스가 있는 정류장(그 정류장에 있거나 막 지난 차)
+          if (buses[q[3]]) { var bi = el('span', 'bi'); bi.appendChild(icon('bus')); bi.style.background = col; r.appendChild(bi); }
+          if (q[3] === me) meEl = r;
+          list.appendChild(r);
+        });
+        if (meEl) requestAnimationFrame(function () { list.scrollTop = meEl.offsetTop - list.clientHeight / 2 + meEl.offsetHeight / 2; });
+        mb.disabled = false;
+        mb.onclick = function () { close(); routeOnMap(d, z, col, function () { routeSheet(z, y, col, back); }); };
+      })
+      .catch(function () { if (!list.isConnected) return; list.textContent = ''; list.appendChild(el('div', 'msg', '노선 정보를 불러오지 못했어요')); });
+  }
+  function routeClear() {
+    if (routeBar) { routeBar.remove(); routeBar = null; }
+    ['br-stop-me', 'br-stop', 'br-line', 'br-edge'].forEach(function (id) { if (map.getLayer(id)) map.removeLayer(id); });
+    ['br-line', 'br-stop'].forEach(function (id) { if (map.getSource(id)) map.removeSource(id); });
+  }
+  function routeOnMap(d, z, col, reopen) {
+    routeClear();
+    var line = (d.l || []).map(function (q) { return [q[0] / 1e5, q[1] / 1e5]; }), me = d.me || z[10] || 0;
+    map.addSource('br-line', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: line } } });
+    map.addSource('br-stop', { type: 'geojson', data: { type: 'FeatureCollection', features: d.s.map(function (q) { return { type: 'Feature', properties: { me: q[3] === me ? 1 : 0, n: q[0] }, geometry: { type: 'Point', coordinates: [q[2] / 1e5, q[1] / 1e5] } }; }) } });
+    map.addLayer({ id: 'br-edge', type: 'line', source: 'br-line', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 9 } });
+    map.addLayer({ id: 'br-line', type: 'line', source: 'br-line', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': col, 'line-width': 5 } });
+    map.addLayer({ id: 'br-stop', type: 'circle', source: 'br-stop', filter: ['==', ['get', 'me'], 0], paint: { 'circle-radius': 3.6, 'circle-color': '#ffffff', 'circle-stroke-color': col, 'circle-stroke-width': 2 } });
+    map.addLayer({ id: 'br-stop-me', type: 'circle', source: 'br-stop', filter: ['==', ['get', 'me'], 1], paint: { 'circle-radius': 7, 'circle-color': col, 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 3 } });
+    var x0 = 180, y0 = 90, x1 = -180, y1 = -90;
+    line.forEach(function (q) { if (q[0] < x0) x0 = q[0]; if (q[0] > x1) x1 = q[0]; if (q[1] < y0) y0 = q[1]; if (q[1] > y1) y1 = q[1]; });
+    setFollow(false);
+    map.fitBounds([[x0, y0], [x1, y1]], { padding: mobile.matches ? { top: 150, bottom: 60, left: 30, right: 30 } : { top: 110, bottom: 60, left: 60, right: 60 }, maxZoom: 16, duration: 600 });
+    // 위쪽 띠: 노선 번호와 가는 곳. 누르면 노선 창으로 돌아가고, X로 지도에서 노선을 지운다.
+    routeBar = el('div'); routeBar.id = 'rbar';
+    var b0 = btn('rbo', null, function () { reopen(); });
+    var no = el('span', 'no', z[0]); no.style.background = col; b0.appendChild(no); b0.appendChild(el('b', null, (z[5] ? z[5] + '행' : z[0] + '번') + ' 노선'));
+    var bx = btn('rbx', null, routeClear); bx.setAttribute('aria-label', '노선 지우기'); bx.appendChild(icon('x'));
+    routeBar.appendChild(b0); routeBar.appendChild(bx); document.body.appendChild(routeBar);
   }
   function busTap(s) { busPair(s, function (o) { nearSheet(-1, 'b', busTuple(s), o ? busTuple(o) : null); }); }
   map.on('click', function (e) {
@@ -10058,6 +10154,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
                 // 전부 보여 주고, 많으면 목록 칸 안에서 밀어 본다(사용자 2026-11-28).
                 d.a.forEach(function (z, k) {
                   var r = el('div', 'rt'), no = el('span', 'no', z[0]); no.style.background = busColor(z[3] || '');
+                  // 버스를 누르면 그 노선을 세로로 보여 준다(사용자 2026-11-28, 네이버, 카카오처럼).
+                  if (z[9]) { r.classList.add('tap'); r.setAttribute('role', 'button'); r.addEventListener('click', function () { routeSheet(z, y, busColor(z[3] || ''), function () { nearSheet(i, kind, x, x2, cur); }); }); }
                   // 서울은 노선이 가는 곳(예: 도봉산행)을, 그 밖은 다음 차 시간을 적는다. 방면은 정류장의 다음 정류장이라 노선 줄에는 쓰지 않는다.
                   r.appendChild(no); r.appendChild(el('span', 'ds', z[5] ? z[5] + '행' : z[4] ? '다음 ' + mins(z[4]) : (z[3] || '')));
                   var tm = el('span', 'tm'), t1 = el('span', 't1');
