@@ -642,6 +642,21 @@ button.nearpin { pointer-events: auto; border: 0; background: none; padding: 0; 
 .nshseg button b { max-width: 100%; font-size: 15px; font-weight: 800; line-height: 1.3; text-align: center; word-break: keep-all; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .nshseg button span { font-size: 12.5px; }
 .nshseg button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 4px rgba(0, 0, 0, .12); }
+/* 지하철역 창(2026-11-28): 노선 탭은 노선 수만큼 칸을 나누고, 넷 넘으면 옆으로 밀어 본다. 노선 이름 앞에 노선 색 점 */
+.subseg { grid-template-columns: repeat(var(--n), minmax(0, 1fr)); }
+.subseg.many { display: flex; overflow-x: auto; scrollbar-width: none; }
+.subseg.many button { flex: none; min-width: 92px; padding: 8px 10px; }
+.subseg button b { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; -webkit-line-clamp: unset; }
+.ldot { flex: none; display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
+.subone { margin-left: 34px; font-weight: 700; color: var(--ink); }
+.subdir .ahd h3 { font-size: 16px; }
+.subdir .ds { color: var(--ink); font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.subdir .bdg { flex: none; font-style: normal; font-size: 11.5px; font-weight: 800; border-radius: 5px; padding: 1px 5px; }
+.subdir .bdg.last { color: #e03131; background: #fff0f0; }
+.subdir .bdg.exp { color: #c2255c; background: #fff0f6; }
+.subdir .alist { max-height: none; }
+.subdir .sfe { margin-top: 6px; font-size: 13px; color: var(--ink-2); }
+.ssrc { margin-top: 12px; font-size: 11.5px; color: var(--ink-2); }
 .nearpin.alt { pointer-events: auto; border: 0; background: none; padding: 0; cursor: pointer; }
 .nearpin.alt .ic { background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .2); border: 2px solid #2f9e44; box-sizing: border-box; }
 .nearpin.alt .ic svg.i { color: #2f9e44; }
@@ -2439,6 +2454,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
 <script src="route.js"></script>
 <script src="regions.js"></script>
 <script src="landmarks.js"></script>
+<script src="subway.js"></script>
 <script>
 // 켜다가 막히면(인터넷이 약해 자료나 지도를 못 받았거나, 켜는 도중 오류) 로딩 화면 대신 안내와 다시 시도 단추를 보여 준다.
 window.cafeBootFail = function (msg) {
@@ -5975,6 +5991,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   //   빼는 것: 가게, 식당, 술집, 다른 카페, 편의점, 은행, 주유소, 숙박, 교회 같은 종교 시설, 의원과 치과, 약국, 학원, 사무실
   // 지도에서 가게로 보이는 것은 카페뿐이어야 한다. 기준점 글씨는 카페 이름보다 작고 옅게 쓴다.
   var LM = window.LANDMARKS || { lines: [], stations: [], apts: [] };
+  var SUBWAY = window.SUBWAY || [];   // 지하철역(데이터 만들기/subway_build.py). [경도*1e5, 위도*1e5, 이름, [[노선, 색, TAGO 역 번호, 서울 실시간]]]
   // 종류별 아이콘. 동그란 바탕에 흰 그림을 직접 그린다. [바탕색, 그림]
   var ICONS = {
     school: ['#5b82d6', 'cap'], univ: ['#3f6fd1', 'cap'], apt: ['#8b94a3', 'apt'], hospital: ['#d9484d', 'cross'],
@@ -6035,7 +6052,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     return {
       'lm-subway': { type: 'geojson', data: { type: 'FeatureCollection', features: LM.lines.map(function (l) { return { type: 'Feature', properties: { c: l.c }, geometry: { type: 'MultiLineString', coordinates: l.g.map(dec) } }; }) } },
       // 역 표시는 그 역을 지나는 노선 색으로 칠한다. 환승역은 어두운 색으로 조금 크게.
-      'lm-stations': { type: 'geojson', data: points(LM.stations, function (a) { return { name: a[2], c: a[3].length === 1 ? a[3][0] : '#2f3a4a', n: a[3].length }; }) },
+      //  역 자리는 공식 자료(subway.js: 역사정보 표준데이터 좌표, TAGO 역 번호)로 찍고, 누르면 역 창이 뜬다(2026-11-28). i: SUBWAY 안의 순번.
+      'lm-stations': { type: 'geojson', data: SUBWAY.length ? { type: 'FeatureCollection', features: SUBWAY.map(function (a, k) { return { type: 'Feature', properties: { name: a[2], c: a[3].length === 1 ? a[3][0][1] : '#2f3a4a', n: a[3].length, i: k }, geometry: { type: 'Point', coordinates: [a[0] / 1e5, a[1] / 1e5] } }; }) }
+        : points(LM.stations, function (a) { return { name: a[2], c: a[3].length === 1 ? a[3][0] : '#2f3a4a', n: a[3].length }; }) },
       'lm-apts': { type: 'geojson', data: points(LM.apts, function (a) { return { name: a[2] }; }) },
       // 버스정류장: 공공데이터 정류장 목록을 화면에 보이는 칸만 받아 채운다(busRefresh).
       'lm-busstops': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
@@ -7002,7 +7021,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   })();
   map.on('mousemove', function (e) {
     var h = hit(e.point), ni = h && h.i !== undefined ? h.i : -1, np = h && h.reg !== undefined ? h.reg : -1;
-    map.getCanvas().style.cursor = h || busAt(e.point) || parkAt(e.point) ? 'pointer' : '';
+    map.getCanvas().style.cursor = h || subAt(e.point) || busAt(e.point) || parkAt(e.point) ? 'pointer' : '';
     if (ni !== hoverI || np !== hoverPill) { hoverI = ni; setHoverReg(np); requestDraw(); }
   });
   map.on('mouseout', function () { if (hoverI >= 0 || hoverPill >= 0) { hoverI = -1; hoverPill = -1; requestDraw(); } });
@@ -7164,6 +7183,122 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     row.appendChild(pin); body.appendChild(el('span', 'name', f[2])); body.appendChild(el('span', 'meta', f[5] ? '정류장 번호 ' + f[5] : '버스정류장')); row.appendChild(body);
     row.addEventListener('click', function () { busFlyThen([f[1] / 1e5, f[0] / 1e5], function () { busTap(f); }); });
     return row;
+  }
+  // ----- 지하철역(2026-11-28, 지하철을 버스처럼) -----
+  // 지도의 역 점(subway.js의 공식 역)을 누르면 곧바로 역 창. 중계 서버 /sub가 서울시 안의 역은 서울 열린데이터광장 실시간 도착을,
+  //  그 밖(부산, 대구, 광주, 대전, 서울 밖 수도권)은 국토교통부 TAGO 시간표로 다음 열차 "예정"을 준다. 키는 서버에 숨김.
+  var SUB_API = 'https://cafemap-blog.rdh0811.workers.dev/sub', subPre = {};
+  function subAt(pt) {
+    if (!SUBWAY.length || !map.getLayer('lm-station-dot')) return null;
+    var f = map.queryRenderedFeatures([[pt.x - 14, pt.y - 14], [pt.x + 14, pt.y + 14]], { layers: ['lm-station-dot', 'lm-station'] });
+    for (var k = 0; k < f.length; k++) { var j = f[k].properties && f[k].properties.i; if (j != null && SUBWAY[j]) return SUBWAY[j]; }
+    return null;
+  }
+  // 도착 정보 받기. 같은 역은 15초 안에 다시 받지 않고, 역 점에 손가락이 닿는 순간부터 미리 받는다(버스와 같음).
+  function subFetch(st, fresh) {
+    var key = st[2] + '@' + st[0] + ',' + st[1], c = subPre[key];
+    if (c && !fresh && Date.now() - c.t < 15000) return c.p;
+    var l = st[3].map(function (L) { return L[0] + '~' + L[2] + '~' + L[3]; }).join('|');
+    var p = fetch(SUB_API + '?n=' + encodeURIComponent(st[2]) + '&l=' + encodeURIComponent(l))
+      .then(function (r) { if (!r.ok) throw new Error('sub'); return r.json(); })
+      .then(function (d) { d.t0 = Date.now(); return d; });   // t0: 남은 초를 여기서부터 센다
+    p.catch(function () { delete subPre[key]; });
+    subPre[key] = { t: Date.now(), p: p };
+    return p;
+  }
+  function subPress(e) { var s = subAt(e.point); if (s) subFetch(s); }
+  map.on('mousedown', subPress); map.on('touchstart', subPress);
+  if (TEST) window.testSub = function (name) { var s = SUBWAY.filter(function (a) { return a[2] === name; })[0]; if (s) subSheet(s); return s; };
+  // 역 창. li: 처음 보여 줄 노선 순번(환승역). 노선마다 상행, 하행 두 칸을 같이 보여 준다(어느 쪽을 탈지 고르기 쉽게).
+  function subSheet(st, li) {
+    var old = $('nsheet'), was = !!old && old.classList.contains('on'); if (old) old.remove();
+    var o = el('div', 'osh'), sh = el('div', 'oshbox');
+    o.id = 'nsheet'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '지하철역');
+    var close = function () { o.classList.remove('on'); document.body.classList.remove('osh-on'); sh.style.transform = ''; setTimeout(function () { o.remove(); }, 230); };
+    o.addEventListener('click', function (e) { if (e.target === o) close(); });
+    sh.appendChild(el('span', 'oshgrab'));
+    var hd = el('div', 'nshhd'); hd.appendChild(icon('subway')); hd.appendChild(el('h2', null, st[2])); sh.appendChild(hd);
+    var lines = st[3], cur = Math.min(li || 0, lines.length - 1), seg = null;
+    if (lines.length > 1) {
+      // 환승역은 노선 탭. 노선 이름 앞에 노선 색 점.
+      seg = el('div', 'nshseg subseg' + (lines.length > 3 ? ' many' : '')); seg.setAttribute('role', 'tablist'); seg.style.setProperty('--n', lines.length);
+      lines.forEach(function (L, k) {
+        var sb = btn(null, null, function () { if (cur === k) return; cur = k; draw(); });
+        sb.setAttribute('role', 'tab');
+        var b = el('b'), dot = el('i', 'ldot'); dot.style.background = L[1]; b.appendChild(dot); b.appendChild(document.createTextNode(L[0])); sb.appendChild(b);
+        seg.appendChild(sb);
+      });
+      sh.appendChild(seg);
+    }
+    var cont = el('div', 'nshcont subcont'); sh.appendChild(cont);
+    var got = subFetch(st), data = null;
+    var secText = function (sec) { sec = Math.floor(sec); return sec <= 0 ? '곧 도착' : sec < 60 ? sec + '초' : Math.floor(sec / 60) + '분 ' + (sec % 60) + '초'; };
+    var draw = function () {
+      if (seg) seg.querySelectorAll('button').forEach(function (sb, k) { sb.setAttribute('aria-selected', String(k === cur)); });
+      cont.textContent = '';
+      var L0 = lines[cur], box = el('div');
+      cont.appendChild(box);
+      // 노선이 하나뿐인 역은 탭 대신 이름 아래에 노선 이름.
+      if (!seg) { var one = el('div', 'nshsub subone'), dt = el('i', 'ldot'); dt.style.background = L0[1]; one.appendChild(dt); one.appendChild(el('span', null, L0[0])); box.appendChild(one); }
+      if (!data) { var w = el('div', 'nsharr subdir'); w.appendChild(el('div', 'msg', data === false ? '도착 정보를 불러오지 못했어요' : '불러오는 중')); box.appendChild(w); return; }
+      var L = (data.L || []).filter(function (x) { return x.l === L0[0]; })[0];
+      if (!L || !L.g) { var w2 = el('div', 'nsharr subdir'); w2.appendChild(el('div', 'msg', '이 노선의 도착 정보가 없어요')); box.appendChild(w2); return; }
+      // 종점역은 한쪽 방향에 떠나는 열차가 없다(시간표가 빔). 다른 쪽에 열차가 있으면 빈 쪽은 보여 주지 않는다.
+      var gs = L.g.some(function (g) { return !g.nt; }) ? L.g.filter(function (g) { return !g.nt; }) : L.g;
+      gs.forEach(function (g) {
+        var blk = el('div', 'nsharr subdir'), h = el('div', 'ahd');
+        h.appendChild(el('h3', null, g.h || (g.k === 'U' ? '상행' : '하행')));
+        blk.appendChild(h);
+        var list = el('div', 'alist');
+        if (!g.t || !g.t.length) list.appendChild(el('div', 'msg', g.end ? '오늘 운행이 끝났어요' : g.nt ? '오늘 시간표 정보가 없어요' : '곧 오는 열차 정보가 없어요'));
+        (g.t || []).forEach(function (t) {
+          var r = el('div', 'rt'), ds = el('span', 'ds', t[1]);
+          // 막차와 급행만 작게 표시한다(평범한 열차는 표시 없음).
+          if (t[3]) ds.appendChild(el('em', 'bdg last', '막차'));
+          if (t[4]) ds.appendChild(el('em', 'bdg exp', '급행'));
+          r.appendChild(ds);
+          var tm = el('span', 'tm'), t1 = el('span', 't1');
+          if (t[0] >= 0) {
+            var bt = el('b', null, secText(t[0] - (Date.now() - data.t0) / 1000)); bt.dataset.s = t[0]; bt.dataset.t = data.t0; t1.appendChild(bt);
+          } else t1.appendChild(el('b', null, t[2] || '도착 정보 없음'));
+          tm.appendChild(t1);
+          r.appendChild(tm); list.appendChild(r);
+        });
+        blk.appendChild(list);
+        if (g.f) blk.appendChild(el('div', 'sfe', '첫차 ' + g.f + ', 막차 ' + g.e + (g.et ? '(' + g.et + '행)' : '')));
+        box.appendChild(blk);
+      });
+      // 서울 실시간을 보여 줄 때는 출처를 적는다(열린데이터광장 이용약관 제10조). 시간표로 보여 줄 때는 실시간이 아니라고 한 번만 적는다.
+      if (L.rt) cont.appendChild(el('div', 'ssrc', '실시간 도착 정보: 서울특별시 공공데이터'));
+      else if (L.g.some(function (g) { return g.t && g.t.length; })) cont.appendChild(el('div', 'ssrc', '실시간 정보가 없는 노선이라 시간표 기준 예정 시각이에요'));
+      var mb = btn('nshmap', null, function () { close(); stopRouteFromMe([st[2], 0, st[1], st[0]], function () { subSheet(st, cur); }, 'subway'); });
+      mb.appendChild(icon('route')); mb.appendChild(document.createTextNode('길찾기'));
+      cont.appendChild(mb);
+    };
+    var ask = function (fresh) {
+      got = subFetch(st, fresh);
+      got.then(function (d) { if (!o.isConnected) return; data = d; draw(); }, function () { if (!o.isConnected) return; if (!data) { data = false; draw(); } });
+    };
+    draw(); ask(false);
+    var lastAsk = Date.now(), tick = setInterval(function () {
+      if (!o.isConnected) { clearInterval(tick); return; }
+      var now = Date.now();
+      cont.querySelectorAll('b[data-s]').forEach(function (b) { b.textContent = secText(+b.dataset.s - (now - +b.dataset.t) / 1000); });
+      if (now - lastAsk > 30000) { lastAsk = now; ask(true); }
+    }, 1000);
+    // 아래로 끌면 닫힌다(목록 칸 안은 빼고).
+    var dragOn = false, dy0 = 0, ddy = 0;
+    sh.addEventListener('pointerdown', function (e) {
+      if (e.target.closest('button')) return;
+      dragOn = true; dy0 = e.clientY; ddy = 0; sh.style.transition = 'none';
+      try { sh.setPointerCapture(e.pointerId); } catch (err) { /* 그대로 둔다 */ }
+    });
+    sh.addEventListener('pointermove', function (e) { if (!dragOn) return; ddy = Math.max(0, e.clientY - dy0); sh.style.transform = 'translateY(' + ddy + 'px)'; });
+    var dragEnd = function () { if (!dragOn) return; dragOn = false; sh.style.transition = ''; if (ddy > 80) close(); else sh.style.transform = ''; };
+    sh.addEventListener('pointerup', dragEnd); sh.addEventListener('pointercancel', dragEnd);
+    o.appendChild(sh); document.body.appendChild(o); document.body.classList.add('osh-on');
+    if (was) { o.classList.add('now', 'on'); requestAnimationFrame(function () { o.classList.remove('now'); }); }
+    else requestAnimationFrame(function () { o.classList.add('on'); });
   }
   // ----- 주차장(2026-11-28) -----
   // 전국주차장정보 표준데이터를 정류장과 같은 0.05도 칸으로 나눈 파일(park/위도칸_경도칸.json, 데이터 만들기/park_tiles.py)을
@@ -7545,6 +7680,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   function busTap(s) { busPair(s, function (o) { nearSheet(-1, 'b', busTuple(s), o ? busTuple(o) : null); }); }
   map.on('click', function (e) {
     var h = hit(e.point);
+    if (!h) { var sb = subAt(e.point); if (sb) { closePile(); subSheet(sb); return; } }
     if (!h) { var bs = busAt(e.point); if (bs) { closePile(); busTap(bs); return; } }
     if (!h) { var pk = parkAt(e.point); if (pk) { closePile(); parkTap(pk); return; } }
     if (h && h.pile) { closePanel(); openPile(h.pile); return; }
@@ -10152,7 +10288,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     else navigator.geolocation.getCurrentPosition(go, function (er) { if (er && er.code === 1) locDenied('걷는 길을 보려면'); else toast('위치를 확인하지 못했어요. 잠시 뒤에 다시 눌러 주세요'); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 });
   }
   // 지도에서 누른 정류장 창의 길찾기(사용자 2026-11-28): 내 위치에서 그 정류장까지 걷는 길. y: 정류장 창의 한 줄, back: 정류장 창을 다시 연다.
-  function stopRouteFromMe(y, back) {
+  // ic: 표시 그림(지하철역 창은 'subway', 없으면 버스).
+  function stopRouteFromMe(y, back, ic) {
     if (!navigator.geolocation) { toast('이 기기에서는 위치를 확인할 수 없어요'); return; }
     var go = function (p) {
       lastFix = { p: p, t: Date.now() };
@@ -10164,9 +10301,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         drawRoute(c, from);
         if (nearMk) nearMk.remove();
         if (nearMk2) { nearMk2.remove(); nearMk2 = null; }
-        var pin = document.createElement('button'), ic = el('span', 'ic'); pin.type = 'button'; pin.className = 'nearpin'; ic.style.background = '#2f9e44';
-        ic.appendChild(icon('bus')); pin.appendChild(ic); pin.appendChild(el('b', null, y[0]));
-        pin.setAttribute('aria-label', y[0] + ' 곧 도착하는 버스 보기');
+        var pin = document.createElement('button'), pic = el('span', 'ic'); pin.type = 'button'; pin.className = 'nearpin'; pic.style.background = ic === 'subway' ? '#3d5bf5' : '#2f9e44';
+        pic.appendChild(icon(ic || 'bus')); pin.appendChild(pic); pin.appendChild(el('b', null, y[0]));
+        pin.setAttribute('aria-label', y[0] + (ic === 'subway' ? ' 곧 도착하는 열차 보기' : ' 곧 도착하는 버스 보기'));
         pin.addEventListener('click', function (e) { e.stopPropagation(); back(); });
         nearMk = new maplibregl.Marker({ element: pin, anchor: 'left', offset: [-19, 0] }).setLngLat(to).addTo(map);
         // to.fromMe: 카페 없는 길(걷는 길 이스터 에그 조건에서도 빠진다, routeInfo.to가 있으면 건너뛴다)
