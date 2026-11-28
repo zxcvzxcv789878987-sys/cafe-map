@@ -38,9 +38,7 @@ def main():
         print(l)
     import os
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)), '작업', 'brand_candidates.txt')
-    open(out, 'w', encoding='utf-8').write('
-'.join(lines) + '
-')
+    open(out, 'w', encoding='utf-8').write(''.join(l + chr(10) for l in lines))
 
 
 if __name__ == '__main__':
