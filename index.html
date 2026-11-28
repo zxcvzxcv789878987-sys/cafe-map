@@ -6171,11 +6171,14 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
 
   // ================= 지도 =================
   var mobile = window.matchMedia('(max-width: 760px)');
-  var KOREA = [[124.8, 33.0], [130.2, 38.7]];
+  // 전국 화면(처음부터 단추, 앱을 열 때)의 범위(사용자 2026-11-28: 너무 멀리 축소된다, 대한민국이 폰 화면에 알맞게 차게).
+  //  남한 본토와 제주까지만 넣는다(서쪽 신안 섬들 125.95, 동쪽 포항 호미곶 129.6, 남쪽 제주 33.1, 북쪽 강원 고성 38.6).
+  //  백령도, 울릉도, 독도는 넣지 않는다(넣으면 바다가 너무 많아진다). 위아래 여백은 검색창과 칩 줄, 아래 단추를 피한다(fitPad).
+  var KOREA = [[125.95, 33.1], [129.65, 38.65]];
   // 배경 지도는 길, 공원, 물에 색이 들어간 일반 지도다. PC가 어두운 모드여도 늘 같은 지도를 쓴다.
   function styleUrl() { return 'https://tiles.openfreemap.org/styles/liberty'; }
   var mapAt = saved.view && S.start === 'last' ? { center: [saved.view[1], saved.view[0]], zoom: saved.view[2] }
-    : { bounds: KOREA, fitBoundsOptions: { padding: { top: 110, bottom: 70, left: 30, right: 30 } } };
+    : { bounds: KOREA, fitBoundsOptions: { padding: fitPad() } };   // 처음부터 단추와 같은 화면
   // 화면째 확대(사용자 2026-11-28: 지도를 끝까지 확대한 뒤 더 벌리면 브라우저가 화면을 키워 단추가 밀리고 멈춘 것처럼 됐다).
   //  손가락 동작을 막는 방식(touch-action, gesturestart)은 아이폰에서 지도까지 안 움직이게 해서 뺐다(같은 날).
   //  대신 화면이 확대된 것을 알아채면 확대 막는 설정을 다시 걸어 1배로 되돌린다.
@@ -6263,6 +6266,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (was && !nb.hidden) { var c = $('chips'); if (c) nb.style.top = Math.round(c.getBoundingClientRect().bottom + 10) + 'px'; }   // 칩 줄 바로 아래
     };
     map.on('rotate', sync); sync();
+    // 확대해서 전국 화면에서 벗어나거나 돌아오면 처음부터 단추를 다시 정한다(바뀔 때만).
+    var offWas = null;
+    map.on('zoom', function () { var o = offHome(); if (o !== offWas) { offWas = o; navVis(); } });
+    window.addEventListener('resize', function () { homeZ = null; navVis(); });
     nb.addEventListener('click', function () { map.easeTo({ bearing: 0, duration: 400 }); });
   })();
   // 지도 스타일을 받아서 원래 있던 글씨와 기호를 전부 뺀 뒤, 위치를 가늠하는 기준점만 다시 넣는다.
@@ -9966,11 +9973,23 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (can) { all.textContent = S.showAll ? '동별로 보기' : rName[S.reg] + ' 전체 보기'; all.setAttribute('aria-pressed', String(S.showAll)); }
   }
   // 오른쪽 아래 단추: 뒤로와 처음부터는 지역을 골랐을 때만. 메모 단추(투명 단추 에그를 연 사람)는 전국에서도 늘 보인다(사용자 2026-11-27).
-  //  처음부터는 지도가 돌아가 있을 때도 보인다(사용자 2026-11-28: 전국에서 돌린 뒤 다시 눌러 똑바로 돌리고 싶다). 누르면 북쪽이 위인 전국으로 날아간다.
+  //  처음부터는 지도가 돌아가 있거나, 전국 화면보다 조금이라도 확대했을 때도 보인다(사용자 2026-11-28). 누르면 북쪽이 위인 전국으로 날아간다.
+  var homeZ = null;
+  function homeZoom() {
+    // 전국 화면의 배율: 한국이 들어가는 배율과, 지도 테두리 때문에 더 축소할 수 없는 배율 중 큰 쪽(지도가 실제로 멈추는 배율).
+    if (homeZ === null) {
+      var cam = map.cameraForBounds(KOREA, { padding: fitPad() }), box = map.getContainer();
+      var bw = (134.5 - 121) / 360, bh = mercY(31) - mercY(40.5);
+      var zMin = Math.max(map.getMinZoom(), Math.log2(box.clientWidth / (512 * bw)), Math.log2(box.clientHeight / (512 * bh)));
+      homeZ = Math.max(cam && isFinite(cam.zoom) ? cam.zoom : 6, zMin);
+    }
+    return homeZ;
+  }
+  function offHome() { return typeof map !== 'undefined' && !!map && (Math.abs(map.getBearing()) >= .5 || map.getZoom() > homeZoom() + .05); }
   function navVis() {
-    var inReg = S.reg >= 0, memo = favOn() && !S.favHide, rot = typeof map !== 'undefined' && map && Math.abs(map.getBearing()) >= .5;
-    $('navBack').hidden = !inReg; $('navHome').hidden = !inReg && !rot;
-    $('nav').hidden = !inReg && !memo && !rot;
+    var inReg = S.reg >= 0, memo = favOn() && !S.favHide, off = offHome();
+    $('navBack').hidden = !inReg; $('navHome').hidden = !inReg && !off;
+    $('nav').hidden = !inReg && !memo && !off;
   }
   function toggleMenu(kind, anchor) { if (P.kind === kind) closePanel(); else openPanel(kind, anchor); }
   $('chips').addEventListener('click', function (e) {
