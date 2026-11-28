@@ -568,6 +568,8 @@ button.oli { width: 100%; padding: 11px 0; margin: 0; background: none; color: v
 /* 콘센트 칸 같은 크기(2026-11-28): 가운데 칸 높이 고정(상태 줄 32 + 자리 칸 214 = 246) */
 .omod .omhd { height: 30px; box-sizing: border-box; }
 .dours .otop { touch-action: none; cursor: grab; }
+/* 반만 열린 카드: 안쪽이 따로 스크롤되지 않고, 어디를 잡아 올려도 카드가 펴진다 */
+#panel[data-snap="half"] .dours { overflow-y: hidden; touch-action: none; }
 .dh.slim::before { width: 48px; margin-left: -24px; }
 .omod .omwho { padding: 0; height: 30px; }
 .omst2 { margin-top: 8px; height: 24px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -9660,6 +9662,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       fr.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms');
       body = el('div', 'dbody'); body.appendChild(fr);
       ours = el('div', 'dours'); body.appendChild(ours);
+      sheetDrag(ours, { soft: true, halfOnly: true });   // 반만 열려 있을 때는 어디를 잡아도 카드가 펴진다(사용자 2026-11-28)
       // 탭 줄은 없앤다(사용자 2026-11-28: 자리를 너무 쓴다). 탭 단추는 안내(코치)가 쓰므로 숨긴 채 둔다.
       //  카카오맵은 정보 안의 "영업시간, 메뉴, 후기" 줄로 들어가고, 카카오맵을 볼 때 머리줄에 "카페지도 정보" 뒤로 단추가 생긴다.
       tabs = el('div', 'dtabs'); tabs.setAttribute('role', 'tablist'); tabs.hidden = true;
@@ -9691,6 +9694,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     } else {
       // 카카오맵에 없는 카페(사용자 2026-11-28): 카카오맵 탭 없이 카페지도 정보만. 모습은 탭이 있는 카드와 같다.
       body = el('div', 'dbody'); ours = el('div', 'dours'); body.appendChild(ours);
+      sheetDrag(ours, { soft: true, halfOnly: true });
       tabs = el('div', 'dtabs one'); tabs.hidden = true;
       var t1 = el('div', 'dtab o', '카페지도 정보'); t1.setAttribute('aria-selected', 'true'); tabs.appendChild(t1);
       omEl = castSet ? el('section', 'omod') : null;
@@ -10187,7 +10191,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 폰에서 카카오맵 화면이 든 카드는 두 단계다: 반만 보이는 상태에서 올리면 전체, 전체에서 내리면 반, 반에서 더 내리면 닫힘.
   // 머리줄을 톡 누르면 반과 전체를 오간다. 그 밖의 카드는 내리면 닫히기만 한다.
   var nudged = false;      // 카페지도 정보 탭을 이번에 연 뒤로 한 번 강조했는가
-  function sheetDrag(h) {
+  // opt.soft: 8px 넘게 움직여야 끌기(톡 누름은 그대로 누름). opt.halfOnly: 카드가 반만 열려 있을 때만 끈다.
+  function sheetDrag(h, opt) {
+    opt = opt || {};
     var on = false, y0 = 0, dy = 0, t0 = 0, base = 0, two = false, soft = false, moved = false;
     // 탭 위에서 시작해도 끌린다(사용자 2026-11-28: 카드가 잘 안 올라간다). 탭은 8px 넘게 움직여야 끌기로 보고, 톡 누르면 탭이 바뀐다.
     var grab = function (e) {
@@ -10198,7 +10204,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var tab = e.target.closest('.dtab');
       if (e.target.closest('button, a') && !tab) return;
       if (!mobile.matches) return;
-      on = true; y0 = e.clientY; dy = 0; t0 = e.timeStamp; soft = !!tab; moved = false;
+      if (opt.halfOnly && !(twoStage() && snap === 'half')) return;
+      on = true; y0 = e.clientY; dy = 0; t0 = e.timeStamp; soft = !!tab || !!opt.soft; moved = false;
       two = twoStage();
       base = two ? snapOffset(snap) : 0;
       if (!soft) grab(e);
