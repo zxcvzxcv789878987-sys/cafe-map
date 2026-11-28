@@ -11127,10 +11127,33 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         }
         // 카드가 먼저 열리고 카페 점이 나중에 카카오 자리로 옮겨지면 거리를 다시 잰다.
         nearDist = dEl ? { i: i, up: function () { if (!dEl.isConnected) { nearDist = null; return; } cm = mercToLngLat(mx[i], my[i]); dEl.textContent = meter(dm(x.b)[1]); if (dEl2 && b2) dEl2.textContent = meter(dm(b2)[1]); } } : null;
+        // 주차장은 500m 안 가까운 곳 세 곳까지(사용자 2026-11-28: 버스만큼). 먼저 자료 파일의 가장 가까운 한 곳을 보이고,
+        //  지도 주차장 칸(park/)을 받으면 가까운 순 세 곳으로 바꾼다. 첫 줄에만 아이콘과 이름표를 두어 한 묶음으로 보이게 한다.
+        var parkRows = [];
+        var parkShow = function (list) {
+          parkRows.forEach(function (r) { r.remove(); }); parkRows = [];
+          list.forEach(function (y, k) {
+            var pv = document.createElement('span'), fee = { '무료': '무료', '유료': '유료', '혼합': '무료와 유료' }[y[2]];
+            pv.appendChild(document.createTextNode(y[0])); if (fee) pv.appendChild(el('em', 'fee', fee));
+            line(near, 'park', k ? ' ' : '주차장', pv, meter(y[1]), function () { nearSheet(i, 'p', y); });
+            var r = near.lastChild; if (k) r.firstChild.style.visibility = 'hidden';
+            parkRows.push(r);
+          });
+        };
+        if (x.p) parkShow([x.p]);
         if (x.p) {
-          var pv = document.createElement('span'), fee = { '무료': '무료', '유료': '유료', '혼합': '무료와 유료' }[x.p[2]];
-          pv.appendChild(document.createTextNode(x.p[0])); if (fee) pv.appendChild(el('em', 'fee', fee));
-          line(near, 'park', '주차장', pv, meter(x.p[1]), function () { nearSheet(i, 'p', x.p); });
+          var pk = mercToLngLat(mx[i], my[i]), pd = .006;
+          parkLoad(busKeys(pk[0] - pd, pk[1] - pd, pk[0] + pd, pk[1] + pd), function () {
+            var got = [];
+            Object.keys(parkTiles).forEach(function (k) {
+              (parkTiles[k] || []).forEach(function (s) {
+                if (Math.abs(s[0] / 1e5 - pk[1]) > pd || Math.abs(s[1] / 1e5 - pk[0]) > pd) return;
+                var m = distM(pk[1], pk[0], s[0] / 1e5, s[1] / 1e5); if (m <= 500) got.push(parkTuple(s, m));
+              });
+            });
+            got.sort(function (u, v) { return u[1] - v[1]; });
+            if (got.length) parkShow(got.slice(0, 3));
+          });
         }
         near.hidden = false;
       }
