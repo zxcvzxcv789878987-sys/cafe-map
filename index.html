@@ -1606,6 +1606,9 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
   #panel.rise[data-kind=search] { animation: cardUp .22s cubic-bezier(.2, .8, .2, 1); }
   #panel[data-kind=search] .ph { padding-top: 12px; }
   #panel[data-kind=search] .ph::before { display: none; }
+  /* 지금 화면처럼 반만 올라온 검색 판은 다른 카드처럼 손잡이 막대를 보여 준다(끌어 올리면 전체, 끌어 내리면 닫힘). */
+  #panel[data-kind=search][data-snap] .ph { padding-top: 18px; }
+  #panel[data-kind=search][data-snap] .ph::before { display: block; }
   /* 목록 카드도 카페 카드처럼 전체 높이로 만들어 두고 아래로 밀어서 반만 보이게 한다. */
   #panel[data-kind=list] { height: 100%; }
   /* 폰의 카드는 모두 같은 방식이다: 윗줄에 손잡이 막대가 있고, 윗줄을 잡고 끌어내리면 닫힌다. X 단추는 두지 않는다. */
@@ -7960,12 +7963,16 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // ----- 카드 하나를 돌려 쓴다 -----
   var panel = $('panel'), P = { kind: null, prev: null, anchor: null, cafe: -1 };
   // 폰에서 반만 올라왔다가 끌어올리면 전체가 되는 카드인가: 카카오맵 화면이 든 카페 카드와 목록 카드.
-  function twoStage() { return mobile.matches && (P.kind === 'list' || (P.kind === 'detail' && panel.hasAttribute('data-embed'))); }
+  //  지금 화면(검색창이 비어 있는 검색 판)도 목록처럼 반만 올라온다(사용자 2026-11-28: 이 화면 N곳을 누르면 화면을 다 덮어 닫을 수가 없다).
+  //  검색창을 눌러 연 검색 판(자판이 올라옴)과 글자를 친 검색 결과는 전체로 둔다. hereHalf: 이번 검색 판이 반만 열리는 지금 화면인가.
+  var hereHalf = false;
+  function twoStage() { return mobile.matches && (P.kind === 'list' || (P.kind === 'detail' && panel.hasAttribute('data-embed')) || (P.kind === 'search' && hereHalf)); }
   var closeTimer = 0;
   function openPanel(kind, anchor) {
     var was = P.kind;
     if (kind === 'search' && was !== 'search' && !searchKeep) { searchTab = 'cafe'; searchTabUser = false; }   // 검색 판을 새로 열면 카페 탭부터(노선 창에서 뒤로 오면 보던 탭)
     searchKeep = false;
+    if (kind === 'search' && was !== 'search') hereHalf = !$('q').value.trim() && document.activeElement !== $('q');
     P.kind = kind; P.anchor = anchor || null; eggIdleArm();
     if (kind === 'detail' && P.cafe >= 0) eggCardOpen(P.cafe);
     lift = 0;
@@ -8060,7 +8067,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     panel.style.left = left + 'px'; panel.style.top = top + 'px';
     panel.style.maxHeight = 'calc(100% - ' + (top + 20) + 'px)';
   }
-  window.addEventListener('resize', function () { if (P.kind) placePanel(); if (twoStage()) setSnap(snap, false); else if (P.kind === 'detail' || P.kind === 'list') { panel.style.transform = ''; } });
+  window.addEventListener('resize', function () { if (P.kind) placePanel(); if (twoStage() && panel.hasAttribute('data-snap')) setSnap(snap, false); else if (P.kind === 'detail' || P.kind === 'list') { panel.style.transform = ''; } });
   function head(title, small, back) {
     var h = el('div', 'ph');
     if (back) { var bk = btn('ib back', null, back); bk.setAttribute('aria-label', '뒤로'); bk.appendChild(icon('back')); h.appendChild(bk); }
@@ -10240,6 +10247,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var tabs = [['cafe', '카페'], ['reg', '지역'], ['stop', '정류장과 역'], ['route', '노선'], ['park', '주차장']];
     if (!searchTabUser) searchTab = 'cafe';
     var bar = el('div', 'stabs'); bar.setAttribute('role', 'tablist');
+    sheetDrag(bar, { soft: true });   // 탭 줄 위에서 시작해도 카드를 끌 수 있다(톡 누르면 탭이 바뀐다)
     tabs.forEach(function (t) {
       var b = btn(null, null, function () { searchTab = t[0]; searchTabUser = true; renderPanel(); });
       b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(searchTab === t[0]));
@@ -10434,6 +10442,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var v = this.value.trim();
     $('qClear').hidden = !this.value;
     clearTimeout(qTimer);
+    // 반만 열린 지금 화면에서 글자를 치면 검색 결과는 전체로 펼친다(끌기도 내리면 닫히는 보통 카드로).
+    if (v && hereHalf && P.kind === 'search') { hereHalf = false; panel.removeAttribute('data-snap'); panel.style.removeProperty('--snapoff'); panel.style.transition = 'transform .3s cubic-bezier(.2, .8, .2, 1)'; panel.style.transform = ''; }
     // 글자를 지우면 닫지 않고 지금 화면으로(사용자 2026-11-28, 가안)
     qTimer = setTimeout(function () { if (P.kind === 'search') renderPanel(); else openPanel('search'); }, v ? 140 : 60);
   });
@@ -10446,7 +10456,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   if (window.visualViewport) { visualViewport.addEventListener('resize', syncSearchBox); visualViewport.addEventListener('scroll', syncSearchBox); }
   window.addEventListener('resize', syncSearchBox); syncSearchBox();
   // 검색창을 누르면 아무것도 치기 전에도 탭이 보이는 판(지금 화면)이 열린다(사용자 2026-11-28).
-  $('q').addEventListener('focus', function () { syncSearchBox(); legalLoad(); if (P.kind !== 'search') openPanel('search'); });
+  $('q').addEventListener('focus', function () { syncSearchBox(); legalLoad(); if (P.kind !== 'search') openPanel('search'); else if (panel.getAttribute('data-snap') === 'half') setSnap('full', true); });
   $('qClear').addEventListener('click', function () { $('q').value = ''; this.hidden = true; if (P.kind === 'search') renderPanel(); $('q').focus(); });
 
   // ----- 지역 고르기 -----
