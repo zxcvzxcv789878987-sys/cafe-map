@@ -9208,11 +9208,14 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     routeOn = false; routeLine = null; offN = 0;
     if (nearMk) { nearMk.remove(); nearMk = null; }
     if (nearMk2) { nearMk2.remove(); nearMk2 = null; }
+    if (map.getLayer && map.getLayer('walk-start')) map.removeLayer('walk-start');
+    if (map.getSource && map.getSource('walk-start')) map.removeSource('walk-start');
     if (map.getLayer && map.getLayer('walk-arrow')) map.removeLayer('walk-arrow');
     if (map.getLayer && map.getLayer('walk')) { map.removeLayer('walk'); map.removeLayer('walk-edge'); }
     if (map.getSource && map.getSource('walk')) map.removeSource('walk');
   }
-  function drawRoute(coords) {
+  //  start: 출발한 자리에 흰 동그라미를 남긴다(내 위치에서 찾은 길만, 걸어가도 그 자리에 남는다. 사용자 2026-11-28).
+  function drawRoute(coords, start) {
     clearRoute();
     var data = { type: 'Feature', geometry: { type: 'LineString', coordinates: coords } };
     map.addSource('walk', { type: 'geojson', data: data });
@@ -9226,6 +9229,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       map.addImage('walk-arrow', g.getImageData(0, 0, 24, 24), { pixelRatio: 2 });
     }
     map.addLayer({ id: 'walk-arrow', type: 'symbol', source: 'walk', layout: { 'symbol-placement': 'line', 'symbol-spacing': 34, 'icon-image': 'walk-arrow', 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-rotation-alignment': 'map' } });
+    if (start) {
+      map.addSource('walk-start', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'Point', coordinates: start } } });
+      map.addLayer({ id: 'walk-start', type: 'circle', source: 'walk-start', paint: { 'circle-radius': 7, 'circle-color': '#ffffff', 'circle-stroke-color': '#6a5ae0', 'circle-stroke-width': 4 } });
+    }
     routeOn = true; routeLine = coords;
   }
   // 키가 있는 곳부터 묻고, 실패하면 다음 곳, 마지막은 키 없는 FOSSGIS 서버.
@@ -9273,7 +9280,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         var to = spot ? [spot[1], spot[0]] : [D.lng[i] / 1e5, D.lat[i] / 1e5], from = [ulng, ulat];
         walkFetch(from, to).then(function (rt) {
           var c = rt.coords.slice(); c.unshift(from); c.push(to);
-          drawRoute(c);
+          drawRoute(c, from);
           routeInfo = { i: i, dist: Math.round(rt.dist), min: Math.max(1, Math.round(rt.dist / 70)), src: rt.src };
           var x0 = 180, y0 = 90, x1 = -180, y1 = -90;
           c.forEach(function (q) { if (q[0] < x0) x0 = q[0]; if (q[0] > x1) x1 = q[0]; if (q[1] < y0) y0 = q[1]; if (q[1] > y1) y1 = q[1]; });
