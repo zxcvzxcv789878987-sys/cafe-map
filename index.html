@@ -1310,7 +1310,7 @@ button.xlink .xbadge.adm { --pri: #495057; --pri2: #adb5bd; }
 .tgrid button.hard:active { background: color-mix(in srgb, var(--pri) 13%, var(--surface)); }
 .xbox p.tmnone { padding: 48px 0 20px; text-align: center; font-size: 14px; color: var(--ink-2); }
 button.xlink .xbadge.qna { --pri: #1c7ed6; --pri2: #74c0fc; }
-/* 문의 창: 종류마다 색이 다르다. 앱 오류 빨강, 기능 제안 노랑, 기타 문의 파랑. */
+/* 문의 창: 종류마다 색이 다르다. 앱 오류 빨강, 개선 제안 노랑, 기타 문의 파랑. */
 .xbox.fb-bug, .fbk .fb-bug { --pri: #e03131; --pri2: #ff8787; }
 .xbox.fb-idea, .fbk .fb-idea { --pri: #f2a900; --pri2: #ffd43b; }
 .xbox.fb-etc, .fbk .fb-etc { --pri: #1c7ed6; --pri2: #74c0fc; }
@@ -7778,7 +7778,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 종류를 고르면 창의 색과 안내, 예시 문구가 바뀐다. 앱 오류만 기기 정보를 덧붙인다(원인을 찾는 데 필요해서).
   var FB_KINDS = [
     ['bug', '앱 오류', 'bug', '어떤 화면에서 무엇을 눌렀을 때 어떻게 됐는지 적어 주세요.'],
-    ['idea', '기능 제안', 'bulb', '있었으면 하는 기능이나 바꾸면 좋을 점을 적어 주세요.'],
+    ['idea', '개선 제안', 'bulb', '있었으면 하는 기능이나 바꾸면 좋을 점을 적어 주세요.'],
     ['etc', '기타 문의', 'help', '궁금한 점을 적어 주세요.']
   ];
   var FB_PIC = { bug: 'mi_bug', idea: 'mi_idea', etc: 'mi_etc' };
@@ -8159,7 +8159,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 이 기기에서 보낸 문의: [{ id, k, m, t }]. 최근 50개까지.
   function fbMine() { var a = load('cafemap.myfb'); return Array.isArray(a) ? a : []; }
   function fbRemember(x) { var a = fbMine().filter(function (y) { return y.id !== x.id; }); a.unshift(x); save('cafemap.myfb', a.slice(0, 50)); }
-  var FB_KIND_NAME = { bug: '앱 오류', idea: '기능 제안', etc: '기타 문의', report: '신고', cafe: '없는 카페 제보' };
+  var FB_KIND_NAME = { bug: '앱 오류', idea: '개선 제안', etc: '기타 문의', report: '신고', cafe: '없는 카페 제보' };
   function fbSeen() { return load('cafemap.fbseen') || {}; }
   // 내 문의 목록: 이 기기 것과, 로그인했으면 계정에 연결된 것을 합친다. 답변도 같이 받아 온다.
   function fbLoad() {
@@ -8221,7 +8221,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         ll.appendChild(el('div', 'fbq', x.m || ''));
         ll.appendChild(el('div', 'fbt', fbWhen(x.t) + ' 보냄'));
         if (x.r && x.r.m) {
-          var a = el('div', 'fba'); a.appendChild(el('b', null, '운영자 답변')); a.appendChild(el('div', null, x.r.m)); a.appendChild(el('div', 'fbt', fbWhen(x.r.t)));
+          var a = el('div', 'fba'); a.appendChild(el('b', null, x.r.ok === 1 ? '반영했어요' : '운영자 답변')); a.appendChild(el('div', null, x.r.m));
+          if (x.r.ok === 1 && (isAppFb(x) || isFixFb(x)) && x.acc && x.acc === who.u) a.appendChild(bean(el('div', 'cafgot', '+' + fmt(fbReward(x)) + ' 원두 받았어요')));
+          a.appendChild(el('div', 'fbt', fbWhen(x.r.t)));
           ll.appendChild(a);
           seen[x.id] = x.r.t; save('cafemap.fbseen', seen);
         } else ll.appendChild(el('p', 'fbwait', '아직 답변이 없어요. 답변이 오면 메뉴 단추에 빨간 점이 떠요.'));
@@ -8304,7 +8306,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         var r = btn('xli fbi', null, function () { answer(x); }), l = el('span'), rt = el('span', 'rt');
         l.appendChild(el('span', 'rs', (x.m || '').split('\n')[0]));
         l.appendChild(el('small', null, (FB_KIND_NAME[x.k] || '문의') + ', ' + fbWhen(x.t)));
-        rt.appendChild(isCafeFb(x) ? el('span', 'fbst' + (x.r ? cafeState(x)[1] : ' todo'), x.r ? cafeState(x)[0] : '검토 전') : el('span', 'fbst' + (x.r ? ' on' : ' todo'), x.r ? '답변함' : '답변 전'));
+        rt.appendChild(isCafeFb(x) ? el('span', 'fbst' + (x.r ? cafeState(x)[1] : ' todo'), x.r ? cafeState(x)[0] : '검토 전') : el('span', 'fbst' + (x.r ? ' on' : ' todo'), x.r ? (x.r.ok === 1 ? '반영함' : '답변함') : '답변 전'));
         r.appendChild(l); r.appendChild(rt); ll.appendChild(r);
       });
     }).catch(function () { ll.textContent = ''; ll.appendChild(el('p', 'xnone', '문의를 불러오지 못했어요')); });
@@ -8329,6 +8331,24 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       });
       two.appendChild(btn('btn', '뒤로', function () { o.remove(); openAdminFb(); }));
       two.appendChild(send); foot.appendChild(two);
+      // 앱 오류, 개선 제안, 기타 문의: 반영하기를 누르면 답변(비우면 기본 문구)과 함께 반영으로 표시하고, 보낸 사람(로그인했으면)이 원두를 받는다.
+      if (isAppFb(x)) {
+        two.className = 'two three';
+        var okSending = false;
+        two.appendChild(btn('btn pri', '반영하기', function () {
+          if (okSending) return; okSending = true;
+          var v = ta.value.trim() || '보내 주신 의견을 앱에 반영했어요. 고마워요.';
+          fetch(SHARE.db + '/v2/fbreply/' + x.id + '.json?auth=' + tk, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ m: v, ok: 1, t: { '.sv': 'timestamp' } }) })
+            .then(function (r) {
+              if (!r.ok) throw new Error('db');
+              if (TEST) { testFb().replies[x.id] = { m: v, ok: 1, t: Date.now() }; setTimeout(fbCheck, 300); }
+              toast(x.u ? '반영했어요. 보낸 사람이 앱을 열면 ' + fmt(FB_XP) + ' 원두를 받아요' : '반영했어요. 로그인 안 하고 보낸 문의라 원두는 없어요');
+              o.remove(); openAdminFb();
+            })
+            .catch(function () { okSending = false; toast('보내지 못했어요'); });
+        }));
+        send.className = 'btn';
+      }
       if (isCafeFb(x) || isFixFb(x)) cafeDecide(x, ta, foot, tk, function () { o.remove(); openAdminFb(); });
       fitVisible(o);
     };
@@ -8504,11 +8524,12 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 문의를 보낸 뒤: 확인 단추를 눌러 닫는 창
   // 폐업 신고를 보낸 뒤: 문의 보냄과 같은 종이비행기 창에 글만 바꿔서(사용자 2026-11-26)
   function goneSent(w) { doneBox('plane', '정보 수정 제안을 보냈어요', '운영자가 확인하고 지도에서 지우면 ' + fmt(GONE_XP) + ' 원두를 드려요. 결과는 메뉴의 문의와 제보에서 볼 수 있어요.'); }
-  function fbSent() { doneBox('plane', '문의를 보냈어요', '답변이 오면 메뉴 단추에 빨간 점이 떠요. 메뉴의 문의와 제보에서 볼 수 있어요.'); }
+  function fbSent() { doneBox('plane', '문의를 보냈어요', (signedIn() ? '운영자가 확인하고 반영하면 ' + fmt(FB_XP) + ' 원두를 드려요. ' : '') + '답변이 오면 메뉴 단추에 빨간 점이 떠요. 메뉴의 문의와 제보에서 볼 수 있어요.'); }
   function openFeedback() {
     var old = $('xinfo'); if (old) old.remove();
     var o = el('div'), box = el('div', 'xbox'), hd = el('div', 'xhead'), bd = el('span', 'xbadge'), ta = document.createElement('textarea');
     var desc = el('p'), kinds = el('div', 'fbk'), cur = null, sending = false;
+    var xpl = el('div', 'rpgold fbxp'), xpb = el('span', 'obean'), xpt = el('span'); xpb.innerHTML = BEAN_SVG; xpl.appendChild(xpb); xpl.appendChild(xpt);
     o.id = 'xinfo'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '문의하기');
     o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
     bd.className = 'xbadge pic'; bd.appendChild(fxStill('mi_ask')); hd.appendChild(bd); hd.appendChild(el('h2', null, '문의하기')); box.appendChild(hd);
@@ -8516,6 +8537,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       cur = k; box.className = 'xbox fb-' + k[0];
       bd.textContent = ''; bd.appendChild(fxStill(FB_PIC[k[0]]));
       desc.textContent = k[3];
+      xpt.textContent = fbXpText(k[0]);
       [].forEach.call(kinds.children, function (c) { c.setAttribute('aria-pressed', String(c.dataset.k === k[0])); });
     };
     FB_KINDS.forEach(function (k) {
@@ -8524,7 +8546,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       c.appendChild(fxIcon(FB_PIC[k[0]])); c.appendChild(el('span', null, k[1]));
       kinds.appendChild(c);
     });
-    box.appendChild(kinds); box.appendChild(desc);
+    box.appendChild(kinds); box.appendChild(desc); box.appendChild(xpl);
     ta.maxLength = 1500; box.appendChild(ta);
     var two = el('div', 'two'), send = btn('btn pri', '보내기', function () {
       var text = ta.value.trim();
@@ -8572,7 +8594,12 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   function isCafeFb(x) { return !!x && x.k === 'cafe'; }
   // 정보 수정 제안의 "그 밖에 틀린 정보"(문의로 들어온 것). 반영되면 3,000 원두(사용자 2026-11-28).
   function isFixFb(x) { return !!x && x.k === 'etc' && /^\[정보 수정 제안\]/.test(x.m || ''); }
-  function fbReward(x) { return isFixFb(x) ? GONE_XP : CAFE_ADD_XP; }
+  // 앱 오류, 개선 제안, 기타 문의(앱 발전에 쓰인 것)도 운영자가 반영하면 원두(사용자 2026-11-28). 정보 수정 제안과 같은 값.
+  var FB_XP = 3000;
+  function isAppFb(x) { return !!x && (x.k === 'bug' || x.k === 'idea' || x.k === 'etc') && !isFixFb(x); }
+  function fbReward(x) { return isCafeFb(x) ? CAFE_ADD_XP : isFixFb(x) ? GONE_XP : FB_XP; }
+  // 문의 창의 원두 띠 문구. 원두는 로그인한 계정으로 보낸 것만 받는다.
+  function fbXpText(k) { var w = k === 'etc' ? '앱 발전에 반영' : '반영'; return signedIn() ? w + '되면 원두 +' + fmt(FB_XP) : '로그인하고 보내면, ' + w + '될 때 원두 +' + fmt(FB_XP); }
   function cafeFbName(x) { return ((x && x.m) || '').split('\n')[0]; }
   // 제보 하나의 상태: [목록에 쓰는 말, 색 class]
   function cafeState(x) {
@@ -8588,9 +8615,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var items = [], now = Date.now();
     XP.rw = XP.rw || {};
     list.forEach(function (x) {
-      if (!(isCafeFb(x) || isFixFb(x)) || !x.r || x.r.ok !== 1 || x.acc !== who.u || XP.rw[x.id]) return;
+      if (!(isCafeFb(x) || isFixFb(x) || isAppFb(x)) || !x.r || x.r.ok !== 1 || x.acc !== who.u || XP.rw[x.id]) return;
       XP.rw[x.id] = now;
-      if (isFixFb(x)) items.push([GONE_XP, '정보 수정 제안', (x.m || '').split('\n')[0].replace(/^\[정보 수정 제안\]\s*/, '').slice(0, 80)]);
+      if (isAppFb(x)) items.push([FB_XP, (FB_KIND_NAME[x.k] || '문의') + ' 반영', (x.m || '').split('\n')[0].slice(0, 80)]);
+      else if (isFixFb(x)) items.push([GONE_XP, '정보 수정 제안', (x.m || '').split('\n')[0].replace(/^\[정보 수정 제안\]\s*/, '').slice(0, 80)]);
       else items.push([CAFE_ADD_XP, '없는 카페 제보', cafeFbName(x).slice(0, 80)]);
     });
     if (items.length) xpGive(items);
@@ -11791,6 +11819,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       ['원두는 어디에 써요?', '원두 1,000개마다 레벨이 1 올라요. 이스터 에그를 찾으면 원두로 열 수 있어요.'],
       ['지도에 없는 카페가 있어요', '메뉴의 문의와 제보에서 없는 카페 제보로 알려 주세요. 운영자가 확인하고 지도에 넣으면 ' + fmt(CAFE_ADD_XP) + ' 원두를 드려요.'],
       ['문을 닫았거나 카페가 아닌 곳이 있어요', '카드의 카페지도 정보 맨 아래 정보 수정 제안을 눌러 주세요. 운영자가 확인하고 지도에서 지우면 ' + fmt(GONE_XP) + ' 원두를 드려요.'],
+      ['앱 오류나 바꾸면 좋을 점이 있어요', '메뉴의 문의와 제보에서 문의하기로 보내 주세요. 로그인하고 보낸 앱 오류, 개선 제안, 기타 문의가 앱에 반영되면 ' + fmt(FB_XP) + ' 원두를 드려요.'],
       ['위치는 왜 물어요?', '내 위치를 지도에 보여 주고, 콘센트를 기록할 때 그 카페에 있는지 확인하려고요. 위치는 저장하지 않아요.'],
       ['내 기록을 다른 사람이 볼 수 있어요?', '메뉴의 내 기록 공개를 켠 것만 랭킹에서 보여요. 처음에는 꺼져 있어요.']
     ].forEach(function (x) {
