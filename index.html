@@ -10983,7 +10983,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     return a;
   }
   function clearRoute() {
-    routeOn = false; routeLine = null; offN = 0; onRouteSeen = false;
+    routeOn = false; routeLine = null; offN = 0; onRouteSeen = false; headShow();
     if (nearMk) { nearMk.remove(); nearMk = null; }
     if (nearMk2) { nearMk2.remove(); nearMk2 = null; }
     parkAlts.forEach(function (m) { m.remove(); }); parkAlts = [];
@@ -11016,7 +11016,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       map.addSource('walk-start', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'Point', coordinates: start } } });
       map.addLayer({ id: 'walk-start', type: 'circle', source: 'walk-start', paint: { 'circle-radius': 7, 'circle-color': '#ffffff', 'circle-stroke-color': '#6a5ae0', 'circle-stroke-width': 4 } });
     }
-    routeOn = true; routeLine = coords;
+    routeOn = true; routeLine = coords; headShow();
   }
   // 키가 있는 곳부터 묻고, 실패하면 다음 곳, 마지막은 키 없는 FOSSGIS 서버.
   // 걷는 길은 중계 서버 /walk(티맵 보행자 경로, 안 되면 openrouteservice)를 먼저 쓰고,
@@ -11078,6 +11078,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   }
   var routeInfo = null;     // { i, dist, min } 판에 적을 것
   function openRoute(i) {
+    startHeading(true);   // 길찾기 동안 보는 방향(아이폰은 누른 순간에만 허용을 물을 수 있다)
     if (!navigator.geolocation) { toast('이 기기에서는 위치를 확인할 수 없어요'); return; }
     var go = function (p) {
       lastFix = { p: p, t: Date.now() };
@@ -11111,6 +11112,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   var meTok = 0;
   var ME_COL = { bus: '#2f9e44', subway: '#3d5bf5', park: '#2f6fdf' };
   function meRouteTo(dest, mode) {
+    startHeading(true);   // 길찾기 동안 보는 방향(아이폰은 누른 순간에만 허용을 물을 수 있다)
     if (!navigator.geolocation) { toast('이 기기에서는 위치를 확인할 수 없어요'); return; }
     var tok = ++meTok, car = mode === 'car', to = dest.to;
     toast(car ? '차 길을 찾는 중' : '걷는 길을 찾는 중');
@@ -11232,6 +11234,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     });
   }
   function transitTo(dest) {
+    startHeading(true);   // 길찾기 동안 보는 방향(아이폰은 누른 순간에만 허용을 물을 수 있다)
     if (!navigator.geolocation) { toast('이 기기에서는 위치를 확인할 수 없어요'); return; }
     var tok = ++meTok;
     toast('대중교통 길을 찾는 중');
@@ -12198,6 +12201,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   }
   // 카페 길찾기의 차로(사용자 2026-11-28). want 'park': 가까운 주차장 거쳐(없으면 카페 앞까지), 'cafe': 내 위치에서 카페 앞까지 차 길.
   function cafeCar(i, want) {
+    startHeading(true);   // 길찾기 동안 보는 방향(아이폰은 누른 순간에만 허용을 물을 수 있다)
     parkNear(i, function (lots) {
       if (want === 'park' && lots.length) { parkGo(i, lots[0], lots, 'park'); return; }
       var tok = ++parkGoTok, to = mercToLngLat(mx[i], my[i]);
@@ -13123,7 +13127,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     headRaf = requestAnimationFrame(function () {
       headRaf = 0;
       if (!me) return;
-      me.getElement().classList.add('has-dir');
+      headShow();
       applyHead();
     });
   }
@@ -13176,7 +13180,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 내 위치 단추를 누를 때(gesture) 아직 허락받지 않았으면 묻는다. 열 때 저절로는 묻지 않는다(물으면 실패하고 다시 묻지 못했다).
   // 아이폰은 이 허락을 기억하지 못하고 앱을 열 때마다 다시 묻는다. 계속 뜨는 게 귀찮다고 해서(사용자 2026-11-28) 평생 한 번만 묻는다.
   //  그 뒤로는 묻지 않으므로, 아이폰에서 앱을 다시 열면 바라보는 방향은 안 돌 수 있다(위치는 그대로). 안드로이드는 원래 묻지 않는다.
-  var headListen = false, headAsked = !!load('cafemap.headAsked');
+  // 보는 방향(부채꼴)은 길찾기로 길을 띄운 동안만 보인다(사용자 2026-11-29). 눈동자는 그대로 방향을 따라간다.
+  function headShow() { if (me) me.getElement().classList.toggle('has-dir', headDeg !== null && routeOn); }
+  //  방향 허용은 이 앱을 연 동안 한 번만 묻는다(전에는 한 번 묻고 다시는 안 물어서, 창을 닫으면 끝내 못 켰다).
+  var headListen = false, headAsked = false;
   function startHeading(gesture) {
     if (!headListen) {
       headListen = true;
@@ -13185,7 +13192,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     }
     var ask = window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function';
     if (!ask || !gesture || headAsked || headDeg !== null) return;
-    headAsked = true; save('cafemap.headAsked', 1);
+    headAsked = true;
     DeviceOrientationEvent.requestPermission().catch(function () { /* 거절해도 다시 묻지 않는다 */ });
   }
   // 손으로 지도를 밀면 따라가기를 끈다(확대, 축소는 따라가기를 그대로 둔다).
