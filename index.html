@@ -7839,7 +7839,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       });
       // 서울 실시간을 보여 줄 때는 출처를 적는다(열린데이터광장 이용약관 제10조). 시간표로 보여 줄 때는 실시간이 아니라고 한 번만 적는다.
       if (L.rt) cont.appendChild(el('div', 'ssrc', '실시간 도착 정보: 서울특별시 공공데이터'));
-      else if (L.g.some(function (g) { return g.t && g.t.length; })) cont.appendChild(el('div', 'ssrc', '실시간 정보가 없는 노선이라 시간표 기준 예정 시각이에요'));
+      // 서울 실시간이 되는 노선(L0[3])인데 지금 실시간이 없으면(새벽, 운행 전후, 자료가 잠깐 안 올 때) "실시간이 없는 노선"이라고 하지 않는다(사용자 2026-11-29).
+      else if (L.g.some(function (g) { return g.t && g.t.length; })) cont.appendChild(el('div', 'ssrc', L0[3] ? '지금은 실시간 도착 정보가 오지 않아 시간표 기준 예정 시각이에요' : '실시간 정보가 없는 노선이라 시간표 기준 예정 시각이에요'));
       var mb = btn('nshmap', null, function () {
         close();
         if (ci != null && ci >= 0) {
