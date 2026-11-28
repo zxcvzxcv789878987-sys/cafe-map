@@ -2413,6 +2413,11 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
 .opc img.on, .ophbox .obgc img.on { opacity: 1; }
 .opc.ld::after, .ophbox .obgc.ld::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 20%, rgba(0, 0, 0, .05) 50%, transparent 80%); background-size: 200% 100%; animation: shimmer 1.3s linear infinite; }
 .ophbox .obgc { position: relative; }
+/* 사진 없는 카페의 로드뷰 칸: 사진 줄과 같은 자리, 같은 높이. 카카오 로고와 저작권 표시는 로드뷰가 그대로 그린다. */
+.orv { position: relative; height: 168px; border-radius: 12px; overflow: hidden; background: var(--surface-2); touch-action: none; }
+.orvv { position: absolute; inset: 0; }
+.orv.wait::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 20%, rgba(0, 0, 0, .05) 50%, transparent 80%); background-size: 200% 100%; animation: shimmer 1.3s linear infinite; pointer-events: none; }
+.orvlab { position: absolute; left: 10px; top: 10px; z-index: 3; height: 26px; padding: 0 10px; border-radius: 999px; background: rgba(20, 23, 28, .62); color: #fff; font-size: 12.5px; font-weight: 700; display: inline-flex; align-items: center; pointer-events: none; }
 .opghost { position: absolute; z-index: 2; object-fit: cover; border-radius: 10px; pointer-events: none; }
 /* +N 칸: 사진이 잘 보이게 어두운 막은 옅게, 글자는 그림자로 읽히게(사용자 2026-11-28: 너무 흐리다) */
 .opc .obgm { background: rgba(20, 23, 28, .22); font-size: 19px; text-shadow: 0 1px 4px rgba(0, 0, 0, .55); }
@@ -11634,6 +11639,44 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   //  사진을 누르면 크게 보는 창(옆으로 넘김, 아래에 출처 블로그). 사진이 없으면 칸을 숨긴다.
   //  +N을 누르면 카드 안에서 모든 사진을 같은 크기 세 칸 바둑판으로 펼치고, 사진 접기로 다시 접는다(사용자 2026-11-28, 예전 바둑판 방식).
   //  움직임: 사진 줄의 세 장이 바둑판 첫 줄 자리로 크기를 바꾸며 옮겨 가고, 나머지 사진은 차례로 나타난다. 접을 때는 먼저 사진 줄이 보이는 데까지 올라간 뒤 거꾸로.
+  // 사진 없는 카페의 로드뷰 칸(2026-11-28 사용자가 정함, 시안 A의 사진 줄 자리): 카카오 지도 SDK 로드뷰를 카드 안에서 실시간으로 띄운다.
+  //  데브톡 답(151107, 151210): 실시간 뷰어는 문제없고, 카카오 로고와 저작권 표시는 로드뷰가 그리는 그대로 둔다. 화면을 저장하지 않는다.
+  //  카페 점 50m 안에 로드뷰가 없거나 SDK를 못 불러오면 칸을 숨긴다. 처음 볼 때 카페 쪽을 바라보게 돌린다.
+  function kakaoSdkReady(done, fail) {
+    if (!liveKey || liveSdk === 3) { fail(); return; }
+    if (liveSdk === 2) { done(); return; }
+    if (liveSdk === 0) liveSdkLoad(function () {});
+    var n = 0, wait = function () { if (liveSdk === 2) done(); else if (liveSdk === 3 || ++n >= 50) fail(); else setTimeout(wait, 200); };
+    wait();
+  }
+  function cafeRoadview(i, box) {
+    var hide = function () { box.hidden = true; if (P.kind === 'detail' && P.cafe === i && snap === 'half' && twoStage()) setSnap('half', true); };
+    if (!liveKey) return;
+    box.textContent = ''; box.hidden = false;
+    var wrap = el('div', 'orv'), view = el('div', 'orvv');
+    wrap.appendChild(view); wrap.appendChild(el('span', 'orvlab', '로드뷰')); box.appendChild(wrap);
+    wrap.classList.add('wait');
+    var gave = false, giveUp = setTimeout(function () { if (!gave) { gave = true; hide(); } }, 10000);
+    kakaoSdkReady(function () {
+      if (gave || !wrap.isConnected) return;
+      var ll = mercToLngLat(mx[i], my[i]), at = new kakao.maps.LatLng(ll[1], ll[0]);
+      new kakao.maps.RoadviewClient().getNearestPanoId(at, 50, function (pid) {
+        if (gave || !wrap.isConnected) return;
+        gave = true; clearTimeout(giveUp);
+        if (!pid) { hide(); return; }
+        var rv = new kakao.maps.Roadview(view);
+        rv.setPanoId(pid, at);
+        setTimeout(function () { wrap.classList.remove('wait'); }, 4000);   // 다 그려졌다는 알림이 늦어도 반짝임은 거둔다
+        kakao.maps.event.addListener(rv, 'init', function () {
+          wrap.classList.remove('wait');
+          // 파노라마 자리에서 카페 쪽 방향(북쪽 0도, 시계 방향)
+          var p = rv.getPosition(), y1 = p.getLat() * Math.PI / 180, y2 = ll[1] * Math.PI / 180, dx = (ll[0] - p.getLng()) * Math.PI / 180;
+          var pan = Math.atan2(Math.sin(dx) * Math.cos(y2), Math.cos(y1) * Math.sin(y2) - Math.sin(y1) * Math.cos(y2) * Math.cos(dx)) * 180 / Math.PI;
+          rv.setViewpoint({ pan: (pan + 360) % 360, tilt: 0, zoom: 0 });
+        });
+      });
+    }, function () { if (!gave) { gave = true; clearTimeout(giveUp); hide(); } });
+  }
   function photoFill(box, list, imgs, title) {
     var all = false, busy = false, MS = 340, EASE = 'cubic-bezier(.2, .8, .2, 1)';
     // 사진은 다 받고 풀린 뒤에 스르르 나타난다(반쯤 받은 흐린 모습을 보이지 않게). 받는 동안은 칸이 반짝인다.
@@ -11854,6 +11897,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (d && d.p.length) { photoFill(photo, d.p, d.i, D.name[i]); blogFill(blog, d.p, d.i, D.name[i]); }
       else { photo.hidden = true; blog.hidden = true; }
       // 사진 줄이 없어지면 반만 열린 높이도 다시 맞춘다(영업시간 줄 끝까지).
+      if (photo.hidden) cafeRoadview(i, photo);
       if (photo.hidden && P.kind === 'detail' && snap === 'half' && twoStage()) setSnap('half', true);
     });
     // 근처와 편의: 자료 파일(info/)을 받은 뒤 채운다.
@@ -12008,8 +12052,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       panel.classList.remove('rise'); panel.style.transition = 'none';
     };
     h.addEventListener('pointerdown', function (e) {
-      var tab = e.target.closest('.dtab');
+      // 사진 줄의 사진도 탭처럼 다룬다(사용자 2026-11-28: 반만 열렸을 때 사진을 끌어도 카드가 펴지거나 내려가게). 톡 누르면 사진이 열린다.
+      var tab = e.target.closest('.dtab, .opc');
       if (e.target.closest('button, a') && !tab) return;
+      if (e.target.closest('.orv')) return;     // 로드뷰 칸 안에서 끄는 것은 로드뷰를 돌리는 것이다
       if (!mobile.matches) return;
       if (opt.halfOnly && !(twoStage() && snap === 'half')) return;
       on = true; y0 = e.clientY; dy = 0; t0 = e.timeStamp; soft = !!tab || !!opt.soft; moved = false;
