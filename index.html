@@ -2400,14 +2400,10 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
 .oin > .ofix { margin-top: 10px; }
 /* 카드 안 글은 띄어쓰기에서만 줄을 바꾼다(사용자 2026-11-28: "용산전자랜 / 드"처럼 글자 중간에서 끊기면 안 된다) */
 .oin, .oin .oln .v, .oin .obtx b, .oin .osc b { word-break: keep-all; overflow-wrap: break-word; }
-/* 사진 전체 보기: 흰 바탕에 세 칸 바둑판. 누르면 검은 크게 보기 창이 그 위에 열린다. */
-.pgrid { position: fixed; inset: 0; z-index: 82; background: var(--surface); display: flex; flex-direction: column; }
-.pghd { flex: none; display: flex; align-items: center; height: 56px; padding: env(safe-area-inset-top, 0px) 6px 0; }
-.pghd b { flex: 1; min-width: 0; text-align: center; font-size: 16px; font-weight: 800; }
-.pgsp { flex: none; width: 40px; }
-.pggrid { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; align-content: start; padding-bottom: env(safe-area-inset-bottom, 0px); }
-.pgc { position: relative; width: 100%; height: 0; padding: 100% 0 0; border: 0; border-radius: 0; background: var(--surface-2); overflow: hidden; cursor: pointer; }
-.pgc img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+/* 사진 줄과 +N으로 펼친 바둑판, 사진 접기 단추를 한 묶음으로 */
+.ophbox { display: flex; flex-direction: column; gap: 6px; }
+.ophbox .obgrid { margin: 0; }
+.ophbox .obfold { margin: 2px 0 0; }
 </style>
 </head>
 <body>
@@ -11580,46 +11576,41 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var pics = imgs.length ? imgs : list.filter(function (x) { return x.p; }).map(function (x) { return { s: x.p, i: x.p, u: x.u, t: x.t, b: x.b }; });
     return { imgs: imgs, pics: pics };
   }
-  // 사진 전체 보기(사용자 2026-11-28: 사진을 누르면 바로 크게 말고, 작은 사진 전체부터). 세 칸 바둑판, 누르면 크게 보기.
-  function openPhotoGrid(pics, title, changed) {
-    var old = $('pgrid'); if (old) old.remove();
-    var o = el('div', 'pgrid'), hd = el('div', 'pghd'), gd = el('div', 'pggrid'), ttl = el('b');
-    o.id = 'pgrid'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', title + ' 사진 전체');
-    var key = function (e) { if (e.key === 'Escape' && !$('pview')) close(); };
-    var close = function () { o.remove(); document.removeEventListener('keydown', key); };
-    var bk = btn('ib', null, close); bk.setAttribute('aria-label', '닫기'); bk.appendChild(icon('back'));
-    hd.appendChild(bk); hd.appendChild(ttl); hd.appendChild(el('span', 'pgsp'));
-    var draw = function () {
-      if (!pics.length) { close(); return; }
-      gd.textContent = ''; ttl.textContent = '사진 ' + pics.length + '장';
-      pics.forEach(function (x, k) {
-        var a = btn('pgc', null, function () { openPhotoView(pics, k, title, function () { draw(); if (changed) changed(); }); });
-        a.setAttribute('aria-label', x.b + '의 블로그 사진 크게 보기');
-        var im = document.createElement('img'); im.src = picMid(x); im.alt = ''; im.loading = 'lazy'; im.referrerPolicy = 'no-referrer';
-        im.onerror = function () { if (im.src !== x.s) im.src = x.s; else a.remove(); };
-        a.appendChild(im); gd.appendChild(a);
-      });
-    };
-    draw();
-    o.appendChild(hd); o.appendChild(gd); document.body.appendChild(o);
-    document.addEventListener('keydown', key);
-  }
   // 카드 맨 위 사진 줄(2026-11-28 시안 A, 네이버와 카카오처럼): 큰 칸 하나와 작은 칸 둘. 더 있으면 마지막 칸에 +N.
-  //  누르면 크게 보는 창(옆으로 넘김, 아래에 출처 블로그). 사진이 없으면 칸을 숨긴다.
+  //  사진을 누르면 크게 보는 창(옆으로 넘김, 아래에 출처 블로그). 사진이 없으면 칸을 숨긴다.
+  //  +N을 누르면 따로 창을 열지 않고 사진 줄 바로 아래 카드 안에서 나머지 사진을 세 칸씩 펼치고, 사진 접기로 다시 접는다(사용자 2026-11-28, 예전 바둑판 방식).
   function photoFill(box, list, imgs, title) {
+    var all = false;
+    var pic = function (cls, x, fn) {
+      var a = btn(cls, null, fn);
+      var im = document.createElement('img'); im.src = cls === 'opc' ? picBig(x) : picMid(x); im.alt = ''; im.referrerPolicy = 'no-referrer';
+      if (cls !== 'opc') im.loading = 'lazy';
+      im.onerror = function () { if (im.src !== x.s) im.src = x.s; else im.remove(); };
+      a.appendChild(im); return a;
+    };
     var draw = function () {
-      var pics = blogPics(list, imgs).pics, n = Math.min(3, pics.length);
-      box.textContent = ''; box.className = 'ophoto n' + n; box.hidden = !n;
+      var pics = blogPics(list, imgs).pics, n = Math.min(3, pics.length), rest = pics.length - n;
+      box.textContent = ''; box.hidden = !n;
+      if (!rest) all = false;
+      var strip = el('div', 'ophoto n' + n);
       pics.slice(0, n).forEach(function (x, k) {
-        var more = k === n - 1 && pics.length > n;
-        // 어느 칸을 눌러도 사진 전체(작은 사진 바둑판)부터 연다(사용자 2026-11-28).
-        var a = btn('opc', null, function () { openPhotoGrid(pics, title, draw); });
-        a.setAttribute('aria-label', '사진 ' + pics.length + '장 모두 보기');
-        var im = document.createElement('img'); im.src = picBig(x); im.alt = ''; im.referrerPolicy = 'no-referrer'; im.onerror = function () { if (im.src !== x.s) im.src = x.s; else im.remove(); };
-        a.appendChild(im);
-        if (more) a.appendChild(el('span', 'obgm', '+' + (pics.length - n)));
-        box.appendChild(a);
+        var more = !all && k === n - 1 && rest > 0;
+        var a = pic('opc', x, function () { if (more) { all = true; draw(); } else openPhotoView(pics, k, title, draw); });
+        a.setAttribute('aria-label', more ? '사진 ' + pics.length + '장 모두 보기' : x.b + '의 블로그 사진 크게 보기');
+        if (more) a.appendChild(el('span', 'obgm', '+' + rest));
+        strip.appendChild(a);
       });
+      box.appendChild(strip);
+      if (!all) return;
+      var gd = el('div', 'obgrid');
+      pics.slice(n).forEach(function (x, k) {
+        var a = pic('obgc', x, function () { openPhotoView(pics, n + k, title, draw); });
+        a.setAttribute('aria-label', x.b + '의 블로그 사진 크게 보기');
+        gd.appendChild(a);
+      });
+      var fold = btn('obfold', null, function () { all = false; draw(); box.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
+      fold.appendChild(document.createTextNode('사진 접기')); fold.appendChild(icon('down'));
+      box.appendChild(gd); box.appendChild(fold);
     };
     draw();
   }
@@ -11683,7 +11674,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   function cafeOurs(i, act) {
     var w = el('div', 'oin');
     // 맨 위 사진 줄(시안 A). 블로그 자료를 받을 때까지 빈 칸이 반짝이고, 사진이 없으면 숨긴다.
-    var photo = el('div', 'ophoto wait'); w.appendChild(photo);
+    var photo = el('div', 'ophbox'); photo.appendChild(el('div', 'ophoto wait')); w.appendChild(photo);
     var top = el('div', 'otop'), tl = el('div', 'otl');
     var lg = pinEl(i); lg.classList.add('opin'); top.appendChild(lg);
     tl.appendChild(el('h1', null, D.name[i]));
