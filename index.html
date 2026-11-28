@@ -670,8 +670,8 @@ button.nearpin { pointer-events: auto; border: 0; background: none; padding: 0; 
 .subdir .bdg.exp { color: #c2255c; background: #fff0f6; }
 .subdir .alist { max-height: none; }
 .subdir .sfe { margin-top: 6px; font-size: 13px; color: var(--ink-2); }
-/* 위 방면(첫차, 막차 줄까지)과 아래 방면 사이는 조금 굵은 회색 줄로 나눈다(사용자 2026-11-28). 이름과 첫 방면 사이는 그대로 얇게 */
-.subdir + .subdir { margin-top: 16px; padding-top: 14px; border-top: 4px solid var(--line); }
+/* 위 방면(첫차, 막차 줄까지)과 아래 방면 사이는 버스 창에서 운행 중 노선과 흐린 노선을 나누는 줄(.rt.offtop)과 같은 진한 2px 줄(사용자 2026-11-28). 이름과 첫 방면 사이는 그대로 얇게 */
+.subdir + .subdir { margin-top: 16px; padding-top: 14px; border-top: 2px solid var(--ink); }
 .ssrc { margin-top: 12px; font-size: 11.5px; color: var(--ink-2); }
 .nearpin.alt { pointer-events: auto; border: 0; background: none; padding: 0; cursor: pointer; }
 .nearpin.alt .ic { background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .2); border: 2px solid #2f9e44; box-sizing: border-box; }
@@ -7449,6 +7449,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
             var bt = el('b', null, secText(t[0] - (Date.now() - data.t0) / 1000)); bt.dataset.s = t[0]; bt.dataset.t = data.t0; t1.appendChild(bt);
           } else t1.appendChild(el('b', null, t[2] || '도착 정보 없음'));
           tm.appendChild(t1);
+          // 몇 정거장 전인지 아는 열차는 남은 시간 아래에 작게(버스 창처럼). 남은 시간은 정거장 수와 시간표로 어림한 것(사용자 2026-11-28).
+          if (t[0] >= 0 && t[2]) tm.appendChild(el('span', null, t[2]));
           r.appendChild(tm); list.appendChild(r);
         });
         blk.appendChild(list);
