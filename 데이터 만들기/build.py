@@ -402,6 +402,11 @@ if os.path.exists(places_path):
     taken = set(out.values())
     kw_path = os.path.join(here, 'kakao_kw.json')
     kw = json.load(open(kw_path, encoding='utf-8')) if os.path.exists(kw_path) else {}
+    # 물은 지 여섯 달 넘은 답은 이번에는 그대로 쓰고, 물어볼 목록에도 넣어 kakao_kw.py가 다시 묻게 한다.
+    kw_date_path = os.path.join(here, 'kakao_kw_date.json')
+    kw_date = json.load(open(kw_date_path, encoding='utf-8')) if os.path.exists(kw_date_path) else {}
+    import datetime
+    kw_now = datetime.date.today().year * 12 + datetime.date.today().month - 1
     left = []                                 # 아직 이름으로 물어보지 않은 곳. kakao_kw.py가 읽는다.
     for i in range(len(names)):
         if i in out or i in dups:
@@ -413,6 +418,9 @@ if os.path.exists(places_path):
             left.append([names[i], lats[i], lngs[i]])
             kstat['아직 이름으로 안 물어봄'] += 1
             continue
+        kd = kw_date.get('%s@%d,%d' % (names[i], lats[i], lngs[i]))
+        if kd is not None and kw_now - kd >= 6:
+            left.append([names[i], lats[i], lngs[i]])
         hit = kakao_match.pick_by_name(names[i], bidx[i], docs, taken)
         if hit:
             taken.add(hit[0])
