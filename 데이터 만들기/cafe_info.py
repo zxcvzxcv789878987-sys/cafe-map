@@ -5,6 +5,7 @@
 # 넣는 것(모두 공공 자료, 거리는 공개 cafes.js 좌표로 잰 직선 미터)
 #   b: 가까운 버스정류장 1km 안. 국토교통부 전국 버스정류장 위치정보(공공데이터포털 파일 15067528)
 #      [이름, 미터, 위도x1e5, 경도x1e5, 정류장번호(nodeid, 예: ADB354000317), 도시코드(cityCode), 모바일단축번호]. 빈 끝 칸은 뺀다.
+#      b2: 건너편 정류장(같은 이름, 다른 번호, 정류장에서 5m 넘고 300m 안). 모양은 b와 같다.
 #      서울(도시코드 11)의 단축번호는 서울시 정류소 번호(arsId, 다섯 자리). 경기 정류장(GGB로 시작)의 경기도 정류소 ID는 GGB 뒤의 숫자.
 #   s: 가까운 지하철역 [역 이름, 미터] 1km 안. 전국도시철도역사정보 표준데이터(15013205). 원본은 철도 데이터 포털(data.kric.go.kr)의 엑셀.
 #   p: 500m 안 가장 가까운 공영(민영) 주차장 [이름, 미터, 무료|유료|혼합(모르면 ''), {y, x: 위도, 경도 x1e5, n: 주차구획수, d: 운영요일,
@@ -317,6 +318,14 @@ def similar(a, b):
 info = [dict() for _ in range(N)]
 stat = collections.Counter()
 
+def stem(n):
+    """정류장 이름 줄기: 마주 보는 두 정류장이 '신세계병원앞', '신세계병원건너'처럼 꼬리만 다를 때 같게 만든다."""
+    n = re.sub(r'\s', '', n).split('.')[0]
+    n = re.sub(r'\([^)]*\)', '', n)
+    n = re.sub(r'\d+번?출구', '', n)
+    return re.sub(r'(건너편|건너|맞은편|앞)?\d*$', '', n)
+
+
 bus = read_bus() if os.path.exists(os.path.join(SRC, 'bus_stops.csv')) else []
 gb = grid(bus)
 for i in range(N):
@@ -332,7 +341,21 @@ for i in range(N):
             b.pop()
         info[i]['b'] = b
         stat['버스정류장'] += 1
-print('버스정류장', len(bus), '곳, 붙은 카페', stat['버스정류장'], flush=True)
+        # 건너편 정류장(사용자 2026-11-28: 버스는 방향이 둘이다). 다른 번호, 같은 관리 지역 줄 가운데 그 정류장에서 5m 넘는 곳.
+        #  같은 이름이면 300m 안, 이름 줄기가 같으면(앞, 건너, 맞은편, 출구 번호, 끝 숫자, 점 뒤를 뗀 이름) 150m 안에서 가장 가까운 곳.
+        #  5m 안은 같은 자리를 두 번 올린 줄이라 뺀다.
+        #  내리기만 하는 정류장(이름에 하차)은 짝으로 삼지 않는다.
+        far = lambda x: x[3] != p[3] and '하차' not in x[0] and x[6] == p[6] and dist(p[1], p[2], x[1], x[2]) > 5
+        q, dq = nearest(gb, p[1], p[2], 300, ok=lambda x: x[0] == p[0] and far(x))
+        if not q and len(stem(p[0])) >= 2:
+            q, dq = nearest(gb, p[1], p[2], 150, ok=lambda x: stem(x[0]) == stem(p[0]) and far(x))
+        if q:
+            b2 = [q[0], int(round(dist(lat[i], lng[i], q[1], q[2]))), round(q[1] * 1e5), round(q[2] * 1e5), q[3], q[4], q[5]]
+            while b2 and b2[-1] == '':
+                b2.pop()
+            info[i]['b2'] = b2
+            stat['건너편 정류장'] += 1
+print('버스정류장', len(bus), '곳, 붙은 카페', stat['버스정류장'], '건너편까지', stat['건너편 정류장'], flush=True)
 
 sub = read_subway()
 if sub:
