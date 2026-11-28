@@ -6479,6 +6479,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     vc = 0;
     // 걷는 길 판에서 "다른 카페 숨기기"를 켰으면 도착 카페 하나만 그린다.
     var only = routeOnlyIdx();
+    // 크게 그릴 카페: 고른 카페, 걷는 길 판에서는 길이 닿는 카페(브랜드 로고를 크게, 사용자 2026-11-28).
+    var big = sel >= 0 ? sel : routing() ? routeInfo.i : -1;
     if (only >= 0) { if (mx[only] >= x0 && mx[only] < x1 && my[only] >= y0 && my[only] < y1) viewIdx[vc++] = only; }
     else for (i = 0; i < N; i++) if (pass[i] && mx[i] >= x0 && mx[i] < x1 && my[i] >= y0 && my[i] < y1) viewIdx[vc++] = i;
     // 카페 점은 동까지 골랐거나, 동네가 보일 만큼 확대했을 때만 찍는다.
@@ -6544,12 +6546,12 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         i = viewIdx[k];
         if (liveWait(i)) continue;   // 카카오의 실제 자리를 받는 중: 건물 자리에 그렸다가 미끄러뜨리지 않고, 받으면 제자리에 그린다
         if (pileOf[i] >= 0 && !(live && live[i])) { if (pass2 === 0) (piles[pileOf[i]] = piles[pileOf[i]] || []).push(i); continue; }
-        if ((grp[i] !== 2) !== (pass2 === 1) || i === sel) continue;
+        if ((grp[i] !== 2) !== (pass2 === 1) || i === big) continue;
         one(i);
       }
       for (var pk in piles) {
         var mem = piles[pk];
-        if (mem.length === 1) { if (mem[0] !== sel) one(mem[0]); continue; }
+        if (mem.length === 1) { if (mem[0] !== big) one(mem[0]); continue; }
         // 묶음 점: 어두운 동그라미에 카페 수를 적는다. 작게 그릴 때는 숫자 없이 점만.
         px = mx[mem[0]] * scale - ox; py = my[mem[0]] * scale - oy;
         var pr = r >= 8 ? r + 1 : r;
@@ -6602,15 +6604,15 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         drawLabel(clip(D.name[hoverI], 22), px + hr + 6, py, true, hr + 6);
       }
     }
-    if (sel >= 0) {
-      px = mx[sel] * scale - ox; py = my[sel] * scale - oy;
-
+    if (big >= 0) {
+      px = mx[big] * scale - ox; py = my[big] * scale - oy;
+      var bo = big === sel ? 17 : 23, bi = bo - 4;   // 길 판의 도착 카페는 더 크게
       if (px > -50 && px < W + 50 && py > -50 && py < H + 50) {
         ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 3;
-        ctx.beginPath(); ctx.arc(px, py, 17, 0, 6.2832); ctx.fillStyle = C.surface; ctx.fill(); ctx.restore();
-        drawDot(sel, px, py, 13);
-        drawLabel(clip(D.name[sel], 22), px + 22, py, true, 22);
-        hits.push({ x: px, y: py, r: 17, i: sel });
+        ctx.beginPath(); ctx.arc(px, py, bo, 0, 6.2832); ctx.fillStyle = C.surface; ctx.fill(); ctx.restore();
+        drawDot(big, px, py, bi);
+        drawLabel(clip(D.name[big], 22), px + bo + 5, py, true, bo + 5);
+        hits.push({ x: px, y: py, r: bo, i: big });
       }
     }
     renderCount();
