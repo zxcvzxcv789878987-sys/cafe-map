@@ -424,8 +424,8 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .dh.slim::before { top: 9px; width: 44px; margin-left: -22px; height: 5px; }
 .dh.tabbed + .dbody, .dh.tabbed + .gonebar + .dbody { border-top: 0; }
 .dh.slim .hx { display: none; }
-.dh .dkback { flex: none; align-self: center; height: 36px; padding: 0 12px 0 6px; border: 0; border-radius: 18px; background: var(--surface-2); display: inline-flex; align-items: center; gap: 2px; font-size: 14px; font-weight: 700; color: var(--ink); }
-.dh .dkback svg.i { width: 18px; height: 18px; }
+.dh .dkback { flex: none; align-self: center; width: 40px; height: 40px; padding: 0; border: 0; background: none; display: grid; place-items: center; color: var(--ink); }
+.dh .dkback svg.i { width: 24px; height: 24px; }
 .dh .dklab { flex: 1; align-self: center; font-size: 15px; color: var(--ink-2); margin-left: 4px; }
 .dh .dkback[hidden], .dh .dklab[hidden] { display: none; }
 .dh.tabbed:not(.slim) { padding-bottom: 8px; }
@@ -9633,7 +9633,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       tabs = el('div', 'dtabs'); tabs.setAttribute('role', 'tablist'); tabs.hidden = true;
       var tabBtn = function (label, cls, on) { var b = btn('dtab ' + cls, label, null); b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(on)); tabs.appendChild(b); return b; };
       var tO = tabBtn('카페지도 정보', 'o', true), tK = tabBtn('카카오맵', 'k', false);
-      var kback = btn('dkback', null, function () { showTab(true); }); kback.appendChild(icon('back')); kback.appendChild(document.createTextNode('카페지도 정보'));
+      // 돌아가기는 화살표 그림만(사용자 2026-11-28: 타원 테두리에 화살표와 글을 넣은 단추는 AI스럽다)
+      var kback = btn('dkback', null, function () { showTab(true); }); kback.appendChild(icon('back')); kback.setAttribute('aria-label', '카페지도 정보로 돌아가기'); kback.title = '카페지도 정보로 돌아가기';
       var klab = el('b', 'dklab', '카카오맵');
       var showTab = function (o2) {
         tK.setAttribute('aria-selected', String(!o2)); tO.setAttribute('aria-selected', String(o2));
