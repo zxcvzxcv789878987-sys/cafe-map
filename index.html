@@ -11005,38 +11005,52 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (lastFix && Date.now() - lastFix.t < 15000) go(lastFix.p);
     else navigator.geolocation.getCurrentPosition(go, function (er) { if (er && er.code === 1) locDenied('걷는 길을 보려면'); else toast('위치를 확인하지 못했어요. 잠시 뒤에 다시 눌러 주세요'); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 });
   }
-  // 지도에서 누른 정류장 창의 길찾기(사용자 2026-11-28): 내 위치에서 그 정류장까지 걷는 길. y: 정류장 창의 한 줄, back: 정류장 창을 다시 연다.
-  // ic: 표시 그림(지하철역 창은 'subway', 없으면 버스).
-  function stopRouteFromMe(y, back, ic) {
+  // 내 위치에서 가는 길 하나로(사용자 2026-11-28: 길찾기 통일). 정류장, 역, 주차장 창의 길찾기가 모두 이것을 쓴다.
+  //  dest: { to: [경도, 위도], name, ic: 'bus'|'subway'|'park', kind: 'b'|'s'|'p', back: 그 창을 다시 연다, open: 주차장 창(요금 줄), fee }
+  //  mode: 'walk' 걷는 길(보라), 'car' 차 길(파랑). 길 판 위의 걸어서, 차로 탭이 mode만 바꿔 다시 부른다.
+  //  to.fromMe: 카페 없는 길(걷는 길 이스터 에그 조건에서도 빠진다, routeInfo.to가 있으면 건너뛴다)
+  var meTok = 0;
+  var ME_COL = { bus: '#2f9e44', subway: '#3d5bf5', park: '#2f6fdf' };
+  function meRouteTo(dest, mode) {
     if (!navigator.geolocation) { toast('이 기기에서는 위치를 확인할 수 없어요'); return; }
-    var go = function (p) {
-      lastFix = { p: p, t: Date.now() };
-      var from = [p.coords.longitude, p.coords.latitude], to = [y[3] / 1e5, y[2] / 1e5];
-      meMarker(from); startWatch();
-      toast('걷는 길을 찾는 중');
-      walkFetch(from, to).then(function (rt) {
-        var c = rt.coords.slice(); c.unshift(from); c.push(to);
-        drawRoute(c, from);
-        if (nearMk) nearMk.remove();
-        if (nearMk2) { nearMk2.remove(); nearMk2 = null; }
-        var pin = document.createElement('button'), pic = el('span', 'ic'); pin.type = 'button'; pin.className = 'nearpin'; pic.style.background = ic === 'subway' ? '#3d5bf5' : '#2f9e44';
-        pic.appendChild(icon(ic || 'bus')); pin.appendChild(pic); pin.appendChild(el('b', null, y[0]));
-        pin.setAttribute('aria-label', y[0] + (ic === 'subway' ? ' 곧 도착하는 열차 보기' : ' 곧 도착하는 버스 보기'));
-        pin.addEventListener('click', function (e) { e.stopPropagation(); back(); });
-        nearMk = new maplibregl.Marker({ element: pin, anchor: 'left', offset: [-19, 0] }).setLngLat(to).addTo(map);
-        // to.fromMe: 카페 없는 길(걷는 길 이스터 에그 조건에서도 빠진다, routeInfo.to가 있으면 건너뛴다)
-        routeInfo = { i: -1, dist: Math.round(rt.dist), min: walkMin(rt.dist), src: rt.src, to: { name: y[0], kind: 'b', fromMe: true, back: back } };
-        var x0 = 180, y0 = 90, x1 = -180, y1 = -90;
-        c.forEach(function (q) { if (q[0] < x0) x0 = q[0]; if (q[0] > x1) x1 = q[0]; if (q[1] < y0) y0 = q[1]; if (q[1] > y1) y1 = q[1]; });
-        setFollow(false);
-        var pad = mobile.matches ? { top: 130, bottom: Math.round(window.innerHeight * .36), left: 40, right: 140 } : { top: 96, bottom: 70, left: 420, right: 160 };
-        map.fitBounds([[x0, y0], [x1, y1]], { padding: pad, maxZoom: 18, duration: 600 });
-        sel = -1; P.prev = null;
-        openPanel('route');
-      }).catch(function () { toast('걷는 길을 찾지 못했어요'); });
-    };
-    if (lastFix && Date.now() - lastFix.t < 15000) go(lastFix.p);
-    else navigator.geolocation.getCurrentPosition(go, function (er) { if (er && er.code === 1) locDenied('걷는 길을 보려면'); else toast('위치를 확인하지 못했어요. 잠시 뒤에 다시 눌러 주세요'); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 });
+    var tok = ++meTok, car = mode === 'car', to = dest.to;
+    toast(car ? '차 길을 찾는 중' : '걷는 길을 찾는 중');
+    myFix().then(function (me) {
+      meMarker(me); startWatch();
+      return (car ? driveFetch(me, to) : walkFetch(me, to)).then(function (rt) { var c = rt.coords.slice(); c.unshift(me); c.push(to); return { c: c, rt: rt, me: me }; });
+    }).then(function (d) {
+      if (tok !== meTok) return;
+      drawRoute(d.c, d.me);
+      if (car) {
+        if (map.getLayer('walk')) map.setPaintProperty('walk', 'line-color', '#2f6fdf');
+        if (map.getLayer('walk-start')) map.setPaintProperty('walk-start', 'circle-stroke-color', '#2f6fdf');
+      }
+      if (nearMk) nearMk.remove();
+      if (nearMk2) { nearMk2.remove(); nearMk2 = null; }
+      var pin = document.createElement('button'), pic = el('span', 'ic'); pin.type = 'button'; pin.className = 'nearpin'; pic.style.background = ME_COL[dest.ic] || ME_COL.bus;
+      pic.appendChild(icon(dest.ic || 'bus')); pin.appendChild(pic); pin.appendChild(el('b', null, dest.name)); pin.style.pointerEvents = 'auto';
+      pin.setAttribute('aria-label', dest.name + (dest.ic === 'subway' ? ' 곧 도착하는 열차 보기' : dest.ic === 'park' ? ' 주차장 정보 보기' : ' 곧 도착하는 버스 보기'));
+      pin.addEventListener('click', function (e) { e.stopPropagation(); (dest.open || dest.back)(); });
+      nearMk = new maplibregl.Marker({ element: pin, anchor: 'left', offset: [-19, 0] }).setLngLat(to).addTo(map);
+      var rt = d.rt;
+      routeInfo = { i: -1, dist: Math.round(rt.dist), min: car ? Math.max(1, Math.round((rt.sec || 0) / 60)) : walkMin(rt.dist), src: rt.src,
+        to: { name: dest.name, kind: dest.kind, fromMe: true, carOnly: car, mode: car ? 'car' : 'walk', dest: dest, back: dest.back, fee: dest.fee, open: dest.open } };
+      var x0 = 180, y0 = 90, x1 = -180, y1 = -90;
+      d.c.forEach(function (q) { if (q[0] < x0) x0 = q[0]; if (q[0] > x1) x1 = q[0]; if (q[1] < y0) y0 = q[1]; if (q[1] > y1) y1 = q[1]; });
+      setFollow(false);
+      sel = -1; P.prev = null;
+      openPanel('route');
+      var pad = mobile.matches ? { top: 130, bottom: Math.round(Math.max(window.innerHeight * .36, panel.offsetHeight + 24)), left: 40, right: 140 } : { top: 96, bottom: 70, left: 420, right: 160 };
+      map.fitBounds([[x0, y0], [x1, y1]], { padding: pad, maxZoom: car ? 17 : 18, duration: 600 });
+    }, function (er) {
+      if (tok !== meTok) return;
+      if (er && er.code === 1) locDenied(car ? '차 길을 보려면' : '걷는 길을 보려면');
+      else toast(car ? '차 길을 찾지 못했어요. 잠시 뒤에 다시 눌러 주세요' : '걷는 길을 찾지 못했어요. 잠시 뒤에 다시 눌러 주세요');
+    });
+  }
+  // 지도에서 누른 정류장(역) 창의 길찾기: 내 위치에서 걸어서. y: 정류장 창의 한 줄, back: 그 창을 다시 연다. ic: 'subway'면 역.
+  function stopRouteFromMe(y, back, ic) {
+    meRouteTo({ to: [y[3] / 1e5, y[2] / 1e5], name: y[0], ic: ic || 'bus', kind: ic === 'subway' ? 's' : 'b', back: back }, 'walk');
   }
   // 걷는 길 판이 열려 있는가. 이 동안은 환경설정과 상관없이 지역 경계를 그리지 않는다.
   function routing() { return P.kind === 'route' && !!routeInfo; }
@@ -11055,6 +11069,16 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var km = function (m) { return m >= 1000 ? (Math.round(m / 100) / 10) + 'km' : Math.round(m) + 'm'; };
     // 카페 길찾기(사용자 2026-11-28): 걸어서, 차로를 고르고, 차로는 그 아래에서 주차장까지(주차장 거쳐 걸어서 카페), 카페 앞까지를 고른다.
     //  500m 안에 주차장이 없으면 아래 고르기 없이 카페 앞까지.
+    // 내 위치에서 정류장, 역, 주차장까지: 카페와 같은 걸어서, 차로 탭(사용자 2026-11-28: 길찾기 통일).
+    if (r.to && r.to.fromMe && r.to.dest) {
+      var mseg = el('div', 'nshseg rtseg'); mseg.setAttribute('role', 'tablist');
+      [['walk', '걸어서'], ['car', '차로']].forEach(function (z) {
+        var on = r.to.mode === z[0];
+        var mb = btn(null, null, function () { if (!on) meRouteTo(r.to.dest, z[0]); });
+        mb.setAttribute('role', 'tab'); mb.setAttribute('aria-selected', String(on)); mb.appendChild(el('b', null, z[1])); mseg.appendChild(mb);
+      });
+      sc.appendChild(mseg);
+    }
     if (r.cafeMode) {
       var seg = el('div', 'nshseg rtseg'); seg.setAttribute('role', 'tablist');
       [['walk', '걸어서'], ['car', '차로']].forEach(function (z) {
@@ -11871,36 +11895,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       }, function (er) { if (er && er.code === 1) locDenied('차 길을 보려면'); else toast('차 길을 찾지 못했어요. 잠시 뒤에 다시 눌러 주세요'); });
     });
   }
-  // 지도에서 누른 주차장 창의 길찾기(사용자 2026-11-28): 내 위치에서 그 주차장까지 차 길(파란 줄). y: 주차장 창의 한 줄.
-  //  판의 뒤로는 주차장 창으로 돌아가고, 주차 요금 줄은 길 위에 주차장 창을 연다.
+  // 지도에서 누른 주차장 창의 길찾기(사용자 2026-11-28): 내 위치에서 그 주차장까지, 차로가 먼저(걸어서 탭도 있다). y: 주차장 창의 한 줄.
+  //  판의 뒤로는 주차장 창으로 돌아가고, 주차 요금 줄과 지도의 표시는 길 위에 주차장 창을 연다.
   function parkRouteFromMe(y) {
     var q = y[3] || {}, to = q.x && q.y ? [q.x / 1e5, q.y / 1e5] : null; if (!to) return;
-    var tok = ++parkGoTok;
-    toast('차 길을 찾는 중');
-    myFix().then(function (me) {
-      return driveFetch(me, to).then(function (rt) { var c = rt.coords.slice(); c.unshift(me); c.push(to); return { c: c, rt: rt, me: me }; });
-    }).then(function (d) {
-      if (tok !== parkGoTok) return;
-      drawRoute(d.c, d.me);
-      if (map.getLayer('walk')) map.setPaintProperty('walk', 'line-color', '#2f6fdf');
-      if (map.getLayer('walk-start')) map.setPaintProperty('walk-start', 'circle-stroke-color', '#2f6fdf');
-      meMarker(d.me);
-      var back = function () { nearSheet(-1, 'p', y); };
-      var pin = document.createElement('button'), ic = el('span', 'ic'); pin.type = 'button'; pin.className = 'nearpin'; ic.style.background = '#2f6fdf';
-      ic.appendChild(icon('park')); pin.appendChild(ic); pin.appendChild(el('b', null, y[0])); pin.style.pointerEvents = 'auto';
-      pin.setAttribute('aria-label', y[0] + ' 주차장 정보 보기');
-      pin.addEventListener('click', function (e) { e.stopPropagation(); nearSheet(-1, 'p', y, null, 'route'); });
-      nearMk = new maplibregl.Marker({ element: pin, anchor: 'left', offset: [-19, 0] }).setLngLat(to).addTo(map);
-      routeInfo = { i: -1, dist: Math.round(d.rt.dist), min: Math.max(1, Math.round((d.rt.sec || 0) / 60)), src: d.rt.src,
-        to: { name: y[0], kind: 'p', fromMe: true, carOnly: true, back: back, fee: parkFee1h(y), open: function () { nearSheet(-1, 'p', y, null, 'route'); } } };
-      var x0 = 180, y0 = 90, x1 = -180, y1 = -90;
-      d.c.forEach(function (c) { if (c[0] < x0) x0 = c[0]; if (c[0] > x1) x1 = c[0]; if (c[1] < y0) y0 = c[1]; if (c[1] > y1) y1 = c[1]; });
-      setFollow(false);
-      sel = -1; P.prev = null;
-      openPanel('route');
-      var pad = mobile.matches ? { top: 130, bottom: Math.round(Math.max(window.innerHeight * .36, panel.offsetHeight + 24)), left: 40, right: 140 } : { top: 96, bottom: 70, left: 420, right: 160 };
-      map.fitBounds([[x0, y0], [x1, y1]], { padding: pad, maxZoom: 17, duration: 600 });
-    }, function (er) { if (er && er.code === 1) locDenied('차 길을 보려면'); else toast('차 길을 찾지 못했어요. 잠시 뒤에 다시 눌러 주세요'); });
+    meRouteTo({ to: to, name: y[0], ic: 'park', kind: 'p', fee: parkFee1h(y), back: function () { nearSheet(-1, 'p', y); }, open: function () { nearSheet(-1, 'p', y, null, 'route'); } }, 'car');
   }
   function myFix() {
     return new Promise(function (ok, no) {
