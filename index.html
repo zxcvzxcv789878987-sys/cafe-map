@@ -876,6 +876,8 @@ body.osh-on #toast { z-index: 95; }
    폰에서는 오른쪽 아래 둥근 단추들과 겹치지 않게 가운데보다 조금 왼쪽에 둔다. 카드나 판이 열려 있으면 숨긴다. */
 #nogo { position: absolute; z-index: 15; left: 50%; bottom: 22px; transform: translateX(-50%); width: 232px; padding: 12px 12px 10px; border-radius: 16px; background: var(--surface); box-shadow: var(--sh-2); text-align: center; }
 #nogo[hidden], .sheet-open #nogo { display: none; }
+/* 세상 끝의 끝 캐릭터가 화면에 있을 때는 아래 상자와 개수 단추가 캐릭터를 가리지 않게 숨긴다 */
+body.egg-tiny-on #nogo, body.egg-tiny-on #count { display: none !important; }
 #nogo .ngt { font-size: 15px; font-weight: 700; color: var(--ink); }
 #nogo .ngs { margin-top: 2px; font-size: 12.5px; color: var(--ink-2); }
 #nogo .ngb { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
@@ -4393,8 +4395,15 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var t = el('div', 'eggtiny'); t.setAttribute('aria-hidden', 'true'); t.appendChild(fxIcon('char'));
     t.addEventListener('click', function (e) { e.stopPropagation(); eggFound('corner2'); });
     new maplibregl.Marker({ element: t }).setLngLat([121.00016, 31.00012]).addTo(map);
-    var vis = function () { t.style.display = map.getZoom() >= 18.6 ? '' : 'none'; };
-    map.on('zoom', vis); vis();
+    // 캐릭터가 화면에 보이는 동안은 아래쪽 상자(이 화면에는 없어요)와 개수 단추를 숨긴다(사용자 2026-11-28: 찜을 켜 두면 그 상자에 가려져 안 보였다).
+    var tinyOn = null;
+    var vis = function () {
+      var on = map.getZoom() >= 18.6;
+      t.style.display = on ? '' : 'none';
+      if (on) { var p = map.project([121.00016, 31.00012]), box = map.getContainer(); on = p.x > -20 && p.y > -20 && p.x < box.clientWidth + 20 && p.y < box.clientHeight + 20; }
+      if (on !== tinyOn) { tinyOn = on; document.body.classList.toggle('egg-tiny-on', on); }
+    };
+    map.on('move', vis); vis();
   }
   var REDUCE = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   // 축하 장면: 가운데 그림(로티)과 이름, 받은 XP. 뒤로 화면 가득 폭죽. 확인 단추를 눌러야 닫힌다.
