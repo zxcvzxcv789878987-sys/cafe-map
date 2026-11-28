@@ -9690,8 +9690,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (kind === 'b') {
       to = [x[3] / 1e5, x[2] / 1e5];
       if (x[6]) row('정류장 번호', x[6]);
-      // 곧 도착하는 버스: 중계 서버가 국토교통부 TAGO에 묻는다(키는 서버에 숨김). 서울 정류장은 TAGO에 없어서 칸을 두지 않는다.
-      if (x[4] && x[5] && x[5] !== '11') {
+      // 곧 도착하는 버스: 중계 서버가 묻는다(키는 서버에 숨김). 서울은 서울시 정류소정보조회에 정류장 번호로, 그 밖은 국토교통부 TAGO에.
+      if (x[5] && (x[5] === '11' ? x[6] : x[4])) {
         arr = el('div', 'nsharr');
         var ahd = el('div', 'ahd'), list = el('div', 'alist');
         ahd.appendChild(el('h3', null, '곧 도착하는 버스'));
@@ -9704,7 +9704,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         var mins = function (sec) { return sec < 60 ? '곧 도착' : Math.round(sec / 60) + '분'; };
         var loadArr = function () {
           list.textContent = ''; list.appendChild(el('div', 'msg', '불러오는 중'));
-          fetch(BUS_API + '?c=' + encodeURIComponent(x[5]) + '&n=' + encodeURIComponent(x[4]))
+          fetch(BUS_API + '?c=' + encodeURIComponent(x[5]) + '&n=' + encodeURIComponent(x[4] || '') + '&a=' + encodeURIComponent(x[6] || ''))
             .then(function (r) { if (!r.ok) throw new Error('bus'); return r.json(); })
             .then(function (d) {
               list.textContent = '';
@@ -9714,7 +9714,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
               d.a.forEach(function (z, k) {
                 var r = el('div', 'rt'), no = el('span', 'no', z[0]); no.style.background = busColor(z[3] || '');
                 if (k >= 6) r.hidden = true;
-                r.appendChild(no); r.appendChild(el('span', 'ds', z[4] ? '다음 ' + mins(z[4]) : (z[3] || '')));
+                // 서울은 방면(예: 도봉산 방면)을, 그 밖은 다음 차 시간을 적는다.
+                r.appendChild(no); r.appendChild(el('span', 'ds', z[5] ? z[5] + ' 방면' : z[4] ? '다음 ' + mins(z[4]) : (z[3] || '')));
                 var tm = el('span', 'tm'); tm.appendChild(el('b', null, mins(z[1]))); if (z[2]) tm.appendChild(el('span', null, z[2] + '정거장 전'));
                 r.appendChild(tm); list.appendChild(r);
               });
