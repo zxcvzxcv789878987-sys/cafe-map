@@ -670,6 +670,7 @@ body.rbus-lab .rbuslb { display: block; }
 .nshrow .lb { flex: none; width: 70px; font-size: 14px; color: var(--ink-2); padding-top: 1px; }
 .nshrow .v { flex: 1; min-width: 0; }
 .nshrow .v small { display: block; font-size: 13px; color: var(--ink-2); }
+a.nshmap { text-decoration: none; box-sizing: border-box; }
 .nshmap { margin-top: 16px; width: 100%; height: 50px; border-radius: 14px; border: 1.5px solid var(--line-2); background: var(--surface); font-size: 15px; font-weight: 700; color: var(--ink); display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .nshmap svg.i { width: 18px; height: 18px; }
 .nearpin { display: flex; align-items: center; gap: 6px; pointer-events: none; }
@@ -3423,7 +3424,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     grp('주차장', [
       ['주차장', '전국주차장정보 표준데이터'],
       // 남은 자리 위치는 시영주차장 자료에 좌표가 없어 공영주차장 안내 정보에서 붙인다(서버 /park, /parks).
-      ['남은 자리', '서울특별시 시영주차장 실시간 주차대수 정보, 서울특별시 공영주차장 안내 정보, 한국교통안전공단 주차정보']
+      ['남은 자리', '서울특별시 시영주차장 실시간 주차대수 정보, 서울특별시 공영주차장 안내 정보, 한국교통안전공단 주차정보'],
+      ['민간 주차장', '카카오 로컬(장소 검색, 저장하지 않고 그때그때 불러 씀)']
     ]);
     var links = function (L) {
       var s = el('span');
@@ -6392,7 +6394,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 종류별 아이콘. 동그란 바탕에 흰 그림을 직접 그린다. [바탕색, 그림]
   var ICONS = {
     school: ['#5b82d6', 'cap'], univ: ['#3f6fd1', 'cap'], apt: ['#8b94a3', 'apt'], hospital: ['#d9484d', 'cross'],
-    park: ['#2f9a5c', 'tree'], civic: ['#6b7482', 'hall'], museum: ['#8a6f55', 'hall'], bus: ['#6f8fc4', 'bus'], terminal: ['#4a5d80', 'bus'], parking: ['#3d72d9', 'P']
+    park: ['#2f9a5c', 'tree'], civic: ['#6b7482', 'hall'], museum: ['#8a6f55', 'hall'], bus: ['#6f8fc4', 'bus'], terminal: ['#4a5d80', 'bus'], parking: ['#3d72d9', 'P'], kparking: ['#9fb4da', 'P']
   };
   function drawIcon(color, glyph) {
     var S = 44, c = document.createElement('canvas'); c.width = c.height = S;
@@ -6465,7 +6467,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       // 버스정류장: 공공데이터 정류장 목록을 화면에 보이는 칸만 받아 채운다(busRefresh).
       'lm-busstops': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
       // 주차장: 전국주차장정보 표준데이터를 화면에 보이는 칸만 받아 채운다(parkRefresh).
-      'lm-parks': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }
+      'lm-parks': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
+      // 카카오 주차장(민간 포함): 16단계부터 화면 범위를 그때그때 불러 채운다(kparkRefresh). 저장하지 않는다.
+      'lm-kparks': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }
     };
   }
   function landmarkLayers() {
@@ -6487,6 +6491,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     return [
       { id: 'lm-subway-edge', type: 'line', source: 'lm-subway', minzoom: 9.5, layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': z(10, 2.6, 16, 7.4) } },
       { id: 'lm-subway-line', type: 'line', source: 'lm-subway', minzoom: 9.5, layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': ['get', 'c'], 'line-width': z(10, 1.4, 16, 4.6) } },
+      // 카카오 주차장(2026-11-29 사용자: 민간 주차장도): 공식 주차장보다 옅은 P, 그 아래 층이라 겹치면 공식 주차장이 남는다.
+      { id: 'lm-kparking', type: 'symbol', source: 'lm-kparks', minzoom: 16,
+        layout: { 'icon-image': 'ic-kparking', 'icon-size': z(16, .78, 18, 1.05), 'icon-padding': 1 }, paint: { 'icon-opacity': .92 } },
       // 주차장(2026-11-28)도 정류장처럼 이름 없이 아이콘만. 정류장보다 아래 층이라 겹치면 정류장이 남는다.
       { id: 'lm-parking', type: 'symbol', source: 'lm-parks', minzoom: 15,
         // 찜한 주차장(f: 1)은 하트 붙은 아이콘, 겹치면 찜한 주차장이 남는다.
@@ -7449,7 +7456,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   })();
   map.on('mousemove', function (e) {
     var h = hit(e.point), ni = h && h.i !== undefined ? h.i : -1, np = h && h.reg !== undefined ? h.reg : -1;
-    map.getCanvas().style.cursor = h || subAt(e.point) || busAt(e.point) || parkAt(e.point) ? 'pointer' : '';
+    map.getCanvas().style.cursor = h || subAt(e.point) || busAt(e.point) || parkAt(e.point) || kparkAt(e.point) ? 'pointer' : '';
     if (ni !== hoverI || np !== hoverPill) { hoverI = ni; setHoverReg(np); requestDraw(); }
   });
   map.on('mouseout', function () { if (hoverI >= 0 || hoverPill >= 0) { hoverI = -1; hoverPill = -1; requestDraw(); } });
@@ -7919,6 +7926,57 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var pr = f[0].properties || {}, t = parkTiles[pr.k];
     return t ? t[pr.j] || null : null;
   }
+  // ----- 카카오 주차장(2026-11-29 사용자: 민간 주차장도 넣기) -----
+  // 주차장 앱들처럼 카카오 로컬 API의 주차장 분류(PK6)를 중계 서버 /kpark로 화면 범위만큼 부른다. 카카오 규칙상 결과는 저장하지 않고
+  //  지금 화면에 찍는 동안만 쓴다(움직이면 다시 부른다). 공식 주차장(park/)과 같은 곳은 뺀다: 30m 안이거나, 150m 안이면서 이름 줄기가 같으면.
+  //  한 줄: [위도*1e5, 경도*1e5, 이름, 전화, 주소, 카카오맵 주소, 분류]
+  var kparkL = [], kparkTok = 0, kparkTimer = 0;
+  function kparkRefresh() {
+    clearTimeout(kparkTimer);
+    kparkTimer = setTimeout(function () {
+      var src = map.getSource && map.getSource('lm-kparks'); if (!src) return;
+      if (map.getZoom() < 15.9) { if (kparkL.length) { kparkL = []; src.setData({ type: 'FeatureCollection', features: [] }); } return; }
+      // 화면보다 사방 30% 넓게 부른다(조금 옮겨도 가장자리 주차장이 바로 보이게).
+      var bb = map.getBounds(), w = bb.getWest(), s0 = bb.getSouth(), e = bb.getEast(), n = bb.getNorth(), mw = (e - w) * .3, mh = (n - s0) * .3;
+      w -= mw; e += mw; s0 -= mh; n += mh;
+      if (e - w > .06 || n - s0 > .05) return;
+      var tok = ++kparkTok;
+      fetch(BUS_API.replace(/\/bus$/, '/kpark') + '?r=' + [w, s0, e, n].map(function (v) { return v.toFixed(5); }).join(','))
+        .then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+        .then(function (d) {
+          if (tok !== kparkTok || !d || !d.l) return;
+          parkLoad(busKeys(w, s0, e, n), function () {
+            if (tok !== kparkTok) return;
+            var stem = function (t) { return String(t || '').replace(/\s|공영주차장|공영|민영|주차장|\((시|구)\)/g, ''); };
+            var ours = [];
+            Object.keys(parkTiles).forEach(function (k) { (parkTiles[k] || []).forEach(function (st) { if (st[0] / 1e5 > s0 - .002 && st[0] / 1e5 < n + .002 && st[1] / 1e5 > w - .002 && st[1] / 1e5 < e + .002) ours.push(st); }); });
+            kparkL = d.l.filter(function (x) {
+              var me = stem(x[2]);
+              return !ours.some(function (st) {
+                var dd = Math.hypot((st[0] - x[0]) / 1e5 * 111000, (st[1] - x[1]) / 1e5 * 88000);
+                if (dd <= 30) return true;
+                var o = stem(st[2]);
+                return dd <= 150 && me && o && (me.indexOf(o) >= 0 || o.indexOf(me) >= 0);
+              });
+            });
+            var s2 = map.getSource('lm-kparks');
+            if (s2) s2.setData({ type: 'FeatureCollection', features: kparkL.map(function (x, j) { return { type: 'Feature', properties: { j: j }, geometry: { type: 'Point', coordinates: [x[1] / 1e5, x[0] / 1e5] } }; }) });
+          });
+        });
+    }, 350);
+  }
+  map.on('moveend', kparkRefresh);
+  // 지도 모양을 다시 입히면 자료 칸이 새로 생기므로 다시 부른다.
+  var kparkSrc = null;
+  map.on('styledata', function () { var s3 = map.getSource('lm-kparks'); if (s3 && s3 !== kparkSrc) { kparkSrc = s3; if (kparkL.length) kparkRefresh(); } });
+  function kparkAt(pt) {
+    if (!map.getLayer('lm-kparking')) return null;
+    var f = map.queryRenderedFeatures([[pt.x - 12, pt.y - 12], [pt.x + 12, pt.y + 12]], { layers: ['lm-kparking'] });
+    if (!f.length) return null;
+    return kparkL[(f[0].properties || {}).j] || null;
+  }
+  function kparkTap(x) { nearSheet(-1, 'p', [x[2], 0, '', { y: x[0], x: x[1], kk: 1, ph: x[3], ad: x[4], url: x[5] }]); }
+  if (TEST) window.testKpark = function () { return { n: kparkL.length, layer: !!map.getLayer('lm-kparking'), z: map.getZoom() }; };
   // 주차장 창이 쓰는 모양으로(카드 근처 칸의 p와 같다): [이름, 거리, 무료|유료|혼합, { y, x, n, d, w, s, h, f, g 공영|민영 }]
   function parkTuple(s, m) { var q = Object.assign({}, s[5] || {}); q.y = s[0]; q.x = s[1]; if (s[4]) q.g = s[4]; return [s[2], m || 0, s[3], q]; }
   function parkTap(s) { nearSheet(-1, 'p', parkTuple(s)); }
@@ -8090,6 +8148,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     ['br-line', 'br-stop'].forEach(function (id) { if (map.getSource(id)) map.removeSource(id); });
     if (map.getLayer('lm-bus')) map.setLayoutProperty('lm-bus', 'visibility', 'visible');
     if (map.getLayer('lm-parking')) map.setLayoutProperty('lm-parking', 'visibility', 'visible');
+    if (map.getLayer('lm-kparking')) map.setLayoutProperty('lm-kparking', 'visibility', 'visible');
     if (was) requestDraw();   // 숨겼던 카페와 경계를 다시 그린다
   }
   // 노선 선을 m 단위 평면으로 펴고, 정류장마다 선 위의 거리를 구해 둔다(정류장 순서대로 앞으로만 찾는다).
@@ -8236,6 +8295,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     // 노선만 보이게: 다른 정류장 표시를 숨기고, 카페와 경계는 draw()가 routeBar를 보고 그리지 않는다.
     if (map.getLayer('lm-bus')) map.setLayoutProperty('lm-bus', 'visibility', 'none');
     if (map.getLayer('lm-parking')) map.setLayoutProperty('lm-parking', 'visibility', 'none');
+    if (map.getLayer('lm-kparking')) map.setLayoutProperty('lm-kparking', 'visibility', 'none');
     // 버스 실시간 위치: 처음 받은 자리를 그리고 15초마다 위치만 다시 묻는다(서버도 15초 기억).
     routeBusDraw(d, d.v || (d.b || []).map(function (s) { return [s, 0, 0, '']; }), col);
     if (d.rq) routeBusTick = setInterval(function () {
@@ -8263,6 +8323,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (!h) { var sb = subAt(e.point); if (sb) { closePile(); subSheet(sb); return; } }
     if (!h) { var bs = busAt(e.point); if (bs) { closePile(); busTap(bs); return; } }
     if (!h) { var pk = parkAt(e.point); if (pk) { closePile(); parkTap(pk); return; } }
+    if (!h) { var kk = kparkAt(e.point); if (kk) { closePile(); kparkTap(kk); return; } }
     if (h && h.pile) { closePanel(); openPile(h.pile); return; }
     closePile();
     if (!h) { closePanel(); return; }
@@ -12100,8 +12161,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (kind === 'b') {
       fav = btn('oact ohw nfav', null, function () { var y = pair ? pair[cur] : x; busFavSet(y, !busFavHas(y)); fav.setAttribute('aria-pressed', String(busFavHas(y))); toast(busFavHas(y) ? '정류장을 찜했어요' : '정류장 찜을 풀었어요'); });
       fav.appendChild(icon('heart')); fav.setAttribute('aria-label', '정류장 찜'); hd.appendChild(fav);
-    } else if (kind === 'p') {
-      // 주차장 찜(사용자 2026-11-28): 정류장처럼 이름 줄 끝의 하트.
+    } else if (kind === 'p' && !(x[3] || {}).kk) {
+      // 주차장 찜(사용자 2026-11-28): 정류장처럼 이름 줄 끝의 하트. 카카오 주차장은 기기에 저장할 수 없어 하트를 두지 않는다.
       fav = btn('oact ohw nfav', null, function () { parkFavSet(x, !parkFavHas(x)); fav.setAttribute('aria-pressed', String(parkFavHas(x))); toast(parkFavHas(x) ? '주차장을 찜했어요' : '주차장 찜을 풀었어요'); });
       fav.appendChild(icon('heart')); fav.setAttribute('aria-label', '주차장 찜'); fav.setAttribute('aria-pressed', String(parkFavHas(x))); hd.appendChild(fav);
     }
@@ -12266,6 +12327,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         if (gl.length) row('운영 시간', gl[0], gl.slice(1).join(', '));
         else if (q.d) row('운영 요일', q.d.replace(/\+/g, ', '));
         if (q.n) row('주차면', fmt(q.n) + '면');
+        // 카카오 주차장: 요금, 운영 시간 자료가 없어서 주소, 전화와 카카오맵 단추(요금과 후기는 카카오맵에서)
+        if (q.kk) { row('주소', q.ad); row('전화', q.ph); }
         // 남은 자리(사용자 2026-11-28, 버스처럼 실시간): 중계 서버 /park(서울시 시영주차장, 교통안전공단 전국 주차정보).
         //  답이 오면 맨 위 줄로 넣는다. 넉넉하면 초록, 열 곳에 한 곳 넘게 남으면 주황, 그보다 적으면 빨강.
         if (q.y && q.x) parkLive(y).then(function (d) {
@@ -12280,6 +12343,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (sub.firstChild) cont.appendChild(sub);
       if (arr) cont.appendChild(arr);
       if (rows.firstChild) cont.appendChild(rows);
+      if (kind === 'p' && y[3] && y[3].kk && y[3].url) {
+        var ka = el('a', 'nshmap', null); ka.href = y[3].url; ka.target = '_blank'; ka.rel = 'noopener';
+        ka.appendChild(icon('map')); ka.appendChild(document.createTextNode('카카오맵에서 요금과 정보 보기')); cont.appendChild(ka);
+      }
       if (to && i < 0 && kind === 'b') {
         var k1 = pair ? cur : 0, mb1 = btn('nshmap', null, function () { close(); stopRouteFromMe(y, function () { nearSheet(i, kind, x, x2, k1); }); });
         mb1.appendChild(icon('route')); mb1.appendChild(document.createTextNode('길찾기'));
