@@ -8719,10 +8719,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     // 사용법(2026-11-27): 지도 점 보는 법과 콘센트 기록하는 법, 처음 안내 다시 보기. 문의하기 바로 위(사용자 2026-11-27, 예전에는 계정 바로 아래).
     var gur = btn('xrow xlink', null, function () { openGuide(true); }), gub = el('span', 'xbadge pic mn');
     gub.appendChild(fxStill('mi_guide')); gur.appendChild(gub); gur.appendChild(el('span', null, '사용법')); gur.appendChild(icon('right'));
-    // 지도 자료: 누르면 자료 출처를 묶음별로 정리한 창(openSources). 아이콘은 새 동네 지도와 다르게 문서 모양.
-    var sr = btn('xrow xlink', null, openSources), srb = el('span', 'xbadge pic mn'), srl = el('span', null, '지도 자료');
-    srb.appendChild(fxStill('mi_src')); sr.appendChild(srb); sr.appendChild(srl); sr.appendChild(icon('right'));
-    fb.appendChild(gur); fb.appendChild(fr); fb.appendChild(sr); sc.appendChild(fb);
+    // 지도 자료는 도움말에서 빼서 메뉴 맨 아래 회색 글씨 줄로 옮겼다(사용자 2026-11-29).
+    fb.appendChild(gur); fb.appendChild(fr); sc.appendChild(fb);
     if (acc && signedIn()) sc.appendChild(acc);
     // 운영자(나만 보임): 회색 가로줄로 나눈 따로 묶음.
     if (fbRows.length) { var adm = el('div', 'fsec admsec'); adm.appendChild(el('div', 'ftitle', '운영자')); fbRows.forEach(function (r) { adm.appendChild(r); }); sc.appendChild(adm); }
@@ -8734,6 +8732,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var osm = el('div', null, '배경 지도 '), oa = el('a', null, '© OpenStreetMap contributors');
     oa.href = 'https://www.openstreetmap.org/copyright'; oa.target = '_blank'; oa.rel = 'noopener'; osm.appendChild(oa); foot2.appendChild(osm);
     var lk = el('div', 'mlinks');
+    // 지도 자료(사용자 2026-11-29): 맨 아래 회색 글씨. 누르면 자료 출처를 묶음별로 정리한 창(openSources)에 들어간다.
+    var sl = el('a', null, '지도 자료'); sl.href = '#'; sl.addEventListener('click', function (e) { e.preventDefault(); openSources(); }); lk.appendChild(sl);
     [['개인정보처리방침', 'privacy.html'], ['이용약관', 'terms.html']].forEach(function (x) { var a3 = el('a', null, x[0]); a3.href = x[1]; a3.target = '_blank'; a3.rel = 'noopener'; lk.appendChild(a3); });
     foot2.appendChild(lk);
     info.appendChild(foot2); sc.appendChild(info);
