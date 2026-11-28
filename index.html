@@ -7520,6 +7520,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (keys.length > 16) return;
     var ks = keys.join(',');
     if (ks === busKeyStr && src === busSrc) return;
+    // 이미 받아 둔 칸은 다른 칸을 기다리지 않고 바로 그린다(사용자 2026-11-29: 검색으로 날아가면 정류장 표시가 늦게 떴다).
+    busPaint(keys);
     busLoad(keys, function () {
       var f = [];
       var fav = {}; (busFavs || []).forEach(function (b) { fav[b[3] + '|' + b[4]] = 1; });
@@ -7529,6 +7531,14 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     });
   }
   map.on('moveend', busRefresh);
+  // 받아 둔 칸의 정류장만 지도에 그린다(받는 중인 칸은 다 받은 뒤 busRefresh가 다시 그린다).
+  function busPaint(keys) {
+    var s2 = map.getSource && map.getSource('lm-busstops'); if (!s2) return;
+    var f = [], fav = {}; (busFavs || []).forEach(function (b) { fav[b[3] + '|' + b[4]] = 1; });
+    keys.forEach(function (k) { (busTiles[k] || []).forEach(function (s, j) { f.push({ type: 'Feature', properties: { k: k, j: j, f: fav[s[3] + '|' + s[4]] ? 1 : 0 }, geometry: { type: 'Point', coordinates: [s[1] / 1e5, s[0] / 1e5] } }); }); });
+    if (!f.length) return;
+    busFC = { type: 'FeatureCollection', features: f }; s2.setData(busFC); busSrc = s2;
+  }
   if (TEST) window.testView = function () { return map.getBounds().toArray(); };
   if (TEST) window.testBusTap = function (s) { busTap(s); };   // 시험: 정류장 한 줄을 주면 그 정류장 창을 연다
   if (TEST) window.testJump = function (lng, lat, z) { map.jumpTo({ center: [lng, lat], zoom: z }); };
@@ -7612,7 +7622,17 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   }
   // 정류장으로 지도를 옮긴 뒤(움직임이 끝나면) 정류장 창을 연다(사용자 2026-11-28: 찜한 정류장을 누르면 이동이 끝나고 창이 열리게).
   //  목록 판은 먼저 닫아 지도가 보이게 하고, 이미 그 자리면 바로 연다.
+  //  검색이나 찜으로 날아갈 때(정류장, 역, 주차장 모두 이 함수): 날아가기 전에 도착할 자리 둘레의 정류장과 주차장 자료를 받아 지도에 그려 둔다.
+  //  전에는 도착한 뒤에 화면의 자료를 전부 받고서야 그려서 표시가 늦게 떴다(사용자 2026-11-29). 받는 데 0.6초가 넘으면 기다리지 않고 날아간다.
   function busFlyThen(ll, open) {
+    var d = .006, keys = busKeys(ll[0] - d, ll[1] - d, ll[0] + d, ll[1] + d), left = 2, started = false;
+    var go0 = function () { if (started) return; started = true; busFlyNow(ll, open); };
+    var one = function () { if (--left <= 0) go0(); };
+    busLoad(keys, function () { busPaint(keys); busKeyStr = ''; one(); });
+    parkLoad(keys, function () { parkPaint(keys); parkKeyStr = ''; one(); });
+    setTimeout(go0, 600);
+  }
+  function busFlyNow(ll, open) {
     if (P.kind) closePanel();
     setFollow(false);
     var z = Math.max(map.getZoom(), 17), c = map.getCenter();
@@ -7915,11 +7935,6 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (!f.length) return;
     if (parkLiveL) parkLiveMark(f, parkLiveL);
     parkFC = { type: 'FeatureCollection', features: f }; s2.setData(parkFC); parkSrc = s2;
-  }
-  // 검색에서 주차장을 누르면 날아가기 전에 도착할 자리 둘레의 칸을 받아 미리 그려 둔다. 도착하는 순간 P가 보이게.
-  function parkPrime(ll, done) {
-    var d = .006, keys = busKeys(ll[0] - d, ll[1] - d, ll[0] + d, ll[1] + d);
-    parkLoad(keys, function () { parkPaint(keys); parkKeyStr = ''; if (done) done(); });
   }
   // 실시간 남은 자리 목록(중계 서버 /parks): [[위도*1e5, 경도*1e5, 이름, 남은 면, 전체 면, 'HH:MM']]. 2분 기억한다.
   var parkLiveL = null, parkLiveT = 0, parkLiveP = null;
@@ -10642,11 +10657,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
               if ((dd <= 250 && me && stem(st[2]) === me) || dd <= 25) { if (!best || dd < best.d) best = { d: dd, st: st }; }
             });
           });
-          var dest = best ? [best.st[1] / 1e5, best.st[0] / 1e5] : ll;
-          parkPrime(dest, function () {
-            busFlyThen(dest, function () {
-              if (best) parkTap(best.st); else nearSheet(-1, 'p', [lx[2], 0, '', { y: lx[0], x: lx[1] }]);
-            });
+          busFlyThen(best ? [best.st[1] / 1e5, best.st[0] / 1e5] : ll, function () {
+            if (best) parkTap(best.st); else nearSheet(-1, 'p', [lx[2], 0, '', { y: lx[0], x: lx[1] }]);
           });
         });
       });
@@ -10659,8 +10671,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var k = o[3], j = o[4];
       parkLoad([k], function () {
         var st = (parkTiles[k] || [])[j]; if (!st) return;
-        var dest = [st[1] / 1e5, st[0] / 1e5];
-        parkPrime(dest, function () { busFlyThen(dest, function () { parkTap(st); }); });
+        busFlyThen([st[1] / 1e5, st[0] / 1e5], function () { parkTap(st); });
       });
     });
     return row;
