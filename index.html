@@ -8688,7 +8688,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (xp) r.appendChild(bean(el('b', 'crxp', '+' + fmt(xp) + ' 원두')));
       r.appendChild(icon('right')); box.appendChild(r);
     };
-    row('rp_q_send', '문의하기', 0, function () { openFeedback(); });
+    row('rp_q_send', '문의하기', FB_XP, function () { openFeedback(); });   // 반영되면 원두(사용자 2026-11-28: 정보 수정 제안, 없는 카페 제보처럼 +3,000 표시)
     row('rp_g_send', '정보 수정 제안', GONE_XP, function () { openGoneHowto(); });
     row('rp_a_send', '없는 카페 제보', CAFE_ADD_XP, function () { openCafeAdd(); });
     box.appendChild(el('div', 'xgrp', '내가 보낸 것'));
