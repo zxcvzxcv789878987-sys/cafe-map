@@ -2519,6 +2519,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
 .ssmore svg.i { width: 14px; height: 14px; }
 .sgap { height: 8px; background: var(--surface-2); margin-top: 6px; }
 /* 검색 안내 판: 최근 검색 줄(누르면 그 말로 찾기, 오른쪽 x로 지우기) */
+.grset { padding: 6px 16px 10px; }   /* 맨 아래 검색 기록 남기기 줄: 위 목록 글자와 같은 왼쪽 */
 .grow { padding: 0 6px 0 16px; gap: 4px; min-height: 48px; }
 .grgo { flex: 1; min-width: 0; height: 48px; padding: 0; border: 0; background: none; display: flex; align-items: center; gap: 12px; font-family: inherit; text-align: left; color: var(--ink); cursor: pointer; }
 .grgo svg.i { flex: none; width: 20px; height: 20px; color: var(--ink-3); }
@@ -3181,6 +3182,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     outline: saved.outline !== false,   // 환경설정: 고른 지역의 경계선과 색칠을 보일지
     nav: saved.nav === 'naver' ? 'naver' : 'kakao',
     routeOnly: saved.routeOnly !== false,   // 걷는 길 판: 길을 보는 동안 다른 카페 숨기기(기본 켬)
+    noRecent: !!saved.noRecent,   // 환경설정: 검색 기록을 남기지 않음(사용자 2026-11-29)
     favHide: !!saved.favHide,   // 환경설정: 내 메모 단추 숨김(투명 단추 에그를 연 사람만 보임)   // 환경설정: 길찾기에 쓸 지도 앱(티맵은 여는 주소를 확인할 수 없고 실제로 안 열려서 뺐다)
     start: saved.startSet && (saved.start === 'korea' || saved.start === 'last') ? saved.start : 'me',   // 환경설정: 시작할 때 보여 줄 곳. me 내 위치(기본), korea 전국, last 마지막에 보던 곳. 직접 고른 적이 없으면(startSet 없음) 내 위치
     startSet: !!saved.startSet,
@@ -6164,7 +6166,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     save(STORE, {
       cats: Object.keys(S.cats).map(Number), brands: Object.keys(S.brands).map(function (j) { return D.brands[j][0]; }),
       reg: S.reg >= 0 ? regPath(S.reg) : null,
-      big: S.big, bigPy: S.bigPy, outlet: S.outlet, chairs: Object.keys(S.chairs), sort: S.sort, hsort: S.hsort, pins: Object.keys(S.pins), tab: S.tab, seen: S.seen, bonus: S.bonus, outline: S.outline, start: S.start, startSet: S.startSet, nav: S.nav, favHide: S.favHide ? 1 : 0, routeOnly: S.routeOnly,
+      big: S.big, bigPy: S.bigPy, outlet: S.outlet, chairs: Object.keys(S.chairs), sort: S.sort, hsort: S.hsort, pins: Object.keys(S.pins), tab: S.tab, seen: S.seen, bonus: S.bonus, outline: S.outline, start: S.start, startSet: S.startSet, nav: S.nav, favHide: S.favHide ? 1 : 0, noRecent: S.noRecent ? 1 : 0, routeOnly: S.routeOnly,
       view: [c.lat, c.lng, +map.getZoom().toFixed(2)]
     });
   }
@@ -8545,6 +8547,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     nv.appendChild(nvTabs); conf.appendChild(nv); dragPick(nvTabs);
     if (XP_ON && favOn()) conf.appendChild(toggleRow('내 메모 단추', !S.favHide, function (v) { S.favHide = !v; persist(); favRender(); }));
     conf.appendChild(toggleRow('지역 경계', S.outline, function (v) { S.outline = v; refilter(); draw(); renderChips(); persist(); }));
+    conf.appendChild(toggleRow('검색 기록 남기기', !S.noRecent, function (v) { setNoRecent(!v); }));
     // 내 기록 공개(사용자 2026-11-28): 설정에는 줄 하나(지금 공개한 것)만 두고, 누르면 창에서 고른다(openPubSet).
     if (loginOn && signedIn() && XP_ON) {
       // 위 스위치 줄(내 메모 단추, 지역 경계)과 같은 굵기의 이름, 오른쪽에 지금 공개한 것을 회색 글자로.
@@ -10655,7 +10658,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   //  최근 검색은 이 기기에만 남는다(검색 결과의 줄을 누르면 그 검색어를 남긴다). 예시를 누르면 그 말로 찾아 준다.
   var RECENT_KEY = 'cafemap.recentQ';
   function recentQ() { var r = load(RECENT_KEY); return Array.isArray(r) ? r.filter(function (x) { return typeof x === 'string' && x; }).slice(0, 8) : []; }
-  function recentAdd(t) { t = String(t || '').trim(); if (t.length < 1) return; var r = recentQ().filter(function (x) { return x !== t; }); r.unshift(t); save(RECENT_KEY, r.slice(0, 8)); }
+  function recentAdd(t) { t = String(t || '').trim(); if (t.length < 1 || S.noRecent) return; var r = recentQ().filter(function (x) { return x !== t; }); r.unshift(t); save(RECENT_KEY, r.slice(0, 8)); }
+  // 검색 기록 남기기 켜고 끄기(사용자 2026-11-29: 검색창이나 메뉴에서). 끄면 남아 있던 기록도 지운다.
+  function setNoRecent(off) { S.noRecent = !!off; if (off) save(RECENT_KEY, []); persist(); }
   function searchFor(t) { var q = $('q'); q.value = t; $('qClear').hidden = !t; q.dispatchEvent(new Event('input', { bubbles: true })); try { q.focus(); } catch (e) { /* 그대로 둔다 */ } }
   function renderGuide() {
     var h = head('검색'); h.appendChild(closeBtn()); panel.appendChild(h);
@@ -10682,6 +10687,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       row.addEventListener('click', function () { searchFor(x[2]); });
       sc.appendChild(row);
     });
+    sc.appendChild(el('div', 'sgap'));
+    var gs = el('div', 'grset'); gs.appendChild(toggleRow('검색 기록 남기기', !S.noRecent, function (v) { setNoRecent(!v); renderPanel(); })); sc.appendChild(gs);
   }
   // ----- 검색 -----
   // 결과는 탭(카페, 지역, 정류장, 노선, 주차장)으로 나눠 본다(사용자 2026-11-28). 처음에는 카페 탭, 카페가 없으면 결과가 있는 첫 탭.
