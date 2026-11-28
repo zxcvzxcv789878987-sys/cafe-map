@@ -61,7 +61,7 @@
               ".validate": "newData.val() === 1 || newData.val() === -1"
             },
             "c": {
-              ".validate": "newData.isString() && newData.val().length <= 3 && newData.val().matches(/^[nws]*$/)"
+              ".validate": "newData.isString() && newData.val().length <= 4 && newData.val().matches(/^[nwsf]*$/)"
             },
             "t": {
               ".validate": "newData.val() === now"
