@@ -10401,7 +10401,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 이 화면 N곳(2026-11-28 사용자와 정한 시안): 어디 갈지 고르는 목록. 지금 지도에 그려진 카페만(필터와 보너스를 따른다).
   //  한 줄: 블로그 사진 작은 칸, 이름, 콘센트 결과, 대형과 새로 연 카페 표시, 내 위치에서 거리. 정렬은 단추 하나(가까운 순, 콘센트 기록 많은 순, 넓은 순).
   //  정류장, 노선, 주차장은 지도 위 표시와 카페 카드의 근처 칸에서 본다.
-  var thumbMem = {}, thumbIO = null;
+  var thumbMem = {}, thumbIO = null, thumbQ = [], thumbBusy = 0;
+  // 사진 찾기는 네 곳씩 차례로(목록을 열자마자 열 곳 넘게 한꺼번에 묻지 않게)
+  function thumbRun() { while (thumbBusy < 4 && thumbQ.length) { var f = thumbQ.shift(); thumbBusy++; f(function () { thumbBusy--; thumbRun(); }); } }
   function outletYes(i) { var v = votes[i] || [0, 0]; return (v[0] || 0) + (myO[i] === 1 ? 1 : 0); }
   function outletNo(i) { var v = votes[i] || [0, 0]; return (v[1] || 0) + (myO[i] === -1 ? 1 : 0); }
   // 목록의 작은 사진: 카드를 연 적 있는 카페는 그 블로그 사진을, 아니면 중계 서버에 사진 한 장만 묻는다(th=1, 카카오 검색 2번). 줄이 화면에 보일 때만 묻는다.
@@ -10428,10 +10430,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (blogMem[c]) { put(blogPics(blogMem[c].p, blogMem[c].i).pics[0]); return; }
     if (c in thumbMem) { put(thumbMem[c]); return; }
     if (!('IntersectionObserver' in window)) return;
-    if (!thumbIO) thumbIO = new IntersectionObserver(function (es) { es.forEach(function (e) { if (!e.isIntersecting) return; thumbIO.unobserve(e.target); if (e.target._load) e.target._load(); }); }, { rootMargin: '160px 0px' });
+    if (!thumbIO) return;
     // 가벼운 사진 한 장 찾기(th=1)는 작은 카페 사진을 대부분 못 찾아서(사용자 2026-11-28: 로고도 사진도 안 나온다), 카드와 같은 블로그 찾기를 쓴다.
     //  찾은 결과는 blogMem에 남아 그 카드를 열 때 다시 찾지 않는다.
-    th._load = function () { cafeBlog(i, function (d) { put(d && d.p.length ? blogPics(d.p, d.i).pics[0] : null); }); };
+    th._load = function () { thumbQ.push(function (next) { cafeBlog(i, function (d) { put(d && d.p.length ? blogPics(d.p, d.i).pics[0] : null); next(); }); }); thumbRun(); };
     thumbIO.observe(th);
   }
   function hereRow(i) {
@@ -10488,6 +10490,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     h.appendChild(closeBtn());
     panel.appendChild(h);
     var sc = el('div', 'scroll'); panel.appendChild(sc);
+    // 사진은 목록 판을 기준으로 아래 열 줄쯤(1000px)까지 미리 찾는다. 화면 기준으로 보면 판 안에 가려진 줄은 스크롤해야 보이는 줄이라 그제야 불러왔다(사용자 2026-11-28).
+    if (thumbIO) thumbIO.disconnect();
+    thumbQ = [];
+    thumbIO = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (e) { if (!e.isIntersecting) return; thumbIO.unobserve(e.target); if (e.target._load) e.target._load(); }); }, { root: sc, rootMargin: '0px 0px 1000px 0px' }) : null;
     var meter = function (m) { return m >= 1000 ? (Math.round(m / 100) / 10) + 'km' : (Math.round(m / 10) * 10) + 'm'; };
     if (cafes.length) {
       cafes.slice(0, 60).forEach(function (i) { sc.appendChild(hereRow(i)); });
