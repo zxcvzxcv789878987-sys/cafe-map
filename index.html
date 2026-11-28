@@ -2440,6 +2440,9 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
 .omi svg { width: 20px; height: 20px; flex: none; }
 .omi.on svg.i { color: #F8312F; fill: #F8312F; }
 .omi svg path:first-child { fill: #fff; opacity: 1; }
+/* 메뉴 맨 위 닉네임과 레벨 한 칸: 닉네임을 크게, 그 아래 Lv와 단계 이름, 다음 레벨까지 */
+.xlvtxt .xnick { display: block; font-size: 19px; font-weight: 800; letter-spacing: -.3px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.xlvcard .xlv .top .lvb b, .xlvcard .top .lvb b { font-size: 15px; color: #4c3fc4; }
 .opghost { position: absolute; z-index: 2; object-fit: cover; border-radius: 10px; pointer-events: none; }
 /* +N 칸: 사진이 잘 보이게 어두운 막은 옅게, 글자는 그림자로 읽히게(사용자 2026-11-28: 너무 흐리다) */
 .opc .obgm { background: rgba(20, 23, 28, .22); font-size: 19px; text-shadow: 0 1px 4px rgba(0, 0, 0, .55); }
@@ -8112,13 +8115,15 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         row.appendChild(whoEl); row.appendChild(btn('btn sm pri', '로그인', function () { openLogin(null, 'menu'); }));
       }
       if (row) acc.appendChild(row);
-      sc.appendChild(acc);
+      // 계정은 메뉴 아래쪽(도움말 다음)으로 내린다(사용자 2026-11-28). 로그인하지 않았으면 로그인 줄이 필요하니 맨 위에 둔다.
+      if (!signedIn()) sc.appendChild(acc);
     }
     // 내 레벨과 모은 XP, 그리고 보상 체계(무엇을 하면 몇 XP인지, 어디까지 받았는지). 로그인하지 않았으면 레벨 대신 안내만 둔다.
     if (XP_ON && loginOn) {
       var xsec = el('div', 'fsec'), xl = el('div', 'xlv'), xtop = el('div', 'top');
       var xnv = xpCount(XP.vis), xno2 = xpCount(XP.vote), lvNow = Math.floor(XP.xp / 1000);
-      xsec.appendChild(el('div', 'ftitle', '내 레벨'));
+      // 맨 위는 닉네임과 레벨을 합친 한 칸(사용자 2026-11-28). 로그인하지 않았으면 예전처럼 "내 레벨" 제목과 안내.
+      if (!signedIn()) xsec.appendChild(el('div', 'ftitle', '내 레벨'));
       if (signedIn()) {
         // 레벨 칸: 왼쪽 단계 그림을 누르면 레벨 단계, 나머지를 누르면 원두 기록(2026-11-27).
         xl = el('div', 'xlv xlvcard');
@@ -8128,6 +8133,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         var xlb = btn('xlvbtn', null, function () { openXpLog(); }), xinfo = el('span', 'xlvtxt'), lvb = el('span', 'lvb');
         lvb.appendChild(el('b', null, 'Lv.' + lvNow)); lvb.appendChild(el('em', 'tnm', TIERS[tNow][1]));
         xtop.appendChild(lvb);
+        xinfo.appendChild(el('b', 'xnick', XP.nick || who.n || '닉네임'));
         xinfo.appendChild(xtop);
         xinfo.appendChild(bean(el('p', null, '다음 레벨까지 ' + fmt(1000 - XP.xp % 1000) + ' 원두')));
         xlb.appendChild(xinfo); xlb.appendChild(icon('right')); xl.appendChild(xlb);
@@ -8250,6 +8256,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var sr = btn('xrow xlink', null, openSources), srb = el('span', 'xbadge pic mn'), srl = el('span', null, '지도 자료');
     srb.appendChild(fxStill('mi_src')); sr.appendChild(srb); sr.appendChild(srl); sr.appendChild(icon('right'));
     fb.appendChild(gur); fb.appendChild(fr); fb.appendChild(sr); sc.appendChild(fb);
+    if (acc && signedIn()) sc.appendChild(acc);
     // 운영자(나만 보임): 회색 가로줄로 나눈 따로 묶음.
     if (fbRows.length) { var adm = el('div', 'fsec admsec'); adm.appendChild(el('div', 'ftitle', '운영자')); fbRows.forEach(function (r) { adm.appendChild(r); }); sc.appendChild(adm); }
     // 지도 자료(사용자 2026-11-28: 너무 많아졌다, 열어야 보이게). 메뉴에는 줄 하나와, 늘 보여야 하는 배경 지도 출처, 개인정보처리방침, 이용약관만 둔다.
