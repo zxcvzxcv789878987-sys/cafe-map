@@ -6331,14 +6331,16 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   map.on('rotateend', function () { setTimeout(function () { var b = map.getBearing(); if (b && Math.abs(b) < 5 && !map.isMoving()) map.easeTo({ bearing: 0, duration: 200 }); }, 0); });
   // 지도 멈춤 지킴이(사용자 2026-11-28: 세상 끝에서 확대, 축소, 돌리기를 하다 보면 지도가 통째로 멈추고 처음부터, 내 위치, 찜한 카페로 가기도 안 됐다. 세 번째).
   //  1) 지도가 '움직이는 중'인데 2초 넘게 실제로는 안 움직이면 멈춘 것으로 보고 풀어 준다(map.stop은 손가락 처리도 같이 되돌린다).
-  //  2) 단추로 시킨 이동(flyTo, easeTo, fitBounds)이 0.9초 지나도 시작조차 안 되면 바로 그 자리로 옮긴다(jumpTo). 화면이 안 보일 때(앱을 내렸을 때)는 그림이 멈추므로 보지 않는다.
+  //  2) 단추로 시킨 이동(flyTo, easeTo, fitBounds)이 2초 지나도 한 번도 안 움직이면 바로 그 자리로 옮긴다(jumpTo). 화면이 안 보일 때(앱을 내렸을 때)와
+  //     앱을 연 뒤 6초는 보지 않는다(2026-11-29 사용자: 앱을 열자마자 이 안내가 떴다. 폰이 바빠 처음 날아가기가 0.9초 넘게 늦게 시작했다).
   //  3) 풀어 줄 때 마지막 오류를 짧게 띄운다. 사용자 캡처로 진짜 원인을 찾기 위해서다(원인을 고치면 뺀다).
-  var mapErr = '', camAt = 0, healAt = 0;
-  window.addEventListener('error', function (e) { mapErr = String((e && e.message) || '').slice(0, 80); });
+  var mapErr = '', camAt = 0, healAt = 0, healFrom = Date.now() + 6000;   // 앱을 연 뒤 6초는 보지 않는다(처음엔 폰이 바빠 날아가기가 늦게 시작한다)
+  // 다른 곳 스크립트의 오류는 내용 없이 'Script error.'로만 와서 까닭으로 쓰지 않는다.
+  window.addEventListener('error', function (e) { var m = String((e && e.message) || ''); if (m && !/^Script error/i.test(m)) mapErr = m.slice(0, 80); });
   window.addEventListener('unhandledrejection', function (e) { mapErr = String((e && e.reason && (e.reason.message || e.reason)) || '').slice(0, 80); });
   map.on('move', function () { camAt = Date.now(); });
   var mapHeal = function (why) {
-    if (Date.now() - healAt < 3000) return;
+    if (Date.now() < healFrom || Date.now() - healAt < 3000) return;
     healAt = Date.now();
     try { map.stop(); } catch (er) { /* 그대로 */ }
     var c = map.getCenter();
@@ -6359,11 +6361,12 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   ['flyTo', 'easeTo', 'fitBounds'].forEach(function (k) {
     var orig = map[k];
     map[k] = function () {
-      var a = arguments, c0 = map.getCenter(), z0 = map.getZoom(), b0 = map.getBearing();
+      var a = arguments, c0 = map.getCenter(), z0 = map.getZoom(), b0 = map.getBearing(), callAt = Date.now();
       var r = orig.apply(map, a);
       setTimeout(function () {
         var c = map.getCenter();
-        if (document.visibilityState !== 'visible') return;
+        if (document.visibilityState !== 'visible' || Date.now() < healFrom) return;
+        if (camAt >= callAt) return;   // 시킨 뒤 한 번이라도 움직였다(늦게라도 시작했다)
         if (c.lng !== c0.lng || c.lat !== c0.lat || map.getZoom() !== z0 || map.getBearing() !== b0) return;   // 움직였다
         var o = a[0] || {}, opt = a[1] || {};
         var to = k === 'fitBounds' ? map.cameraForBounds(o, opt) : o;
@@ -6374,7 +6377,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         mapHeal('단추');
         var j = {}; if (tc) j.center = tc; if (to.zoom !== undefined) j.zoom = to.zoom; if (to.bearing !== undefined) j.bearing = to.bearing;
         map.jumpTo(j);
-      }, 900);
+      }, 2000);
       return r;
     };
   });
