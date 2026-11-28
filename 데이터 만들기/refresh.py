@@ -168,6 +168,8 @@ say('   카페 주변 정보 만들기')
 # 건축물대장: 새 카페의 건물과 열두 달 지난 건물을 한 번에 5,000곳까지(서버가 느려 한 시간쯤). 다 못 받으면 다음 달에 이어 받는다.
 run('building_info.py', '--max', '5000', '--workers', '2')
 run('cafe_info.py', '--fetch')
+# 지도의 주차장 표시(park/*.json): 방금 받은 전국 주차장 자료를 지도 칸으로 나눈다.
+run('park_tiles.py')
 # 지하철 노선, 역, 아파트 단지(landmarks.js): 석 달에 한 번 OpenStreetMap에서 다시 받는다. 실패하면 옛 파일을 둔다.
 ym = datetime.date.today().year * 12 + datetime.date.today().month
 if ym - state.get('landmarks', 0) >= 3:
@@ -183,7 +185,7 @@ else:
     say('6. 깃허브에 올리기')
     def git(*a):
         return subprocess.run(['git'] + list(a), cwd=ROOT, capture_output=True, text=True, encoding='utf-8', errors='replace')
-    git('add', 'cafes.js', 'info', 'landmarks.js')
+    git('add', 'cafes.js', 'info', 'landmarks.js', 'park')
     if git('diff', '--cached', '--quiet').returncode == 0:
         say('   바뀐 것이 없다.')
     else:
