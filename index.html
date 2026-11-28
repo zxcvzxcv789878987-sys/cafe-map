@@ -3431,7 +3431,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     };
     grp('길 안내', [
       ['걷는 길과 차 길', links([['카카오맵', 'https://map.kakao.com/'], ['TMAP', 'https://tmapapi.tmapmobility.com/'], ['© openrouteservice.org by HeiGIT', 'https://openrouteservice.org/'], ['Geoapify', 'https://www.geoapify.com/'], ['FOSSGIS', 'https://routing.openstreetmap.de/']])],
-      ['대중교통 길', '카카오맵, 서울특별시 대중교통환승경로 조회 서비스'],
+      ['대중교통 길', '카카오맵, 서울특별시 대중교통환승경로 조회 서비스, ODsay(powered by www.ODsay.com)'],
       ['버스 노선 모양', '각 버스정보의 노선 좌표, 없는 곳은 Geoapify']
     ]);
     grp('배경 지도', [['지도 그림', links([['OpenFreeMap', 'https://openfreemap.org/'], ['© OpenMapTiles', 'https://www.openmaptiles.org/'], ['© OpenStreetMap contributors', 'https://www.openstreetmap.org/copyright']])]]);
@@ -11241,6 +11241,41 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var pad = mobile.matches ? { top: 130, bottom: Math.round(Math.max(window.innerHeight * .36, panel.offsetHeight + 24)), left: 40, right: 60 } : { top: 96, bottom: 70, left: 420, right: 80 };
     map.fitBounds([[x0, y0], [x1, y1]], { padding: pad, maxZoom: 15, duration: 600 });
   }
+  // ODsay 대중교통 길찾기(2026-11-29 사용자 가입, Basic 하루 30번, 기한 없음). 카카오, 서울시가 안 될 때 세 번째로 쓴다.
+  //  키는 우리 사이트 주소(zxcvzxcv789878987-sys.github.io)에서만 쓰이게 묶여 있어 앱 안에 둔다. 브라우저가 사이트 주소를 함께 보내야 해서 앱에서 바로 부른다.
+  //  답을 서버 /transit과 같은 모양으로 바꾼다. 경로 모양은 지나는 정류장(역) 자리를 이은 선이다. 결과에는 ODsay 출처를 적는다(ODsay 이용 규칙).
+  var ODSAY_KEY = 'ACW/3GmIfgBQELtzLcaQEvUsC0JpPNBhc6emk1w9XkU';
+  var ODSAY_BUS = { 1: '일반', 2: '좌석', 3: '마을', 4: '직행좌석', 5: '공항', 6: '간선급행', 10: '외곽', 11: '간선', 12: '지선', 13: '순환', 14: '광역', 15: '급행', 26: '급행간선' };
+  function odsayTransit(me, to) {
+    var u = 'https://api.odsay.com/v1/api/searchPubTransPathT?SX=' + me[0].toFixed(6) + '&SY=' + me[1].toFixed(6) + '&EX=' + to[0].toFixed(6) + '&EY=' + to[1].toFixed(6) + '&apiKey=' + encodeURIComponent(ODSAY_KEY);
+    return fetch(u).then(function (r) { return r.json(); }).then(function (j) {
+      var path = (j && j.result && j.result.path) || [];
+      if (!path.length) throw new Error('odsay');
+      var r5 = function (x) { return Math.round(x * 1e5) / 1e5; };
+      var routes = path.map(function (pa) {
+        var info = pa.info || {}, segs = [], last = me;
+        (pa.subPath || []).forEach(function (sp, k, arr) {
+          if (sp.trafficType === 3) {
+            // 걷는 구간: 앞 구간 끝(처음은 내 위치)에서 다음 구간 시작(끝은 도착지)까지 곧게
+            var nx = arr[k + 1], to2 = nx && nx.startX ? [nx.startX, nx.startY] : to;
+            segs.push({ m: 'W', sec: (sp.sectionTime || 0) * 60, d: sp.distance || 0, p: [[r5(last[0]), r5(last[1])], [r5(to2[0]), r5(to2[1])]] });
+            return;
+          }
+          var st = ((sp.passStopList || {}).stations || []).map(function (q) { return [r5(+q.x), r5(+q.y)]; });
+          if (st.length < 2) st = [[r5(sp.startX), r5(sp.startY)], [r5(sp.endX), r5(sp.endY)]];
+          var lane = sp.lane || [], sub = sp.trafficType === 1;
+          segs.push({ m: sub ? 'S' : 'B', sec: (sp.sectionTime || 0) * 60, d: sp.distance || 0,
+            n: lane.map(function (l) { return sub ? String(l.name || '').replace(/^수도권\s*/, '') : String(l.busNo || ''); }).filter(function (x, i, a) { return x && a.indexOf(x) === i; }),
+            v: sub ? [] : lane.map(function (l) { return ODSAY_BUS[l.type] || ''; }).filter(Boolean),
+            a: sp.startName || '', b: sp.endName || '', c: sp.stationCount || 0, p: st });
+          last = [sp.endX, sp.endY];
+        });
+        var rides = (info.busTransitCount || 0) + (info.subwayTransitCount || 0);
+        return { t: (info.totalTime || 0) * 60, d: info.totalDistance || 0, x: Math.max(0, rides - 1), f: info.payment || null, k: pa.pathType === 1 ? 'SUBWAY' : pa.pathType === 2 ? 'BUS' : 'BUS_AND_SUBWAY', s: segs };
+      }).sort(function (a, b) { return a.t - b.t; }).slice(0, 8);
+      return { r: routes, st: 'OK', src: 'odsay' };
+    });
+  }
   function transitTo(dest) {
     if (!navigator.geolocation) { toast('이 기기에서는 위치를 확인할 수 없어요'); return; }
     var tok = ++meTok;
@@ -11248,7 +11283,13 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     myFix().then(function (me) {
       meMarker(me); startWatch();
       var u = BUS_API.replace(/\/bus$/, '/transit') + '?f=' + me[0].toFixed(5) + ',' + me[1].toFixed(5) + '&t=' + dest.to[0].toFixed(5) + ',' + dest.to[1].toFixed(5);
-      return fetch(u).then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j || {}, me: me }; }); }, function () { return { ok: false, j: {}, me: me }; });
+      return fetch(u).then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j || {}, me: me }; }); }, function () { return { ok: false, j: {}, me: me }; })
+        .then(function (d) {
+          // 카카오, 서울시가 안 되면(한도, 오류) ODsay. 너무 가까워 길이 없는 것(NO_RESULTS)은 ODsay도 같으니 묻지 않는다.
+          var none = d.ok && (!(d.j.r || []).length) && d.j.st === 'NO_RESULTS';
+          if ((d.ok && (d.j.r || []).length) || none) return d;
+          return odsayTransit(me, dest.to).then(function (o) { return { ok: true, j: o, me: me }; }, function () { return d; });
+        });
     }).then(function (d) {
       if (tok !== meTok) return;
       var routes = d.j.r || [];
@@ -11354,6 +11395,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     sc.appendChild(extTransit(T.me, dest));
     var cr = el('p', 'rtsrc');
     if (r.src === 'seoul') cr.appendChild(document.createTextNode('대중교통 길 안내 서울특별시(지도 위 선은 타는 곳과 내리는 곳을 곧게 이은 것)'));
+    else if (r.src === 'odsay') { cr.appendChild(document.createTextNode('대중교통 길 안내 powered by ')); var a3 = el('a', null, 'www.ODsay.com'); a3.href = 'https://www.odsay.com/'; a3.target = '_blank'; a3.rel = 'noopener'; cr.appendChild(a3); }
     else { cr.appendChild(document.createTextNode('대중교통 길 안내 ')); var a2 = el('a', null, '카카오맵'); a2.href = 'https://map.kakao.com/'; a2.target = '_blank'; a2.rel = 'noopener'; cr.appendChild(a2); }
     sc.appendChild(cr);
   }
