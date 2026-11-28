@@ -565,6 +565,27 @@ button.oli { width: 100%; padding: 11px 0; margin: 0; background: none; color: v
 .ompic svg { width: 100%; height: 100%; display: block; }
 .ompic.dim svg { opacity: .45; filter: grayscale(1); }
 .ompic .fxs { width: 32px; height: 32px; }
+/* 콘센트 칸 같은 크기(2026-11-28): 가운데 칸 높이 고정(상태 줄 32 + 자리 칸 214 = 246) */
+.omod .omhd { height: 30px; box-sizing: border-box; }
+.dours .otop { touch-action: none; cursor: grab; }
+.dh.slim::before { width: 48px; margin-left: -24px; }
+.omod .omwho { padding: 0; height: 30px; }
+.omst2 { margin-top: 8px; height: 24px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.omst2 b { font-size: 15px; font-weight: 800; }
+.omst2 span { font-size: 13px; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+.omst2 + .omtiles { margin-top: 8px; }
+.omtiles.four .omtile { height: 103px; box-sizing: border-box; padding: 6px 4px; justify-content: center; }
+.omempty { margin-top: 8px; height: 246px; border-radius: 14px; background: color-mix(in srgb, var(--pri) 4%, var(--surface)); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
+.omempty .ompic { width: 64px; height: 64px; }
+.omempty b { font-size: 17px; font-weight: 800; }
+.omgold1, .omod .ommine { margin-top: 10px; height: 44px; box-sizing: border-box; border-radius: 12px; display: flex; align-items: center; gap: 8px; padding: 0 12px; font-size: 14px; }
+.omgold1 { background: #fff4cc; font-weight: 700; color: #7a5600; }
+.omgold1 .lb { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.omgold1 b { font-weight: 800; }
+.omod .ommine { background: var(--surface-2); color: var(--ink); }
+.omod .ommine b { font-weight: 700; }
+.omod .omgo { margin-top: 10px; box-sizing: border-box; }
+.omod .omgo.omfix { background: var(--surface); color: var(--ink); border: 1.5px solid var(--line-2); width: 100%; height: 50px; border-radius: 14px; font-size: 16px; padding: 0; }
 .omtiles { margin-top: 14px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .omtiles.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .omtile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 12px 4px 11px; border-radius: 14px; background: color-mix(in srgb, var(--pri) 6%, var(--surface)); }
@@ -9516,6 +9537,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (last && Date.now() - last > HALF_YEAR) out.push(['오랜만의 기록', 500]);
       return out;
     }
+    // 콘센트 칸(2026-11-28 시안 "콘센트 칸 같은 크기"): 기록이 있든 없든, 받을 원두가 몇 가지든 늘 같은 높이.
+    //  윗줄(콘센트, N명 기록) → 가운데 고정 칸(자리 4칸 두 줄, 기록이 없으면 우는 컵) → 한 줄(받을 원두를 합친 줄, 내가 기록했으면 내 기록) → 단추.
     function fillOutlet(box) {
       box.textContent = '';
       var v = votes[i] || [0, 0, 0, 0, 0, 0], re = canRevote(i), mo = re ? 0 : myO[i], mc = mo === 1 ? myC[i] : 0;
@@ -9523,12 +9546,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var hd = el('div', 'omhd'); hd.appendChild(el('h2', null, '콘센트'));
       if (tot) { var wl = btn('omwho', null, function () { openVoters(i); }); wl.appendChild(document.createTextNode(tot + '명 기록')); wl.appendChild(icon('right')); hd.appendChild(wl); }
       box.appendChild(hd);
-      var st = el('div', 'omst'), pic = el('span', 'ompic');
-      if (!tot) { pic.innerHTML = SAD_CUP_SVG; st.appendChild(pic); st.appendChild(el('b', null, '아직 기록이 없어요')); }
-      else { pic.appendChild(fxIcon('plug')); if (ny < nn) pic.classList.add('dim'); st.appendChild(pic); st.appendChild(el('b', null, ny >= nn ? '콘센트 자리 있어요' : '콘센트가 없다는 기록이 많아요')); }
-      box.appendChild(st);
       if (tot) {
-        // 자리 넷을 늘 2칸씩 두 줄로 보인다(사용자 2026-11-28: 항상 4개).
+        var st = el('div', 'omst2');
+        st.appendChild(el('b', null, ny >= nn ? '콘센트 자리 있어요' : '콘센트가 없다는 기록이 많아요'));
+        if (nn) st.appendChild(el('span', null, '없다는 기록 ' + nn + '명'));
+        box.appendChild(st);
         var tl = el('div', 'omtiles four');
         CHAIRS.forEach(function (c) {
           var mine = (mc & c[2]) !== 0, n = (v[c[3]] || 0) + (mine ? 1 : 0), t = el('div', 'omtile' + (n ? '' : ' off') + (mine ? ' my' : ''));
@@ -9537,21 +9559,31 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
           tl.appendChild(t);
         });
         box.appendChild(tl);
-        if (nn) box.appendChild(el('div', 'omnote', '콘센트가 없다고 한 사람 ' + nn + '명'));
-      }
-      var bon = outletReward().filter(function (x) { return x[0] !== '콘센트 기록'; });
-      if (bon.length) box.appendChild(goldBox(bon));
-      if (mo) {
-        var my = el('div', 'ommine'), mt = el('span');
-        mt.appendChild(el('b', null, '내 기록'));
-        mt.appendChild(document.createTextNode(' ' + (mo === -1 ? '콘센트 없어요' : CHAIRS.filter(function (c) { return mc & c[2]; }).map(function (c) { return c[1]; }).join(', '))));
-        my.appendChild(mt); my.appendChild(btn('omfix', '고치기', function () { outletSheet(); }));
-        box.appendChild(my);
       } else {
-        var full = dayFull(i);
-        box.appendChild(btn('omgo' + (full ? ' full' : ''), full ? '오늘은 3곳을 다 기록했어요' : '콘센트 기록하기', function () { if (full) { dayFullBox(); return; } outletSheet(); }));
-        if (full) box.appendChild(el('div', 'omnote c', '내일 다시 기록할 수 있어요'));
+        var em = el('div', 'omempty'), pic = el('span', 'ompic'); pic.innerHTML = SAD_CUP_SVG;
+        em.appendChild(pic); em.appendChild(el('b', null, '아직 기록이 없어요'));
+        box.appendChild(em);
       }
+      var full = !mo && dayFull(i);
+      if (mo) {
+        var my = el('div', 'ommine');
+        my.appendChild(el('b', null, '내 기록'));
+        my.appendChild(el('span', null, mo === -1 ? '콘센트 없어요' : CHAIRS.filter(function (c) { return mc & c[2]; }).map(function (c) { return c[1]; }).join(', ')));
+        box.appendChild(my);
+      } else if (full) {
+        box.appendChild(el('div', 'ommine', '내일 다시 기록할 수 있어요'));
+      } else {
+        // 받을 원두를 한 줄로 합친다(예: 첫 기록 2배, 새로 연 카페 +2,500)
+        var rw = outletReward(), sum = 0;
+        rw.forEach(function (x) { sum += x[1]; });
+        var g = el('div', 'omgold1'), bean = el('span', 'obean'); bean.innerHTML = BEAN_SVG;
+        g.appendChild(bean);
+        g.appendChild(el('span', 'lb', rw.map(function (x) { return x[0].replace('첫 기록 원두(2배)', '첫 기록 2배'); }).join(', ')));
+        g.appendChild(el('b', null, '+' + fmt(sum)));
+        box.appendChild(g);
+      }
+      if (mo) box.appendChild(btn('omgo omfix', '기록 고치기', function () { outletSheet(); }));
+      else box.appendChild(btn('omgo' + (full ? ' full' : ''), full ? '오늘은 3곳을 다 기록했어요' : '콘센트 기록하기', function () { if (full) { dayFullBox(); return; } outletSheet(); }));
     }
     // 기록하기 창: 자리 셋(여러 개 고르기)과 콘센트가 없어요. 받을 원두를 한 줄에 하나씩 보여 준다.
     //  처음 고를 때 카페 근처인지 확인하고(안 되면 바로 알림), 아래로 끌거나 바깥을 누르면 닫힌다(사용자 2026-11-28).
@@ -10065,6 +10097,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     // 닫기는 이름 줄 맨 끝(따로 한 줄을 쓰지 않게, 사용자 2026-11-28)
     if (act.close) actBtn('oclose', icon('x'), '닫기', act.close);
     top.appendChild(acts); w.appendChild(top);
+    // 이름 줄도 카드 손잡이다(사용자 2026-11-28: 손잡이가 얇아 잡기 힘들다). 단추 위에서 시작한 것은 단추로 둔다.
+    sheetDrag(top);
     // 평수와 표시는 이름 아래 한 줄로 넓게(이름 칸이 좁아 줄이 밀리고 높이가 어긋났다. 사용자 2026-11-28).
     if (tags.firstChild) { tags.classList.add('wide'); w.appendChild(tags); }
     // 주소와 길찾기 한 줄, 그 아래 영업시간과 전화번호(공식 자료가 없어 앱 안의 카카오맵 탭으로 넘긴다), 내 메모
