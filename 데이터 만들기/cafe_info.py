@@ -115,7 +115,8 @@ def fetch_parking():
             except ValueError:
                 continue
             if 33 < la < 39 and 124 < ln < 132:
-                out.append([it.get('prkplceNm') or '', round(la, 6), round(ln, 6), it.get('parkingchrgeInfo') or '', it.get('prkplceSe') or '', park_extra(it)])
+                out.append([it.get('prkplceNm') or '', round(la, 6), round(ln, 6), it.get('parkingchrgeInfo') or '', it.get('prkplceSe') or '', park_extra(it),
+                            (it.get('rdnmadr') or it.get('lnmadr') or '').strip()])   # 7번째 칸 주소: 검색에서 시군구를 적으려고(park_tiles.py)
         total = int(body.get('totalCount') or 0)
         if not items or page * 1000 >= total:
             break

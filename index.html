@@ -9826,6 +9826,53 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     return row;
   }
 
+  // ----- 주차장 검색(2026-11-28 사용자: 검색 탭에 주차장) -----
+  // 색인 파일(parkidx/, 데이터 만들기/park_tiles.py)을 찾는 낱말의 첫 글자에 맞는 것만 그때 받는다. 이름 조각과 지역 낱말(서울, 용산구)로 나뉘어 있다.
+  //  한 줄: [이름, 지역, 무료|유료|혼합, 칸, 칸 안 순번]. "용산 주차장"처럼 주차장이라는 낱말은 빼고 찾는다(이름에 주차장이 없는 곳이 많다).
+  var parkIdx = {}, parkIdxWait = {};
+  function parkFind(words) {
+    var ws = words.filter(function (w) { return !/^(공영)?주차장?$/.test(w); });
+    if (!ws.length) ws = words;
+    var files = [];
+    ws.forEach(function (w) { var f = 'n' + w.charAt(0).toLowerCase().charCodeAt(0).toString(16); if (files.indexOf(f) < 0) files.push(f); });
+    var wait = false;
+    files.forEach(function (f) {
+      if (parkIdx[f]) return;
+      wait = true;
+      if (!parkIdxWait[f]) parkIdxWait[f] = fetch('parkidx/' + f + '.json').then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; })
+        .then(function (v) { parkIdx[f] = v || []; delete parkIdxWait[f]; if (P.kind === 'search') renderPanel(); });
+    });
+    if (wait) return null;
+    var out = [], seen = {}, ct = map.getCenter();
+    files.forEach(function (f) {
+      parkIdx[f].forEach(function (e) {
+        var id = e[3] + '/' + e[4]; if (seen[id]) return;
+        var nm = e[0].toLowerCase(), hay = nm + ' ' + nm.replace(/\s/g, '') + ' ' + e[1];
+        for (var w = 0; w < ws.length; w++) if (hay.indexOf(ws[w]) < 0) return;
+        seen[id] = 1; out.push(e);
+      });
+    });
+    // 지도 가운데에서 가까운 순서(칸 가운데로 잰다), 같으면 이름 순서.
+    out.forEach(function (o) { var t = o[3].split('_'); o.d = Math.pow((+t[0] + .5) / 20 - ct.lat, 2) + Math.pow(((+t[1] + .5) / 20 - ct.lng) * .8, 2); });
+    out.sort(function (a, b) { return a.d - b.d || a[0].localeCompare(b[0]); });
+    return out;
+  }
+  function parkSearchRow(o) {
+    var row = btn('row'), body = el('span', 'body'), pin = el('span', 'pin'); pin.style.setProperty('--c', 'var(--surface-2)'); pin.style.setProperty('--t', 'var(--ink-2)'); pin.appendChild(icon('park'));
+    var fee = { '무료': '무료', '유료': '유료', '혼합': '무료와 유료' }[o[2]];
+    row.appendChild(pin); body.appendChild(el('span', 'name', o[0])); body.appendChild(el('span', 'meta', [o[1], fee].filter(Boolean).join(', ') || '주차장')); row.appendChild(body);
+    // 누르면 그 자리로 날아간 뒤 주차장 창을 연다(정류장 검색과 같다).
+    row.addEventListener('click', function () {
+      $('q').value = ''; $('qClear').hidden = true; closePanel();
+      var k = o[3], j = o[4];
+      parkLoad([k], function () {
+        var st = (parkTiles[k] || [])[j]; if (!st) return;
+        busFlyThen([st[1] / 1e5, st[0] / 1e5], function () { parkTap(st); });
+      });
+    });
+    return row;
+  }
+
   // ----- 노선 번호 검색(2026-11-28 사용자: 검색에서 버스 노선 번호로도) -----
   // 중계 서버 /routes가 지도 가운데 도시의 노선을 찾는다(수도권은 서울과 경기를 같이). 도시는 지도 가운데 둘레 정류장의 도시 코드로 정한다.
   //  한 줄: [번호, 노선 아이디, 종류, 기점, 종점, 지역, 도시 코드]
@@ -9879,7 +9926,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   }
 
   // ----- 검색 -----
-  // 결과는 탭 넷(카페, 지역, 정류장, 노선)으로 나눠 본다(사용자 2026-11-28). 처음에는 카페 탭, 카페가 없으면 결과가 있는 첫 탭.
+  // 결과는 탭(카페, 지역, 정류장, 노선, 주차장)으로 나눠 본다(사용자 2026-11-28). 처음에는 카페 탭, 카페가 없으면 결과가 있는 첫 탭.
   //  탭을 직접 누르면 검색 판을 닫을 때까지 그 탭을 지킨다.
   var flat = null, qTimer = 0, searchTab = 'cafe', searchTabUser = false, searchKeep = false;
   function renderSearch() {
@@ -9899,6 +9946,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var stops = joined.length >= 2 ? busFind(words) : [];
     // 노선: 숫자가 든 한 낱말(예: 13, 2-5, M5107)이면 한 글자여도 찾는다.
     var routes = words.length === 1 ? routeFind(words[0]) : [];
+    // 주차장: 이름이나 지역으로(2026-11-28).
+    var parks = joined.length >= 2 ? parkFind(words) : [];
     if (routes) routes = routeSortLocal(routes, joined);
     // 카페: 이름에 찾은 글자가 다 든 곳(이름으로 찾은 카페)을 먼저, 동네나 도로명 주소까지 합쳐야 맞는 곳(주소로 찾은 카페)을 그 아래 따로.
     //  찾은 글자는 이름과 주소에서 굵게 칠한다(사용자 2026-11-28: "하슬"로 찾았는데 왜 트라디시옹이 나왔는지 몰랐다. 주소가 하슬라로).
@@ -9917,8 +9966,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       }
       byName.sort(function (p, q) { return p[0] - q[0]; }); byAddr.sort(function (p, q) { return p[0] - q[0]; });
     }
-    var cnt = { cafe: found.length, reg: regs.length + lg.length, stop: stops ? stops.length : -1, route: routes ? routes.length : -1 };   // -1: 아직 찾는 중
-    var tabs = [['cafe', '카페'], ['reg', '지역'], ['stop', '정류장'], ['route', '노선']];
+    var cnt = { cafe: found.length, reg: regs.length + lg.length, stop: stops ? stops.length : -1, route: routes ? routes.length : -1, park: parks ? parks.length : -1 };   // -1: 아직 찾는 중
+    var tabs = [['cafe', '카페'], ['reg', '지역'], ['stop', '정류장'], ['route', '노선'], ['park', '주차장']];
     if (!searchTabUser) {
       var first = tabs.filter(function (t) { return cnt[t[0]] > 0; })[0];
       searchTab = cnt.cafe > 0 || !first ? 'cafe' : first[0];
@@ -9966,6 +10015,13 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (stops === null) empty('정류장을 찾는 중이에요');
       else if (!stops.length) empty(joined.length < 2 ? '두 글자 이상 입력해 주세요' : '맞는 정류장이 없어요');
       else stops.slice(0, 40).forEach(function (o) { sc.appendChild(busRow(o)); });
+    } else if (searchTab === 'park') {
+      if (parks === null) empty('주차장을 찾는 중이에요');
+      else if (!parks.length) empty(joined.length < 2 ? '두 글자 이상 입력해 주세요' : '맞는 주차장이 없어요');
+      else {
+        parks.slice(0, 40).forEach(function (o) { sc.appendChild(parkSearchRow(o)); });
+        if (parks.length > 40) sc.appendChild(el('p', 'note', '지도 가운데에서 가까운 40곳이에요. 동네 이름을 함께 입력하면 더 좁혀져요.'));
+      }
     } else {
       if (routes === null) empty('노선을 찾는 중이에요');
       else if (!routes.length) empty(/\d/.test(joined) ? '맞는 노선이 없어요' : '노선 번호를 입력해 주세요');
