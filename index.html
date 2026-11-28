@@ -4056,6 +4056,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   var fastN = 0, lastRF = null;
   function eggOffroute(p) {
     var c = p.coords; if (!c || c.accuracy > 40) return;
+    // 카페에서 정류장, 주차장까지의 길은 내 위치에서 시작하는 길이 아니므로 세지 않는다(2026-11-28)
+    if (routeInfo && routeInfo.to) { offN = 0; fastN = 0; return; }
     var now = Date.now(), sp = typeof c.speed === 'number' && c.speed >= 0 ? c.speed : -1;
     if (sp < 0 && lastRF && now - lastRF.t > 1000) sp = distToLine([c.longitude, c.latitude], [lastRF.ll, lastRF.ll]) / ((now - lastRF.t) / 1000);
     lastRF = { ll: [c.longitude, c.latitude], t: now };
