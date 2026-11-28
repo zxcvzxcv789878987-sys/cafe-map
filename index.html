@@ -512,6 +512,20 @@ button.oli { width: 100%; padding: 11px 0; margin: 0; background: none; color: v
 .nshhd h2 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -.3px; overflow-wrap: anywhere; }
 .nshsub { margin: 6px 0 0 34px; display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-2); }
 .nshsub .fee { font-size: 12px; font-weight: 700; color: var(--ink-2); background: var(--surface-2); border-radius: 5px; padding: 2px 6px; }
+.nsharr { margin-top: 16px; }
+.nsharr .ahd { display: flex; align-items: center; justify-content: space-between; }
+.nsharr .ahd h3 { margin: 0; font-size: 16px; font-weight: 800; }
+.nsharr .ahd button { border: 0; background: none; padding: 6px 0 6px 8px; font-size: 13px; color: var(--ink-2); display: inline-flex; align-items: center; gap: 4px; }
+.nsharr .rt { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.nsharr .rt:last-child { border-bottom: 0; }
+.nsharr .no { flex: none; min-width: 58px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: #fff; font-size: 15px; font-weight: 800; padding: 0 8px; box-sizing: border-box; white-space: nowrap; }
+.nsharr .ds { flex: 1; min-width: 0; font-size: 14px; color: var(--ink-2); }
+.nsharr .tm { flex: none; text-align: right; display: flex; flex-direction: column; gap: 2px; }
+.nsharr .tm b { font-size: 16px; font-weight: 800; color: #d6336c; }
+.nsharr .tm span { font-size: 12px; color: var(--ink-2); }
+.nsharr .amore { width: 100%; margin-top: 4px; height: 40px; border: 0; border-radius: 10px; background: var(--surface-2); font-size: 14px; font-weight: 700; color: var(--ink-2); }
+#nsheet .oshbox { max-height: 88vh; overflow-y: auto; overscroll-behavior: contain; }
+.nsharr .msg { padding: 14px 0 4px; font-size: 14px; color: var(--ink-2); }
 .nshrows { margin-top: 12px; display: flex; flex-direction: column; }
 .nshrow { display: flex; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--line); font-size: 15px; line-height: 1.5; }
 .nshrow:last-child { border-bottom: 0; }
@@ -9672,10 +9686,46 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var v = el('span', 'v'); v.appendChild(document.createTextNode(main)); if (small) v.appendChild(el('small', null, small));
       r.appendChild(v); rows.appendChild(r);
     };
-    var to;
+    var to, arr = null;
     if (kind === 'b') {
       to = [x[3] / 1e5, x[2] / 1e5];
       if (x[6]) row('정류장 번호', x[6]);
+      // 곧 도착하는 버스: 중계 서버가 국토교통부 TAGO에 묻는다(키는 서버에 숨김). 서울 정류장은 TAGO에 없어서 칸을 두지 않는다.
+      if (x[4] && x[5] && x[5] !== '11') {
+        arr = el('div', 'nsharr');
+        var ahd = el('div', 'ahd'), list = el('div', 'alist');
+        ahd.appendChild(el('h3', null, '곧 도착하는 버스'));
+        var rf = btn(null, null, function () { loadArr(); }); rf.appendChild(document.createTextNode('새로 보기')); ahd.appendChild(rf);
+        arr.appendChild(ahd); arr.appendChild(list);
+        var busColor = function (t) {
+          if (/간선/.test(t)) return '#3d5bf5'; if (/지선/.test(t)) return '#2fa84f'; if (/광역|직행|급행|좌석/.test(t)) return '#e03131';
+          if (/마을/.test(t)) return '#53b332'; if (/순환/.test(t)) return '#f08c00'; if (/공항/.test(t)) return '#1c7ed6'; return '#5c6b7f';
+        };
+        var mins = function (sec) { return sec < 60 ? '곧 도착' : Math.round(sec / 60) + '분'; };
+        var loadArr = function () {
+          list.textContent = ''; list.appendChild(el('div', 'msg', '불러오는 중'));
+          fetch(BUS_API + '?c=' + encodeURIComponent(x[5]) + '&n=' + encodeURIComponent(x[4]))
+            .then(function (r) { if (!r.ok) throw new Error('bus'); return r.json(); })
+            .then(function (d) {
+              list.textContent = '';
+              if (d.err) { list.appendChild(el('div', 'msg', '도착 정보를 불러오지 못했어요')); return; }
+              if (!d.a || !d.a.length) { list.appendChild(el('div', 'msg', '지금 곧 도착하는 버스가 없어요')); return; }
+              // 가장 빨리 오는 6개만 먼저, 나머지는 더 보기로 펼친다.
+              d.a.forEach(function (z, k) {
+                var r = el('div', 'rt'), no = el('span', 'no', z[0]); no.style.background = busColor(z[3] || '');
+                if (k >= 6) r.hidden = true;
+                r.appendChild(no); r.appendChild(el('span', 'ds', z[4] ? '다음 ' + mins(z[4]) : (z[3] || '')));
+                var tm = el('span', 'tm'); tm.appendChild(el('b', null, mins(z[1]))); if (z[2]) tm.appendChild(el('span', null, z[2] + '정거장 전'));
+                r.appendChild(tm); list.appendChild(r);
+              });
+              if (d.a.length > 6) {
+                var more = btn('amore', (d.a.length - 6) + '개 더 보기', function () { list.querySelectorAll('.rt').forEach(function (r) { r.hidden = false; }); more.remove(); });
+                list.appendChild(more);
+              }
+            }, function () { list.textContent = ''; list.appendChild(el('div', 'msg', '도착 정보를 불러오지 못했어요')); });
+        };
+        loadArr();
+      }
     } else {
       var q = x[3] || {}, fee = { '무료': '무료', '유료': '유료', '혼합': '무료와 유료' }[x[2]];
       if (fee) sub.appendChild(el('span', 'fee', fee));
@@ -9699,6 +9749,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (q.n) row('주차면', fmt(q.n) + '면');
     }
     sh.appendChild(sub);
+    if (arr) sh.appendChild(arr);
     if (rows.firstChild) sh.appendChild(rows);
     if (to) {
       var mb = btn('nshmap', null, function () { close(); nearOnMap(i, kind, x[0], to, x[1]); });
@@ -9750,6 +9801,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 블로그 후기: 중계 서버(Cloudflare Workers, 카카오 키를 숨김)가 카카오 블로그 검색으로 찾은 네이버 블로그 글을 돌려준다.
   //  결과는 저장하지 않는다(카카오 규칙). 같은 카드를 다시 열 때만 쓰려고 이번 실행 동안 메모리에만 둔다.
   var BLOG_API = 'https://cafemap-blog.rdh0811.workers.dev/blog', blogMem = {};
+  var BUS_API = 'https://cafemap-blog.rdh0811.workers.dev/bus';
   function blogAreas(i) {
     var dn = D.dong[D.dongOf[i]], sg = D.sgg[dn[1]][0].split(' ').pop(), a = [];
     var s1 = sg.replace(/(시|군|구)$/, ''); if (s1.length >= 2) a.push(s1);
