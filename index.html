@@ -2519,7 +2519,6 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
 .ssmore svg.i { width: 14px; height: 14px; }
 .sgap { height: 8px; background: var(--surface-2); margin-top: 6px; }
 /* 검색 안내 판: 최근 검색 줄(누르면 그 말로 찾기, 오른쪽 x로 지우기) */
-.grset { padding: 6px 16px 10px; }   /* 맨 아래 검색 기록 남기기 줄: 위 목록 글자와 같은 왼쪽 */
 .grow { padding: 0 6px 0 16px; gap: 4px; min-height: 48px; }
 .grgo { flex: 1; min-width: 0; height: 48px; padding: 0; border: 0; background: none; display: flex; align-items: center; gap: 12px; font-family: inherit; text-align: left; color: var(--ink); cursor: pointer; }
 .grgo svg.i { flex: none; width: 20px; height: 20px; color: var(--ink-3); }
@@ -10669,13 +10668,15 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   var RECENT_KEY = 'cafemap.recentQ';
   function recentQ() { var r = load(RECENT_KEY); return Array.isArray(r) ? r.filter(function (x) { return typeof x === 'string' && x; }).slice(0, 8) : []; }
   function recentAdd(t) { t = String(t || '').trim(); if (t.length < 1 || S.noRecent) return; var r = recentQ().filter(function (x) { return x !== t; }); r.unshift(t); save(RECENT_KEY, r.slice(0, 8)); }
-  // 검색 기록 남기기 켜고 끄기(사용자 2026-11-29: 검색창이나 메뉴에서). 끄면 남아 있던 기록도 지운다.
+  // 검색 기록 남기기 켜고 끄기(사용자 2026-11-29: 메뉴의 환경설정에서). 끄면 남아 있던 기록도 지운다.
   function setNoRecent(off) { S.noRecent = !!off; if (off) save(RECENT_KEY, []); persist(); }
   function searchFor(t) { var q = $('q'); q.value = t; $('qClear').hidden = !t; q.dispatchEvent(new Event('input', { bubbles: true })); try { q.focus(); } catch (e) { /* 그대로 둔다 */ } }
   function renderGuide() {
     var h = head('검색'); h.appendChild(closeBtn()); panel.appendChild(h);
     var sc = el('div', 'scroll'); panel.appendChild(sc);
-    var rec = recentQ();
+    // 검색 기록을 쓰는 사람은 최근 검색만, 안 쓰는 사람(또는 아직 기록이 없을 때)은 찾는 법 안내만 보여 준다(사용자 2026-11-29: 공간이 부족하다).
+    //  검색 기록 남기기 켜고 끄기는 메뉴의 환경설정에만 둔다.
+    var rec = S.noRecent ? [] : recentQ();
     if (rec.length) {
       var hd = el('div', 'ssec'); hd.appendChild(el('b', null, '최근 검색'));
       hd.appendChild(btn('ssmore', '모두 지우기', function () { save(RECENT_KEY, []); renderPanel(); }));
@@ -10687,6 +10688,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         row.appendChild(go); row.appendChild(x); sc.appendChild(row);
       });
       sc.appendChild(el('div', 'sgap'));
+      return;
     }
     var hd2 = el('div', 'ssec'); hd2.appendChild(el('b', null, '이렇게 찾을 수 있어요')); sc.appendChild(hd2);
     [['cup', '카페', '스타벅스 강남'], ['pin', '동네', '연남동'], ['subway', '역과 정류장', '홍대입구역'], ['bus', '버스 노선', '7016'], ['park', '주차장', '공영주차장']].forEach(function (x) {
@@ -10698,7 +10700,6 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       sc.appendChild(row);
     });
     sc.appendChild(el('div', 'sgap'));
-    var gs = el('div', 'grset'); gs.appendChild(toggleRow('검색 기록 남기기', !S.noRecent, function (v) { setNoRecent(!v); renderPanel(); })); sc.appendChild(gs);
   }
   // ----- 검색 -----
   // 결과는 탭(카페, 지역, 정류장, 노선, 주차장)으로 나눠 본다(사용자 2026-11-28). 처음에는 카페 탭, 카페가 없으면 결과가 있는 첫 탭.
