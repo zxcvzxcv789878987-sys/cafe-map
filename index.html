@@ -670,6 +670,8 @@ button.nearpin { pointer-events: auto; border: 0; background: none; padding: 0; 
 .nearpin.alt .ic svg.i { color: #2f9e44; }
 .nearpin.alt b { background: #fff; color: #14171c; box-shadow: 0 2px 6px rgba(0, 0, 0, .15); }
 .nearpin b { background: #14171c; color: #fff; font-size: 12.5px; font-weight: 700; padding: 4px 8px; border-radius: 8px; white-space: nowrap; max-width: 56vw; overflow: hidden; text-overflow: ellipsis; }
+.oln .sdot { width: 8px; height: 8px; margin-left: 5px; vertical-align: 1px; }
+.oln .snext { display: block; font-size: 12.5px; color: var(--ink-2); }
 .oln .fee { font-style: normal; margin-left: 6px; font-size: 12px; font-weight: 700; color: var(--ink-2); background: var(--surface-2); border-radius: 5px; padding: 2px 6px; white-space: nowrap; }
 .ofix { width: 100%; padding: 16px 0 2px; border: 0; border-top: 1px solid var(--line); background: none; display: flex; align-items: center; gap: 8px; font: inherit; font-size: 14px; color: var(--ink-2); text-align: left; }
 .ofix > span { flex: 1; }
@@ -7286,6 +7288,15 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     return p;
   }
   function subPress(e) { var s = subAt(e.point); if (s) subFetch(s); }
+  // 한 점에서 가장 가까운 역(maxM 안). 카페 카드 근처 칸에 쓴다. ll: [경도, 위도] → [역, 미터] 또는 null
+  function subNearest(ll, maxM) {
+    var best = null, bd = maxM;
+    SUBWAY.forEach(function (a) {
+      if (Math.abs(a[1] / 1e5 - ll[1]) > .015 || Math.abs(a[0] / 1e5 - ll[0]) > .02) return;
+      var g = distM(ll[1], ll[0], a[1] / 1e5, a[0] / 1e5); if (g < bd) { bd = g; best = a; }
+    });
+    return best ? [best, bd] : null;
+  }
   function subFavSet(st, on) {
     subFavs = subFavs.filter(function (f) { return !subSame(f, st); });
     if (on) subFavs.unshift([st[0], st[1], st[2]]);
@@ -11725,7 +11736,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (d && d.p.length) { photoFill(photo, d.p, d.i, D.name[i]); blogFill(blog, d.p, d.i, D.name[i]); }
       else { photo.hidden = true; blog.hidden = true; }
     });
-    // 근처와 편의: 자료 파일(info/)을 받은 뒤 채운다. 지하철역은 카카오맵이 출구까지 더 정확히 보여 줘서 뺐다(2026-11-28).
+    // 근처와 편의: 자료 파일(info/)을 받은 뒤 채운다.
+    //  지하철역은 한때 뺐다가(카카오맵이 출구까지 더 정확) 역 창이 생기며 다시 넣었다(사용자 2026-11-28): 가까운 역 한 곳, 다음 열차, 누르면 역 창.
     var near = el('section', 'osec band'), conv = el('section', 'osec');
     near.hidden = true; conv.hidden = true; w.appendChild(near); w.appendChild(conv);
     var line = function (box, ic, label, val, right, tap) {
@@ -11744,9 +11756,31 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     };
     var meter = function (m) { return m >= 1000 ? (Math.round(m / 100) / 10) + 'km' : Math.round(m) + 'm'; };
     cafeInfo(i, function (x) {
-      if (!x) return;
-      if (x.b || x.p) {
+      // 가까운 역은 우리 역 자료(subway.js)에서 카페 점으로 찾는다(1km 안). info 자료가 없어도 보여 준다.
+      var sn = SUBWAY.length ? subNearest(mercToLngLat(mx[i], my[i]), 1000) : null;
+      if (!x && !sn) return;
+      x = x || {};
+      if (x.b || x.p || sn) {
         near.appendChild(el('h2', null, '근처'));
+        if (sn) {
+          var st0 = sn[0], sv = document.createElement('span');
+          sv.appendChild(document.createTextNode(softBreak(st0[2])));
+          // 노선 색 점(환승역은 여러 개). 노선 이름은 창에서 본다.
+          st0[3].forEach(function (L) { var dt = el('i', 'ldot sdot'); dt.style.background = L[1]; dt.title = L[0]; sv.appendChild(dt); });
+          // 다음 열차: 모든 노선, 방향 가운데 가장 먼저 오는 열차(남은 초를 아는 것만). 1초마다 줄어든다.
+          var nx = el('small', 'snext'); nx.hidden = true; sv.appendChild(nx);
+          line(near, 'subway', '가까운 역', sv, meter(sn[1]), function () { subSheet(st0); });
+          var sr = near.lastChild;
+          sr.addEventListener('pointerdown', function () { subFetch(st0); });
+          subFetch(st0).then(function (d) {
+            var best = null;
+            (d.L || []).forEach(function (L) { (L.g || []).forEach(function (g) { (g.t || []).forEach(function (t) { if (t[0] >= 0 && (!best || t[0] < best[0])) best = t; }); }); });
+            if (!best || !nx.isConnected) return;
+            var show = function () { var left = Math.floor(best[0] - (Date.now() - d.t0) / 1000); nx.textContent = left <= 30 ? '다음 열차 곧 도착' : '다음 열차 ' + Math.ceil(left / 60) + '분 뒤'; };
+            show(); nx.hidden = false;
+            var tk = setInterval(function () { if (!nx.isConnected) { clearInterval(tk); return; } show(); }, 15000);
+          }, function () {});
+        }
         // 정류장 거리는 지도에 찍힌 카페 점(카카오 매장 자리로 옮겨 찍었으면 그 자리)에서 잰다. 건물 점에서 재면 걷는 길과 크게 다를 때가 있다.
         //  건너편(b2)이 자료에 없으면 공공데이터 정류장 목록에서 그 자리에서 찾는다.
         var cm = mercToLngLat(mx[i], my[i]), dm = function (y) { var z = y.slice(); z[1] = distM(cm[1], cm[0], y[2] / 1e5, y[3] / 1e5); return z; };
