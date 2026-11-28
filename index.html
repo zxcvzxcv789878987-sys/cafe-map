@@ -3319,7 +3319,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     ]);
     grp('주차장', [
       ['주차장', '전국주차장정보 표준데이터'],
-      ['남은 자리', '서울특별시 시영주차장 실시간 주차대수']
+      // 남은 자리 위치는 시영주차장 자료에 좌표가 없어 공영주차장 안내 정보에서 붙인다(서버 /park, /parks).
+      ['남은 자리', '서울특별시 시영주차장 실시간 주차대수 정보, 서울특별시 공영주차장 안내 정보']
     ]);
     var links = function (L) {
       var s = el('span');
