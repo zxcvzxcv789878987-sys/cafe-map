@@ -2431,6 +2431,15 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
 .otag.new, .otag.prep { cursor: pointer; border: 0; font-family: inherit; }
 .otag.new { color: #2b9a41; }
 .otag.prep { color: #d6336c; }
+.oact.omore svg.i { width: 24px; height: 24px; stroke-width: 3.4; }
+.otl h1 .owh { width: 17px; height: 17px; margin-left: 5px; vertical-align: -2px; color: #F8312F; fill: #F8312F; }
+/* 더보기 목록: 단추 바로 아래 작은 흰 판, 한 줄에 하나 */
+.omenu { position: fixed; z-index: 85; min-width: 148px; padding: 6px; border-radius: 14px; background: var(--surface); box-shadow: var(--sh-2); display: flex; flex-direction: column; }
+.omi { height: 44px; padding: 0 12px; border: 0; border-radius: 10px; background: none; display: flex; align-items: center; gap: 10px; font-family: inherit; font-size: 15px; font-weight: 600; color: var(--ink); text-align: left; cursor: pointer; }
+.omi:active { background: var(--surface-2); }
+.omi svg { width: 20px; height: 20px; flex: none; }
+.omi.on svg.i { color: #F8312F; fill: #F8312F; }
+.omi svg path:first-child { fill: #fff; opacity: 1; }
 .opghost { position: absolute; z-index: 2; object-fit: cover; border-radius: 10px; pointer-events: none; }
 /* +N 칸: 사진이 잘 보이게 어두운 막은 옅게, 글자는 그림자로 읽히게(사용자 2026-11-28: 너무 흐리다) */
 .opc .obgm { background: rgba(20, 23, 28, .22); font-size: 19px; text-shadow: 0 1px 4px rgba(0, 0, 0, .55); }
@@ -11067,7 +11076,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       xs();
       // 카페지도 정보 탭: 콘센트 칸을 새로 그리고 찜 단추를 맞춘다.
       if (omEl && omEl.isConnected) fillOutlet(omEl);
-      var ohw = ours && ours.querySelector('.ohw'); if (ohw) ohw.setAttribute('aria-pressed', String(want[i] === 1));
+      var owh = ours && ours.querySelector('.otl .owh'); if (owh) owh.style.display = want[i] === 1 ? '' : 'none';
     }
     function store() {
       if (myO[i] !== 1) myC[i] = 0;
@@ -12095,7 +12104,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var photo = el('div', 'ophbox'); photo.appendChild(el('div', 'ophoto wait')); w.appendChild(photo);
     var top = el('div', 'otop'), tl = el('div', 'otl');
     var lg = pinEl(i); lg.classList.add('opin'); top.appendChild(lg);
-    tl.appendChild(el('h1', null, D.name[i]));
+    // 찜한 카페는 이름 끝에 작은 빨간 하트(찜 단추가 더보기 안으로 들어가서, 찜했는지 바로 보이게)
+    var h1 = el('h1', null, D.name[i]), owh = icon('heart'); owh.classList.add('owh'); owh.style.display = want[i] === 1 ? '' : 'none'; h1.appendChild(owh);
+    tl.appendChild(h1);
     // 평수는 작게, 대형이면 그 옆에 대형 카페 표시. 누르면 대형 기준을 정하는 창(사용자 2026-11-28).
     var tags = el('div', 'otags'), ar = D.area[i], ago = monthsAgo(i);
     if (ar > 0) {
@@ -12112,12 +12123,28 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (tags.firstChild) tl.appendChild(tags);
     top.appendChild(tl);
     var acts = el('div', 'oacts');
-    // 찜, 메모, 공유는 글자 없이 그림만(사용자 2026-11-28). 이름은 aria-label로.
     var actBtn = function (cls, pic, label, fn) { var b = btn('oact ' + cls, null, fn); b.appendChild(pic); b.setAttribute('aria-label', label); b.title = label; acts.appendChild(b); return b; };
     var memoPic = function () { var t = document.createElement('span'); t.innerHTML = MEMO_SVG; return t.firstChild; };
-    var hw = actBtn('ohw', icon('heart'), '찜', act.want); hw.setAttribute('aria-pressed', String(want[i] === 1));
-    if (act.memo) actBtn('omemo', memoPic(), '메모', act.memo);
-    actBtn('oshare', icon('share'), '공유', act.share);
+    // 찜, 메모, 공유는 더보기 단추 하나로 합친다(사용자 2026-11-28: 단추가 많아 카페 이름이 두 줄로 밀린다). 누르면 단추 아래에 작은 목록.
+    var cardMenu = function () {
+      var old = $('omenu'); if (old) { old.remove(); return; }
+      var m = el('div', 'omenu'); m.id = 'omenu'; m.setAttribute('role', 'menu');
+      var close = function () { m.remove(); document.removeEventListener('pointerdown', out, true); };
+      var out = function (e) { if (!m.contains(e.target) && !more.contains(e.target)) close(); };
+      var item = function (pic, label, fn, on) {
+        var b = btn('omi' + (on ? ' on' : ''), null, function () { close(); fn(); });
+        b.setAttribute('role', 'menuitem'); b.appendChild(pic); b.appendChild(el('span', null, label)); m.appendChild(b);
+      };
+      item(icon('heart'), want[i] === 1 ? '찜 해제' : '찜', act.want, want[i] === 1);
+      if (act.memo) item(memoPic(), '메모', act.memo);
+      item(icon('share'), '공유', act.share);
+      var r = more.getBoundingClientRect();
+      m.style.top = Math.round(r.bottom + 4) + 'px'; m.style.right = Math.round(Math.max(8, window.innerWidth - r.right)) + 'px';
+      document.body.appendChild(m); document.addEventListener('pointerdown', out, true);
+      // 반만 열린 카드처럼 아래 자리가 모자라면 단추 위로 연다
+      if (m.getBoundingClientRect().bottom > window.innerHeight - 8) m.style.top = Math.round(Math.max(8, r.top - m.offsetHeight - 4)) + 'px';
+    };
+    var more = actBtn('omore', icon('more'), '찜, 메모, 공유', cardMenu);
     // 닫기는 이름 줄 맨 끝(따로 한 줄을 쓰지 않게, 사용자 2026-11-28)
     if (act.close) actBtn('oclose', icon('x'), '닫기', act.close);
     top.appendChild(acts); w.appendChild(top);
