@@ -2394,6 +2394,14 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
 .oin > .ofix { margin-top: 10px; }
 /* 카드 안 글은 띄어쓰기에서만 줄을 바꾼다(사용자 2026-11-28: "용산전자랜 / 드"처럼 글자 중간에서 끊기면 안 된다) */
 .oin, .oin .oln .v, .oin .obtx b, .oin .osc b { word-break: keep-all; overflow-wrap: break-word; }
+/* 사진 전체 보기: 흰 바탕에 세 칸 바둑판. 누르면 검은 크게 보기 창이 그 위에 열린다. */
+.pgrid { position: fixed; inset: 0; z-index: 82; background: var(--surface); display: flex; flex-direction: column; }
+.pghd { flex: none; display: flex; align-items: center; height: 56px; padding: env(safe-area-inset-top, 0px) 6px 0; }
+.pghd b { flex: 1; min-width: 0; text-align: center; font-size: 16px; font-weight: 800; }
+.pgsp { flex: none; width: 40px; }
+.pggrid { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; align-content: start; padding-bottom: env(safe-area-inset-bottom, 0px); }
+.pgc { position: relative; width: 100%; height: 0; padding: 100% 0 0; border: 0; border-radius: 0; background: var(--surface-2); overflow: hidden; cursor: pointer; }
+.pgc img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 </style>
 </head>
 <body>
@@ -11396,7 +11404,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     setTimeout(function () { ta.focus(); }, 50);
   }
   // 사진 크기: 카카오가 주는 작은 사진은 130px뿐이라 바둑판에서 흐리다. 네이버 블로그 사진은 중간 크기(580px)로 받는다.
-  function picMid(it) { return /pstatic\.net\//.test(it.i) ? it.i.replace(/\?type=[^&]*/, '') + '?type=w580' : it.s; }
+  // 네이버 블로그 사진(postfiles, blogfiles)은 주소 끝 type으로 크기를 고른다. 링크 미리보기(dthumb) 같은 다른 주소에는 붙이지 않는다.
+  function picSized(it, t) { return /\/\/(postfiles|blogfiles)\.pstatic\.net\//.test(it.i) ? it.i.replace(/\?type=[^&]*/, '') + '?type=' + t : ''; }
+  function picMid(it) { return picSized(it, 'w580') || it.s; }
+  // 카드 맨 위 사진 줄은 크게 보이므로 더 큰 사진(사용자 2026-11-28: 확대하기 전까지 화질이 안 좋다). 네이버가 아니면 원본, 안 열리면 작은 사진.
+  function picBig(it) { return picSized(it, 'w966') || it.i || it.s; }
   // 사진 크게 보기(사용자 2026-11-28: 카카오맵처럼). 손가락을 따라 옆으로 부드럽게 밀리고, 놓으면 다음 사진으로 미끄러진다.
   //  큰 사진이 다 오면 서서히 나타난다(작은 사진을 먼저 보여 주지 않는다). 아래에 그 블로그 글 제목과 주소, 누르면 그 글을 앱 안에서.
   function openPhotoView(imgs, at, title, changed) {
@@ -11473,10 +11485,39 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   }
   // 블로그 사진: 카페 이름이 든 블로그 글에 실린 사진(카카오 이미지 검색). 아주 작은 그림(이모티콘, 스티커, 아이콘)은 뺀다.
   //  실린 사진이 없으면 글마다 대표 사진을 쓴다. 사진이 1~2장뿐이어도 보여 준다(사용자 2026-11-28).
+  //  블로그에 붙인 지도나 링크 미리보기 그림(카카오맵 로고 같은 것, dthumb)은 카페 사진이 아니라서 뺀다(사용자 2026-11-28: 대표 사진이 카카오맵 로고였다).
+  //  맨 앞(사진 줄의 큰 칸)에는 네이버 블로그 원본이 있고 충분히 큰 사진을 둔다.
   function blogPics(list, imgs) {
-    imgs = (imgs || []).filter(function (x) { return (x.w || 0) >= 400 && (x.h || 0) >= 300 && !hidePics[x.i]; });
+    imgs = (imgs || []).filter(function (x) { return (x.w || 0) >= 400 && (x.h || 0) >= 300 && !hidePics[x.i] && !/dthumb|localimg|staticmap/.test(x.i || ''); });
+    var best = -1;
+    imgs.some(function (x, k) { if (picSized(x, 'w966') && x.w >= 600) { best = k; return true; } return false; });
+    if (best > 0) imgs = [imgs[best]].concat(imgs.slice(0, best), imgs.slice(best + 1));
     var pics = imgs.length ? imgs : list.filter(function (x) { return x.p; }).map(function (x) { return { s: x.p, i: x.p, u: x.u, t: x.t, b: x.b }; });
     return { imgs: imgs, pics: pics };
+  }
+  // 사진 전체 보기(사용자 2026-11-28: 사진을 누르면 바로 크게 말고, 작은 사진 전체부터). 세 칸 바둑판, 누르면 크게 보기.
+  function openPhotoGrid(pics, title, changed) {
+    var old = $('pgrid'); if (old) old.remove();
+    var o = el('div', 'pgrid'), hd = el('div', 'pghd'), gd = el('div', 'pggrid'), ttl = el('b');
+    o.id = 'pgrid'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', title + ' 사진 전체');
+    var key = function (e) { if (e.key === 'Escape' && !$('pview')) close(); };
+    var close = function () { o.remove(); document.removeEventListener('keydown', key); };
+    var bk = btn('ib', null, close); bk.setAttribute('aria-label', '닫기'); bk.appendChild(icon('back'));
+    hd.appendChild(bk); hd.appendChild(ttl); hd.appendChild(el('span', 'pgsp'));
+    var draw = function () {
+      if (!pics.length) { close(); return; }
+      gd.textContent = ''; ttl.textContent = '사진 ' + pics.length + '장';
+      pics.forEach(function (x, k) {
+        var a = btn('pgc', null, function () { openPhotoView(pics, k, title, function () { draw(); if (changed) changed(); }); });
+        a.setAttribute('aria-label', x.b + '의 블로그 사진 크게 보기');
+        var im = document.createElement('img'); im.src = picMid(x); im.alt = ''; im.loading = 'lazy'; im.referrerPolicy = 'no-referrer';
+        im.onerror = function () { if (im.src !== x.s) im.src = x.s; else a.remove(); };
+        a.appendChild(im); gd.appendChild(a);
+      });
+    };
+    draw();
+    o.appendChild(hd); o.appendChild(gd); document.body.appendChild(o);
+    document.addEventListener('keydown', key);
   }
   // 카드 맨 위 사진 줄(2026-11-28 시안 A, 네이버와 카카오처럼): 큰 칸 하나와 작은 칸 둘. 더 있으면 마지막 칸에 +N.
   //  누르면 크게 보는 창(옆으로 넘김, 아래에 출처 블로그). 사진이 없으면 칸을 숨긴다.
@@ -11486,9 +11527,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       box.textContent = ''; box.className = 'ophoto n' + n; box.hidden = !n;
       pics.slice(0, n).forEach(function (x, k) {
         var more = k === n - 1 && pics.length > n;
-        var a = btn('opc', null, function () { openPhotoView(pics, k, title, draw); });
-        a.setAttribute('aria-label', more ? '사진 ' + pics.length + '장 모두 보기' : x.b + '의 블로그 사진 크게 보기');
-        var im = document.createElement('img'); im.src = picMid(x); im.alt = ''; im.referrerPolicy = 'no-referrer'; im.onerror = function () { if (im.src !== x.s) im.src = x.s; else im.remove(); };
+        // 어느 칸을 눌러도 사진 전체(작은 사진 바둑판)부터 연다(사용자 2026-11-28).
+        var a = btn('opc', null, function () { openPhotoGrid(pics, title, draw); });
+        a.setAttribute('aria-label', '사진 ' + pics.length + '장 모두 보기');
+        var im = document.createElement('img'); im.src = picBig(x); im.alt = ''; im.referrerPolicy = 'no-referrer'; im.onerror = function () { if (im.src !== x.s) im.src = x.s; else im.remove(); };
         a.appendChild(im);
         if (more) a.appendChild(el('span', 'obgm', '+' + (pics.length - n)));
         box.appendChild(a);
