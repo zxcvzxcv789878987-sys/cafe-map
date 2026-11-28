@@ -522,6 +522,7 @@ button.oli { width: 100%; padding: 11px 0; margin: 0; background: none; color: v
 .nshhd { margin-top: 18px; display: flex; align-items: center; gap: 10px; }
 .nshhd > svg.i { flex: none; width: 24px; height: 24px; color: var(--ink-2); }
 .nshhd h2 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -.3px; overflow-wrap: anywhere; }
+.nshhd h2 .sno { margin-left: 6px; font-size: 15px; font-weight: 600; letter-spacing: 0; white-space: nowrap; }
 .nshsub { margin: 6px 0 0 34px; display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-2); }
 .nshsub .dir { font-weight: 700; color: var(--ink); }
 .nshseg + .nshcont .nshsub { margin: 10px 0 0 4px; }
@@ -532,13 +533,15 @@ button.oli { width: 100%; padding: 11px 0; margin: 0; background: none; color: v
 .nsharr .ahd { display: flex; align-items: center; justify-content: space-between; }
 .nsharr .ahd h3 { margin: 0; font-size: 16px; font-weight: 800; }
 .nsharr .ahd button { border: 0; background: none; padding: 6px 0 6px 8px; font-size: 13px; color: var(--ink-2); display: inline-flex; align-items: center; gap: 4px; }
-.nsharr .rt { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.nsharr .alist { max-height: 44vh; overflow-y: auto; overscroll-behavior: contain; margin-top: 4px; }
+.nsharr .rt { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); }
 .nsharr .rt:last-child { border-bottom: 0; }
-.nsharr .no { flex: none; min-width: 58px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: #fff; font-size: 15px; font-weight: 800; padding: 0 8px; box-sizing: border-box; white-space: nowrap; }
-.nsharr .ds { flex: 1; min-width: 0; font-size: 14px; color: var(--ink-2); }
-.nsharr .tm { flex: none; text-align: right; display: flex; flex-direction: column; gap: 2px; }
-.nsharr .tm b { font-size: 16px; font-weight: 800; color: #d6336c; }
+.nsharr .no { flex: none; min-width: 48px; height: 24px; border-radius: 6px; display: grid; place-items: center; color: #fff; font-size: 13.5px; font-weight: 800; padding: 0 7px; box-sizing: border-box; white-space: nowrap; }
+.nsharr .ds { flex: 1; min-width: 0; font-size: 13px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nsharr .tm { flex: none; display: flex; align-items: baseline; gap: 6px; }
+.nsharr .tm b { font-size: 14px; font-weight: 800; color: #d6336c; }
 .nsharr .tm span { font-size: 12px; color: var(--ink-2); }
+.osh.now, .osh.now .oshbox { transition: none; }
 .nsharr .amore { width: 100%; margin-top: 4px; height: 40px; border: 0; border-radius: 10px; background: var(--surface-2); font-size: 14px; font-weight: 700; color: var(--ink-2); }
 #nsheet .oshbox { max-height: 88vh; overflow-y: auto; overscroll-behavior: contain; }
 .nsharr .msg { padding: 14px 0 4px; font-size: 14px; color: var(--ink-2); }
@@ -2450,6 +2453,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     '던킨': 'logos/0aa6cc420b-f.webp',
     '데니스커피': 'logos/6bf1c0ff1c.webp',
     '데이롱카페': 'logos/4326747295-f.webp',
+    '동네커피': 'logos/d0169940fb.webp',
     '드롭탑': 'logos/5a375cb738.webp',
     '디디디알캔앤보틀': 'logos/c314290eb1-f.webp',
     '디에떼': 'logos/c8b96acc40-f.webp',
@@ -2548,6 +2552,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     '영커피': 'logos/7456c8f1c4-f.webp',
     '옐로우캔': 'logos/839003b865-f.webp',
     '오가다': 'logos/ad605542a6.webp',
+    '오늘도빙수': 'logos/9a4059a636.webp',
     '오슬랑': 'logos/38bd4d23c3.webp',
     '오슬로우': 'logos/b591e541ed-f.webp',
     '올선데이': 'logos/e64ee7fd93-f.webp',
@@ -2585,10 +2590,13 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     '카페051': 'logos/9a89cc59c3-f.webp',
     '카페16온스': 'logos/f681959318-f.webp',
     '카페게이트': 'logos/148fae9bf2.webp',
+    '카페그리닝': 'logos/bada232133-f.webp',
+    '카페달링': 'logos/9e5e3c3449-f.webp',
     '카페동네': 'logos/d2ceb42d60-f.webp',
     '카페드림': 'logos/b498d4dee6-f.webp',
     '카페루앤비': 'logos/8448a1b6bd-f.webp',
     '카페룰리오가닉': 'logos/fa6c191d04-f.webp',
+    '카페리프': 'logos/02a9e98a40-f.webp',
     '카페마일로': 'logos/68cdb3dd0b-f.webp',
     '카페베네': 'logos/a16b80dbc1-f.webp',
     '카페보스': 'logos/40de112fad-f.webp',
@@ -2606,6 +2614,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     '커피니': 'logos/00ce21ff64.webp',
     '커피로드뷰': 'logos/3cc82d9a66.webp',
     '커피마마': 'logos/9888b36ad4.webp',
+    '커피마마퀸': 'logos/6252075e96-f.webp',
     '커피명가': 'logos/f9ce0c235c-f.webp',
     '커피베이': 'logos/1898f64f0e-f.webp',
     '커피볶는시골커피': 'logos/0c2d1df179.webp',
@@ -2615,12 +2624,16 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     '커피스토어': 'logos/75b7891989-f.webp',
     '커피에반하다': 'logos/4cf3b9b9a5.webp',
     '커피온리': 'logos/e16105cd68.webp',
+    '커피왕': 'logos/4ec2a82501-f.webp',
     '커피인류': 'logos/0c838ae3d7-f.webp',
+    '커피쿡': 'logos/dab7db95e8.webp',
     '커피특별시': 'logos/777a1c5206-f.webp',
     '커피팡': 'logos/527ea8edb6.webp',
     '커피홀베이커리': 'logos/d2b1e0ba65.webp',
     '컴포즈커피': 'logos/dd97e42f87.webp',
     '컵넛': 'logos/50271f283c-f.webp',
+    '코끼리카페': 'logos/09c447d374-f.webp',
+    '콜프로스터스': 'logos/2b0bd11ca2.webp',
     '콩카페': 'logos/557fc632e4-f.webp',
     '쿼드커피': 'logos/7757a874d3.webp',
     '크레이저': 'logos/0e9dfc4fa1-f.webp',
@@ -6907,17 +6920,21 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   function busAt(pt) {
     if (!map.getLayer('lm-bus')) return null;
     var f = map.queryRenderedFeatures([[pt.x - 12, pt.y - 12], [pt.x + 12, pt.y + 12]], { layers: ['lm-bus'] });
-    return f.length ? f[0].geometry.coordinates : null;
+    return f.length ? { ll: f[0].geometry.coordinates, nm: (f[0].properties && (f[0].properties['name:ko'] || f[0].properties.name)) || '버스정류장' } : null;
   }
-  function busTap(ll) {
+  function busTap(b) {
+    // 누르자마자 지도의 이름으로 창부터 띄우고, 정류장을 찾으면 같은 자리에서 내용을 바꾼다.
+    var ll = b.ll, tok = (busTap.n = (busTap.n || 0) + 1);
+    nearSheet(-1, 'b', [b.nm, 0, 0, 0, '', '', '']);
     fetch(BUS_API.replace(/\/bus$/, '/stop') + '?la=' + ll[1].toFixed(6) + '&lo=' + ll[0].toFixed(6))
       .then(function (r) { if (!r.ok) throw new Error('stop'); return r.json(); })
       .then(function (d) {
-        if (!d.n) { toast('이 정류장의 도착 정보를 찾지 못했어요'); return; }
+        if (tok !== busTap.n || !$('nsheet')) return;   // 그사이 닫았거나 다른 정류장을 눌렀다
+        if (!d.n) { $('nsheet').remove(); document.body.classList.remove('osh-on'); toast('이 정류장의 도착 정보를 찾지 못했어요'); return; }
         var st = function (q) { return [q.nm, 0, Math.round(q.la * 1e5), Math.round(q.lo * 1e5), q.n, q.c, q.a]; };
         nearSheet(-1, 'b', st(d), d.o ? st(d.o) : null);   // 건너편 정류장(같은 이름)도 서버가 찾아 준다
       })
-      .catch(function () { toast('정류장 정보를 불러오지 못했어요'); });
+      .catch(function () { if (tok === busTap.n && $('nsheet')) { $('nsheet').remove(); document.body.classList.remove('osh-on'); } toast('정류장 정보를 불러오지 못했어요'); });
   }
   map.on('click', function (e) {
     var h = hit(e.point);
@@ -9800,13 +9817,15 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 버스는 방향이 둘이라(사용자 2026-11-28) 건너편 정류장(x2, 같은 이름, 다른 번호)이 있으면 위에 가까운 쪽, 건너편을 고르는 칸을 둔다.
   //  고르면 걸어서 몇 분, 정류장 번호, 곧 도착하는 버스, 지도에서 보기가 그 정류장으로 바뀐다.
   function nearSheet(i, kind, x, x2, side) {
-    var old = $('nsheet'); if (old) old.remove();
+    var old = $('nsheet'), was = !!old && old.classList.contains('on'); if (old) old.remove();   // was: 열려 있던 창을 바꿔 끼우면 다시 올라오지 않게
     var o = el('div', 'osh'), sh = el('div', 'oshbox');
     o.id = 'nsheet'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', kind === 'b' ? '버스정류장' : '주차장');
     var close = function () { o.classList.remove('on'); document.body.classList.remove('osh-on'); sh.style.transform = ''; setTimeout(function () { o.remove(); }, 230); };
     o.addEventListener('click', function (e) { if (e.target === o) close(); });
     sh.appendChild(el('span', 'oshgrab'));
-    var hd = el('div', 'nshhd'); hd.appendChild(icon(kind === 'b' ? 'bus' : 'park')); hd.appendChild(el('h2', null, x[0])); sh.appendChild(hd);
+    // 정류장 번호는 이름 바로 옆에 붙인다(사용자 2026-11-28: 아래 줄로 따로 두면 자리만 차지한다). 쪽을 바꾸면 번호도 바뀐다.
+    var hd = el('div', 'nshhd'), h2 = el('h2', null, x[0]), hno = el('span', 'sno', ''); h2.appendChild(hno);
+    hd.appendChild(icon(kind === 'b' ? 'bus' : 'park')); hd.appendChild(h2); sh.appendChild(hd);
     var pair = kind === 'b' && x2 ? [x, x2] : null, cur = pair && side ? 1 : 0, seg = null, segSub = [], dirEl = null;
     // 도착 정보는 정류장마다 한 번 물어 두고(방면도 같이 온다) 쪽을 바꿀 때 다시 쓴다. 새로 보기를 누르면 다시 묻는다.
     //  방면(사용자 2026-11-28): 그 정류장 다음 정류장 이름. 서울은 노선들의 다음 정류장 가운데 가장 많은 것, 그 밖은 TAGO 노선 정보에서.
@@ -9838,7 +9857,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var cont = el('div', 'nshcont'); sh.appendChild(cont);
     var busColor = function (t) {
       if (/간선/.test(t)) return '#3d5bf5'; if (/지선/.test(t)) return '#2fa84f'; if (/광역|직행|급행|좌석/.test(t)) return '#e03131';
-      if (/마을/.test(t)) return '#53b332'; if (/순환/.test(t)) return '#f08c00'; if (/공항/.test(t)) return '#1c7ed6'; return '#5c6b7f';
+      // 일반, 마을버스는 카카오맵이 쓰는 색(청록, 초록)으로 칠한다(사용자 2026-11-28).
+      if (/일반/.test(t)) return '#4fa8bd';
+      if (/마을/.test(t)) return '#61ad26'; if (/순환/.test(t)) return '#f08c00'; if (/공항/.test(t)) return '#1c7ed6'; return '#5c6b7f';
     };
     var mins = function (sec) { return sec < 60 ? '곧 도착' : Math.round(sec / 60) + '분'; };
     var fill = function () {
@@ -9846,7 +9867,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (seg) seg.querySelectorAll('button').forEach(function (sb, k) { sb.setAttribute('aria-selected', String(k === cur)); });
       cont.textContent = '';
       var sub = el('div', 'nshsub');
-      if (i >= 0) sub.appendChild(el('span', null, '걸어서 ' + walkMin(y[1]) + '분, ' + nearMeter(y[1])));   // i < 0: 지도에서 바로 누른 정류장(카페와 상관없음)
+      if (i >= 0) sub.appendChild(el('span', null, '걸어서 ' + walkMin(y[1]) + '분, ' + nearMeter(y[1])));
+      else if (!y[5]) sub.appendChild(el('span', null, '정류장 정보를 불러오는 중'));   // i < 0: 지도에서 바로 누른 정류장(카페와 상관없음)
       // 하나뿐인 정류장은 방면을 이 줄에 적는다(둘이면 위 고르는 칸에 있다).
       dirEl = null;
       if (kind === 'b' && !pair) { dirEl = el('b', 'dir', ''); sub.appendChild(dirEl); }
@@ -9861,7 +9883,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var to, arr = null;
       if (kind === 'b') {
         to = [y[3] / 1e5, y[2] / 1e5];
-        if (y[6]) row('정류장 번호', y[6]);
+        hno.textContent = y[6] || '';
         // 곧 도착하는 버스: 중계 서버가 묻는다(키는 서버에 숨김). 서울은 서울시 정류소정보조회에 정류장 번호로, 그 밖은 국토교통부 TAGO에.
         if (canArr(y)) {
           arr = el('div', 'nsharr');
@@ -9876,19 +9898,14 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
                 list.textContent = '';
                 if (d.err) { list.appendChild(el('div', 'msg', '도착 정보를 불러오지 못했어요')); return; }
                 if (!d.a || !d.a.length) { list.appendChild(el('div', 'msg', '지금 곧 도착하는 버스가 없어요')); return; }
-                // 가장 빨리 오는 6개만 먼저, 나머지는 더 보기로 펼친다.
+                // 전부 보여 주고, 많으면 목록 칸 안에서 밀어 본다(사용자 2026-11-28).
                 d.a.forEach(function (z, k) {
                   var r = el('div', 'rt'), no = el('span', 'no', z[0]); no.style.background = busColor(z[3] || '');
-                  if (k >= 6) r.hidden = true;
                   // 서울은 노선이 가는 곳(예: 도봉산행)을, 그 밖은 다음 차 시간을 적는다. 방면은 정류장의 다음 정류장이라 노선 줄에는 쓰지 않는다.
                   r.appendChild(no); r.appendChild(el('span', 'ds', z[5] ? z[5] + '행' : z[4] ? '다음 ' + mins(z[4]) : (z[3] || '')));
                   var tm = el('span', 'tm'); tm.appendChild(el('b', null, mins(z[1]))); if (z[2]) tm.appendChild(el('span', null, z[2] + '정거장 전'));
                   r.appendChild(tm); list.appendChild(r);
                 });
-                if (d.a.length > 6) {
-                  var more = btn('amore', (d.a.length - 6) + '개 더 보기', function () { list.querySelectorAll('.rt').forEach(function (r) { r.hidden = false; }); more.remove(); });
-                  list.appendChild(more);
-                }
               }, function () { if (!list.isConnected) return; list.textContent = ''; list.appendChild(el('div', 'msg', '도착 정보를 불러오지 못했어요')); });
           };
           draw();
@@ -9932,7 +9949,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     // 아래로 끌면 닫힌다.
     var dragOn = false, dy0 = 0, ddy = 0;
     sh.addEventListener('pointerdown', function (e) {
-      if (e.target.closest('button')) return;
+      if (e.target.closest('button') || e.target.closest('.alist')) return;
       dragOn = true; dy0 = e.clientY; ddy = 0; sh.style.transition = 'none';
       try { sh.setPointerCapture(e.pointerId); } catch (err) { /* 그대로 둔다 */ }
     });
@@ -9940,7 +9957,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var dragEnd = function () { if (!dragOn) return; dragOn = false; sh.style.transition = ''; if (ddy > 80) close(); else sh.style.transform = ''; };
     sh.addEventListener('pointerup', dragEnd); sh.addEventListener('pointercancel', dragEnd);
     o.appendChild(sh); document.body.appendChild(o); document.body.classList.add('osh-on');
-    requestAnimationFrame(function () { o.classList.add('on'); });
+    if (was) { o.classList.add('now', 'on'); requestAnimationFrame(function () { o.classList.remove('now'); }); }
+    else requestAnimationFrame(function () { o.classList.add('on'); });
   }
   // 지도에서 보기: 카페에서 정류장(주차장)까지 걷는 길을 지도에 그리고, 그 자리에 표시를 둔다. 걷는 길 판의 뒤로를 누르면 카페 카드로 돌아간다.
   //  other: 건너편 정류장 { to, label, open }. 흐린 표시로 같이 두고, 누르면 그 정류장 창을 연다.
