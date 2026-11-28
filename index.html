@@ -11203,6 +11203,16 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         if (gl.length) row('운영 시간', gl[0], gl.slice(1).join(', '));
         else if (q.d) row('운영 요일', q.d.replace(/\+/g, ', '));
         if (q.n) row('주차면', fmt(q.n) + '면');
+        // 남은 자리(사용자 2026-11-28, 버스처럼 실시간): 중계 서버 /park. 지금은 서울시 시영주차장(5분 주기)만이라 서울 안에서만 묻는다.
+        //  답이 오면 맨 위 줄로 넣는다. 넉넉하면 초록, 열 곳에 한 곳 넘게 남으면 주황, 그보다 적으면 빨강.
+        if (q.y > 3741000 && q.y < 3772000 && q.x > 12673000 && q.x < 12727000) parkLive(y).then(function (d) {
+          if (!d || d.a == null || !cont.isConnected) return;
+          row('남은 자리', fmt(d.a) + '면', '전체 ' + fmt(d.tot) + '면, ' + d.t + ' 기준, 서울시 자료');
+          var lr = rows.lastChild, mv = lr.querySelector('.v'), r0 = d.tot ? d.a / d.tot : 0;
+          if (mv && mv.firstChild) { var bb = el('b', 'plive', mv.firstChild.textContent); bb.style.color = r0 >= .3 ? '#2f9e44' : r0 >= .1 ? '#f08c00' : '#e03131'; mv.replaceChild(bb, mv.firstChild); }
+          rows.insertBefore(lr, rows.firstChild);
+          if (!cont.contains(rows)) cont.insertBefore(rows, cont.querySelector('.nshmap'));
+        });
       }
       if (sub.firstChild) cont.appendChild(sub);
       if (arr) cont.appendChild(arr);
@@ -11420,6 +11430,16 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   //  결과는 저장하지 않는다(카카오 규칙). 같은 카드를 다시 열 때만 쓰려고 이번 실행 동안 메모리에만 둔다.
   var BLOG_API = 'https://cafemap-blog.rdh0811.workers.dev/blog', blogMem = {};
   var BUS_API = 'https://cafemap-blog.rdh0811.workers.dev/bus';
+  // 주차장 남은 자리(중계 서버 /park). 같은 주차장은 1분 안에 다시 묻지 않는다. y: 주차장 창의 한 줄 [이름, 거리, 무료|유료|혼합, { y, x, ... }]
+  var parkLiveMem = {};
+  function parkLive(y) {
+    var q = y[3] || {}, k = y[0] + '|' + q.y + '|' + q.x, c = parkLiveMem[k];
+    if (c && Date.now() - c.t < 60000) return c.p;
+    var p = fetch(BUS_API.replace(/\/bus$/, '/park') + '?y=' + q.y + '&x=' + q.x + '&n=' + encodeURIComponent(y[0]))
+      .then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+    parkLiveMem[k] = { t: Date.now(), p: p };
+    return p;
+  }
   function blogAreas(i) {
     var dn = D.dong[D.dongOf[i]], sg = D.sgg[dn[1]][0].split(' ').pop(), a = [];
     var s1 = sg.replace(/(시|군|구)$/, ''); if (s1.length >= 2) a.push(s1);
