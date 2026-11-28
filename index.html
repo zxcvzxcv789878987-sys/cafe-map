@@ -551,8 +551,9 @@ button.oli { width: 100%; padding: 11px 0; margin: 0; background: none; color: v
 .nshmap { margin-top: 16px; width: 100%; height: 50px; border-radius: 14px; border: 1.5px solid var(--line-2); background: var(--surface); font-size: 15px; font-weight: 700; color: var(--ink); display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .nshmap svg.i { width: 18px; height: 18px; }
 .nearpin { display: flex; align-items: center; gap: 6px; pointer-events: none; }
-.nearpin .ic { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; box-shadow: 0 3px 8px rgba(0, 0, 0, .25); }
-.nearpin .ic svg.i { width: 18px; height: 18px; color: #fff; }
+.nearpin .ic { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; box-shadow: 0 3px 8px rgba(0, 0, 0, .25); }
+.nearpin .ic svg.i { width: 23px; height: 23px; color: #fff; }
+button.nearpin { pointer-events: auto; border: 0; background: none; padding: 0; cursor: pointer; font: inherit; }
 /* 건너편 정류장 고르기(2026-11-28) */
 .nshseg { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface-2); }
 .nshseg button { border: 0; border-radius: 10px; background: none; padding: 8px 4px; display: flex; flex-direction: column; align-items: center; gap: 1px; color: var(--ink-2); }
@@ -9896,7 +9897,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         var oto = ot ? [ot[3] / 1e5, ot[2] / 1e5] : null, k0 = cur;
         var mb = btn('nshmap', null, function () {
           close();
-          nearOnMap(i, kind, y[0], to, y[1], oto ? { to: oto, label: k0 ? '가까운 쪽' : '건너편', open: function () { nearSheet(i, kind, x, x2, 1 - k0); } } : null, pair ? (k0 ? '건너편' : '가까운 쪽') : '', kind === 'p');
+          nearOnMap(i, kind, y[0], to, y[1], oto ? { to: oto, label: k0 ? '가까운 쪽' : '건너편', open: function () { nearSheet(i, kind, x, x2, 1 - k0); } } : null, pair ? (k0 ? '건너편' : '가까운 쪽') : '', kind === 'p', function () { nearSheet(i, kind, x, x2, k0); });
         });
         mb.appendChild(icon('map')); mb.appendChild(document.createTextNode('지도에서 보기'));
         cont.appendChild(mb);
@@ -9920,7 +9921,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   //  other: 건너편 정류장 { to, label, open }. 흐린 표시로 같이 두고, 누르면 그 정류장 창을 연다.
   //  rev: 거꾸로(그곳에서 카페까지). 주차장은 차를 대고 걸어오는 길이 먼저라 주차장에서 카페가 처음이고, 길 판에서 방향을 바꿀 수 있다(사용자 2026-11-28).
   var nearMk = null, nearMk2 = null;
-  function nearOnMap(i, kind, name, to, meters, other, sideLabel, rev) {
+  //  me: 지도의 이 정류장(주차장) 표시를 누르면 다시 여는 창. 버스는 곧 도착하는 버스가 바로 보인다(사용자 2026-11-28).
+  function nearOnMap(i, kind, name, to, meters, other, sideLabel, rev, me) {
     // 카페 쪽 끝은 지도에 찍힌 카페 점(카카오 매장 자리로 옮겨 찍었으면 그 자리)에 맞춘다. 건물 점에서 시작하면 점과 길이 떨어져 보인다.
     var from = mercToLngLat(mx[i], my[i]);
     var show = function (c, dist, src) {
@@ -9928,20 +9930,24 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (nearMk) nearMk.remove();
       if (nearMk2) { nearMk2.remove(); nearMk2 = null; }
       var col = kind === 'b' ? '#2f9e44' : '#2f6fdf';
-      var pin = el('div', 'nearpin'), ic = el('span', 'ic'); ic.style.background = col;
+      var pin = document.createElement(me ? 'button' : 'div'), ic = el('span', 'ic'); pin.className = 'nearpin'; ic.style.background = col;
       ic.appendChild(icon(kind === 'b' ? 'bus' : 'park')); pin.appendChild(ic); pin.appendChild(el('b', null, name));
-      nearMk = new maplibregl.Marker({ element: pin, anchor: 'left', offset: [-15, 0] }).setLngLat(to).addTo(map);
+      if (me) {
+        pin.type = 'button'; pin.setAttribute('aria-label', name + (kind === 'b' ? ' 곧 도착하는 버스 보기' : ' 주차장 정보 보기'));
+        pin.addEventListener('click', function (e) { e.stopPropagation(); me(); });
+      }
+      nearMk = new maplibregl.Marker({ element: pin, anchor: 'left', offset: [-19, 0] }).setLngLat(to).addTo(map);
       var pts = c.slice();
       if (other) {
         var p2 = document.createElement('button'); p2.type = 'button'; p2.className = 'nearpin alt';
         var ic2 = el('span', 'ic'); ic2.appendChild(icon('bus')); p2.appendChild(ic2); p2.appendChild(el('b', null, other.label));
         p2.setAttribute('aria-label', other.label + ' 정류장 보기');
         p2.addEventListener('click', function (e) { e.stopPropagation(); other.open(); });
-        nearMk2 = new maplibregl.Marker({ element: p2, anchor: 'left', offset: [-15, 0] }).setLngLat(other.to).addTo(map);
+        nearMk2 = new maplibregl.Marker({ element: p2, anchor: 'left', offset: [-19, 0] }).setLngLat(other.to).addTo(map);
         pts.push(other.to);
       }
       routeInfo = { i: i, dist: Math.round(dist), min: walkMin(dist), src: src, to: { name: name + (sideLabel ? '(' + sideLabel + ')' : ''), kind: kind, rev: !!rev,
-        flip: kind === 'p' ? function () { nearOnMap(i, kind, name, to, meters, other, sideLabel, !rev); } : null } };
+        flip: kind === 'p' ? function () { nearOnMap(i, kind, name, to, meters, other, sideLabel, !rev, me); } : null } };
       var x0 = 180, y0 = 90, x1 = -180, y1 = -90;
       pts.forEach(function (q) { if (q[0] < x0) x0 = q[0]; if (q[0] > x1) x1 = q[0]; if (q[1] < y0) y0 = q[1]; if (q[1] > y1) y1 = q[1]; });
       setFollow(false);
