@@ -9635,7 +9635,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var tO = tabBtn('카페지도 정보', 'o', true), tK = tabBtn('카카오맵', 'k', false);
       // 돌아가기는 화살표 그림만(사용자 2026-11-28: 타원 테두리에 화살표와 글을 넣은 단추는 AI스럽다)
       var kback = btn('dkback', null, function () { showTab(true); }); kback.appendChild(icon('back')); kback.setAttribute('aria-label', '카페지도 정보로 돌아가기'); kback.title = '카페지도 정보로 돌아가기';
-      var klab = el('b', 'dklab', '카카오맵');
+      // 화살표 옆에 글을 두면 그곳으로 가는 단추처럼 읽혀서(사용자 2026-11-28) 글 없이 빈 자리만 둔다.
+      var klab = el('span', 'dklab');
       var showTab = function (o2) {
         tK.setAttribute('aria-selected', String(!o2)); tO.setAttribute('aria-selected', String(o2));
         h.classList.toggle('slim', o2); kback.hidden = o2; klab.hidden = o2;
