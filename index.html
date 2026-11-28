@@ -7621,7 +7621,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     // 이동을 먼저 시작하고 그다음 끝 신호를 기다린다. 판을 닫으며 생긴 지도 움직임이 이 이동에 끊기면서 보내는 끝 신호를 받지 않으려고.
     //  날아가는 시간은 앱의 다른 날아가기와 같은 규칙(flyMsTo, 1.2~2초, 곡선 1.2. 사용자 2026-11-28: 0.6초는 너무 빠르다).
     var dur = flyMsTo(ll, z);
-    map.flyTo({ center: ll, zoom: z, duration: dur, curve: 1.2, essential: true });
+    // 폰에서는 목적지를 화면 가운데보다 조금 위에 둔다. 아래에서 올라오는 창(정류장, 역, 주차장)에 가려 표시가 안 보였다(사용자 2026-11-29, 검색으로 간 주차장 P).
+    map.flyTo({ center: ll, zoom: z, duration: dur, curve: 1.2, essential: true, offset: mobile.matches ? [0, -Math.round(window.innerHeight * .2)] : [0, 0] });
     map.once('moveend', go);
     setTimeout(go, dur + 900);   // moveend가 오지 않을 때(움직임이 끊기는 등)
   }
@@ -7891,6 +7892,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var inSeoul = true;
     var liveOld = inSeoul && Date.now() - parkLiveT >= 120000;
     if (ks === parkKeyStr && src === parkSrc && !liveOld) return;
+    // 이미 받아 둔 칸은 다른 칸을 기다리지 않고 바로 그린다(사용자 2026-11-29: 검색으로 주차장에 가면 P가 늦게 떴다. 화면의 칸을 전부 받은 뒤 한꺼번에 그렸다).
+    if (ks !== parkKeyStr) parkPaint(keys);
     parkLoad(keys, function () {
       var f = [];
       keys.forEach(function (k) { (parkTiles[k] || []).forEach(function (s, j) { f.push({ type: 'Feature', properties: { k: k, j: j, f: parkFavKey[parkKeyOf(s)] ? 1 : 0 }, geometry: { type: 'Point', coordinates: [s[1] / 1e5, s[0] / 1e5] } }); }); });
@@ -7903,6 +7906,20 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         var s3 = map.getSource('lm-parks'); if (s3) s3.setData(parkFC);
       });
     });
+  }
+  // 받아 둔 칸의 주차장만 지도에 그린다(받는 중인 칸은 다 받은 뒤 parkRefresh가 다시 그린다).
+  function parkPaint(keys) {
+    var s2 = map.getSource && map.getSource('lm-parks'); if (!s2) return;
+    var f = [];
+    keys.forEach(function (k) { (parkTiles[k] || []).forEach(function (s, j) { f.push({ type: 'Feature', properties: { k: k, j: j, f: parkFavKey[parkKeyOf(s)] ? 1 : 0 }, geometry: { type: 'Point', coordinates: [s[1] / 1e5, s[0] / 1e5] } }); }); });
+    if (!f.length) return;
+    if (parkLiveL) parkLiveMark(f, parkLiveL);
+    parkFC = { type: 'FeatureCollection', features: f }; s2.setData(parkFC); parkSrc = s2;
+  }
+  // 검색에서 주차장을 누르면 날아가기 전에 도착할 자리 둘레의 칸을 받아 미리 그려 둔다. 도착하는 순간 P가 보이게.
+  function parkPrime(ll, done) {
+    var d = .006, keys = busKeys(ll[0] - d, ll[1] - d, ll[0] + d, ll[1] + d);
+    parkLoad(keys, function () { parkPaint(keys); parkKeyStr = ''; if (done) done(); });
   }
   // 실시간 남은 자리 목록(중계 서버 /parks): [[위도*1e5, 경도*1e5, 이름, 남은 면, 전체 면, 'HH:MM']]. 2분 기억한다.
   var parkLiveL = null, parkLiveT = 0, parkLiveP = null;
@@ -10619,8 +10636,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
               if ((dd <= 250 && me && stem(st[2]) === me) || dd <= 25) { if (!best || dd < best.d) best = { d: dd, st: st }; }
             });
           });
-          busFlyThen(best ? [best.st[1] / 1e5, best.st[0] / 1e5] : ll, function () {
-            if (best) parkTap(best.st); else nearSheet(-1, 'p', [lx[2], 0, '', { y: lx[0], x: lx[1] }]);
+          var dest = best ? [best.st[1] / 1e5, best.st[0] / 1e5] : ll;
+          parkPrime(dest, function () {
+            busFlyThen(dest, function () {
+              if (best) parkTap(best.st); else nearSheet(-1, 'p', [lx[2], 0, '', { y: lx[0], x: lx[1] }]);
+            });
           });
         });
       });
@@ -10633,7 +10653,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var k = o[3], j = o[4];
       parkLoad([k], function () {
         var st = (parkTiles[k] || [])[j]; if (!st) return;
-        busFlyThen([st[1] / 1e5, st[0] / 1e5], function () { parkTap(st); });
+        var dest = [st[1] / 1e5, st[0] / 1e5];
+        parkPrime(dest, function () { busFlyThen(dest, function () { parkTap(st); }); });
       });
     });
     return row;
