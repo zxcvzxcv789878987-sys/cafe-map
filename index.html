@@ -153,6 +153,7 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 /* 콘센트 기록이 있는 카페: 플러그 그림에 초록 동그라미를 두른다(지도 점의 초록 표시와 같은 색, 사용자 2026-11-27) */
 .row .tag { flex: none; color: var(--ok); display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--ok); box-sizing: border-box; }
 .row .tag svg.i { width: 16px; height: 16px; }
+#panel[data-snap="half"] > .scroll { padding-bottom: calc(var(--snapoff, 0px) + 16px); }
 /* 검색 결과 탭(카페, 지역, 정류장, 노선): 밑줄 탭 */
 .stabs { flex: none; display: flex; gap: 20px; padding: 0 16px; border-bottom: 1px solid var(--line); }
 .stabs button { border: 0; background: none; padding: 10px 0 9px; margin-bottom: -1px; border-bottom: 2.5px solid transparent; font-size: 15px; font-weight: 700; color: var(--ink-2); display: inline-flex; align-items: baseline; gap: 4px; }
@@ -521,8 +522,9 @@ button.oli { width: 100%; padding: 11px 0; margin: 0; background: none; color: v
 .omemol > span { flex: 1; min-width: 0; font-size: 14.5px; line-height: 1.45; color: var(--ink); overflow-wrap: anywhere; }
 .oln { display: flex; align-items: center; gap: 12px; min-height: 46px; font-size: 15px; }
 .oln > svg.i { flex: none; width: 20px; height: 20px; color: var(--ink-2); }
-.oln .lb { flex: none; width: 76px; font-size: 14px; color: var(--ink-2); }
-.oln .v { flex: 1; min-width: 0; line-height: 1.4; overflow-wrap: anywhere; }
+/* 이름표는 한 줄로(사용자 2026-11-28: "가까운 정류장"이 두 줄로 넘쳤다). 값은 두 줄까지 */
+.oln .lb { flex: none; min-width: 76px; font-size: 14px; color: var(--ink-2); white-space: nowrap; }
+.oln .v { flex: 1; min-width: 0; line-height: 1.4; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .oln .d { flex: none; font-size: 14px; font-weight: 700; }
 .oln.tap { cursor: pointer; border-radius: 10px; }
 .oln.tap:active { background: var(--surface-2); }
@@ -7081,6 +7083,15 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       cb((same || like || part || {}).o || null);
     });
   }
+  // 한 점에서 가장 가까운 정류장(600m 안, 하차 전용 빼고). 카페 카드의 가까운 정류장에 쓴다. ll: [경도, 위도]
+  function busNearest(ll, cb) {
+    var d = .006, keys = busKeys(ll[0] - d, ll[1] - d, ll[0] + d, ll[1] + d);
+    busLoad(keys, function () {
+      var best = null, bd = 600;
+      keys.forEach(function (k) { (busTiles[k] || []).forEach(function (o) { if (/하차/.test(o[2])) return; var g = distM(ll[1], ll[0], o[0] / 1e5, o[1] / 1e5); if (g < bd) { bd = g; best = o; } }); });
+      cb(best);
+    });
+  }
   // 정류장 창이 쓰는 모양으로: [이름, 거리, 위도*1e5, 경도*1e5, 정류장 아이디, 도시 코드, 정류장 번호]
   function busTuple(s, m) { return [s[2], m || 0, s[0], s[1], s[3], s[4], s[5]]; }
   function busAt(pt) {
@@ -7584,6 +7595,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     panel.style.transition = animate === 'slow' ? 'transform .46s cubic-bezier(.4, 0, .2, 1)' : animate ? 'transform .3s cubic-bezier(.2, .8, .2, 1)' : 'none';
     panel.style.transform = 'translateY(' + snapOffset(which) + 'px)';
     panel.setAttribute('data-snap', which);
+    // 반만 열렸을 때 판의 아랫부분은 화면 밖이라, 그만큼 목록 아래에 여백을 두어 마지막 줄까지 스크롤해 볼 수 있게 한다(사용자 2026-11-28: 찜 목록이 끝까지 안 내려간다).
+    panel.style.setProperty('--snapoff', (which === 'full' ? 0 : snapOffset(which)) + 'px');
   }
   // now: 움직임 없이 바로 닫는다(끌어내려 닫을 때는 이미 내려가 있다).
   function closePanel(now) {
@@ -10063,13 +10076,49 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (lastFix && Date.now() - lastFix.t < 15000) go(lastFix.p);
     else navigator.geolocation.getCurrentPosition(go, function (er) { if (er && er.code === 1) locDenied('걷는 길을 보려면'); else toast('위치를 확인하지 못했어요. 잠시 뒤에 다시 눌러 주세요'); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 });
   }
+  // 지도에서 누른 정류장 창의 길찾기(사용자 2026-11-28): 내 위치에서 그 정류장까지 걷는 길. y: 정류장 창의 한 줄, back: 정류장 창을 다시 연다.
+  function stopRouteFromMe(y, back) {
+    if (!navigator.geolocation) { toast('이 기기에서는 위치를 확인할 수 없어요'); return; }
+    var go = function (p) {
+      lastFix = { p: p, t: Date.now() };
+      var from = [p.coords.longitude, p.coords.latitude], to = [y[3] / 1e5, y[2] / 1e5];
+      meMarker(from); startWatch();
+      toast('걷는 길을 찾는 중');
+      walkFetch(from, to).then(function (rt) {
+        var c = rt.coords.slice(); c.unshift(from); c.push(to);
+        drawRoute(c, from);
+        if (nearMk) nearMk.remove();
+        if (nearMk2) { nearMk2.remove(); nearMk2 = null; }
+        var pin = document.createElement('button'), ic = el('span', 'ic'); pin.type = 'button'; pin.className = 'nearpin'; ic.style.background = '#2f9e44';
+        ic.appendChild(icon('bus')); pin.appendChild(ic); pin.appendChild(el('b', null, y[0]));
+        pin.setAttribute('aria-label', y[0] + ' 곧 도착하는 버스 보기');
+        pin.addEventListener('click', function (e) { e.stopPropagation(); back(); });
+        nearMk = new maplibregl.Marker({ element: pin, anchor: 'left', offset: [-19, 0] }).setLngLat(to).addTo(map);
+        // to.fromMe: 카페 없는 길(걷는 길 이스터 에그 조건에서도 빠진다, routeInfo.to가 있으면 건너뛴다)
+        routeInfo = { i: -1, dist: Math.round(rt.dist), min: walkMin(rt.dist), src: rt.src, to: { name: y[0], kind: 'b', fromMe: true, back: back } };
+        var x0 = 180, y0 = 90, x1 = -180, y1 = -90;
+        c.forEach(function (q) { if (q[0] < x0) x0 = q[0]; if (q[0] > x1) x1 = q[0]; if (q[1] < y0) y0 = q[1]; if (q[1] > y1) y1 = q[1]; });
+        setFollow(false);
+        var pad = mobile.matches ? { top: 130, bottom: Math.round(window.innerHeight * .36), left: 40, right: 140 } : { top: 96, bottom: 70, left: 420, right: 160 };
+        map.fitBounds([[x0, y0], [x1, y1]], { padding: pad, maxZoom: 18, duration: 600 });
+        sel = -1; P.prev = null;
+        openPanel('route');
+      }).catch(function () { toast('걷는 길을 찾지 못했어요'); });
+    };
+    if (lastFix && Date.now() - lastFix.t < 15000) go(lastFix.p);
+    else navigator.geolocation.getCurrentPosition(go, function (er) { if (er && er.code === 1) locDenied('걷는 길을 보려면'); else toast('위치를 확인하지 못했어요. 잠시 뒤에 다시 눌러 주세요'); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 });
+  }
   // 걷는 길 판이 열려 있는가. 이 동안은 환경설정과 상관없이 지역 경계를 그리지 않는다.
   function routing() { return P.kind === 'route' && !!routeInfo; }
   // 걷는 길 판이 열려 있고 "다른 카페 숨기기"가 켜져 있으면 그 도착 카페 번호, 아니면 -1
   function routeOnlyIdx() { return S.routeOnly && routing() ? routeInfo.i : -1; }
   function renderRoute() {
     var r = routeInfo; if (!r) { closePanel(); return; }
-    var h = head((r.to ? (r.to.rev ? r.to.name + '에서 카페' : '카페에서 ' + r.to.name) : D.name[r.i]) + '까지', null, function () { var k = r.i; clearRoute(); P.prev = null; sel = k; P.cafe = k; openPanel('detail'); requestDraw(); });
+    var ttl = r.to ? (r.to.fromMe ? '내 위치에서 ' + r.to.name : r.to.rev ? r.to.name + '에서 카페' : '카페에서 ' + r.to.name) : D.name[r.i];
+    var h = head(ttl + '까지', null, function () {
+      if (r.to && r.to.fromMe) { clearRoute(); routeInfo = null; P.prev = null; closePanel(); requestDraw(); r.to.back(); return; }   // 정류장 창으로 돌아간다
+      var k = r.i; clearRoute(); P.prev = null; sel = k; P.cafe = k; openPanel('detail'); requestDraw();
+    });
     h.appendChild(closeBtn()); panel.appendChild(h);
     var sc = el('div', 'scroll rtbody');
     // 주차장 길은 방향을 고른다(주차장에서 카페, 카페에서 주차장).
@@ -10583,7 +10632,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (dirEl) { dirEl.textContent = dirs[cur] ? dirs[cur] + ' 방면' : ''; dirEl.hidden = !dirs[cur]; }
     };
     // 서버는 도착 정보만 먼저 빨리 주고(more: 1), 오는 차 없는 노선의 알림, 앞차, 방면은 뒤에서 채운다(2026-11-28 사용자: 더 빨리).
-    //  more가 오면 창이 열려 있는 동안 1.5초 간격으로 세 번까지 다시 묻고, 이미 받은 알림과 앞차는 지우지 않고 합친다.
+    //  more가 오면 창이 열려 있는 동안 다섯 번까지(간격은 점점 길게) 다시 묻고, 이미 받은 알림과 앞차는 지우지 않고 합친다.
     var last = [null, null], moreN = [0, 0], redraw = null;
     var merge = function (k, d) {
       var p = last[k];
@@ -10598,9 +10647,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var y = pair ? pair[k] : x;
       got[k] = busFetch(y, fresh).then(function (d) { d = merge(k, d); if (d.d) { dirs[k] = d.d; showDir(); } return d; });
       got[k].then(function (d) {
-        if (!d.more || moreN[k] >= 3) return;
-        moreN[k]++;
-        setTimeout(function () { if (!o.isConnected) return; ask(k, true); if (k === (pair ? cur : 0) && redraw) redraw(); }, 1500);
+        // 다시 묻는 간격은 점점 길게(1.5, 2.5, 4, 6, 9초). 2026-11-28 검수: 방면이 몇 초 뒤에야 채워지는 정류장이 있었다.
+        var gaps = [1500, 2500, 4000, 6000, 9000];
+        if (!d.more || moreN[k] >= gaps.length) return;
+        var wait = gaps[moreN[k]++];
+        setTimeout(function () { if (!o.isConnected) return; ask(k, true); if (k === (pair ? cur : 0) && redraw) redraw(); }, wait);
       }, function () {});
       return got[k];
     };
@@ -10719,6 +10770,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (sub.firstChild) cont.appendChild(sub);
       if (arr) cont.appendChild(arr);
       if (rows.firstChild) cont.appendChild(rows);
+      if (to && i < 0 && kind === 'b') {
+        var k1 = pair ? cur : 0, mb1 = btn('nshmap', null, function () { close(); stopRouteFromMe(y, function () { nearSheet(i, kind, x, x2, k1); }); });
+        mb1.appendChild(icon('route')); mb1.appendChild(document.createTextNode('길찾기'));
+        cont.appendChild(mb1);
+      }
       if (to && i >= 0) {
         var mb = btn('nshmap', null, function () { close(); nearGo(i, kind, x, x2, pair ? cur : 0); });
         // 이름은 길찾기(사용자 2026-11-28: 지도에서 보기 대신). 카페에서 그곳까지 걷는 길을 그린다.
@@ -11107,26 +11163,37 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         // 정류장 거리는 지도에 찍힌 카페 점(카카오 매장 자리로 옮겨 찍었으면 그 자리)에서 잰다. 건물 점에서 재면 걷는 길과 크게 다를 때가 있다.
         //  건너편(b2)이 자료에 없으면 공공데이터 정류장 목록에서 그 자리에서 찾는다.
         var cm = mercToLngLat(mx[i], my[i]), dm = function (y) { var z = y.slice(); z[1] = distM(cm[1], cm[0], y[2] / 1e5, y[3] / 1e5); return z; };
-        // 가까운 정류장과 반대편 정류장을 두 줄로(사용자 2026-11-28). 반대편(b2)이 자료에 없으면 공공데이터 정류장 목록에서 그 자리에서 찾아 줄을 더한다.
-        //  줄을 누르면 그쪽 탭을 고른 정류장 창이 열린다.
-        var b2 = x.b2 || null, b2Row = null, dEl = null, dEl2 = null;
-        var openBus = function (k) { cm = mercToLngLat(mx[i], my[i]); nearSheet(i, 'b', dm(x.b), b2 ? dm(b2) : null, b2 ? k : 0); };
+        // 가까운 정류장과 반대편 정류장을 두 줄로(사용자 2026-11-28). 줄을 누르면 그쪽 탭을 고른 정류장 창이 열린다.
+        //  가까운 정류장은 지도에 찍힌 카페 점에서 공공데이터 정류장 목록으로 다시 찾는다(사용자 2026-11-28: 더 가까운 정류장이 있는데 먼 것이 잡혔다.
+        //  info 자료는 건물 점으로 셈해서, 카카오 매장 자리로 옮긴 카페 점과 어긋났다). 짝 중 더 가까운 쪽을 가까운 정류장으로 쓴다.
+        var bA = x.b, b2 = null, b2Row = null, dEl = null, dEl2 = null, r1 = null;
+        var openBus = function (k) { cm = mercToLngLat(mx[i], my[i]); nearSheet(i, 'b', dm(bA), b2 ? dm(b2) : null, b2 ? k : 0); };
+        var setRow = function (r, y) { var v = r.querySelector('.v'), d = r.querySelector('.d'); if (v) v.textContent = y[0]; if (d) d.textContent = meter(dm(y)[1]); };
+        var addB2 = function () {
+          if (!b2) { if (b2Row) { b2Row.remove(); b2Row = null; dEl2 = null; } return; }
+          if (b2Row) { setRow(b2Row, b2); return; }
+          line(near, 'bus', '반대편 정류장', b2[0], meter(dm(b2)[1]), function () { openBus(1); });
+          b2Row = near.lastChild; dEl2 = b2Row.querySelector('.d');
+          if (r1.nextSibling !== b2Row) near.insertBefore(b2Row, r1.nextSibling);
+          b2Row.addEventListener('pointerdown', function () { if (b2) busFetch(b2); });
+        };
+        var settle = function (y, p) {
+          if (p && dm(p)[1] < dm(y)[1]) { var t = y; y = p; p = t; }
+          bA = y; b2 = p; setRow(r1, bA); addB2();
+        };
         if (x.b) {
-          line(near, 'bus', '가까운 정류장', x.b[0], meter(dm(x.b)[1]), function () { openBus(0); });
-          var r1 = near.lastChild; dEl = r1.querySelector('.d');
-          r1.addEventListener('pointerdown', function () { busFetch(x.b); });
-          var addB2 = function () {
-            if (!b2 || b2Row) return;   // 화면에 붙기 전에도 붙인다(정류장 자료가 이미 있으면 바로 끝나서 카드가 아직 화면 밖이다)
-            line(near, 'bus', '반대편 정류장', b2[0], meter(dm(b2)[1]), function () { openBus(1); });
-            b2Row = near.lastChild; dEl2 = b2Row.querySelector('.d');
-            if (r1.nextSibling !== b2Row) near.insertBefore(b2Row, r1.nextSibling);
-            b2Row.addEventListener('pointerdown', function () { busFetch(b2); });
-          };
-          if (b2) addB2();
-          else busPair([x.b[2], x.b[3], x.b[0], x.b[4], x.b[5], x.b[6]], function (o) { if (o) { b2 = busTuple(o); addB2(); } });
+          line(near, 'bus', '가까운 정류장', bA[0], meter(dm(bA)[1]), function () { openBus(0); });
+          r1 = near.lastChild; dEl = r1.querySelector('.d');
+          r1.addEventListener('pointerdown', function () { busFetch(bA); });
+          busNearest(cm, function (st) {
+            var y = x.b;
+            if (st) { var t = busTuple(st); if (dm(t)[1] + 15 < dm(x.b)[1]) y = t; }
+            if (y === x.b && x.b2) { settle(y, x.b2); return; }
+            busPair([y[2], y[3], y[0], y[4], y[5], y[6]], function (o) { settle(y, o ? busTuple(o) : null); });
+          });
         }
         // 카드가 먼저 열리고 카페 점이 나중에 카카오 자리로 옮겨지면 거리를 다시 잰다.
-        nearDist = dEl ? { i: i, up: function () { if (!dEl.isConnected) { nearDist = null; return; } cm = mercToLngLat(mx[i], my[i]); dEl.textContent = meter(dm(x.b)[1]); if (dEl2 && b2) dEl2.textContent = meter(dm(b2)[1]); } } : null;
+        nearDist = dEl ? { i: i, up: function () { if (!dEl.isConnected) { nearDist = null; return; } cm = mercToLngLat(mx[i], my[i]); dEl.textContent = meter(dm(bA)[1]); if (dEl2 && b2) dEl2.textContent = meter(dm(b2)[1]); } } : null;
         // 주차장은 500m 안 가까운 곳 세 곳까지(사용자 2026-11-28: 버스만큼). 먼저 자료 파일의 가장 가까운 한 곳을 보이고,
         //  지도 주차장 칸(park/)을 받으면 가까운 순 세 곳으로 바꾼다. 첫 줄에만 아이콘과 이름표를 두어 한 묶음으로 보이게 한다.
         var parkRows = [];
