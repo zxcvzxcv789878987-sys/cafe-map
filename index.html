@@ -7920,7 +7920,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   function parkFavRow(f) {
     var row = btn('row'), body = el('span', 'body'), pin = el('span', 'pin'); pin.style.setProperty('--c', 'var(--surface-2)'); pin.style.setProperty('--t', 'var(--ink-2)'); pin.appendChild(icon('park'));
     var fee = { '무료': '무료', '유료': '유료', '혼합': '무료와 유료' }[f[3]];
-    row.appendChild(pin); body.appendChild(el('span', 'name', f[2])); body.appendChild(el('span', 'meta', fee ? fee + ' 주차장' : '주차장')); row.appendChild(body);
+    row.appendChild(pin); body.appendChild(el('span', 'name', parkName(f[2], f[4]))); body.appendChild(el('span', 'meta', fee || '주차장')); row.appendChild(body);
     row.addEventListener('click', function () { busFlyThen([f[1] / 1e5, f[0] / 1e5], function () { parkTap(f); }); });
     return row;
   }
@@ -10444,7 +10444,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
 
   // ----- 주차장 검색(2026-11-28 사용자: 검색 탭에 주차장) -----
   // 색인 파일(parkidx/, 데이터 만들기/park_tiles.py)을 찾는 낱말의 첫 글자에 맞는 것만 그때 받는다. 이름 조각과 지역 낱말(서울, 용산구)로 나뉘어 있다.
-  //  한 줄: [이름, 지역, 무료|유료|혼합, 칸, 칸 안 순번, 위도*1e5, 경도*1e5]. "용산 주차장"처럼 주차장이라는 낱말은 빼고 찾는다(이름에 주차장이 없는 곳이 많다).
+  //  한 줄: [이름, 지역, 무료|유료|혼합, 칸, 칸 안 순번, 위도*1e5, 경도*1e5, 공영|민영]. "용산 주차장"처럼 주차장이라는 낱말은 빼고 찾는다(이름에 주차장이 없는 곳이 많다).
   var parkIdx = {}, parkIdxWait = {};
   function parkFind(words) {
     // "시영주차장"처럼 붙여 쓴 낱말은 주차장을 뗀다.
@@ -10494,7 +10494,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   function parkSearchRow(o) {
     var row = btn('row'), body = el('span', 'body'), pin = el('span', 'pin'); pin.style.setProperty('--c', 'var(--surface-2)'); pin.style.setProperty('--t', 'var(--ink-2)'); pin.appendChild(icon('park'));
     var fee = { '무료': '무료', '유료': '유료', '혼합': '무료와 유료' }[o[2]];
-    row.appendChild(pin); body.appendChild(el('span', 'name', o[0]));
+    row.appendChild(pin); body.appendChild(el('span', 'name', parkName(o[0], o.live ? (o.live[6] === 'seoul' ? '공영' : '') : o[7])));
     if (o.live) {
       // 실시간 목록에서 찾은 주차장: 남은 자리를 줄에 적고, 누르면 그 자리의 지도 주차장 창(짝이 없으면 실시간 자료만 든 창).
       var lx = o.live;
@@ -11979,7 +11979,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     o.addEventListener('click', function (e) { if (e.target === o) close(); });
     sh.appendChild(el('span', 'oshgrab'));
     // 정류장 번호는 이름 바로 옆에 붙인다(사용자 2026-11-28: 아래 줄로 따로 두면 자리만 차지한다). 쪽을 바꾸면 번호도 바뀐다.
-    var hd = el('div', 'nshhd'), h2 = el('h2', null, x[0]), hno = el('span', 'sno', ''); h2.appendChild(hno);
+    var hd = el('div', 'nshhd'), h2 = el('h2', null, kind === 'p' ? parkName(x[0], (x[3] || {}).g) : x[0]), hno = el('span', 'sno', ''); h2.appendChild(hno);
     hd.appendChild(icon(kind === 'b' ? 'bus' : 'park')); hd.appendChild(h2); sh.appendChild(hd);
     // 정류장 찜(사용자 2026-11-28): 이름 줄 끝의 하트. 고른 쪽 정류장을 찜하고, 찜 칩의 목록 맨 위에 모인다.
     var fav = null;
@@ -12054,7 +12054,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var sub = el('div', 'nshsub');
       if (i >= 0) sub.appendChild(el('span', null, '걸어서 ' + walkMin(y[1]) + '분, ' + nearMeter(y[1])));
       else if (kind === 'b' && !y[5]) sub.appendChild(el('span', null, '정류장 정보를 불러오는 중'));   // i < 0: 지도에서 바로 누른 정류장(카페와 상관없음)
-      else if (kind === 'p' && y[3] && y[3].g) sub.appendChild(el('span', null, y[3].g + ' 주차장'));   // 지도에서 누른 주차장: 공영, 민영
+      else if (kind === 'p' && y[3] && y[3].g && parkName(y[0], y[3].g).indexOf(y[3].g) < 0) sub.appendChild(el('span', null, y[3].g + ' 주차장'));   // 지도에서 누른 주차장: 공영, 민영(이름에 이미 있으면 뺀다)
       // 하나뿐인 정류장은 방면을 이 줄에 적는다(둘이면 위 고르는 칸에 있다).
       dirEl = null;
       if (kind === 'b' && !pair) { dirEl = el('b', 'dir', ''); sub.appendChild(dirEl); }
@@ -12231,6 +12231,13 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   //  파란 줄로 이어 그린다. 카드의 다른 가까운 주차장은 흐린 P 표시로 같이 두고, 누르면 그 주차장으로 길을 다시 그린다.
   //  list: 카드에 나온 가까운 주차장들(y도 들어 있다). 차 길은 내 위치가 주차장에서 400m 안이거나 80km 넘게 멀면 그리지 않는다.
   var parkAlts = [], parkGoTok = 0, parkZoomFn = null;
+  // 주차장 이름을 화면에 쓸 때(사용자 2026-11-29: "관철동"이 주차장 이름인 줄 모르고 주소인 줄 알았다):
+  //  등록된 이름에 주차장이라는 말이 없으면 뒤에 붙인다. 공영이면 공영주차장, 민영이나 모르면 주차장. 서울시 자료 끝의 (시), (구)는 뗀다.
+  //  자료 자체(찜, 짝짓기에 쓰는 이름)는 그대로 두고 보여 줄 때만 쓴다.
+  function parkName(n, g) {
+    n = String(n || '').replace(/\s*\((시|구)\)$/, '').trim();
+    return /주차|파킹|parking/i.test(n) ? n : n + (g === '공영' ? ' 공영주차장' : ' 주차장');
+  }
   function parkFee1h(y) {
     var f = (y[3] || {}).f;
     if (f && !f[1]) return '무료';
@@ -12313,7 +12320,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (tok !== parkGoTok) return;
       drawRoute(c);
       var pin = document.createElement('button'), ic = el('span', 'ic'); pin.type = 'button'; pin.className = 'nearpin'; ic.style.background = '#2f6fdf';
-      ic.appendChild(icon('park')); pin.appendChild(ic); pin.appendChild(el('b', null, y[0]));
+      ic.appendChild(icon('park')); pin.appendChild(ic); pin.appendChild(el('b', null, parkName(y[0], (y[3] || {}).g)));
       pin.setAttribute('aria-label', y[0] + ' 주차장 정보 보기');
       pin.style.pointerEvents = 'auto';
       pin.addEventListener('click', function (e) { e.stopPropagation(); reopen(); });
@@ -12323,13 +12330,13 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (others.length) { parkZoomFn = function () { document.body.classList.toggle('pk-far', map.getZoom() < 15.5); }; map.on('zoom', parkZoomFn); parkZoomFn(); }
       others.forEach(function (z) {
         var at = [z[3].x / 1e5, z[3].y / 1e5], p2 = document.createElement('button'), ic2 = el('span', 'ic');
-        p2.type = 'button'; p2.className = 'nearpin alt pk'; ic2.appendChild(icon('park')); p2.appendChild(ic2); p2.appendChild(el('b', null, z[0]));
+        p2.type = 'button'; p2.className = 'nearpin alt pk'; ic2.appendChild(icon('park')); p2.appendChild(ic2); p2.appendChild(el('b', null, parkName(z[0], (z[3] || {}).g)));
         p2.setAttribute('aria-label', z[0] + '으로 길찾기');
         p2.addEventListener('click', function (e) { e.stopPropagation(); parkGo(i, z, list, mode); });
         parkAlts.push(new maplibregl.Marker({ element: p2, anchor: 'left', offset: [-19, 0] }).setLngLat(at).addTo(map));
         pts.push(at);
       });
-      routeInfo = { i: i, dist: Math.round(dist), min: walkMin(dist), src: src, to: { name: y[0], kind: 'p', rev: true, fee: parkFee1h(y), car: null, tok: tok, open: reopen } };
+      routeInfo = { i: i, dist: Math.round(dist), min: walkMin(dist), src: src, to: { name: parkName(y[0], (y[3] || {}).g), kind: 'p', rev: true, fee: parkFee1h(y), car: null, tok: tok, open: reopen } };
       if (mode) { routeInfo.cafeMode = mode; routeInfo.lots = list; }
       setFollow(false);
       P.cafe = i; sel = i; P.prev = 'detail';
@@ -13002,6 +13009,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
           parkRows.forEach(function (r) { r.remove(); }); parkRows = [];
           list.forEach(function (y, k) {
             var pv = document.createElement('span'), fee = { '무료': '무료', '유료': '유료', '혼합': '무료와 유료' }[y[2]];
+            // 카드에는 왼쪽에 주차장 이름표가 있어서 등록된 이름 그대로(뒤에 공영주차장을 붙이면 두 줄을 넘어 요금 표시가 잘린다).
             pv.appendChild(document.createTextNode(softBreak(y[0]))); if (fee) pv.appendChild(el('em', 'fee', fee));
             line(near, 'park', k ? ' ' : '주차장', pv, meter(y[1]), function () { nearSheet(i, 'p', y, list); });
             var r = near.lastChild; if (k) r.firstChild.style.visibility = 'hidden';

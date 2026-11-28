@@ -4,7 +4,7 @@
 # 같은 이름이 같은 자리(10m 안)에 두 번 있으면 한 줄만 남긴다.
 # 검색 색인(2026-11-28 사용자: 검색 탭에 주차장): parkidx/n<첫 글자 코드>.json.
 #  이름을 빈칸과 괄호로 나눈 조각, 빈칸을 뗀 이름, 지역 낱말의 첫 글자 칸에 넣는다(정류장 색인 busidx와 비슷한 방식).
-#  한 줄: [이름, 지역(예: 서울 용산구), 무료|유료|혼합, 칸, 칸 안 순번, 위도*1e5, 경도*1e5]. 지역은 parking.json 7번째 칸 주소에서 시도와 시군구.
+#  한 줄: [이름, 지역(예: 서울 용산구), 무료|유료|혼합, 칸, 칸 안 순번, 위도*1e5, 경도*1e5, 공영|민영]. 지역은 parking.json 7번째 칸 주소에서 시도와 시군구.
 #  자리(위도, 경도)는 검색 결과를 지도 가운데에서 가까운 순으로 정확히 늘어놓으려고 넣는다(2026-11-29).
 # 실행: python -I -X utf8 park_tiles.py [parking.json 경로]
 import json, os, re, shutil, sys
@@ -69,7 +69,7 @@ for k, v in tiles.items():
             if part:
                 heads.add(part[0])
         for h in heads:
-            shards.setdefault('n%x' % ord(h), []).append([s[2], ar, s[3], k, j, s[0], s[1]])
+            shards.setdefault('n%x' % ord(h), []).append([s[2], ar, s[3], k, j, s[0], s[1], s[4]])
 for k, v in shards.items():
     with open(os.path.join(IDX, k + '.json'), 'w', encoding='utf-8', newline='') as f:
         json.dump(v, f, ensure_ascii=False, separators=(',', ':'))
