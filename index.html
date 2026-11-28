@@ -10638,6 +10638,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var la = y / 1e5, m = Math.hypot((x / 1e5 + 180) / 360 - myLoc.x, mercY(la) - myLoc.y) * 40075016 * Math.cos(la * Math.PI / 180);
     return m < 950 ? Math.round(m / 10) * 10 + 'm' : (m / 1000).toFixed(1) + 'km';
   }
+  // 줄 아래 작은 글씨를 카페 줄처럼 쉼표 없이 칸마다 띄워 놓는다(사용자 2026-11-29: 카페는 평, 주소, 거리를 띄워 놓는다).
+  function parkMeta(bits) { var meta = el('span', 'meta'); bits.filter(Boolean).forEach(function (t) { meta.appendChild(el('span', null, t)); }); return meta; }
   function parkSearchRow(o) {
     var row = btn('row'), body = el('span', 'body'), pin = el('span', 'pin'); pin.style.setProperty('--c', 'var(--surface-2)'); pin.style.setProperty('--t', 'var(--ink-2)'); pin.appendChild(icon('park'));
     var fee = { '무료': '무료', '유료': '유료', '혼합': '무료와 유료' }[o[2]];
@@ -10645,7 +10647,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (o.live) {
       // 실시간 목록에서 찾은 주차장: 남은 자리를 줄에 적고, 누르면 그 자리의 지도 주차장 창(짝이 없으면 실시간 자료만 든 창).
       var lx = o.live;
-      body.appendChild(el('span', 'meta', [parkDistText(lx[0], lx[1]), '남은 자리 ' + fmt(lx[3]) + '면', (lx[6] === 'seoul' ? '서울시' : '교통안전공단') + ' 자료'].filter(Boolean).join(', '))); row.appendChild(body);
+      body.appendChild(parkMeta(['남은 자리 ' + fmt(lx[3]) + '면', (lx[6] === 'seoul' ? '서울시' : '교통안전공단') + ' 자료', parkDistText(lx[0], lx[1])])); row.appendChild(body);
       row.addEventListener('click', function () {
         $('q').value = ''; $('qClear').hidden = true; closePanel();
         var ll = [lx[1] / 1e5, lx[0] / 1e5], d = .004;
@@ -10664,7 +10666,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       });
       return row;
     }
-    body.appendChild(el('span', 'meta', [parkDistText(o[5], o[6]), o[1], fee].filter(Boolean).join(', ') || '주차장')); row.appendChild(body);
+    // 무료, 유료 → 지역 → 거리(카페 줄의 평 → 주소 → 거리와 같은 차례)
+    body.appendChild(parkMeta([fee, o[1], parkDistText(o[5], o[6])])); row.appendChild(body);
     // 누르면 그 자리로 날아간 뒤 주차장 창을 연다(정류장 검색과 같다).
     row.addEventListener('click', function () {
       $('q').value = ''; $('qClear').hidden = true; closePanel();
