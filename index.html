@@ -3877,7 +3877,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     ['guide', '사용법 정독', '처음 안내를 본 뒤 메뉴의 사용법을 직접 열어 세 묶음을 모두 펼쳐 읽었어요.'],
     // 넷째 칸이 있으면 어려운 짝이고, 그 값은 짝인 일반 에그(도감에서 같은 줄 오른쪽에 놓인다).
     // 같은 행동을 더 어렵게 한 것이고, 일반 쪽과 한 번의 행동으로 같이 깨지지 않게 만든다(사용자 2026-11-26).
-    ['corner2', '세상 끝의 끝', '세상 끝 친구 곁을 가장 크게 확대해서 숨어 있던 아주 작은 친구를 찾았어요.', 'corner'],
+    ['corner2', '세상 끝의 끝', '지도를 가장 크게 확대해서 왼쪽 아래 맨 끝에 숨은 아주 작은 친구를 찾았어요.', 'corner'],
     ['privacy2', '마침표까지 읽은 사람', '개인정보처리방침 속에 숨은 원두 모양 마침표를 찾아 눌렀어요.', 'privacy'],
     ['hour2', '똑같은 숫자', '1:11, 2:22, 3:33, 4:44, 5:55, 11:11, 22:22처럼 같은 숫자로 된 시각에 앱을 켰어요.', 'hour'],
     ['offline2', '지하 카페', '인터넷이 끊긴 채로 콘센트를 기록하려고 했어요.', 'offline'],
@@ -4371,12 +4371,12 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var d = el('div', 'eggcorner'); d.setAttribute('aria-hidden', 'true'); d.appendChild(fxIcon('char'));
     d.addEventListener('click', function (e) { e.stopPropagation(); eggFound('corner'); });
     new maplibregl.Marker({ element: d }).setLngLat([121.22, 31.2]).addTo(map);
-    // 세상 끝의 끝: 지도를 가장 크게(18.6단계 이상) 확대해야만 보이는 아주 작은 캐릭터(사용자 2026-11-26).
-    //  자리(사용자 2026-11-28): 세상 끝 친구를 찾아와서 더 확대하면 "여기 하나 더 있었네" 하게, 그 친구 바로 곁(남서쪽 8m쯤, 18.6단계에서 20px쯤)에 둔다.
-    //  전에는 지도 테두리 맨 귀퉁이(121, 31)였는데, 지도를 돌리는 동안 테두리를 넓히면서 그곳이 끝이 아니게 됐다.
+    // 세상 끝의 끝: 지도를 가장 크게(18.6단계 이상) 확대해야만 보이는 왼쪽 아래 맨 끝의 아주 작은 캐릭터(사용자 2026-11-26).
+    //  자리는 지도 테두리 맨 귀퉁이(121, 31) 그대로 둔다(사용자 2026-11-28). 지도를 돌릴 때 테두리를 넓히는 것은 8단계 아래에서만이라
+    //  18.6단계에서는 이 귀퉁이가 늘 끝이다.
     var t = el('div', 'eggtiny'); t.setAttribute('aria-hidden', 'true'); t.appendChild(fxIcon('char'));
     t.addEventListener('click', function (e) { e.stopPropagation(); eggFound('corner2'); });
-    new maplibregl.Marker({ element: t }).setLngLat([121.22 - 0.00007, 31.2 - 0.00005]).addTo(map);
+    new maplibregl.Marker({ element: t }).setLngLat([121.00016, 31.00012]).addTo(map);
     var vis = function () { t.style.display = map.getZoom() >= 18.6 ? '' : 'none'; };
     map.on('zoom', vis); vis();
   }
