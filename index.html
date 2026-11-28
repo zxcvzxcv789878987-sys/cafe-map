@@ -10438,7 +10438,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
 
   // ----- 주차장 검색(2026-11-28 사용자: 검색 탭에 주차장) -----
   // 색인 파일(parkidx/, 데이터 만들기/park_tiles.py)을 찾는 낱말의 첫 글자에 맞는 것만 그때 받는다. 이름 조각과 지역 낱말(서울, 용산구)로 나뉘어 있다.
-  //  한 줄: [이름, 지역, 무료|유료|혼합, 칸, 칸 안 순번]. "용산 주차장"처럼 주차장이라는 낱말은 빼고 찾는다(이름에 주차장이 없는 곳이 많다).
+  //  한 줄: [이름, 지역, 무료|유료|혼합, 칸, 칸 안 순번, 위도*1e5, 경도*1e5]. "용산 주차장"처럼 주차장이라는 낱말은 빼고 찾는다(이름에 주차장이 없는 곳이 많다).
   var parkIdx = {}, parkIdxWait = {};
   function parkFind(words) {
     var ws = words.filter(function (w) { return !/^(공영)?주차장?$/.test(w); });
@@ -10462,8 +10462,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         seen[id] = 1; out.push(e);
       });
     });
-    // 지도 가운데에서 가까운 순서(칸 가운데로 잰다), 같으면 이름 순서.
-    out.forEach(function (o) { var t = o[3].split('_'); o.d = Math.pow((+t[0] + .5) / 20 - ct.lat, 2) + Math.pow(((+t[1] + .5) / 20 - ct.lng) * .8, 2); });
+    // 지도 가운데에서 가까운 순서(사용자 2026-11-29: 정확한 거리순). 색인에 자리(o[5], o[6])가 있으면 그 자리로, 없으면 칸 가운데로 잰다.
+    out.forEach(function (o) {
+      if (o[5]) { o.d = Math.pow(o[5] / 1e5 - ct.lat, 2) + Math.pow((o[6] / 1e5 - ct.lng) * .8, 2); return; }
+      var t = o[3].split('_'); o.d = Math.pow((+t[0] + .5) / 20 - ct.lat, 2) + Math.pow(((+t[1] + .5) / 20 - ct.lng) * .8, 2);
+    });
     out.sort(function (a, b) { return a.d - b.d || a[0].localeCompare(b[0]); });
     return out;
   }
