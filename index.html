@@ -420,7 +420,9 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .dtabs.one { flex: 1; }
 .dh.tabbed .ib { align-self: center; margin-bottom: 3px; }
 /* 탭 줄을 없앤 머리줄(2026-11-28): 정보를 볼 때는 손잡이만 남은 얇은 줄, 카카오맵을 볼 때는 뒤로 단추와 닫기 */
-.dh.slim { padding: 14px 0 0; min-height: 0; }
+.dh.slim { padding: 24px 0 0; min-height: 0; }
+.dh.slim::before { top: 9px; width: 44px; margin-left: -22px; height: 5px; }
+.dh.tabbed + .dbody, .dh.tabbed + .gonebar + .dbody { border-top: 0; }
 .dh.slim .hx { display: none; }
 .dh .dkback { flex: none; align-self: center; height: 36px; padding: 0 12px 0 6px; border: 0; border-radius: 18px; background: var(--surface-2); display: inline-flex; align-items: center; gap: 2px; font-size: 14px; font-weight: 700; color: var(--ink); }
 .dh .dkback svg.i { width: 18px; height: 18px; }
@@ -6918,8 +6920,12 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 카드의 높이 단계: half 화면의 절반쯤만 보임, full 전체. 카드 자체는 늘 전체 높이이고, 아래로 밀어 놓아서 반만 보이게 한다.
   // lift: 반만 올라온 카드를 그보다 더 올려 둔 높이. 카페정보 판을 열어 둔 동안 카드를 화면의 3분의 2쯤까지 올린다.
   var snap = 'half', lift = 0;
-  // 반만 열린 높이: 어느 카드든 화면의 46%(카카오맵 탭에서 올렸다 내렸을 때와 같은 높이, 사용자 2026-11-28).
-  function halfPx() { return Math.round(window.innerHeight * .46); }
+  // 반만 열린 높이: 어느 카드든 같다.
+  function halfPx() {
+    // 필터 칩 줄 아래부터 화면 맨 아래까지의 절반(사용자 2026-11-28)
+    var c = $('chips'), b = c ? c.getBoundingClientRect().bottom : window.innerHeight * .08;
+    return Math.round((window.innerHeight - b) / 2);
+  }
   function snapOffset(which) { return which === 'full' ? 0 : Math.max(0, panel.offsetHeight - halfPx() - lift); }
   function setSnap(which, animate) {
     snap = which;
