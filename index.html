@@ -9205,6 +9205,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     routeOn = false; routeLine = null; offN = 0;
     if (nearMk) { nearMk.remove(); nearMk = null; }
     if (nearMk2) { nearMk2.remove(); nearMk2 = null; }
+    if (map.getLayer && map.getLayer('walk-arrow')) map.removeLayer('walk-arrow');
     if (map.getLayer && map.getLayer('walk')) { map.removeLayer('walk'); map.removeLayer('walk-edge'); }
     if (map.getSource && map.getSource('walk')) map.removeSource('walk');
   }
@@ -9212,8 +9213,16 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     clearRoute();
     var data = { type: 'Feature', geometry: { type: 'LineString', coordinates: coords } };
     map.addSource('walk', { type: 'geojson', data: data });
-    map.addLayer({ id: 'walk-edge', type: 'line', source: 'walk', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 9 } });
-    map.addLayer({ id: 'walk', type: 'line', source: 'walk', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#6a5ae0', 'line-width': 5 } });
+    map.addLayer({ id: 'walk-edge', type: 'line', source: 'walk', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 14 } });
+    map.addLayer({ id: 'walk', type: 'line', source: 'walk', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#6a5ae0', 'line-width': 10 } });
+    // 가는 방향: 길 안에 흰 꺾쇠(>)를 일정한 간격으로 찍는다. 선의 점 순서가 곧 가는 방향이다(사용자 2026-11-28).
+    if (!map.hasImage('walk-arrow')) {
+      var cv = document.createElement('canvas'); cv.width = cv.height = 24;
+      var g = cv.getContext('2d'); g.strokeStyle = '#ffffff'; g.lineWidth = 4; g.lineCap = 'round'; g.lineJoin = 'round';
+      g.beginPath(); g.moveTo(9, 5); g.lineTo(16, 12); g.lineTo(9, 19); g.stroke();
+      map.addImage('walk-arrow', g.getImageData(0, 0, 24, 24), { pixelRatio: 2 });
+    }
+    map.addLayer({ id: 'walk-arrow', type: 'symbol', source: 'walk', layout: { 'symbol-placement': 'line', 'symbol-spacing': 34, 'icon-image': 'walk-arrow', 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-rotation-alignment': 'map' } });
     routeOn = true; routeLine = coords;
   }
   // 키가 있는 곳부터 묻고, 실패하면 다음 곳, 마지막은 키 없는 FOSSGIS 서버.
@@ -9910,7 +9919,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   //  rev: 거꾸로(그곳에서 카페까지). 주차장은 차를 대고 걸어오는 길이 먼저라 주차장에서 카페가 처음이고, 길 판에서 방향을 바꿀 수 있다(사용자 2026-11-28).
   var nearMk = null, nearMk2 = null;
   function nearOnMap(i, kind, name, to, meters, other, sideLabel, rev) {
-    var from = [D.lng[i] / 1e5, D.lat[i] / 1e5];
+    // 카페 쪽 끝은 지도에 찍힌 카페 점(카카오 매장 자리로 옮겨 찍었으면 그 자리)에 맞춘다. 건물 점에서 시작하면 점과 길이 떨어져 보인다.
+    var from = mercToLngLat(mx[i], my[i]);
     var show = function (c, dist, src) {
       drawRoute(c);
       if (nearMk) nearMk.remove();
