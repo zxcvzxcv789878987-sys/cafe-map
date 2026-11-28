@@ -13,7 +13,7 @@
 #   5. 점검: 카페 수가 지난번과 크게 다르면 멈추고 예전 파일을 그대로 둔다
 #   6. 깃허브에 올리기
 #   지하철 노선, 역, 아파트(landmarks.js)는 석 달에 한 번 fetch_landmarks.py로 다시 받는다
-#   0, 7. 키 점검(check_keys.py)과 새 브랜드 후보(brand_candidates.py)를 기록에 남긴다
+#   0, 7. 키 점검(check_keys.py), 새 법정구역 파일 점검(check_legal.py), 새 브랜드 후보(brand_candidates.py)를 기록에 남긴다
 # 받은 원본은 "데이터 만들기/작업" 폴더에 둔다(깃허브에는 올리지 않는다).
 import sys, os, json, re, time, shutil, subprocess, urllib.request, urllib.parse, datetime
 
@@ -73,6 +73,7 @@ def count(path):
 say('==== 갱신 시작 ====')
 # 0. 키 점검: 공공데이터, 카카오 키가 살아 있는지 한 번씩 물어본다. 문제가 있어도 멈추지 않고 보고에 남긴다.
 key_report = run('check_keys.py')
+legal_report = run('check_legal.py')     # 새 법정구역 파일이 나왔는지(받기는 사람이)
 
 # 1. 카페 목록
 say('1. 상가정보 파일 확인')
@@ -196,6 +197,9 @@ else:
 # 7. 사람이 볼 것: 새 브랜드 후보와 키 점검 결과
 say('7. 사람이 볼 것')
 run('brand_candidates.py', out_js)
+for line in legal_report.splitlines():
+    if '새 파일' in line or '실패' in line:
+        say('   법정구역:', line)
 for line in key_report.splitlines():
     if '문제' in line and '문제 0개' not in line:
         say('   키를 확인해야 한다:', line)
