@@ -12068,9 +12068,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       panel.classList.remove('rise'); panel.style.transition = 'none';
     };
     h.addEventListener('pointerdown', function (e) {
-      // 사진 줄의 사진도 탭처럼 다룬다(사용자 2026-11-28: 반만 열렸을 때 사진을 끌어도 카드가 펴지거나 내려가게). 톡 누르면 사진이 열린다.
-      var tab = e.target.closest('.dtab, .opc');
-      if (e.target.closest('button, a') && !tab) return;
+      // 탭, 사진, 단추(찜, 공유, 닫기, 길찾기, 영업시간 줄 등) 위에서 시작해도 끌린다(사용자 2026-11-28: 칸 위에서 끌어도 카드가 움직이게, 정류장 창과 같은 방식).
+      //  단추 위에서 시작한 것은 8px 넘게 움직여야 끌기로 보고, 톡 누르면 그 단추를 누른 것이다. 끌고 난 뒤의 누름은 막는다(end).
+      var tab = e.target.closest('button, a');
       if (e.target.closest('.orv')) return;     // 로드뷰 칸 안에서 끄는 것은 로드뷰를 돌리는 것이다
       if (!mobile.matches) return;
       if (opt.halfOnly && !(twoStage() && snap === 'half')) return;
