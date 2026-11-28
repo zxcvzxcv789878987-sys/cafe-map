@@ -188,6 +188,9 @@ for r in rows:
     branch = r['지점명'].strip()
     n = norm(raw)
     b = brand_of(raw.replace(' ', ''))
+    if b < 0 and branch:
+        # 상호명 '동네커피', 지점명 '진해점'처럼 나뉜 줄. 지점 이름이 붙은 곳만 잡는 브랜드(동네커피, 커피왕, 봄봄)를 위해 붙여서 한 번 더 본다.
+        b = brand_of((raw + branch).replace(' ', ''))
     area = 0.0
     ltype = ''
     k = addr_key(r['도로명주소'])

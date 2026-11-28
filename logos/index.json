@@ -179,6 +179,11 @@
   "src": "https://play-lh.googleusercontent.com/gywn3ObuAzznDxdrHusPh6dqAH0FCNkcjf5Cx3laXgGnOdQN3uJAXnawIvzJqugZixvLedkWhXzEdrABk2gT3A=s512",
   "px": 512
  },
+ "동네커피": {
+  "file": "logos/d0169940fb.webp",
+  "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQBOUsrplvB09XbjPK6Z-d9vlnA_gg9Wgq0tbaBR6ak-w&s=10",
+  "px": 400
+ },
  "드롭탑": {
   "file": "logos/5a375cb738.webp",
   "src": "https://framerusercontent.com/images/ht8OraWVX8dphvQwY0AY918akW4.png",
@@ -669,6 +674,11 @@
   "src": "http://ogadanew.cafe24.com/wp-content/uploads/2019/11/mb_logo.png",
   "px": 32
  },
+ "오늘도빙수": {
+  "file": "logos/9a4059a636.webp",
+  "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSl9_EA9cPa1kEhT43leBlGAypqp3d19rfbvQtUQ8HA8w&s=10",
+  "px": 435
+ },
  "오슬랑": {
   "file": "logos/38bd4d23c3.webp",
   "src": "https://cdn.imweb.me/thumbnail/20241224/dd8e31b17ab12.png",
@@ -854,6 +864,16 @@
   "src": "https://cdn.imweb.me/thumbnail/20250410/a3328609595d0.png",
   "px": 196
  },
+ "카페그리닝": {
+  "file": "logos/bada232133-f.webp",
+  "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRMS7B74r1zvJqaeXJBl5-Pc9DLUsEG9LnrTr6D1kTdbw&s=10",
+  "px": 447
+ },
+ "카페달링": {
+  "file": "logos/9e5e3c3449-f.webp",
+  "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQSu9m7OXeQXtMROJ6F1zMXVBqo5R1-4cMSgjalubH4Zg&s=10",
+  "px": 447
+ },
  "카페동네": {
   "file": "logos/d2ceb42d60-f.webp",
   "src": "file",
@@ -873,6 +893,11 @@
   "file": "logos/fa6c191d04-f.webp",
   "src": "file",
   "px": 341
+ },
+ "카페리프": {
+  "file": "logos/02a9e98a40-f.webp",
+  "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRmza80JlXEmWHHk67PNkUGVHyZqf4geMwcaRfvqmZQlA&s=10",
+  "px": 223
  },
  "카페마일로": {
   "file": "logos/68cdb3dd0b-f.webp",
@@ -959,6 +984,11 @@
   "src": "https://coffeemama.co.kr/favicon32.ico",
   "px": 32
  },
+ "커피마마퀸": {
+  "file": "logos/6252075e96-f.webp",
+  "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT89kwWUNZLFP12DHAPh2AusFh_AkmrRnRy_tlVUJmoOQ&s=10",
+  "px": 447
+ },
  "커피명가": {
   "file": "logos/f9ce0c235c-f.webp",
   "src": "https://www.myungga.com/web/upload/share-image-1-17f8f9fe04c44cada5cc2bf4a64cdfe9.jpg",
@@ -1004,10 +1034,20 @@
   "src": "https://static.wixstatic.com/media/5993f5_d322725ab616421080e5dace19f87bef%7Emv2.jpg/v1/fill/w_192%2Ch_192%2Clg_1%2Cusm_0.66_1.00_0.01/5993f5_d322725ab616421080e5dace19f87bef%7Emv2.jpg",
   "px": 192
  },
+ "커피왕": {
+  "file": "logos/4ec2a82501-f.webp",
+  "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRhziAsz7WgEMHHUsvaF1Fwd1uow7nhVUojL5VN1n-k2A&s=10",
+  "px": 447
+ },
  "커피인류": {
   "file": "logos/0c838ae3d7-f.webp",
   "src": "https://coffeeinryu.com:443/superboard/data/siteconfig/20240911160953_66e142412f5dd_bb5ed23764143acb8cc262d40288568f0346f3c1.jpg",
   "px": 585
+ },
+ "커피쿡": {
+  "file": "logos/dab7db95e8.webp",
+  "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS9fbIhuitY_eX3wdLOMbW4_8VmPwfO0FSDaZlI2ZTD9A&s=10",
+  "px": 390
  },
  "커피특별시": {
   "file": "logos/777a1c5206-f.webp",
@@ -1033,6 +1073,16 @@
   "file": "logos/50271f283c-f.webp",
   "src": "https://cupnut.co.kr/_public/images2/common/link_banner.png",
   "px": 180
+ },
+ "코끼리카페": {
+  "file": "logos/09c447d374-f.webp",
+  "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR1zpYMTRIRutEFg6Xagh5TDuvWW1hcKRkG3o3ki6OtTA&s",
+  "px": 225
+ },
+ "콜프로스터스": {
+  "file": "logos/2b0bd11ca2.webp",
+  "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSQFcDKdN8GJqZGS9_dKbn4wt_i6O0l1ugZOqf1BIDWpA&s=10",
+  "px": 395
  },
  "콩카페": {
   "file": "logos/557fc632e4-f.webp",
