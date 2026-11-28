@@ -1981,6 +1981,11 @@ button.xlink svg.i { width: 15px; height: 15px; opacity: .5; flex: none; }
 .eggtiny { width: 8px; height: 8px; cursor: default; }
 .eggtiny .fxs { width: 8px; height: 8px; display: block; }
 .eggcorner .fxs { width: 16px; height: 16px; display: block; }
+/* 세상 끝 친구, 세상 끝의 끝: 누르면 한 번 톡 튀어 오른다(사용자 2026-11-28). 지도 표시 자체는 지도가 자리를 잡으므로 안의 그림만 움직인다. */
+.eggcorner.hop .fxs { animation: eggHop .42s cubic-bezier(.3, .7, .4, 1); }
+.eggtiny.hop .fxs { animation: eggHopS .42s cubic-bezier(.3, .7, .4, 1); }
+@keyframes eggHop { 0% { transform: none; } 40% { transform: translateY(-9px) scale(1.05, .95); } 70% { transform: translateY(0) scale(1.08, .9); } 100% { transform: none; } }
+@keyframes eggHopS { 0% { transform: none; } 40% { transform: translateY(-5px) scale(1.05, .95); } 70% { transform: translateY(0) scale(1.08, .9); } 100% { transform: none; } }
 .me .dot { pointer-events: auto; cursor: default; }
 /* 메뉴 레벨 칸: 왼쪽 단계 그림(누르면 레벨 단계), 오른쪽 레벨과 원두(누르면 원두 기록) */
 .xlv.xlvcard { flex-direction: row; align-items: center; gap: 12px; }
@@ -4387,13 +4392,15 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 지도가 갈 수 있는 왼쪽 아래 끝(121, 31) 근처 육지(중국 상하이 서쪽)에 아주 작게 숨긴 우리 캐릭터
   function eggCorner() {
     var d = el('div', 'eggcorner'); d.setAttribute('aria-hidden', 'true'); d.appendChild(fxIcon('char'));
-    d.addEventListener('click', function (e) { e.stopPropagation(); eggFound('corner'); });
+    // 누를 때마다 한 번 튀어 오른다(이미 찾은 뒤에도).
+    var hop = function (x) { x.classList.remove('hop'); void x.offsetWidth; x.classList.add('hop'); setTimeout(function () { x.classList.remove('hop'); }, 450); };
+    d.addEventListener('click', function (e) { e.stopPropagation(); hop(d); eggFound('corner'); });
     new maplibregl.Marker({ element: d }).setLngLat([121.22, 31.2]).addTo(map);
     // 세상 끝의 끝: 지도를 가장 크게(18.6단계 이상) 확대해야만 보이는 왼쪽 아래 맨 끝의 아주 작은 캐릭터(사용자 2026-11-26).
     //  자리는 지도 테두리 맨 귀퉁이(121, 31) 그대로 둔다(사용자 2026-11-28). 지도를 돌릴 때 테두리를 넓히는 것은 8단계 아래에서만이라
     //  18.6단계에서는 이 귀퉁이가 늘 끝이다.
     var t = el('div', 'eggtiny'); t.setAttribute('aria-hidden', 'true'); t.appendChild(fxIcon('char'));
-    t.addEventListener('click', function (e) { e.stopPropagation(); eggFound('corner2'); });
+    t.addEventListener('click', function (e) { e.stopPropagation(); hop(t); eggFound('corner2'); });
     new maplibregl.Marker({ element: t }).setLngLat([121.00016, 31.00012]).addTo(map);
     // 캐릭터가 화면에 보이는 동안은 아래쪽 상자(이 화면에는 없어요)와 개수 단추를 숨긴다(사용자 2026-11-28: 찜을 켜 두면 그 상자에 가려져 안 보였다).
     var tinyOn = null;
