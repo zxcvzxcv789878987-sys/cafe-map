@@ -3350,7 +3350,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       return s;
     };
     grp('길 안내', [
-      ['걷는 길', links([['TMAP', 'https://tmapapi.tmapmobility.com/'], ['© openrouteservice.org by HeiGIT', 'https://openrouteservice.org/'], ['Geoapify', 'https://www.geoapify.com/'], ['FOSSGIS', 'https://routing.openstreetmap.de/']])],
+      ['걷는 길과 차 길', links([['카카오맵', 'https://map.kakao.com/'], ['TMAP', 'https://tmapapi.tmapmobility.com/'], ['© openrouteservice.org by HeiGIT', 'https://openrouteservice.org/'], ['Geoapify', 'https://www.geoapify.com/'], ['FOSSGIS', 'https://routing.openstreetmap.de/']])],
       ['버스 노선 모양', '각 버스정보의 노선 좌표, 없는 곳은 Geoapify']
     ]);
     grp('배경 지도', [['지도 그림', links([['OpenFreeMap', 'https://openfreemap.org/'], ['© OpenMapTiles', 'https://www.openmaptiles.org/'], ['© OpenStreetMap contributors', 'https://www.openstreetmap.org/copyright']])]]);
@@ -10682,7 +10682,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   function walkTmap(from, to) {
     return fetch(BUS_API.replace(/\/bus$/, '/walk') + '?f=' + from[0].toFixed(5) + ',' + from[1].toFixed(5) + '&t=' + to[0].toFixed(5) + ',' + to[1].toFixed(5))
       .then(function (r) { if (!r.ok) throw new Error('route'); return r.json(); })
-      .then(function (j) { if (!j.coords || j.coords.length < 2) throw new Error('route'); return { coords: j.coords, dist: j.dist, src: 'tmap' }; });
+      .then(function (j) { if (!j.coords || j.coords.length < 2) throw new Error('route'); return { coords: j.coords, dist: j.dist, src: j.src || 'tmap' }; });   // 서버가 티맵, 카카오, openrouteservice 중 준 곳
   }
   function walkFetch(from, to) {
     var tries = [walkTmap];
@@ -10698,7 +10698,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var q = '?f=' + from[0].toFixed(5) + ',' + from[1].toFixed(5) + '&t=' + to[0].toFixed(5) + ',' + to[1].toFixed(5);
     return fetch(BUS_API.replace(/\/bus$/, '/drive') + q)
       .then(function (r) { if (!r.ok) throw new Error('drive'); return r.json(); })
-      .then(function (j) { if (!j.coords || j.coords.length < 2) throw new Error('drive'); return { coords: j.coords, dist: j.dist, sec: j.sec, src: 'tmap' }; })
+      .then(function (j) { if (!j.coords || j.coords.length < 2) throw new Error('drive'); return { coords: j.coords, dist: j.dist, sec: j.sec, src: j.src || 'tmap', taxi: j.taxi || 0 }; })   // 서버: 카카오 먼저, 그다음 티맵
       .catch(function () {
         if (!ROUTE.geoapify) throw new Error('drive');
         return fetch('https://api.geoapify.com/v1/routing?waypoints=' + from[1] + ',' + from[0] + '|' + to[1] + ',' + to[0] + '&mode=drive&apiKey=' + encodeURIComponent(ROUTE.geoapify))
@@ -10864,6 +10864,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var link = function (t, u) { var a = el('a', null, t); a.href = u; a.target = '_blank'; a.rel = 'noopener'; return a; };
     var osm = function () { p.appendChild(document.createTextNode('© ')); p.appendChild(link('OpenStreetMap', 'https://www.openstreetmap.org/copyright')); p.appendChild(document.createTextNode(' 기여자')); };
     if (src === 'tmap') { p.appendChild(document.createTextNode('길 안내 ')); p.appendChild(link('TMAP', 'https://tmapapi.tmapmobility.com/')); return p; }
+    if (src === 'kakao') { p.appendChild(document.createTextNode('길 안내 ')); p.appendChild(link('카카오맵', 'https://map.kakao.com/')); return p; }
     if (src === 'ors') { p.appendChild(document.createTextNode('길 안내 © ')); p.appendChild(link('openrouteservice.org', 'https://openrouteservice.org/')); p.appendChild(document.createTextNode(' by HeiGIT, ')); osm(); }
     else if (src === 'fossgis') { p.appendChild(document.createTextNode('길 안내 ')); p.appendChild(link('FOSSGIS', 'https://routing.openstreetmap.de/')); p.appendChild(document.createTextNode(', ')); osm(); }
     else { p.appendChild(document.createTextNode('Powered by ')); p.appendChild(link('Geoapify', 'https://www.geoapify.com/')); p.appendChild(document.createTextNode(', ')); osm(); }
