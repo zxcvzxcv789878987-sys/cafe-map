@@ -566,8 +566,8 @@ button.oli { width: 100%; padding: 11px 0; margin: 0; background: none; color: v
 .rvl .rs .dt { position: absolute; left: 13px; top: 50%; width: 12px; height: 12px; margin-top: -6px; border-radius: 50%; background: var(--surface); border: 2px solid var(--rc); box-sizing: border-box; }
 .rvl .rs .nm { flex: 1; min-width: 0; font-size: 14.5px; color: var(--ink); }
 .rvl .rs .nm em { font-style: normal; margin-left: 6px; font-size: 11.5px; font-weight: 700; color: var(--ink-2); }
-.rvl .rs.me .nm { font-weight: 800; }
-.rvl .rs.me .dt { width: 18px; height: 18px; left: 10px; margin-top: -9px; background: var(--rc); border: 3px solid var(--surface); box-shadow: 0 0 0 2px var(--rc); }
+.rvl .rs.cur .nm { font-weight: 800; }   /* 이 정류장 줄. 이름을 me로 하면 내 위치 표시(.me, 폭 70px)와 겹쳐 글자가 세로로 쪼개진다 */
+.rvl .rs.cur .dt { width: 18px; height: 18px; left: 10px; margin-top: -9px; background: var(--rc); border: 3px solid var(--surface); box-shadow: 0 0 0 2px var(--rc); }
 .rvl .rs .bi { position: absolute; left: 6px; top: 50%; width: 26px; height: 26px; margin-top: -13px; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 2px 5px rgba(0, 0, 0, .25); }
 .rvl .rs .bi svg.i { width: 16px; height: 16px; color: #fff; }
 #rbar { position: fixed; z-index: 25; left: 50%; transform: translateX(-50%); top: calc(118px + env(safe-area-inset-top, 0px)); display: flex; align-items: center; gap: 2px; padding: 4px 4px 4px 6px; border-radius: 14px; background: var(--surface); box-shadow: 0 4px 14px rgba(0, 0, 0, .18); max-width: calc(100% - 32px); box-sizing: border-box; }
@@ -597,7 +597,7 @@ button.nearpin { pointer-events: auto; border: 0; background: none; padding: 0; 
 /* 건너편 정류장 고르기(2026-11-28) */
 .nshseg { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface-2); }
 .nshseg button { min-width: 0; border: 0; border-radius: 10px; background: none; padding: 8px 4px; display: flex; flex-direction: column; align-items: center; gap: 1px; color: var(--ink-2); }
-.nshseg button b { font-size: 15px; font-weight: 800; }
+.nshseg button b { max-width: 100%; font-size: 15px; font-weight: 800; line-height: 1.3; text-align: center; word-break: keep-all; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .nshseg button span { font-size: 12.5px; }
 .nshseg button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 4px rgba(0, 0, 0, .12); }
 .nearpin.alt { pointer-events: auto; border: 0; background: none; padding: 0; cursor: pointer; }
@@ -6992,6 +6992,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   }
   map.on('moveend', busRefresh);
   if (TEST) window.testView = function () { return map.getBounds().toArray(); };
+  if (TEST) window.testBusTap = function (s) { busTap(s); };   // 시험: 정류장 한 줄을 주면 그 정류장 창을 연다
   if (TEST) window.testBus = function () { var sc = map.getSource('lm-busstops'); return { z: map.getZoom(), layer: !!map.getLayer('lm-bus'), src: !!sc, same: sc === busSrc, n: busFC.features.length, keys: busKeyStr, img: map.hasImage('ic-bus') }; };
   // 지도 모양을 다시 입히면(setStyle) 자료 칸이 새로 생기므로 받아 둔 정류장을 다시 넣는다.
   map.on('styledata', function () { var s3 = map.getSource('lm-busstops'); if (s3 && s3 !== busSrc) { busSrc = s3; s3.setData(busFC); busKeyStr = ''; busRefresh(); } });
@@ -7088,7 +7089,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         (d.b || []).forEach(function (q) { buses[q] = (buses[q] || 0) + 1; });
         list.style.setProperty('--rc', col);
         d.s.forEach(function (q, k) {
-          var r = el('div', 'rs' + (q[3] === me ? ' me' : '') + (k === 0 ? ' first' : '') + (k === d.s.length - 1 ? ' last' : ''));
+          var r = el('div', 'rs' + (q[3] === me ? ' cur' : '') + (k === 0 ? ' first' : '') + (k === d.s.length - 1 ? ' last' : ''));
           r.appendChild(el('span', 'ln')); r.appendChild(el('span', 'dt'));
           var nm = el('span', 'nm', q[0]); if (q[4]) nm.appendChild(el('em', null, '회차')); r.appendChild(nm);
           // 버스가 있는 정류장(그 정류장에 있거나 막 지난 차)
@@ -10085,27 +10086,47 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       fav = btn('oact ohw nfav', null, function () { var y = pair ? pair[cur] : x; busFavSet(y, !busFavHas(y)); fav.setAttribute('aria-pressed', String(busFavHas(y))); toast(busFavHas(y) ? '정류장을 찜했어요' : '정류장 찜을 풀었어요'); });
       fav.appendChild(icon('heart')); fav.setAttribute('aria-label', '정류장 찜'); hd.appendChild(fav);
     }
-    var pair = kind === 'b' && x2 ? [x, x2] : null, cur = pair && side ? 1 : 0, seg = null, segSub = [], dirEl = null;
+    var pair = kind === 'b' && x2 ? [x, x2] : null, cur = pair && side ? 1 : 0, seg = null, segMain = [], segSub = [], dirEl = null;
+    // 고르는 칸(사용자 2026-11-28: 이 정류장, 건너편보다 알기 쉽게): 굵은 글씨는 버스가 가는 쪽(OO 방면), 작은 글씨는 어느 쪽 정류장인지.
+    //  방면을 아직 모르면 굵은 글씨에 어느 쪽인지를 적는다.
+    var sideName = [i >= 0 ? '가까운 쪽' : '누른 정류장', '길 건너편'];
     // 도착 정보는 정류장마다 한 번 물어 두고(방면도 같이 온다) 쪽을 바꿀 때 다시 쓴다. 새로 보기를 누르면 다시 묻는다.
     //  방면(사용자 2026-11-28): 그 정류장 다음 정류장 이름. 서울은 노선들의 다음 정류장 가운데 가장 많은 것, 그 밖은 TAGO 노선 정보에서.
     var canArr = function (y) { return y[5] && (y[5] === '11' ? y[6] : y[4]); };
-    var got = [null, null], dirs = ['', ''];
+    var got = [null, null], dirs = ['', ''], retried = [0, 0];
     var showDir = function () {
-      segSub.forEach(function (sp, k) { sp.textContent = dirs[k] ? dirs[k] + ' 방면' : i >= 0 ? '걸어서 ' + walkMin(pair[k][1]) + '분' : ''; });
+      segSub.forEach(function (sp, k) {
+        var walk = i >= 0 ? '걸어서 ' + walkMin(pair[k][1]) + '분' : '';
+        segMain[k].textContent = dirs[k] ? dirs[k] + ' 방면' : sideName[k];
+        sp.textContent = dirs[k] ? sideName[k] + (walk ? ', ' + walk : '') : walk;
+        sp.hidden = !sp.textContent;
+      });
       if (dirEl) { dirEl.textContent = dirs[cur] ? dirs[cur] + ' 방면' : ''; dirEl.hidden = !dirs[cur]; }
     };
     var ask = function (k, fresh) {
       var y = pair ? pair[k] : x;
       got[k] = busFetch(y, fresh).then(function (d) { if (d.d) { dirs[k] = d.d; showDir(); } return d; });
       got[k].catch(function () {});
+      // 처음 묻는 정류장은 서버가 방면을 뒤에서 찾느라 비워 보낼 때가 있어서(노선 정류장 목록을 받는 데 몇 초 걸린다),
+      //  비었으면 창이 열려 있는 동안 4초 간격으로 세 번까지 다시 묻는다.
+      if (!retried[k]) got[k].then(function (d) {
+        if (d.d || retried[k]) return; retried[k] = 1;
+        var n = 0, again = function () {
+          setTimeout(function () {
+            if (!o.isConnected || dirs[k]) return;
+            busFetch(y, true).then(function (e) { if (e.d) { dirs[k] = e.d; showDir(); } else if (++n < 3) again(); }, function () { if (++n < 3) again(); });
+          }, 4000);
+        };
+        again();
+      }, function () {});
       return got[k];
     };
     if (pair) {
       seg = el('div', 'nshseg'); seg.setAttribute('role', 'tablist');
-      [i >= 0 ? '가까운 쪽' : '이 정류장', '건너편'].forEach(function (t, k) {
+      sideName.forEach(function (t, k) {
         var sb = btn(null, null, function () { if (cur === k) return; cur = k; fill(); });
         sb.setAttribute('role', 'tab');
-        sb.appendChild(el('b', null, t)); segSub[k] = el('span', null, ''); sb.appendChild(segSub[k]);
+        segMain[k] = el('b', null, t); sb.appendChild(segMain[k]); segSub[k] = el('span', null, ''); sb.appendChild(segSub[k]);
         seg.appendChild(sb);
       });
       sh.appendChild(seg);
@@ -10221,7 +10242,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         var oto = ot ? [ot[3] / 1e5, ot[2] / 1e5] : null, k0 = cur;
         var mb = btn('nshmap', null, function () {
           close();
-          nearOnMap(i, kind, y[0], to, y[1], oto ? { to: oto, label: k0 ? '가까운 쪽' : '건너편', open: function () { nearSheet(i, kind, x, x2, 1 - k0); } } : null, pair ? (k0 ? '건너편' : '가까운 쪽') : '', kind === 'p', function () { nearSheet(i, kind, x, x2, k0); });
+          nearOnMap(i, kind, y[0], to, y[1], oto ? { to: oto, label: k0 ? '가까운 쪽' : '길 건너편', open: function () { nearSheet(i, kind, x, x2, 1 - k0); } } : null, pair ? (k0 ? '길 건너편' : '가까운 쪽') : '', kind === 'p', function () { nearSheet(i, kind, x, x2, k0); });
         });
         mb.appendChild(icon('map')); mb.appendChild(document.createTextNode('지도에서 보기'));
         cont.appendChild(mb);
