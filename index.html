@@ -7660,14 +7660,36 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     return row;
   }
   // 역 이름 검색: 낱말이 다 든 이름. "강남역"처럼 끝에 '역'을 붙여도 찾는다. 이름이 똑같은 역을 먼저, 그다음 지도 가운데에서 가까운 순.
-  function subFind(words) {
-    var ws = words.map(function (w) { return w.length > 1 && /역$/.test(w) && w !== '서울역' ? w.slice(0, -1) : w; }), j = ws.join('');
+  //  alts(2026-11-29): 낱말마다 같은 뜻 낱말들. 다른 이름 사전(SUB_ALIAS), 노선 이름(1호선), 줄임말 규칙(성대 → 성균관대)으로도 찾는다.
+  //  차례: 이름이 똑같은 역, 이름에 들었거나 다른 이름으로 찾은 역, 줄임말로 찾은 역(건너뛴 글자가 적은 것 먼저). 같은 차례 안에서는 지도 가운데에서 가까운 순.
+  function subFind(words, alts) {
+    var strip = function (w) { return w.length > 1 && /역$/.test(w) && w !== '서울역' ? w.slice(0, -1) : w; };
+    alts = alts || words.map(function (w) { return [w]; });
+    var ws = words.map(strip), j = ws.join('');
+    var sets = alts.map(function (a) {
+      var o = [], al = [];
+      a.forEach(function (w) { var x = strip(w); if (o.indexOf(x) < 0) o.push(x); (SUB_ALIAS[x] || []).forEach(function (y) { if (al.indexOf(y) < 0) al.push(y); }); });
+      return { w: o, al: al };
+    });
+    var lineHit = function (lines, xs) {
+      return xs.some(function (x) { return x.length >= 3 && lines.some(function (L) { return L === x || (/(선|철도|라인)$/.test(x) && L.indexOf(x) >= 0) || L.indexOf(x) === 0; }); });
+    };
     var ct = map.getCenter(), out = [];
     SUBWAY.forEach(function (a) {
-      var nm = a[2].toLowerCase();
-      for (var w = 0; w < ws.length; w++) if (nm.indexOf(ws[w]) < 0) return;
+      var nm = a[2].toLowerCase(), flatNm = nm.replace(/[·\s]/g, ''), lines = a[3].map(function (L) { return String(L[0]).toLowerCase(); }), rank = 1, gap = 0;
+      for (var w = 0; w < sets.length; w++) {
+        var st = sets[w];
+        if (hayHas(nm, st.w)) continue;
+        if (st.al.some(function (y) { return y.toLowerCase() === nm; })) { rank = Math.min(rank, .5); continue; }   // 다른 이름 사전(성대 → 성균관대)은 줄임말로 걸린 다른 역보다 앞
+        if (lineHit(lines, st.w)) continue;
+        var g = -1;
+        st.w.forEach(function (x) { if (/^[가-힣]{2,4}$/.test(x)) { var gg = abbrGap(flatNm, x); if (gg > 0 && (g < 0 || gg < g)) g = gg; } });
+        if (g > 0) { rank = 2; gap += g; continue; }
+        return;
+      }
+      if (nm === j) rank = 0;
       var dx = a[0] / 1e5 - ct.lng, dy = a[1] / 1e5 - ct.lat;
-      out.push([(nm === j ? 0 : 1e6) + dx * dx + dy * dy, a]);
+      out.push([rank * 1e6 + gap * 1e4 + dx * dx + dy * dy, a]);
     });
     out.sort(function (p, q) { return p[0] - q[0]; });
     return out.map(function (x) { return x[1]; });
@@ -10332,16 +10354,17 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     document.head.appendChild(sc);
   }
   // 낱말 하나가 이름의 앞부분과 맞아야 한다("수원"만 치면 수원의 동이 줄줄이 나오지 않게). 나머지 낱말은 시군구, 읍면까지 합친 글자에서 찾는다.
-  function legalFind(words) {
+  // alts: 낱말마다 같은 뜻 낱말들(검색어 넓히기). 초성으로 친 것은 동 이름의 첫소리로 찾는다.
+  function legalFind(alts) {
     if (!LG) { legalLoad(); return []; }
     if (!lgText) { lgText = LG.n.split('|'); lgPath = {}; for (var r = 0; r < NR; r++) lgPath[regPath(r)] = r; }
     var out = [];
     for (var i = 0; i < lgText.length && out.length < 60; i++) {
-      var nm = lgText[i], w, head = false;
-      for (w = 0; w < words.length; w++) if (nm.indexOf(words[w]) === 0) { head = true; break; }
+      var nm = lgText[i], w, head = false, nc = null;
+      for (w = 0; w < alts.length && !head; w++) head = alts[w].some(function (x) { if (isCho(x)) { if (nc == null) nc = choOf(nm); return nc.indexOf(x) === 0; } return nm.indexOf(x) === 0; });
       if (!head) continue;
       var full = legalPath(i).toLowerCase(), ok = true;
-      for (w = 0; w < words.length; w++) if (full.indexOf(words[w]) < 0) { ok = false; break; }
+      for (w = 0; w < alts.length; w++) if (!hayHas(full, alts[w])) { ok = false; break; }
       // 카페가 있는 법정동은 지역 목록(위의 지역 결과)에 이미 나오니 뺀다. 여기에는 카페가 없는 동과 리만 남는다.
       if (ok && lgPath[LG.g[LG.gi[i]] + ' ' + nm] === undefined) out.push(i);
     }
@@ -10393,17 +10416,18 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var cx = LG.c[2 * i] / 1e5, cy = LG.c[2 * i + 1] / 1e5, b = LG.b.slice(4 * i, 4 * i + 4);
     map.fitBounds([[cx - b[0] / 1e5, cy - b[1] / 1e5], [cx + b[2] / 1e5, cy + b[3] / 1e5]], { padding: fitPad(), maxZoom: 16, duration: 600 });
   }
-  window.cafeTest.legalMiss = function () { legalFind(['가']); return LG ? LG.g.filter(function (g) { return lgPath[g] === undefined; }) : 'not loaded'; };
-  window.cafeTest.legal = function (q) { return legalFind(q.toLowerCase().split(/\s+/).filter(Boolean)).map(legalPath); };
+  window.cafeTest.legalMiss = function () { legalFind([['가']]); return LG ? LG.g.filter(function (g) { return lgPath[g] === undefined; }) : 'not loaded'; };
+  window.cafeTest.legal = function (q) { return legalFind(q.toLowerCase().split(/\s+/).filter(Boolean).map(wordAlts)).map(legalPath); };
 
   // ----- 정류장 검색(2026-11-28 사용자: 정류장 이름, 정류장 번호로 검색) -----
   // 색인 파일(busidx/, 데이터 만들기/bus_tiles.py)을 찾는 글자에 맞는 것만 그때 받는다. 이름은 점으로 나눈 조각의 첫 글자별, 번호는 앞 두 자리별.
   //  한 줄: [이름, 도시, [[칸, 칸 안 순번, 정류장 번호], ...]]. 칸과 순번으로 bus/칸.json의 정류장을 찾아 연다.
   var busIdx = {}, busIdxWait = {};
-  function busFind(words) {
+  function busFind(words, alts) {
+    alts = alts || words.map(function (w) { return [w]; });
     var q = words.join(''), num = /^\d{2,}$/.test(q), files = [];
     if (num) files.push('a' + q.slice(0, 2));
-    else words.forEach(function (w) { var f = 'n' + w.charAt(0).toLowerCase().charCodeAt(0).toString(16); if (files.indexOf(f) < 0) files.push(f); });
+    else alts.forEach(function (a) { a.forEach(function (w) { if (isCho(w)) return; var f = 'n' + w.charAt(0).toLowerCase().charCodeAt(0).toString(16); if (files.indexOf(f) < 0) files.push(f); }); });
     var wait = false;
     files.forEach(function (f) {
       if (busIdx[f]) return;
@@ -10417,7 +10441,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       busIdx[f].forEach(function (e) {
         if (num) { e[2].forEach(function (p) { if (p[2].indexOf(q) === 0) out.push([e[0], e[1], p]); }); return; }
         var nm = e[0].toLowerCase(), hay = nm + ' ' + nm.replace(/\s/g, '') + ' ' + e[1];
-        for (var w = 0; w < words.length; w++) if (hay.indexOf(words[w]) < 0) return;
+        for (var w = 0; w < alts.length; w++) if (!hayHas(hay, alts[w])) return;
         if (seen[e[0] + e[1]]) return; seen[e[0] + e[1]] = 1;
         e[2].forEach(function (p) { out.push([e[0], e[1], p]); });
       });
@@ -10462,10 +10486,12 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       lv.sort(function (a, b) { return a.d - b.d; });
       return lv;
     }
-    var ws = words.filter(function (w) { return !/^(공영)?주차장?$/.test(w); });
-    if (!ws.length) ws = words;
+    // 검색어 넓히기(한영 오타, 초성, 영어 이름): 낱말마다 같은 뜻 낱말들
+    var alts = words.map(wordAlts);
+    var as = alts.filter(function (a, k) { return !/^(공영)?주차장?$/.test(words[k]); });
+    if (!as.length) as = alts;
     var files = [];
-    ws.forEach(function (w) { var f = 'n' + w.charAt(0).toLowerCase().charCodeAt(0).toString(16); if (files.indexOf(f) < 0) files.push(f); });
+    as.forEach(function (a) { a.forEach(function (w) { if (isCho(w)) return; var f = 'n' + w.charAt(0).toLowerCase().charCodeAt(0).toString(16); if (files.indexOf(f) < 0) files.push(f); }); });
     var wait = false;
     files.forEach(function (f) {
       if (parkIdx[f]) return;
@@ -10479,7 +10505,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       parkIdx[f].forEach(function (e) {
         var id = e[3] + '/' + e[4]; if (seen[id]) return;
         var nm = e[0].toLowerCase(), hay = nm + ' ' + nm.replace(/\s/g, '') + ' ' + e[1];
-        for (var w = 0; w < ws.length; w++) if (hay.indexOf(ws[w]) < 0) return;
+        for (var w = 0; w < as.length; w++) if (!hayHas(hay, as[w])) return;
         seen[id] = 1; out.push(e);
       });
     });
@@ -10742,7 +10768,79 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // ----- 검색 -----
   // 결과는 탭(카페, 지역, 정류장, 노선, 주차장)으로 나눠 본다(사용자 2026-11-28). 처음에는 카페 탭, 카페가 없으면 결과가 있는 첫 탭.
   //  탭을 직접 누르면 검색 판을 닫을 때까지 그 탭을 지킨다.
-  var flat = null, qTimer = 0, searchTab = 'cafe', searchTabUser = false, searchKeep = false;
+  var flat = null, flatCho = null, qTimer = 0, searchTab = 'cafe', searchTabUser = false, searchKeep = false;
+  // ----- 검색어 넓히기(2026-11-29 사용자: "성대 1호선"처럼 줄여 써도 잡히게, 예를 하나하나 말할 수 없으니 포털 방식으로) -----
+  //  다음(카카오)은 줄임말, 영어와 한글을 섞어 쓴 낱말에 동의어 사전을 쓰고, 초성 검색과 한영 자판 오타 고침도 쓴다. 우리 자료에 맞게 다섯 가지를 넣었다.
+  //  1) 한영 자판 오타: 영어 자판 그대로 친 것(tjdeo)을 한글(성대)로도 찾는다. 바꾼 글자가 모두 온전한 글자일 때만.
+  //  2) 초성: ㅅㄱㄱㄷ처럼 자음만 치면 이름의 첫소리로 찾는다(카페, 지역, 역).
+  //  3) 줄임말 규칙: 첫 글자가 같고 친 글자가 이름에 차례대로 들어 있으면 찾는다(성대 → 성균관대, 스벅 → 스타벅스, 고터 → 고속터미널). 정확히 든 것보다 뒤에 둔다.
+  //  4) 다른 이름 사전: 줄임말 규칙으로 안 되는 역의 옛 이름과 근처 대학, 큰 건물(연대 → 신촌), 카페 영어 이름(starbucks → 스타벅스).
+  //  5) 역은 노선 이름으로도 찾는다(1호선, 신분당선). "성대 1호선"은 1호선에 있는 성균관대역.
+  var HG_CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ', HG_JUNG = 'ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ';
+  var HG_JONG = ['', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+  var KO_KEY = { q: 'ㅂ', w: 'ㅈ', e: 'ㄷ', r: 'ㄱ', t: 'ㅅ', y: 'ㅛ', u: 'ㅕ', i: 'ㅑ', o: 'ㅐ', p: 'ㅔ', a: 'ㅁ', s: 'ㄴ', d: 'ㅇ', f: 'ㄹ', g: 'ㅎ', h: 'ㅗ', j: 'ㅓ', k: 'ㅏ', l: 'ㅣ', z: 'ㅋ', x: 'ㅌ', c: 'ㅊ', v: 'ㅍ', b: 'ㅠ', n: 'ㅜ', m: 'ㅡ' };
+  var HG_VV = { 'ㅗㅏ': 'ㅘ', 'ㅗㅐ': 'ㅙ', 'ㅗㅣ': 'ㅚ', 'ㅜㅓ': 'ㅝ', 'ㅜㅔ': 'ㅞ', 'ㅜㅣ': 'ㅟ', 'ㅡㅣ': 'ㅢ' };
+  var HG_FF = { 'ㄱㅅ': 'ㄳ', 'ㄴㅈ': 'ㄵ', 'ㄴㅎ': 'ㄶ', 'ㄹㄱ': 'ㄺ', 'ㄹㅁ': 'ㄻ', 'ㄹㅂ': 'ㄼ', 'ㄹㅅ': 'ㄽ', 'ㄹㅌ': 'ㄾ', 'ㄹㅍ': 'ㄿ', 'ㄹㅎ': 'ㅀ', 'ㅂㅅ': 'ㅄ' };
+  function keysToHangul(str) {
+    var j = [], i, out = '';
+    for (i = 0; i < str.length; i++) { var c = KO_KEY[str.charAt(i)]; if (!c) return null; j.push(c); }
+    var isV = function (c) { return HG_JUNG.indexOf(c) >= 0; };
+    i = 0;
+    while (i < j.length) {
+      var ch = j[i];
+      if (isV(ch) || i + 1 >= j.length || !isV(j[i + 1])) return null;
+      var v = j[i + 1]; i += 2;
+      if (i < j.length && HG_VV[v + j[i]]) { v = HG_VV[v + j[i]]; i++; }
+      var t = '';
+      if (i < j.length && !isV(j[i]) && (i + 1 >= j.length || !isV(j[i + 1]))) {
+        t = j[i]; i++;
+        if (i < j.length && HG_FF[t + j[i]] && (i + 1 >= j.length || !isV(j[i + 1]))) { t = HG_FF[t + j[i]]; i++; }
+      }
+      if (HG_JONG.indexOf(t) < 0) return null;
+      out += String.fromCharCode(0xAC00 + (HG_CHO.indexOf(ch) * 21 + HG_JUNG.indexOf(v)) * 28 + HG_JONG.indexOf(t));
+    }
+    return out;
+  }
+  function choOf(str) { var o = ''; for (var i = 0; i < str.length; i++) { var c = str.charCodeAt(i) - 0xAC00; o += c >= 0 && c < 11172 ? HG_CHO.charAt(Math.floor(c / 588)) : str.charAt(i); } return o; }
+  function isCho(w) { return /^[ㄱ-ㅎ]{2,}$/.test(w); }
+  // 줄임말: q의 첫 글자가 name 첫 글자와 같고 나머지 글자가 차례대로 들어 있으면 건너뛴 글자 수, 아니면 -1.
+  function abbrGap(name, q) {
+    if (q.length < 2 || name.charAt(0) !== q.charAt(0)) return -1;
+    var at = 0, gap = 0;
+    for (var i = 1; i < q.length; i++) { var k = name.indexOf(q.charAt(i), at + 1); if (k < 0) return -1; gap += k - at - 1; at = k; }
+    return gap;
+  }
+  // 역의 다른 이름(옛 이름, 근처 대학과 큰 건물). 줄임말 규칙으로 찾히는 것(건대, 홍대, 고터)은 넣지 않는다. 성대, 고대는 같은 규칙에 걸리는 다른 역보다 앞에 오게 넣었다.
+  var SUB_ALIAS = {
+    '성대': ['성균관대'], '고대': ['고려대'], '연대': ['신촌'], '연세대': ['신촌'], '중대': ['흑석'], '중앙대': ['흑석'], '경희대': ['회기'], '시립대': ['청량리', '회기'],
+    '서강대': ['서강대', '신촌'], '이수': ['총신대입구'], '신천': ['잠실새내'], '코엑스': ['삼성'], '롯데월드': ['잠실'], '롯데타워': ['잠실'], '석촌호수': ['잠실', '석촌'],
+    '고속버스터미널': ['고속터미널'], '강남터미널': ['고속터미널'], '센트럴시티': ['고속터미널'], '동서울': ['강변'], '동서울터미널': ['강변'], '남터': ['남부터미널'],
+    '디엠시': ['디지털미디어시티'], 'dmc': ['디지털미디어시티'], '인천공항': ['인천공항1터미널', '인천공항2터미널'], '타임스퀘어': ['영등포'], '디큐브': ['신도림'], '더현대': ['여의도'],
+    '경복궁': ['경복궁'], '남산': ['명동', '회현'], '동대문디디피': ['동대문역사문화공원'], 'ddp': ['동대문역사문화공원'], '광장시장': ['종로5가'], '부산역': ['부산역'], '해운대해수욕장': ['해운대'],
+    '부경대': ['경성대·부경대'], '경성대': ['경성대·부경대'], '전남대': ['전대·에버랜드'], '용인대': ['시청·용인대']
+  };
+  // 카페 이름의 영어 표기와 자주 틀리는 표기(다음의 국문, 영문 혼용 동의어처럼). 붙여 쓴 영어 낱말로 찾는다.
+  var CAFE_ALIAS = {
+    starbucks: ['스타벅스'], twosome: ['투썸'], twosomeplace: ['투썸플레이스'], ediya: ['이디야'], mega: ['메가'], megacoffee: ['메가'], compose: ['컴포즈'], paik: ['빽다방'], paiks: ['빽다방'],
+    hollys: ['할리스'], coffeebean: ['커피빈'], bluebottle: ['블루보틀'], angelinus: ['엔제리너스'], paulbassett: ['폴바셋'], tomntoms: ['탐앤탐스'], pascucci: ['파스쿠찌'], gongcha: ['공차'],
+    dunkin: ['던킨'], mammoth: ['매머드'], theventi: ['더벤티'], venti: ['벤티'], caffebene: ['카페베네'], cafebene: ['카페베네'], baskin: ['배스킨'], paris: ['파리바게뜨'], tous: ['뚜레쥬르'],
+    '스벅': ['스타벅스'], '커빈': ['커피빈'], '폴바': ['폴바셋'], '엔젤리너스': ['엔제리너스'], '탐탐': ['탐앤탐스'], '투썸플레이스': ['투썸'], '빽다': ['빽다방'], '파바': ['파리바게뜨'], '뚜쥬': ['뚜레쥬르']
+  };
+  // 낱말 하나를 같은 뜻으로 볼 낱말들로(맨 앞은 친 그대로).
+  function wordAlts(w) {
+    var a = [w];
+    if (/^[a-z]+$/.test(w)) { var h = keysToHangul(w); if (h) a.push(h); }
+    a.slice().forEach(function (x) { (CAFE_ALIAS[x] || []).forEach(function (y) { if (a.indexOf(y) < 0) a.push(y); }); });
+    return a;
+  }
+  // hay에 alts 중 하나라도 들었는지. 초성으로 친 것은 hay의 첫소리(cho, 없으면 만든다)에서 찾는다.
+  function hayHas(hay, alts, cho) {
+    for (var i = 0; i < alts.length; i++) {
+      if (isCho(alts[i])) { if (cho == null) cho = choOf(hay); if (cho.indexOf(alts[i]) >= 0) return true; }
+      else if (hay.indexOf(alts[i]) >= 0) return true;
+    }
+    return false;
+  }
   var searchMore = {}, searchMoreQ = '', searchGuide = false;   // searchGuide: 검색창을 눌러 연 검색 판(빈 검색어일 때 안내 판)   // 검색 결과에서 더 보기로 펼친 묶음(검색어가 바뀌면 다시 접는다)
   function renderSearch() {
     var words = $('q').value.toLowerCase().split(/\s+/).filter(Boolean), k, w, ok;
@@ -10750,19 +10848,21 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (searchMoreQ !== $('q').value.trim()) { searchMore = {}; searchMoreQ = $('q').value.trim(); }
     var h = head('검색 결과'); h.appendChild(closeBtn());
     var joined = words.join(''), regs = [], eggWord = joined === '이스터에그' || joined === 'easteregg';
+    var alts = words.map(wordAlts), hlw = [];   // 낱말마다 같은 뜻으로 볼 낱말들, 굵게 칠할 낱말들
+    alts.forEach(function (a) { a.forEach(function (x) { if (!isCho(x) && hlw.indexOf(x) < 0) hlw.push(x); }); });
     for (k = 0; k < NR; k++) {
       var nm = regPath(k).toLowerCase(); ok = true;
-      for (w = 0; w < words.length; w++) if (nm.indexOf(words[w]) < 0) { ok = false; break; }
+      for (w = 0; w < words.length; w++) if (!hayHas(nm, alts[w])) { ok = false; break; }
       if (ok) regs.push(k);
     }
     // 큰 지역을 먼저, 같은 크기면 카페가 많은 곳을 먼저 보여 준다.
     regs.sort(function (p, q) { return regChain(p).length - regChain(q).length || rCnt[q] - rCnt[p]; });
-    var lg = joined.length >= 2 ? legalFind(words) : [];
+    var lg = joined.length >= 2 ? legalFind(alts) : [];
     lg.sort(function (p, q) { return (lgText[p] === joined ? 0 : 1) - (lgText[q] === joined ? 0 : 1); });
     // 버스정류장: 이름이나 번호로. 숫자만 쳤으면 정류장 번호로 찾는다.
-    var stops = joined.length >= 2 ? busFind(words) : [];
+    var stops = joined.length >= 2 ? busFind(words, alts) : [];
     // 지하철역(2026-11-28): 정류장 탭에 함께(탭 이름 정류장과 역). 정류장처럼 두 글자부터.
-    var subs = joined.length >= 2 ? subFind(words) : [];
+    var subs = joined.length >= 2 ? subFind(words, alts) : [];
     // 노선: 숫자가 든 한 낱말(예: 13, 2-5, M5107)이면 한 글자여도 찾는다.
     var routes = words.length === 1 ? routeFind(words[0]) : [];
     // 주차장: 이름이나 지역으로(2026-11-28).
@@ -10772,18 +10872,32 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     //  찾은 글자는 이름과 주소에서 굵게 칠한다(사용자 2026-11-28: "하슬"로 찾았는데 왜 트라디시옹이 나왔는지 몰랐다. 주소가 하슬라로).
     var found = [], byName = [], byAddr = [];
     if (joined.length >= 2) {
-      if (!flat) { flat = new Array(N); for (k = 0; k < N; k++) flat[k] = (D.name[k] + ' ' + regPath(dongReg[D.dongOf[k]]) + ' ' + D.road[k]).toLowerCase(); }
+      // 이름은 띄어 쓴 것과 붙여 쓴 것 둘 다 넣는다(스타벅스강남 → 스타벅스 강남역점).
+      if (!flat) { flat = new Array(N); for (k = 0; k < N; k++) { var nl = D.name[k].toLowerCase(); flat[k] = nl + ' ' + nl.replace(/\s/g, '') + ' ' + (regPath(dongReg[D.dongOf[k]]) + ' ' + D.road[k]).toLowerCase(); } }
+      var anyCho = alts.some(function (a) { return a.some(isCho); });
+      if (anyCho && !flatCho) { flatCho = new Array(N); for (k = 0; k < N; k++) flatCho[k] = choOf(D.name[k].toLowerCase()); }
+      // 줄임말 규칙은 낱말 하나를 쳤을 때 이름 첫 덩어리(스타벅스 강남역점이면 스타벅스)에만 쓴다.
+      var ab = words.length === 1 ? alts[0].filter(function (x) { return /^[가-힣]{2,4}$/.test(x); }) : [], byAbbr = [];
       var ct = map.getCenter(), cx = (ct.lng + 180) / 360, cy = mercY(ct.lat);
       for (k = 0; k < N; k++) {
+        var it;
         ok = true;
-        for (w = 0; w < words.length; w++) if (flat[k].indexOf(words[w]) < 0) { ok = false; break; }
-        if (!ok) continue;
-        var nmLow = D.name[k].toLowerCase(), inName = true;
-        for (w = 0; w < words.length; w++) if (nmLow.indexOf(words[w]) < 0) { inName = false; break; }
-        var it = [(mx[k] - cx) * (mx[k] - cx) + (my[k] - cy) * (my[k] - cy), k];
+        for (w = 0; w < words.length; w++) if (!hayHas(flat[k], alts[w], anyCho ? flatCho[k] : null)) { ok = false; break; }
+        if (!ok) {
+          if (ab.length) {
+            var tok = D.name[k].toLowerCase().split(/\s/)[0];
+            if (ab.some(function (x) { return abbrGap(tok, x) > 0; })) byAbbr.push([(mx[k] - cx) * (mx[k] - cx) + (my[k] - cy) * (my[k] - cy), k]);
+          }
+          continue;
+        }
+        var nmLow = D.name[k].toLowerCase(), nmAll = nmLow + ' ' + nmLow.replace(/\s/g, ''), inName = true;
+        for (w = 0; w < words.length; w++) if (!hayHas(nmAll, alts[w], anyCho ? flatCho[k] : null)) { inName = false; break; }
+        it = [(mx[k] - cx) * (mx[k] - cx) + (my[k] - cy) * (my[k] - cy), k];
         found.push(it); (inName ? byName : byAddr).push(it);
       }
       byName.sort(function (p, q) { return p[0] - q[0]; }); byAddr.sort(function (p, q) { return p[0] - q[0]; });
+      // 줄임말로 찾은 카페는 이름으로 찾은 카페 바로 뒤에(이름에 그대로 든 것이 먼저).
+      byAbbr.sort(function (p, q) { return p[0] - q[0]; }); byName = byName.concat(byAbbr); found = found.concat(byAbbr);
     }
     // 탭 없이 한 목록(2026-11-28 사용자와 정한 시안): 카페, 지역, 정류장과 역, 노선, 주차장을 묶음으로 위에서 세 개씩.
     //  묶음 오른쪽 더 보기를 누르면 그 묶음을 그 자리에서 펼친다(검색어가 바뀌면 다시 접힌다).
@@ -10806,7 +10920,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       shown++;
     };
     var near40 = '지도 가운데에서 가까운 40곳이에요. 동네 이름을 함께 입력하면 더 좁혀져요.';
-    sec('cafe', '카페', byName.map(function (f) { return [f[1], 0]; }).concat(byAddr.map(function (f) { return [f[1], 1]; })), function (x) { return cafeRow(x[0], true, 'search', words, !!x[1]); }, near40);
+    sec('cafe', '카페', byName.map(function (f) { return [f[1], 0]; }).concat(byAddr.map(function (f) { return [f[1], 1]; })), function (x) { return cafeRow(x[0], true, 'search', hlw, !!x[1]); }, near40);
     sec('reg', '지역', regs.map(function (r) { return ['r', r]; }).concat(lg.map(function (i) { return ['l', i]; })), function (x) {
       if (x[0] === 'l') return legalRow(x[1]);
       var r = x[1], row = btn('row'), body = el('span', 'body'), pin = el('span', 'pin'); pin.style.setProperty('--c', 'var(--surface-2)'); pin.style.setProperty('--t', 'var(--ink-2)'); pin.appendChild(icon('pin'));
