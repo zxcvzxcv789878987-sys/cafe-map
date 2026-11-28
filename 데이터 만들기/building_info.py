@@ -90,7 +90,13 @@ def save():
 def ask(lot):
     p = {'sigunguCd': lot[:5], 'bjdongCd': lot[5:10], 'platGbCd': '1' if lot[10] == '2' else '0', 'bun': lot[11:15], 'ji': lot[15:19],
          'numOfRows': 100, 'pageNo': 1, '_type': 'json', 'serviceKey': KEY}
-    t = urllib.request.urlopen(urllib.request.Request(URL + '?' + urllib.parse.urlencode(p), headers={'User-Agent': 'Mozilla/5.0'}), timeout=60).read().decode('utf-8', 'replace')
+    time.sleep(0.4)     # 너무 자주 물으면 서버가 429로 막는다
+    try:
+        t = urllib.request.urlopen(urllib.request.Request(URL + '?' + urllib.parse.urlencode(p), headers={'User-Agent': 'Mozilla/5.0'}), timeout=60).read().decode('utf-8', 'replace')
+    except urllib.error.HTTPError as e:
+        if e.code == 429:
+            raise OverflowError('너무 자주 물음(429)')
+        raise
     if 'LIMITED_NUMBER_OF_SERVICE_REQUESTS' in t or 'EXCEEDS' in t.upper():
         raise OverflowError('하루 한도')
     d = json.loads(t)

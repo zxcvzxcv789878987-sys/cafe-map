@@ -7,6 +7,7 @@
 #   2. 넓이, 영업 상태, 문 연 달: 행정안전부 인허가 자료 3종 (휴게음식점, 제과점, 일반음식점)
 #      카페 목록에 아직 없는 최근 열두 달의 개업 카페도 여기서 더한다(build.py 2-1).
 #   3. 카카오맵의 전국 카페 목록(좌표, 장소 번호)과 이름으로 다시 물어보기
+#   3-1. 브랜드 본사 매장 목록(hq_fetch 폴더의 브랜드별 받기 스크립트)
 #   4. cafes.js(올리는 것, 공공데이터 좌표)와 cafes.local.js(이 컴퓨터용, 카카오 좌표) 만들기
 #      카카오에도 인허가에도 없는 카페는 그 자리의 카카오 카페로 확인해 숨기거나 인허가 이름으로 바꾼다(build.py 3-5).
 #   5. 점검: 카페 수가 지난번과 크게 다르면 멈추고 예전 파일을 그대로 둔다
@@ -117,6 +118,10 @@ if os.path.exists(os.path.join(HERE, 'kakao_key.txt')):
     os.replace(fresh, places)
 else:
     say('3. 카카오 키가 없어서 건너뛴다.')
+
+# 3-1. 브랜드 본사 매장 목록 다시 받기(hq_fetch/<브랜드>.py). 받기가 실패하거나 많이 줄면 지난 목록을 둔다.
+say('3-1. 본사 매장 목록 다시 받기')
+run(os.path.join('hq_fetch', 'run_all.py'))
 
 # 4. 만들기 (한 번 만들어서 짝 없는 곳을 뽑고, 이름으로 물어본 뒤, 다시 만든다)
 out_js, local_js = os.path.join(ROOT, 'cafes.js'), os.path.join(ROOT, 'cafes.local.js')
