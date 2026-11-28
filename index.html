@@ -10417,7 +10417,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   function hereThumb(i, th) {
     th.appendChild(pinEl(i));
     var put = function (x) {
-      if (!x || !th.isConnected) return;
+      // 이미 찾아 둔 사진은 줄이 화면에 붙기 전에 바로 넣는다(붙었는지 보고 거르면 정렬을 바꾼 뒤 사진이 안 나왔다, 사용자 2026-11-28)
+      if (!x) return;
       var im = document.createElement('img'); im.alt = ''; im.referrerPolicy = 'no-referrer'; im.decoding = 'async';
       im.onload = function () { th.classList.add('on'); };
       im.onerror = function () { if (im.src !== x.s) im.src = x.s; else im.remove(); };
