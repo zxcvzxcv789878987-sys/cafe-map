@@ -568,6 +568,15 @@ button.oli { width: 100%; padding: 11px 0; margin: 0; background: none; color: v
 .rvl .rs .nm em { font-style: normal; margin-left: 6px; font-size: 11.5px; font-weight: 700; color: var(--ink-2); }
 .rvl .rs.cur .nm { font-weight: 800; }   /* 이 정류장 줄. 이름을 me로 하면 내 위치 표시(.me, 폭 70px)와 겹쳐 글자가 세로로 쪼개진다 */
 .rvl .rs.cur .dt { width: 18px; height: 18px; left: 10px; margin-top: -9px; background: var(--rc); border: 3px solid var(--surface); box-shadow: 0 0 0 2px var(--rc); }
+/* 노선 창의 버스(실시간): 선 위 버스 그림, 오른쪽에 차량 번호와 남은 시간 */
+.rvl .rvbus { position: absolute; left: 6px; width: 26px; height: 26px; z-index: 2; pointer-events: none; }
+.rvl .rvtag { position: absolute; right: 0; z-index: 2; transform: translateY(-50%); display: flex; align-items: baseline; gap: 6px; padding: 2px 7px; border-radius: 8px; background: var(--surface); box-shadow: 0 1px 4px rgba(0, 0, 0, .18); pointer-events: none; white-space: nowrap; }
+.rvl .rvtag small { font-size: 11.5px; font-weight: 600; color: var(--ink-2); }
+.rvl .rvtag b { font-size: 13px; font-weight: 800; color: #d6336c; font-variant-numeric: tabular-nums; }
+.rvl .rvtag b:empty { display: none; }
+.rsched { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13.5px; }
+.rsched i { font-style: normal; color: var(--ink-2); margin-right: 5px; }
+.rsched b { font-weight: 700; color: var(--ink); }
 .rvl .rs .bi { position: absolute; left: 6px; top: 50%; width: 26px; height: 26px; margin-top: -13px; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 2px 5px rgba(0, 0, 0, .25); }
 .rvl .rs .bi svg.i { width: 16px; height: 16px; color: #fff; }
 #rbar { position: fixed; z-index: 25; left: 50%; transform: translateX(-50%); top: calc(118px + env(safe-area-inset-top, 0px)); display: flex; align-items: center; gap: 2px; padding: 4px 4px 4px 6px; border-radius: 14px; background: var(--surface); box-shadow: 0 4px 14px rgba(0, 0, 0, .18); max-width: calc(100% - 32px); box-sizing: border-box; }
@@ -580,7 +589,7 @@ body.broute-on #navAll, body.broute-on #count, body.broute-on #nogo { display: n
 /* 지도로 노선보기의 버스(실시간 위치) */
 .rbus { position: relative; width: 26px; height: 26px; pointer-events: none; }
 .rbusmk { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .3); box-sizing: border-box; }
-.rbuslb { display: none; position: absolute; left: 50%; bottom: calc(100% + 3px); transform: translateX(-50%); padding: 1px 6px; border-radius: 6px; background: #fff; font-size: 11.5px; font-weight: 800; white-space: nowrap; box-shadow: 0 1px 4px rgba(0, 0, 0, .25); }
+.rbuslb { display: none; position: absolute; left: 50%; bottom: calc(100% + 3px); transform: translateX(-50%); padding: 1px 6px; border-radius: 6px; background: #fff; color: #333d4b; font-size: 11px; font-weight: 700; white-space: nowrap; box-shadow: 0 1px 4px rgba(0, 0, 0, .25); }
 body.rbus-lab .rbuslb { display: block; }
 .rbusmk svg.i { width: 15px; height: 15px; color: #fff; }
 .nsharr .tm b { font-size: 14px; font-weight: 800; color: #d6336c; }
@@ -7098,21 +7107,84 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         if (!list.isConnected) return;
         list.textContent = '';
         if (!d.s || !d.s.length) { list.appendChild(el('div', 'msg', d.err ? '이 노선의 정류장 정보를 불러오지 못했어요' : '노선 정보가 없어요')); return; }
-        var me = d.me || z[10] || 0, buses = {}, meEl = null;
-        (d.b || []).forEach(function (q) { buses[q] = (buses[q] || 0) + 1; });
+        var me = d.me || z[10] || 0, meEl = null, rowEl = {};
         list.style.setProperty('--rc', col);
+        // 첫차, 막차, 배차(사용자 2026-11-28). 첫차와 막차는 기점 출발 시각이다.
+        if (d.t && (d.t.f || d.t.l || d.t.g)) {
+          var sc = el('div', 'rsched');
+          [['첫차', d.t.f], ['막차', d.t.l], ['배차', d.t.g ? d.t.g.replace(/^배차 /, '') : '']].forEach(function (w) {
+            if (!w[1]) return; var sp = el('span'); sp.appendChild(el('i', null, w[0])); sp.appendChild(el('b', null, w[1])); sc.appendChild(sp);
+          });
+          if (sc.firstChild) sh.insertBefore(sc, list);
+        }
         d.s.forEach(function (q, k) {
           var r = el('div', 'rs' + (q[3] === me ? ' cur' : '') + (k === 0 ? ' first' : '') + (k === d.s.length - 1 ? ' last' : ''));
           r.appendChild(el('span', 'ln')); r.appendChild(el('span', 'dt'));
           var nm = el('span', 'nm', q[0]); if (q[4]) nm.appendChild(el('em', null, '회차')); r.appendChild(nm);
-          // 버스가 있는 정류장(그 정류장에 있거나 막 지난 차)
-          if (buses[q[3]]) { var bi = el('span', 'bi'); bi.appendChild(icon('bus')); bi.style.background = col; r.appendChild(bi); }
           if (q[3] === me) meEl = r;
+          rowEl[q[3]] = r;
           list.appendChild(r);
         });
         if (meEl) requestAnimationFrame(function () { list.scrollTop = meEl.offsetTop - list.clientHeight / 2 + meEl.offsetHeight / 2; });
         mb.disabled = false;
         mb.onclick = function () { close(); routeOnMap(d, z, col, function () { routeSheet(z, y, col, back); }); };
+        // 버스 실시간(사용자 2026-11-28): 버스가 노선을 따라 움직이고(지도와 같은 셈), 누른 정류장까지 남은 시간이 1초마다 줄어든다.
+        //  가장 가까운 두 대는 도착 정보의 시간 그대로, 그 뒤 차는 남은 정거장 수로 어림해서 "약"을 붙인다. 지난 차는 차량 번호만.
+        var T = trackMake(d), G = T.G, idx = {}, mk = {}, arr = { t1: -1, t2: -1, st: 0, t0: 0 };
+        G.seqs.forEach(function (s, k) { idx[s] = k; });
+        var meIdx = idx[me] != null ? idx[me] : -1;
+        trackUpdate(T, d.v || (d.b || []).map(function (s) { return [s, 0, 0, '']; }));
+        var yc = null, rowY = function () { yc = G.seqs.map(function (s) { var r = rowEl[s]; return r ? r.offsetTop + r.offsetHeight / 2 : 0; }); };
+        var askArr = function (fresh) {
+          busFetch(y, fresh).then(function (dd) {
+            var a = (dd.a || []).filter(function (w) { return w[9] && w[9] === z[9]; })[0] || (dd.a || []).filter(function (w) { return w[0] === z[0]; })[0];
+            if (a) arr = { t1: a[1], t2: a[4] || -1, st: a[2] || 0, t0: dd.t0 };
+          }, function () {});
+        };
+        askArr(false);
+        var mmss = function (sec) { sec = Math.floor(sec); return sec <= 0 ? '곧 도착' : sec < 60 ? sec + '초' : Math.floor(sec / 60) + '분 ' + (sec % 60) + '초'; };
+        var lastTxt = 0;
+        var frame = function () {
+          if (!list.isConnected) return;
+          if (!yc) rowY();
+          var t = performance.now(); trackStep(T, t);
+          var keys = Object.keys(T.B), up = [];
+          keys.forEach(function (k) {
+            var o = T.B[k], i0 = idx[o.seq]; if (i0 == null) return;
+            var i1 = Math.min(i0 + 1, G.seqs.length - 1), a = G.seqAt[G.seqs[i0]], b = G.seqAt[G.seqs[i1]];
+            var f = b > a ? Math.max(0, Math.min(1, (o.pos - a) / (b - a))) : 0, yy = yc[i0] + (yc[i1] - yc[i0]) * f;
+            var m = mk[k];
+            if (!m) {
+              m = mk[k] = { ic: busMark(col, '', 'rvbus'), tag: el('div', 'rvtag') };
+              m.pl = el('small', null, o.plate); m.tm = el('b', null, ''); m.tag.appendChild(m.pl); m.tag.appendChild(m.tm);
+              list.appendChild(m.ic); list.appendChild(m.tag);
+            }
+            m.ic.style.top = (yy - 13) + 'px'; m.tag.style.top = yy + 'px';
+            if (meIdx >= 0 && i0 < meIdx) up.push({ k: k, i: i0, p: o.pos }); else m.tm.textContent = '';
+          });
+          Object.keys(mk).forEach(function (k) { if (!T.B[k]) { mk[k].ic.remove(); mk[k].tag.remove(); delete mk[k]; } });
+          // 남은 시간 글자는 1초에 네 번만 고친다.
+          if (t - lastTxt > 250) {
+            lastTxt = t;
+            up.sort(function (p, q) { return q.i - p.i || q.p - p.p; });
+            var el0 = arr.t0 ? (Date.now() - arr.t0) / 1000 : 0, per = arr.t1 > 0 && arr.st > 0 ? arr.t1 / arr.st : 90;
+            up.forEach(function (u, r) {
+              var away = meIdx - u.i, txt;
+              if (r === 0 && arr.t1 >= 0) txt = mmss(arr.t1 - el0);
+              else if (r === 1 && arr.t2 > 0) txt = mmss(arr.t2 - el0);
+              else txt = '약 ' + Math.max(1, Math.round((away * per - el0) / 60)) + '분';
+              mk[u.k].tm.textContent = txt;
+            });
+          }
+          requestAnimationFrame(frame);
+        };
+        requestAnimationFrame(frame);
+        // 15초마다 버스 위치와 도착 시간을 새로 받는다(창이 열려 있는 동안만).
+        var tick = setInterval(function () {
+          if (!list.isConnected) { clearInterval(tick); return; }
+          fetch(rq + '&p=1').then(function (r) { return r.ok ? r.json() : null; }).then(function (e) { if (e && e.v) trackUpdate(T, e.v); }, function () {});
+          askArr(true);
+        }, 15000);
       })
       .catch(function () { if (!list.isConnected) return; list.textContent = ''; list.appendChild(el('div', 'msg', '노선 정보를 불러오지 못했어요')); });
   }
@@ -7173,10 +7245,13 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var f = C[hi] > C[lo] ? (m - C[lo]) / (C[hi] - C[lo]) : 0;
       return [(P[lo][0] + (P[hi][0] - P[lo][0]) * f) / kx, (P[lo][1] + (P[hi][1] - P[lo][1]) * f) / ky];
     };
-    return { kx: kx, ky: ky, proj: proj, seqAt: seqAt, seqSeg: seqSeg, nextOf: nextOf, at: at, n: P.length };
+    return { kx: kx, ky: ky, proj: proj, seqAt: seqAt, seqSeg: seqSeg, nextOf: nextOf, seqs: seqs, at: at, n: P.length };
   }
-  function routeBusDraw(d, v, col, label) {
-    var G = routeGeo || (routeGeo = routeGeoMake(d)), now = performance.now(), seen = {};
+  // 버스 위치 셈(지도와 노선 창이 같이 쓴다). T = { G: 노선 모양, B: { 차 번호: 버스 } }.
+  //  trackUpdate: 새로 받은 위치(v)를 넣는다. trackStep: 지금 시각의 자리(o.pos, 노선 선 위 m)를 셈한다.
+  function trackMake(d) { return { G: routeGeoMake(d), B: {} }; }
+  function trackUpdate(T, v) {
+    var G = T.G, now = performance.now(), seen = {};
     (v || []).forEach(function (b, k) {
       var seq = b[0], base = G.seqAt[seq];
       if (base == null) return;
@@ -7186,13 +7261,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         if (r.off < 250) tgt = r.at;
       }
       var key = b[3] || 'n' + k; seen[key] = 1;
-      var o = routeBusMk[key];
-      if (!o) {
-        var e = el('div', 'rbus'), ic = el('span', 'rbusmk'); ic.style.background = col; ic.appendChild(icon('bus')); e.appendChild(ic);
-        var lb = el('b', 'rbuslb', label); lb.style.color = col; e.appendChild(lb);
-        o = routeBusMk[key] = { m: new maplibregl.Marker({ element: e }).setLngLat(G.at(tgt)).addTo(map), pos: tgt, from: tgt, to: tgt, t0: now, dur: 1, gps: gps, seq: seq, base: tgt };
-        return;
-      }
+      var o = T.B[key];
+      if (!o) { T.B[key] = { plate: b[3] || '', pos: tgt, from: tgt, to: tgt, t0: now, dur: 1, gps: gps, seq: seq, base: tgt }; return; }
       if (seq !== o.seq && tgt < o.pos - 30 && !gps) { o.pos = o.from = o.to = tgt; }   // 회차 등으로 뒤로 크게 바뀌면 그 자리로
       o.from = o.pos; o.t0 = now; o.gps = gps;
       if (gps) { o.to = tgt; o.dur = 15000; }
@@ -7200,23 +7270,44 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       else { o.to = o.pos; o.dur = 1; }
       o.seq = seq; o.base = tgt;
     });
-    Object.keys(routeBusMk).forEach(function (k) { if (!seen[k]) { routeBusMk[k].m.remove(); delete routeBusMk[k]; } });
+    Object.keys(T.B).forEach(function (k) { if (!seen[k]) delete T.B[k]; });
+  }
+  function trackStep(T, t) {
+    var G = T.G;
+    Object.keys(T.B).forEach(function (k) {
+      var o = T.B[k], f = Math.min(1, (t - o.t0) / o.dur), p = o.from + (o.to - o.from) * f;
+      // 경기도: 따라잡은 뒤에는 다음 정류장 쪽으로 기어간다(85%까지).
+      if (!o.gps && f >= 1) {
+        var nx = G.nextOf[o.seq], end = nx != null ? G.seqAt[nx] : null;
+        if (end != null && end > o.base) {
+          var cap = o.base + (end - o.base) * .85, sp = (end - o.base) / 80000;
+          p = Math.min(cap, Math.max(p, o.to + sp * (t - o.t0 - o.dur)));
+        }
+      }
+      o.pos = p;
+    });
+  }
+  // 버스 표시(지도와 노선 창 같은 모양): 동그라미 버스 그림, 위에 차량 번호(사용자 2026-11-28: 노선 번호가 아니라 차량 번호).
+  function busMark(col, plate, cls) {
+    var e = el('div', cls), ic = el('span', 'rbusmk'); ic.style.background = col; ic.appendChild(icon('bus')); e.appendChild(ic);
+    if (plate) e.appendChild(el('b', 'rbuslb', plate));
+    return e;
+  }
+  function routeBusDraw(d, v, col) {
+    var T = routeGeo || (routeGeo = trackMake(d));
+    trackUpdate(T, v);
+    Object.keys(T.B).forEach(function (k) {
+      if (!routeBusMk[k]) routeBusMk[k] = { m: new maplibregl.Marker({ element: busMark(col, T.B[k].plate, 'rbus') }).setLngLat(T.G.at(T.B[k].pos)).addTo(map), at: -1 };
+    });
+    Object.keys(routeBusMk).forEach(function (k) { if (!T.B[k]) { routeBusMk[k].m.remove(); delete routeBusMk[k]; } });
     if (!routeBusRaf) {
       var loop = function () {
         routeBusRaf = 0;
         if (!routeGeo) return;
-        var t = performance.now();
+        trackStep(routeGeo, performance.now());
         Object.keys(routeBusMk).forEach(function (k) {
-          var o = routeBusMk[k], f = Math.min(1, (t - o.t0) / o.dur), p = o.from + (o.to - o.from) * f;
-          // 경기도: 따라잡은 뒤에는 다음 정류장 쪽으로 기어간다(85%까지).
-          if (!o.gps && f >= 1) {
-            var nx = G.nextOf[o.seq], end = nx != null ? G.seqAt[nx] : null;
-            if (end != null && end > o.base) {
-              var cap = o.base + (end - o.base) * .85, sp = (end - o.base) / 80000;
-              p = Math.min(cap, Math.max(p, o.to + sp * (t - o.t0 - o.dur)));
-            }
-          }
-          if (Math.abs(p - o.pos) > .05) { o.pos = p; o.m.setLngLat(G.at(p)); }
+          var o = routeGeo.B[k], mk = routeBusMk[k];
+          if (o && Math.abs(o.pos - mk.at) > .05) { mk.at = o.pos; mk.m.setLngLat(routeGeo.G.at(o.pos)); }
         });
         routeBusRaf = requestAnimationFrame(loop);
       };
@@ -7239,11 +7330,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     // 노선만 보이게: 다른 정류장 표시를 숨기고, 카페와 경계는 draw()가 routeBar를 보고 그리지 않는다.
     if (map.getLayer('lm-bus')) map.setLayoutProperty('lm-bus', 'visibility', 'none');
     // 버스 실시간 위치: 처음 받은 자리를 그리고 15초마다 위치만 다시 묻는다(서버도 15초 기억).
-    routeBusDraw(d, d.v || (d.b || []).map(function (s) { return [s, 0, 0, '']; }), col, z[0]);
+    routeBusDraw(d, d.v || (d.b || []).map(function (s) { return [s, 0, 0, '']; }), col);
     if (d.rq) routeBusTick = setInterval(function () {
-      fetch(d.rq + '&p=1').then(function (r) { return r.ok ? r.json() : null; }).then(function (e) { if (e && e.v && routeBar) routeBusDraw(d, e.v, col, z[0]); }, function () {});
+      fetch(d.rq + '&p=1').then(function (r) { return r.ok ? r.json() : null; }).then(function (e) { if (e && e.v && routeBar) routeBusDraw(d, e.v, col); }, function () {});
     }, 15000);
-    // 버스 번호: 정류장 이름처럼 확대하면(14부터) 버스 옆에 보인다(사용자 2026-11-28).
+    // 차량 번호: 정류장 이름처럼 확대하면(14부터) 버스 위에 보인다(사용자 2026-11-28).
     routeZoomFn = function () { document.body.classList.toggle('rbus-lab', map.getZoom() >= 14); };
     map.on('zoom', routeZoomFn); routeZoomFn();
     var x0 = 180, y0 = 90, x1 = -180, y1 = -90;
