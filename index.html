@@ -3422,7 +3422,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     grp('주차장', [
       ['주차장', '전국주차장정보 표준데이터'],
       // 남은 자리 위치는 시영주차장 자료에 좌표가 없어 공영주차장 안내 정보에서 붙인다(서버 /park, /parks).
-      ['남은 자리', '서울특별시 시영주차장 실시간 주차대수 정보, 서울특별시 공영주차장 안내 정보']
+      ['남은 자리', '서울특별시 시영주차장 실시간 주차대수 정보, 서울특별시 공영주차장 안내 정보, 한국교통안전공단 주차정보']
     ]);
     var links = function (L) {
       var s = el('span');
@@ -7846,8 +7846,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var bb = map.getBounds(), keys = busKeys(bb.getWest(), bb.getSouth(), bb.getEast(), bb.getNorth());
     if (keys.length > 16) return;
     var ks = keys.join(',');
-    // 서울을 보고 있으면 실시간 남은 자리도 붙인다(2분마다 새로).
-    var inSeoul = bb.getNorth() > 37.41 && bb.getSouth() < 37.72 && bb.getEast() > 126.73 && bb.getWest() < 127.27;
+    // 실시간 남은 자리도 붙인다(2분마다 새로). 서울시 자료와 교통안전공단 전국 자료라 어디서나 묻는다.
+    var inSeoul = true;
     var liveOld = inSeoul && Date.now() - parkLiveT >= 120000;
     if (ks === parkKeyStr && src === parkSrc && !liveOld) return;
     parkLoad(keys, function () {
@@ -12093,11 +12093,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         if (gl.length) row('운영 시간', gl[0], gl.slice(1).join(', '));
         else if (q.d) row('운영 요일', q.d.replace(/\+/g, ', '));
         if (q.n) row('주차면', fmt(q.n) + '면');
-        // 남은 자리(사용자 2026-11-28, 버스처럼 실시간): 중계 서버 /park. 지금은 서울시 시영주차장(5분 주기)만이라 서울 안에서만 묻는다.
+        // 남은 자리(사용자 2026-11-28, 버스처럼 실시간): 중계 서버 /park(서울시 시영주차장, 교통안전공단 전국 주차정보).
         //  답이 오면 맨 위 줄로 넣는다. 넉넉하면 초록, 열 곳에 한 곳 넘게 남으면 주황, 그보다 적으면 빨강.
-        if (q.y > 3741000 && q.y < 3772000 && q.x > 12673000 && q.x < 12727000) parkLive(y).then(function (d) {
+        if (q.y && q.x) parkLive(y).then(function (d) {
           if (!d || d.a == null || !cont.isConnected) return;
-          row('남은 자리', fmt(d.a) + '면', '전체 ' + fmt(d.tot) + '면, ' + d.t + ' 기준, 서울시 자료');
+          row('남은 자리', fmt(d.a) + '면', '전체 ' + fmt(d.tot) + '면, ' + d.t + ' 기준, ' + (d.src === 'kotsa' ? '교통안전공단' : '서울시') + ' 자료');
           var lr = rows.lastChild, mv = lr.querySelector('.v'), r0 = d.tot ? d.a / d.tot : 0;
           if (mv && mv.firstChild) { var bb = el('b', 'plive', mv.firstChild.textContent); bb.style.color = r0 >= .3 ? '#2f9e44' : r0 >= .1 ? '#f08c00' : '#e03131'; mv.replaceChild(bb, mv.firstChild); }
           rows.insertBefore(lr, rows.firstChild);
