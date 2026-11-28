@@ -12636,7 +12636,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       });
     };
     // 다시 그린 뒤 앞 세 장을 예전 자리에서 새 자리로 옮기고, 상자 높이도 부드럽게 바꾼다.
-    var morph = function (from, h0, done) {
+    var morph = function (from, h0, done, ms, ease) {
+      ms = ms || MS; ease = ease || EASE;
       var b = box.getBoundingClientRect(), h1 = box.offsetHeight, pairs = [];
       Array.prototype.slice.call(box.querySelectorAll('.opc, .obgc'), 0, 3).forEach(function (a, k) {
         var f = from[k]; if (!f || !f.src) return;
@@ -12644,16 +12645,16 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         var g = document.createElement('img'); g.className = 'opghost'; g.src = f.src; g.alt = ''; g.setAttribute('aria-hidden', 'true');
         g.style.left = t.x + 'px'; g.style.top = t.y + 'px'; g.style.width = t.w + 'px'; g.style.height = t.h + 'px';
         box.appendChild(g); a.style.visibility = 'hidden'; pairs.push([g, a]);
-        g.animate([{ left: f.x + 'px', top: f.y + 'px', width: f.w + 'px', height: f.h + 'px' }, { left: t.x + 'px', top: t.y + 'px', width: t.w + 'px', height: t.h + 'px' }], { duration: MS, easing: EASE });
+        g.animate([{ left: f.x + 'px', top: f.y + 'px', width: f.w + 'px', height: f.h + 'px' }, { left: t.x + 'px', top: t.y + 'px', width: t.w + 'px', height: t.h + 'px' }], { duration: ms, easing: ease });
       });
       box.style.overflow = 'hidden';
-      box.animate([{ height: h0 + 'px' }, { height: h1 + 'px' }], { duration: MS, easing: EASE });
+      box.animate([{ height: h0 + 'px' }, { height: h1 + 'px' }], { duration: ms, easing: ease });
       setTimeout(function () {
         pairs.forEach(function (p) { p[0].remove(); p[1].style.visibility = ''; });
         box.style.overflow = '';
         var m = box.querySelector('.obgm'); if (m) m.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160 });
         if (done) done();
-      }, MS + 20);
+      }, ms + 20);
     };
     var scrollToStrip = function (done) {
       var sc = box.closest('.dours');
@@ -12671,7 +12672,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var openAll = function () {
       if (busy) return;
       // 반만 열린 카드에서 사진을 펼치면 카드도 끝까지 올린다(사용자 2026-11-29).
-      //  확 튀지 않게 카드 여닫힘과 같은 느린 곡선으로 먼저 올리고, 사진은 카드가 반쯤 올라간 뒤에 펼친다.
+      //  확 튀지 않게 카드 여닫힘과 같은 느린 곡선(.46초)으로 올리고, 사진도 같은 시간, 같은 곡선으로 동시에 펼친다.
       var rise = P.kind === 'detail' && twoStage() && snap === 'half';
       if (REDUCE) { if (rise) setSnap('full', false); all = true; draw(); return; }
       busy = true;
@@ -12681,9 +12682,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         Array.prototype.slice.call(box.querySelectorAll('.obgc'), 3).concat([box.querySelector('.obfold')]).forEach(function (a, k) {
           if (a) a.animate([{ opacity: 0, transform: 'translateY(10px) scale(.96)' }, { opacity: 1, transform: 'none' }], { duration: 300, delay: 90 + Math.min(k, 15) * 22, easing: 'ease-out', fill: 'backwards' });
         });
-        morph(from, h0, function () { busy = false; });
+        if (rise) morph(from, h0, function () { busy = false; }, 460, 'cubic-bezier(.4, 0, .2, 1)');
+        else morph(from, h0, function () { busy = false; });
       };
-      if (rise) { setSnap('full', 'slow'); setTimeout(go, 220); } else go();
+      if (rise) setSnap('full', 'slow');
+      go();
     };
     var foldAll = function () {
       if (busy) return;
