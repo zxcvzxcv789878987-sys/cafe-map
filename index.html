@@ -6231,13 +6231,18 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 지도 출처는 지도 구석의 i 단추 대신 메뉴(줄 세 개 단추)의 "지도 자료"에 적는다.
   window.cafeMap = map;
   map.once('idle', function () { setTimeout(warmKorea, 1500); });   // 전국 지도 조각 미리 받기(warmKorea)
-  // 날아가는 동안 흰 화면 막기(사용자 2026-11-28 화면 녹화: 처음부터를 누르면 날아가는 중간 1초쯤 지도가 하얗고 지하철 선과 이름표만 보였고,
+  // 날아가는 동안 흰 화면 막기(사용자 2026-11-28 화면 녹화 두 번: 처음부터를 누르면 날아가는 중간 1초쯤 지도가 하얗고 지하철 선과 이름표만 보였고,
   //  전국에 다 와서도 위쪽 절반 조각이 늦게 찼다). 조각을 미리 받아 둬도 폰이 중간 배율 조각을 그릴 틈이 없다.
-  //  그래서 아주 거친 밑그림을 늘 깔아 둔다. 자세한 지도가 오면 그 위를 덮는다.
+  //  그래서 아주 거친 밑그림을 깔아 둔다. 자세한 지도가 오면 그 위를 덮는다.
   //   - under5: 5단계 조각 한 장(5/27/12)이 남한 전체를 덮는다. 어디를 보든 이 한 장이라 앱을 켠 뒤 한 번 받으면 늘 준비되어 있다.
-  //     바다, 숲, 큰길(고속도로, 국도), 시도 경계까지 그려서 전국 크기 지도와 거의 같아 보인다. 8단계보다 확대하면 거친 선이 어긋나므로 그리지 않고,
-  //     큰길은 7단계부터 흐려진다(자세한 길과 겹쳐 두 줄로 보이지 않게).
-  //   - under: 6단계 조각으로 바다만 9.5단계까지(해안선이 덜 어긋난다).
+  //     바다, 숲, 큰길(고속도로, 국도), 시도 경계까지 그려서 전국 크기 지도와 거의 같아 보인다.
+  //   - 평소에는 7단계까지만 보이고 7.6단계에서 사라진다(그보다 확대하면 거친 선이 자세한 지도와 어긋나 두 줄로 보인다).
+  //   - 크게 날아가는 동안(배율이 1.5단계 넘게 바뀌는 이동)에는 11단계까지 보이게 켰다가, 자세한 지도를 다 그리면(idle) 다시 끈다.
+  var UNDER = [['under5-water', 'fill-opacity', 1], ['under5-wood', 'fill-opacity', .4], ['under5-road', 'line-opacity', 1], ['under5-bound', 'line-opacity', 1]];
+  var underHi = false;
+  function underOp(base) { return ['interpolate', ['linear'], ['zoom'], 7, base, 7.6, underHi ? base : 0, 10.5, underHi ? base : 0, 11, 0]; }
+  function underPaint() { UNDER.forEach(function (u) { if (map.getLayer(u[0])) map.setPaintProperty(u[0], u[1], underOp(u[2])); }); }
+  function underFly(on) { if (underHi === on) return; underHi = on; underPaint(); }
   function ensureUnder() {
     if (!map.getStyle() || map.getSource('under5')) return;
     var src = map.getSource('openmaptiles'); if (!src || !src.tiles || !src.tiles.length) return;
@@ -6245,16 +6250,31 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var before = map.getLayer('park') ? 'park' : undefined;
       map.addSource('under5', { type: 'vector', tiles: src.tiles.slice(), minzoom: 0, maxzoom: 5 });
       if (!map.getSource('under')) map.addSource('under', { type: 'vector', tiles: src.tiles.slice(), minzoom: 0, maxzoom: 6 });
-      map.addLayer({ id: 'under5-water', type: 'fill', source: 'under5', 'source-layer': 'water', maxzoom: 8, filter: ['!=', ['get', 'brunnel'], 'tunnel'], paint: { 'fill-color': '#b3d9ee' } }, before);
-      map.addLayer({ id: 'under5-wood', type: 'fill', source: 'under5', 'source-layer': 'landcover', maxzoom: 8, filter: ['==', ['get', 'class'], 'wood'], paint: { 'fill-color': '#cde3c0', 'fill-opacity': .4, 'fill-antialias': false } }, before);
-      map.addLayer({ id: 'under5-road', type: 'line', source: 'under5', 'source-layer': 'transportation', maxzoom: 7.6, filter: ['match', ['get', 'class'], ['motorway', 'trunk', 'primary'], true, false],
+      map.addLayer({ id: 'under5-water', type: 'fill', source: 'under5', 'source-layer': 'water', maxzoom: 11, filter: ['!=', ['get', 'brunnel'], 'tunnel'], paint: { 'fill-color': '#b3d9ee', 'fill-opacity': underOp(1) } }, before);
+      map.addLayer({ id: 'under5-wood', type: 'fill', source: 'under5', 'source-layer': 'landcover', maxzoom: 11, filter: ['==', ['get', 'class'], 'wood'], paint: { 'fill-color': '#cde3c0', 'fill-opacity': underOp(.4), 'fill-antialias': false } }, before);
+      map.addLayer({ id: 'under5-road', type: 'line', source: 'under5', 'source-layer': 'transportation', maxzoom: 11, filter: ['match', ['get', 'class'], ['motorway', 'trunk', 'primary'], true, false],
         layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': ['match', ['get', 'class'], 'motorway', '#f3c98a', '#ece0a6'], 'line-width': ['interpolate', ['linear'], ['zoom'], 5, .6, 7.5, 1.6], 'line-opacity': ['interpolate', ['linear'], ['zoom'], 6.8, 1, 7.6, 0] } }, before);
-      map.addLayer({ id: 'under5-bound', type: 'line', source: 'under5', 'source-layer': 'boundary', maxzoom: 8, filter: ['all', ['<=', ['get', 'admin_level'], 4], ['!=', ['get', 'maritime'], 1]],
-        paint: { 'line-color': '#c9c6be', 'line-width': 1, 'line-dasharray': [2, 1.5] } }, before);
+        paint: { 'line-color': ['match', ['get', 'class'], 'motorway', '#f3c98a', '#ece0a6'], 'line-width': ['interpolate', ['linear'], ['zoom'], 5, .6, 7.5, 1.6, 11, 3], 'line-opacity': underOp(1) } }, before);
+      map.addLayer({ id: 'under5-bound', type: 'line', source: 'under5', 'source-layer': 'boundary', maxzoom: 11, filter: ['all', ['<=', ['get', 'admin_level'], 4], ['!=', ['get', 'maritime'], 1]],
+        paint: { 'line-color': '#c9c6be', 'line-width': 1, 'line-dasharray': [2, 1.5], 'line-opacity': underOp(1) } }, before);
       if (!map.getLayer('under-water')) map.addLayer({ id: 'under-water', type: 'fill', source: 'under', 'source-layer': 'water', minzoom: 8, maxzoom: 9.5, filter: ['!=', ['get', 'brunnel'], 'tunnel'], paint: { 'fill-color': '#b3d9ee' } }, before);
     } catch (er) { /* 못 넣으면 그대로 */ }
   }
+  // 크게 날아가는 이동이면 밑그림을 켜고, 자세한 지도를 다 그리면 끈다.
+  ['flyTo', 'easeTo', 'fitBounds'].forEach(function (k) {
+    var orig = map[k];
+    map[k] = function () {
+      try {
+        var o = arguments[0] || {}, to = k === 'fitBounds' ? map.cameraForBounds(o, arguments[1] || {}) : o;
+        if (to && to.zoom !== undefined && Math.abs(to.zoom - map.getZoom()) >= 1.5) {
+          underFly(true);
+          var off = function () { map.once('idle', function () { if (!map.isMoving()) underFly(false); else off(); }); };
+          map.once('moveend', off);
+        }
+      } catch (er) { /* 그대로 */ }
+      return orig.apply(map, arguments);
+    };
+  });
   map.on('idle', ensureUnder);
   map.on('moveend', eggDokdo); eggCorner(); setTimeout(eggOpenCheck, 2000);
   var ldEl = document.getElementById('loading'); if (ldEl) ldEl.hidden = true;   // 자료를 다 읽었으니 로딩 표시를 내린다.
