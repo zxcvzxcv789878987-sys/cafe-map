@@ -5947,7 +5947,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       { id: 'lm-subway-line', type: 'line', source: 'lm-subway', minzoom: 9.5, layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': ['get', 'c'], 'line-width': z(10, 1.4, 16, 4.6) } },
       // 버스 정류장은 이름 없이 아이콘만 찍는다.
       { id: 'lm-bus', type: 'symbol', source: 'openmaptiles', 'source-layer': 'poi', minzoom: 15.5, filter: ['all', ['==', CLS, 'bus'], ['==', SUB, 'bus_stop']],
-        layout: { 'icon-image': 'ic-bus', 'icon-size': z(15.5, .5, 18, .72), 'icon-padding': 1 }, paint: { 'icon-opacity': .92 } },
+        layout: { 'icon-image': 'ic-bus', 'icon-size': z(15.5, .9, 18, 1.2), 'icon-padding': 1 }, paint: { 'icon-opacity': .95 } },
       text('lm-water', 'water_name', 9, ['match', CLS, ['river', 'lake', 'bay', 'strait', 'sea'], true, false], { 'text-size': 12, 'text-letter-spacing': .08 }, { 'text-color': '#4d8fca' }),
       text('lm-river', 'waterway', 11, ['==', CLS, 'river'], { 'symbol-placement': 'line', 'text-size': 12, 'text-letter-spacing': .08 }, { 'text-color': '#4d8fca' }),
       text('lm-peak', 'mountain_peak', 10.5, ['all', ['==', CLS, 'peak'], ['<=', RANK, 1]], {}, { 'text-color': '#5f8a55' }),
@@ -6878,7 +6878,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   })();
   map.on('mousemove', function (e) {
     var h = hit(e.point), ni = h && h.i !== undefined ? h.i : -1, np = h && h.reg !== undefined ? h.reg : -1;
-    map.getCanvas().style.cursor = h ? 'pointer' : '';
+    map.getCanvas().style.cursor = h || busAt(e.point) ? 'pointer' : '';
     if (ni !== hoverI || np !== hoverPill) { hoverI = ni; setHoverReg(np); requestDraw(); }
   });
   map.on('mouseout', function () { if (hoverI >= 0 || hoverPill >= 0) { hoverI = -1; hoverPill = -1; requestDraw(); } });
@@ -6902,8 +6902,26 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     pileBox.style.left = (pileAt.x * scale - ox) + 'px';
     pileBox.style.top = (pileAt.y * scale - oy - 18) + 'px';
   }
+  // 지도의 버스정류장 표시를 누르면 그 정류장의 곧 도착하는 버스 창을 연다(사용자 2026-11-28).
+  //  지도 그림의 정류장(OpenStreetMap)에는 정류장 번호가 없어서, 중계 서버가 그 자리에서 가장 가까운 공공데이터 정류장을 찾아 준다.
+  function busAt(pt) {
+    if (!map.getLayer('lm-bus')) return null;
+    var f = map.queryRenderedFeatures([[pt.x - 12, pt.y - 12], [pt.x + 12, pt.y + 12]], { layers: ['lm-bus'] });
+    return f.length ? f[0].geometry.coordinates : null;
+  }
+  function busTap(ll) {
+    fetch(BUS_API.replace(/\/bus$/, '/stop') + '?la=' + ll[1].toFixed(6) + '&lo=' + ll[0].toFixed(6))
+      .then(function (r) { if (!r.ok) throw new Error('stop'); return r.json(); })
+      .then(function (d) {
+        if (!d.n) { toast('이 정류장의 도착 정보를 찾지 못했어요'); return; }
+        var st = function (q) { return [q.nm, 0, Math.round(q.la * 1e5), Math.round(q.lo * 1e5), q.n, q.c, q.a]; };
+        nearSheet(-1, 'b', st(d), d.o ? st(d.o) : null);   // 건너편 정류장(같은 이름)도 서버가 찾아 준다
+      })
+      .catch(function () { toast('정류장 정보를 불러오지 못했어요'); });
+  }
   map.on('click', function (e) {
     var h = hit(e.point);
+    if (!h) { var bs = busAt(e.point); if (bs) { closePile(); busTap(bs); return; } }
     if (h && h.pile) { closePanel(); openPile(h.pile); return; }
     closePile();
     if (!h) { closePanel(); return; }
@@ -9795,7 +9813,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var canArr = function (y) { return y[5] && (y[5] === '11' ? y[6] : y[4]); };
     var got = [null, null], dirs = ['', ''];
     var showDir = function () {
-      segSub.forEach(function (sp, k) { sp.textContent = dirs[k] ? dirs[k] + ' 방면' : '걸어서 ' + walkMin(pair[k][1]) + '분'; });
+      segSub.forEach(function (sp, k) { sp.textContent = dirs[k] ? dirs[k] + ' 방면' : i >= 0 ? '걸어서 ' + walkMin(pair[k][1]) + '분' : ''; });
       if (dirEl) { dirEl.textContent = dirs[cur] ? dirs[cur] + ' 방면' : ''; dirEl.hidden = !dirs[cur]; }
     };
     var ask = function (k) {
@@ -9808,7 +9826,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     };
     if (pair) {
       seg = el('div', 'nshseg'); seg.setAttribute('role', 'tablist');
-      ['가까운 쪽', '건너편'].forEach(function (t, k) {
+      [i >= 0 ? '가까운 쪽' : '누른 정류장', '건너편'].forEach(function (t, k) {
         var sb = btn(null, null, function () { if (cur === k) return; cur = k; fill(); });
         sb.setAttribute('role', 'tab');
         sb.appendChild(el('b', null, t)); segSub[k] = el('span', null, ''); sb.appendChild(segSub[k]);
@@ -9828,7 +9846,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (seg) seg.querySelectorAll('button').forEach(function (sb, k) { sb.setAttribute('aria-selected', String(k === cur)); });
       cont.textContent = '';
       var sub = el('div', 'nshsub');
-      sub.appendChild(el('span', null, '걸어서 ' + walkMin(y[1]) + '분, ' + nearMeter(y[1])));
+      if (i >= 0) sub.appendChild(el('span', null, '걸어서 ' + walkMin(y[1]) + '분, ' + nearMeter(y[1])));   // i < 0: 지도에서 바로 누른 정류장(카페와 상관없음)
       // 하나뿐인 정류장은 방면을 이 줄에 적는다(둘이면 위 고르는 칸에 있다).
       dirEl = null;
       if (kind === 'b' && !pair) { dirEl = el('b', 'dir', ''); sub.appendChild(dirEl); }
@@ -9900,7 +9918,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (sub.firstChild) cont.appendChild(sub);
       if (arr) cont.appendChild(arr);
       if (rows.firstChild) cont.appendChild(rows);
-      if (to) {
+      if (to && i >= 0) {
         var oto = ot ? [ot[3] / 1e5, ot[2] / 1e5] : null, k0 = cur;
         var mb = btn('nshmap', null, function () {
           close();
