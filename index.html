@@ -12550,8 +12550,20 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   //  인허가 달(s, 그보다 오래된 글은 같은 이름의 예전 가게일 수 있다), 우리 자료에서 같은 이름 카페 수(u).
   var nameDup = null;
   function normName(t) { return String(t).replace(/[\s\p{P}\p{S}_]+/gu, '').toLowerCase(); }
+  // 같은 이름 카페 수 표는 처음 카드를 열 때 만들면 그 카드가 늦게 열린다(전국 카페 이름을 다 훑는다, 사용자 2026-11-29).
+  //  앱이 한가할 때 조금씩 나눠 미리 만들어 둔다. 다 만들기 전에 카드를 열면 남은 것을 그 자리에서 마저 만든다.
+  var dupAt = 0, dupTmp = {};
+  function dupStep(until) {
+    for (; dupAt < N && (until < 0 || performance.now() < until); dupAt++) { var nk = normName(D.name[dupAt]); dupTmp[nk] = (dupTmp[nk] || 0) + 1; }
+    if (dupAt >= N && !nameDup) nameDup = dupTmp;
+  }
+  (function dupIdle() {
+    if (nameDup) return;
+    var ric = window.requestIdleCallback || function (f) { return setTimeout(function () { f({ timeRemaining: function () { return 8; } }); }, 200); };
+    ric(function (dl) { dupStep(performance.now() + Math.max(4, Math.min(12, dl.timeRemaining()))); if (!nameDup) dupIdle(); }, { timeout: 3000 });
+  })();
   function blogQuery(i) {
-    if (!nameDup) { nameDup = {}; for (var k = 0; k < N; k++) { var nk = normName(D.name[k]); nameDup[nk] = (nameDup[nk] || 0) + 1; } }
+    if (!nameDup) dupStep(-1);
     var dn = D.dong[D.dongOf[i]], sg = D.sgg[dn[1]], sido = D.sido[sg[1]], toks = [SIDO_SHORT[sido] || String(sido).slice(0, 2)];
     String(sg[0]).split(' ').forEach(function (t) { var u = t.replace(/(특별자치시|특별시|광역시|시|군|구)$/, ''); if (u.length >= 2) toks.push(u); });
     var d0 = dn[0].replace(/[0-9.]+/g, ''), d1 = d0.replace(/(동|가|읍|면|리)$/, '');
@@ -12565,12 +12577,17 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       (bj >= 0 ? '&b=' + encodeURIComponent(D.brands[bj][0]) : '') + (rd ? '&r=' + encodeURIComponent(rd[1] + ' ' + rd[2]) : '') +
       '&s=' + ((D.since && D.since[i]) || 0) + '&u=' + (nameDup[normName(D.name[i])] || 1);
   }
+  // 같은 카페를 받는 중에 또 부르면(카드를 닫았다 바로 다시 열 때) 새로 묻지 않고 그 답을 같이 받는다.
+  var blogWait = {};
   function cafeBlog(i, done) {
     var c = cidOf(i);
     if (blogMem[c]) { done(blogMem[c]); return; }
+    if (blogWait[c]) { blogWait[c].push(done); return; }
+    blogWait[c] = [done];
+    var fin = function (v) { var w = blogWait[c] || []; delete blogWait[c]; w.forEach(function (f) { f(v); }); };
     fetch(BLOG_API + blogQuery(i))
       .then(function (r) { if (!r.ok) throw new Error('blog'); return r.json(); })
-      .then(function (d) { var v = Array.isArray(d) ? { p: d, i: [] } : { p: d.p || [], i: d.i || [] }; blogMem[c] = v; done(v); }, function () { done(null); });
+      .then(function (d) { var v = Array.isArray(d) ? { p: d, i: [] } : { p: d.p || [], i: d.i || [] }; blogMem[c] = v; fin(v); }, function () { fin(null); });
   }
   // 목록(이 화면 N곳)의 작은 사진: 가벼운 찾기(m=th, 카카오 검색 3번: 글 2, 사진 1). 같은 규칙으로 그 카페 글의 사진만 고른다.
   //  카드를 열면 그때 전체 찾기(cafeBlog)를 한다. 하루 검색 한도(블로그, 사진 각 3만 번)를 아끼려는 것.
