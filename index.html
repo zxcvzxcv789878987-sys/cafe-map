@@ -6683,6 +6683,12 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 이 컴퓨터용 자료(cafes.local.js)를 쓸 때는 이미 카카오 좌표라서 하지 않는다.
   var live = new Uint8Array(N), liveKey = (window.CAFE_KAKAO || {}).js || '', liveOn = !!liveKey && !D.kakao && !!D.kid;
   // 2026-11-26: 15.5에서 14.5로 낮췄다. 점이 작을 때 미리 옮겨 두면 움직임이 몇 픽셀이라 거의 안 보인다(사용자: 확대하면 점이 갑자기 움직인다).
+  // 2026-11-28 무료 한도 아끼기: 한 기기가 하루에 묻는 수를 LIVE_DAY_MAX번으로 막는다(세는 수만 기억하고 좌표는 기억하지 않는다).
+  //  넘으면 그날은 건물 자리에 그린다. 카카오 카페가 없는 칸(강, 산, 논밭)은 묻지 않는다(kidTile).
+  var LIVE_DAY_MAX = 1500, liveDay = load('liveDay') || {}, kidTile = null;
+  if (liveDay.d !== new Date().toDateString()) liveDay = { d: new Date().toDateString(), n: 0 };
+  function liveSpent() { liveDay.n++; liveCalls++; if (liveDay.n % 20 === 0) save('liveDay', liveDay); }
+  function liveCapped() { return liveDay.n >= LIVE_DAY_MAX; }
   var LIVE_ZOOM = 14.5, liveHold = 0, kidIndex = null, liveTiles = {}, liveQueue = [], liveBusy = false, liveCalls = 0, liveSdk = 0, livePlaces = null;
   function liveSdkLoad(done) {
     if (liveSdk === 2) return done();
@@ -6698,9 +6704,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   }
   // 한 네모 구역의 카페를 묻는다. 한 번에 45곳까지만 주므로, 더 많으면 넷으로 쪼개서 다시 묻는다.
   function liveAsk(x0, y0, x1, y1, depth, got, done) {
-    if (liveCalls > 600) return done();              // 한 번 열어서 너무 많이 묻지 않게 막는다.
+    if (liveCalls > 600 || liveCapped()) return done();   // 한 번 열어서, 또 하루에 너무 많이 묻지 않게 막는다.
     var a = mercToLngLat(x0, y1), b = mercToLngLat(x1, y0);
-    liveCalls++;
+    liveSpent();
     livePlaces.categorySearch('CE7', function (data, status, pg) {
       if (status !== kakao.maps.services.Status.OK) return done();
       if (pg.totalCount > 45 && depth < 3 && pg.current === 1) {
@@ -6715,7 +6721,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         liveFrom.set(i, [mx[i], my[i]]);
         mx[i] = (+data[k].x + 180) / 360; my[i] = mercY(+data[k].y); live[i] = 1; got.push(i);
       }
-      if (pg.hasNextPage && pg.current < 3) { liveCalls++; pg.nextPage(); } else done();
+      if (pg.hasNextPage && pg.current < 3 && !liveCapped()) { liveSpent(); pg.nextPage(); } else done();
     }, { rect: a[0] + ',' + a[1] + ',' + b[0] + ',' + b[1], size: 15 });
   }
   // 방금 옮긴 카페들끼리 14m보다 가까우면 서로 밀어서 아이콘이 겹치지 않게 한다.
@@ -6738,7 +6744,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 카카오에 없던 카페, 받기가 늦거나 실패한 칸, 덜 확대한 화면(점이 작다)은 건물 자리에 그대로 그린다.
   var LIVE_WAIT = 2500, LIVE_FADE = 240, liveFade = new Map(), liveFadeRaf = 0;
   function liveWait(i) {
-    if (!liveOn || liveSdk === 3 || !D.kid || !D.kid[i] || live[i]) return false;
+    if (!liveOn || liveSdk === 3 || !D.kid || !D.kid[i] || live[i] || liveCapped()) return false;
     if (liveHold > Date.now()) return true;
     var t = liveTiles[Math.floor(mx[i] * 65536) + ',' + Math.floor(my[i] * 65536)];
     return t > 0 && Date.now() - t < LIVE_WAIT;
@@ -6772,6 +6778,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var t = liveQueue.shift(), got = [];
     liveAsk(t[0], t[1], t[2], t[3], 0, got, function () {
       liveBusy = false;
+      save('liveDay', liveDay);
       liveTiles[t[4]] = -1;   // 이 칸은 다 받았다(못 받은 카페는 이제 건물 자리에 그린다)
       if (got.length) { liveSpread(got); liveFadeIn(got); } else requestDraw();
       if (!liveQueue.length && liveHold) { liveHold = 0; requestDraw(); }
@@ -6780,13 +6787,13 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   }
   // 화면에 보이는 구역을 고정된 칸(약 600m)으로 나눠서, 아직 묻지 않은 칸만 묻는다.
   function liveFetch() {
-    if (!liveOn || liveSdk === 3 || map.getZoom() < LIVE_ZOOM) return;
+    if (!liveOn || liveSdk === 3 || liveCapped() || map.getZoom() < LIVE_ZOOM) return;
     var b = map.getBounds();
     liveFetchBox((b.getWest() + 180) / 360, mercY(b.getNorth()), (b.getEast() + 180) / 360, mercY(b.getSouth()));
   }
   // 앞으로 보일 화면(가운데 경도, 위도와 배율)의 칸을 미리 받는다. 내 위치로 날아갈 때 쓴다.
   function liveFetchAt(lng, lat, z) {
-    if (!liveOn || liveSdk === 3 || z < LIVE_ZOOM) return;
+    if (!liveOn || liveSdk === 3 || liveCapped() || z < LIVE_ZOOM) return;
     var box = map.getContainer(), wf = box.clientWidth / (512 * Math.pow(2, z)) / 2, hf = box.clientHeight / (512 * Math.pow(2, z)) / 2;
     var cx = (lng + 180) / 360, cy = mercY(lat);
     liveFetchBox(cx - wf, cy - hf, cx + wf, cy + hf);
@@ -6797,6 +6804,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   function liveFetchBox(fx0, fy0, fx1, fy1) {
     liveSdkLoad(function () {
       if (!kidIndex) { kidIndex = new Map(); for (var i = 0; i < N; i++) if (D.kid[i]) kidIndex.set(D.kid[i], i); }
+      if (!kidTile) { kidTile = new Set(); for (var i2 = 0; i2 < N; i2++) if (D.kid[i2]) kidTile.add(Math.floor(mx[i2] * 65536) + ',' + Math.floor(my[i2] * 65536)); }
       var T = 1 / 65536;
       var x0 = Math.floor(fx0 / T), x1 = Math.floor(fx1 / T);
       var y0 = Math.floor(fy0 / T), y1 = Math.floor(fy1 / T);
@@ -6804,6 +6812,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       for (var x = x0; x <= x1; x++) for (var y = y0; y <= y1; y++) {
         var key = x + ',' + y;
         if (liveTiles[key]) continue;
+        if (!kidTile.has(key)) { liveTiles[key] = -1; continue; }   // 옮길 카페가 없는 칸은 묻지 않는다
         liveTiles[key] = Date.now();   // 받는 중(이 칸의 카카오 카페는 받을 때까지 그리지 않는다)
         liveQueue.push([x * T, y * T, (x + 1) * T, (y + 1) * T, key]);
       }
