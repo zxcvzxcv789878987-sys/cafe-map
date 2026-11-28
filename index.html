@@ -5442,8 +5442,28 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     map.flyTo({ center: ll, zoom: z, offset: mobile.matches ? [0, -H * .2] : [180, 0], duration: dur, curve: 1.2, essential: true });
     setTimeout(function () { selectCafe(i); }, dur + 80);
   }
+  // 전국 지도 조각 미리 받기(사용자 2026-11-28: 홈으로 갈 때 전국 지도가 늦게 떠서 화면이 깨진다).
+  //  내 위치에서 시작하면 전국 크기(줌 4~7) 지도 조각을 한 번도 받지 않아, 날아가는 동안 빈 곳이 보였다.
+  //  앱이 한숨 돌린 뒤 한국을 덮는 그 조각들(스무 장이 안 된다)을 미리 받아 두면 브라우저가 기억해 두었다가 바로 꺼내 쓴다.
+  var koreaWarm = {};
+  function warmKorea() {
+    var st = map.getStyle && map.getStyle(), src = null;
+    if (!st || !st.sources) return;
+    Object.keys(st.sources).some(function (id) { var s0 = map.getSource(id); if (s0 && s0.type === 'vector' && s0.tiles && s0.tiles.length) { src = s0; return true; } return false; });
+    if (!src) return;
+    var tpl = src.tiles[0], get = function (u) { koreaWarm[u] = 1; fetch(u, { mode: 'cors', credentials: 'same-origin' }).catch(function () { delete koreaWarm[u]; }); };
+    for (var z = 4; z <= 7; z++) {
+      var n = Math.pow(2, z), ty = function (lat) { var r = lat * Math.PI / 180; return Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * n); };
+      var x0 = Math.floor((KOREA[0][0] + 180) / 360 * n), x1 = Math.floor((KOREA[1][0] + 180) / 360 * n), y0 = ty(KOREA[1][1]), y1 = ty(KOREA[0][1]);
+      for (var x = x0; x <= x1; x++) for (var y = y0; y <= y1; y++) {
+        var u = tpl.replace('{z}', z).replace('{x}', x).replace('{y}', y);
+        if (!koreaWarm[u]) get(u);
+      }
+    }
+  }
   // 전국 지도로 간다. 처음부터 단추와 같은 곳(전국)이지만 내 위치 단추처럼 천천히 날아간다.
   function goKoreaSlow() {
+    warmKorea();   // 아직 못 받았으면 지금이라도(이미 받은 조각은 다시 받지 않는다)
     if (P.kind) closePanel();
     setRegion(-1, false);
     var cam = map.cameraForBounds(KOREA, { padding: fitPad() });
@@ -6088,6 +6108,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   }, mapAt));
   // 지도 출처는 지도 구석의 i 단추 대신 메뉴(줄 세 개 단추)의 "지도 자료"에 적는다.
   window.cafeMap = map;
+  map.once('idle', function () { setTimeout(warmKorea, 1500); });   // 전국 지도 조각 미리 받기(warmKorea)
   map.on('moveend', eggDokdo); eggCorner(); setTimeout(eggOpenCheck, 2000);
   var ldEl = document.getElementById('loading'); if (ldEl) ldEl.hidden = true;   // 자료를 다 읽었으니 로딩 표시를 내린다.
   if (window.cafeSplashDone) window.cafeSplashDone();   // 시작 화면도 내린다
