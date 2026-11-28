@@ -12659,6 +12659,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     };
     var openAll = function () {
       if (busy) return;
+      // 반만 열린 카드에서 사진을 펼치면 카드도 끝까지 올린다(사용자 2026-11-29)
+      if (P.kind === 'detail' && twoStage() && snap === 'half') setSnap('full', true);
       if (REDUCE) { all = true; draw(); return; }
       busy = true;
       var from = spots(), h0 = box.offsetHeight;
