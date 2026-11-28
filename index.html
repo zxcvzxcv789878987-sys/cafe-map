@@ -7121,9 +7121,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (Math.abs(c.lng - ll[0]) < 1e-5 && Math.abs(c.lat - ll[1]) < 1e-5 && Math.abs(map.getZoom() - z) < .01) { open(); return; }
     var done = false, go = function () { if (done) return; done = true; open(); };
     // 이동을 먼저 시작하고 그다음 끝 신호를 기다린다. 판을 닫으며 생긴 지도 움직임이 이 이동에 끊기면서 보내는 끝 신호를 받지 않으려고.
-    map.flyTo({ center: ll, zoom: z, duration: 600 });
+    //  날아가는 시간은 앱의 다른 날아가기와 같은 규칙(flyMsTo, 1.2~2초, 곡선 1.2. 사용자 2026-11-28: 0.6초는 너무 빠르다).
+    var dur = flyMsTo(ll, z);
+    map.flyTo({ center: ll, zoom: z, duration: dur, curve: 1.2, essential: true });
     map.once('moveend', go);
-    setTimeout(go, 1500);   // moveend가 오지 않을 때(움직임이 끊기는 등)
+    setTimeout(go, dur + 900);   // moveend가 오지 않을 때(움직임이 끊기는 등)
   }
   function busFavRow(f) {
     var row = btn('row'), body = el('span', 'body'), pin = el('span', 'pin'); pin.style.setProperty('--c', 'var(--surface-2)'); pin.style.setProperty('--t', 'var(--ink-2)'); pin.appendChild(icon('bus'));
@@ -11297,7 +11299,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   $('locate').addEventListener('click', function () { startHeading(true); setFollow(true); locateMe(); });
   // 날아가는 시간: 배율이 많이 바뀔수록, 멀수록 오래. 사용자 2026-11-27: 앱을 열 때, 내 위치 단추, 처음 안내가 끝날 때 너무 빠르다(1.6초에서 5.5초로 늘림).
   //  2026-11-28 사용자: 조금 느리다. 같은 모양으로 25% 빠르게, 가장 길어도 2초(1.2초에서 2초).
-  //  쓰는 곳: 앱을 열 때, 내 위치 단추, 처음 안내, 가까운 곳, 전국 지도, 처음부터 단추(새 동네 지도의 처음부터도). 지역 고르기, 검색, 카드 열기, 걷는 길은 0.5~0.6초 그대로.
+  //  쓰는 곳: 앱을 열 때, 내 위치 단추, 처음 안내, 가까운 곳, 전국 지도, 처음부터 단추(새 동네 지도의 처음부터도), 찜한 정류장과 검색한 정류장으로 가기.
+  //  2026-11-28 사용자: 앞으로 새로 넣는 날아가기는 모두 이 규칙을 쓴다. 지역 고르기, 검색, 카드 열기, 걷는 길의 화면 맞추기(0.5~0.6초)는 날아가기가 아니라 그대로.
   function flyMs(dz, far) { return Math.round(Math.max(1200, Math.min(2000, .75 * (1100 + 480 * Math.abs(dz) + 380 * Math.min(far || 0, 6))))); }
   function flyMsTo(ll, z) {
     var p0 = map.project(ll), box = map.getContainer();
