@@ -6231,6 +6231,20 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 지도 출처는 지도 구석의 i 단추 대신 메뉴(줄 세 개 단추)의 "지도 자료"에 적는다.
   window.cafeMap = map;
   map.once('idle', function () { setTimeout(warmKorea, 1500); });   // 전국 지도 조각 미리 받기(warmKorea)
+  // 날아가는 동안 흰 화면 막기(사용자 2026-11-28 화면 녹화: 처음부터를 누르면 날아가는 중간 1초쯤 지도가 하얗고 지하철 선과 이름표만 보였다).
+  //  조각을 미리 받아 둬도 폰이 중간 배율 조각을 그릴 틈이 없다. 그래서 아주 거친 6단계 조각(한국 전체가 한두 장)으로 바다만 따로 깔아 둔다.
+  //  이 조각은 어느 배율에서나 한두 장이라 늘 준비되어 있어서, 자세한 조각이 오기 전에도 바다와 땅 모양이 보인다.
+  //  9단계보다 확대하면 거친 해안선이 자세한 지도와 어긋나 보이므로 그때는 그리지 않는다.
+  function ensureUnder() {
+    if (!map.getStyle() || map.getSource('under')) return;
+    var src = map.getSource('openmaptiles'); if (!src || !src.tiles || !src.tiles.length) return;
+    try {
+      map.addSource('under', { type: 'vector', tiles: src.tiles.slice(), minzoom: 0, maxzoom: 6 });
+      var before = map.getLayer('park') ? 'park' : undefined;
+      map.addLayer({ id: 'under-water', type: 'fill', source: 'under', 'source-layer': 'water', maxzoom: 9.5, filter: ['!=', ['get', 'brunnel'], 'tunnel'], paint: { 'fill-color': '#b3d9ee' } }, before);
+    } catch (er) { /* 못 넣으면 그대로 */ }
+  }
+  map.on('idle', ensureUnder);
   map.on('moveend', eggDokdo); eggCorner(); setTimeout(eggOpenCheck, 2000);
   var ldEl = document.getElementById('loading'); if (ldEl) ldEl.hidden = true;   // 자료를 다 읽었으니 로딩 표시를 내린다.
   if (window.cafeSplashDone) window.cafeSplashDone();   // 시작 화면도 내린다
