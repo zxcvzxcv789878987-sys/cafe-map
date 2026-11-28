@@ -8302,7 +8302,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     panel.dataset.kind = kind; panel.hidden = false;
     // 카드는 아래에서 위로 올라오며 나타난다(이미 카드가 떠 있을 때 내용만 바뀌는 경우는 빼고).
     var fresh = kind === 'detail' ? was !== 'detail' : !was, keep = was === kind ? snap : 'half';
-    panel.style.transform = panel.style.transition = '';
+    panel.style.transform = panel.style.transition = panel.style.opacity = panel.style.transformOrigin = '';   // 위로 접혀 닫히던 검색 판의 흔적도 지운다
     panel.classList.remove('rise');
     document.body.classList.add('sheet-open');
     renderPanel(); placePanel();
@@ -8361,12 +8361,19 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (P.kind) return;      // 내려가는 사이에 다른 카드가 열렸으면 그대로 둔다.
       panel.hidden = true;
       var fr = panel.querySelector('iframe'); if (fr) fr.remove();
-      panel.style.transition = panel.style.transform = '';
+      panel.style.transition = panel.style.transform = panel.style.opacity = panel.style.transformOrigin = '';
     };
     clearTimeout(closeTimer);
     if (mobile.matches && now !== true && !panel.hidden) {
       // 폰에서는 아래로 스르륵 내려가며 닫힌다.
       panel.classList.remove('rise');
+      if (was === 'search' && !panel.hasAttribute('data-snap')) {
+        // 검색창 아래에 붙어 내려온 검색 판은 검색창 쪽(위)으로 접히며 닫힌다(사용자 2026-11-29).
+        panel.style.transformOrigin = 'top center';
+        panel.style.transition = 'transform .2s ease-in, opacity .2s ease-in'; panel.style.transform = 'translateY(-24px) scaleY(.92)'; panel.style.opacity = '0';
+        closeTimer = setTimeout(done, 210);
+        return;
+      }
       panel.style.transition = 'transform .22s ease-in'; panel.style.transform = 'translateY(105%)';
       closeTimer = setTimeout(done, 230);
     } else done();
