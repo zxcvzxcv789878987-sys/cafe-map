@@ -6175,7 +6175,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       // 주차장(2026-11-28)도 정류장처럼 이름 없이 아이콘만. 정류장보다 아래 층이라 겹치면 정류장이 남는다.
       { id: 'lm-parking', type: 'symbol', source: 'lm-parks', minzoom: 15,
         // 찜한 주차장(f: 1)은 하트 붙은 아이콘, 겹치면 찜한 주차장이 남는다.
-        layout: { 'icon-image': ['case', ['==', ['get', 'f'], 1], 'ic-parking-fav', 'ic-parking'], 'icon-size': z(15, .85, 18, 1.2), 'icon-padding': 1, 'symbol-sort-key': ['-', 1, ['get', 'f']] }, paint: { 'icon-opacity': .95 } },
+        // 실시간 남은 자리(a, 2026-11-28 사용자: 지도 P에서 바로)가 있으면 P 오른쪽에 숫자. 색은 창과 같다(r: 남은 비율). 자리가 없으면 숫자만 빠진다.
+        layout: { 'icon-image': ['case', ['==', ['get', 'f'], 1], 'ic-parking-fav', 'ic-parking'], 'icon-size': z(15, .85, 18, 1.2), 'icon-padding': 1, 'symbol-sort-key': ['-', 1, ['get', 'f']],
+          'text-field': ['case', ['has', 'a'], ['to-string', ['get', 'a']], ''], 'text-font': ['Noto Sans Bold'], 'text-size': 12.5, 'text-anchor': 'left', 'text-offset': [1.05, 0], 'text-optional': true },
+        paint: { 'icon-opacity': .95, 'text-color': ['case', ['>=', ['coalesce', ['get', 'r'], 0], .3], '#2f9e44', ['>=', ['coalesce', ['get', 'r'], 0], .1], '#f08c00', '#e03131'], 'text-halo-color': '#ffffff', 'text-halo-width': 2 } },
       // 버스 정류장은 이름 없이 아이콘만 찍는다. 지도 자료(OpenStreetMap)에는 빠진 정류장이 많아서(수원 정자동 26%) 공공데이터 정류장으로 그린다(2026-11-28).
       { id: 'lm-bus', type: 'symbol', source: 'lm-busstops', minzoom: 15,
         // 찜한 정류장(f: 1)은 하트 붙은 아이콘, 겹치면 찜한 정류장이 남는다.
@@ -7471,17 +7474,49 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var bb = map.getBounds(), keys = busKeys(bb.getWest(), bb.getSouth(), bb.getEast(), bb.getNorth());
     if (keys.length > 16) return;
     var ks = keys.join(',');
-    if (ks === parkKeyStr && src === parkSrc) return;
+    // 서울을 보고 있으면 실시간 남은 자리도 붙인다(2분마다 새로).
+    var inSeoul = bb.getNorth() > 37.41 && bb.getSouth() < 37.72 && bb.getEast() > 126.73 && bb.getWest() < 127.27;
+    var liveOld = inSeoul && Date.now() - parkLiveT >= 120000;
+    if (ks === parkKeyStr && src === parkSrc && !liveOld) return;
     parkLoad(keys, function () {
       var f = [];
       keys.forEach(function (k) { (parkTiles[k] || []).forEach(function (s, j) { f.push({ type: 'Feature', properties: { k: k, j: j, f: parkFavKey[parkKeyOf(s)] ? 1 : 0 }, geometry: { type: 'Point', coordinates: [s[1] / 1e5, s[0] / 1e5] } }); }); });
       parkFC = { type: 'FeatureCollection', features: f }; parkKeyStr = ks;
+      if (inSeoul && parkLiveL) parkLiveMark(f, parkLiveL);
       var s2 = map.getSource('lm-parks'); if (s2) { s2.setData(parkFC); parkSrc = s2; }
+      if (inSeoul && liveOld) parkLiveAll(function (L) {
+        if (ks !== parkKeyStr || !L.length) return;
+        parkLiveMark(parkFC.features, L);
+        var s3 = map.getSource('lm-parks'); if (s3) s3.setData(parkFC);
+      });
+    });
+  }
+  // 실시간 남은 자리 목록(중계 서버 /parks): [[위도*1e5, 경도*1e5, 이름, 남은 면, 전체 면, 'HH:MM']]. 2분 기억한다.
+  var parkLiveL = null, parkLiveT = 0, parkLiveP = null;
+  function parkLiveAll(cb) {
+    if (parkLiveL && Date.now() - parkLiveT < 120000) { cb(parkLiveL); return; }
+    if (!parkLiveP) parkLiveP = fetch(BUS_API.replace(/\/bus$/, '/parks')).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+      .then(function (d) { parkLiveP = null; parkLiveT = Date.now(); parkLiveL = (d && d.l) || []; return parkLiveL; });
+    parkLiveP.then(cb);
+  }
+  // 지도 주차장마다 실시간 주차장과 짝을 짓는다(서버 /park와 같은 규칙: 이름이 같으면 250m, 달라도 25m 안).
+  function parkLiveMark(feats, L) {
+    var stem = function (t) { return String(t || '').replace(/\s|공영주차장|공영|주차장|\((시|구)\)/g, ''); };
+    var ls = L.map(function (x) { return stem(x[2]); });
+    feats.forEach(function (ft) {
+      var s = (parkTiles[ft.properties.k] || [])[ft.properties.j]; if (!s) return;
+      var me = stem(s[2]), best = null;
+      L.forEach(function (x, n) {
+        var d = Math.hypot((x[0] - s[0]) / 1e5 * 111000, (x[1] - s[1]) / 1e5 * 88000);
+        if ((d <= 250 && me && ls[n] === me) || d <= 25) { if (!best || d < best.d) best = { d: d, x: x }; }
+      });
+      if (best && best.x[4]) { ft.properties.a = best.x[3]; ft.properties.r = best.x[3] / best.x[4]; }
+      else { delete ft.properties.a; delete ft.properties.r; }
     });
   }
   map.on('moveend', parkRefresh);
   map.on('styledata', function () { var s3 = map.getSource('lm-parks'); if (s3 && s3 !== parkSrc) { parkSrc = s3; s3.setData(parkFC); parkKeyStr = ''; parkRefresh(); } });
-  if (TEST) window.testPark = function () { var sc = map.getSource('lm-parks'); return { z: map.getZoom(), layer: !!map.getLayer('lm-parking'), src: !!sc, n: parkFC.features.length, keys: parkKeyStr, img: map.hasImage('ic-parking') }; };
+  if (TEST) window.testPark = function () { var sc = map.getSource('lm-parks'); return { z: map.getZoom(), layer: !!map.getLayer('lm-parking'), src: !!sc, n: parkFC.features.length, live: parkFC.features.filter(function (f) { return f.properties.a != null; }).length, liveL: parkLiveL ? parkLiveL.length : -1, keys: parkKeyStr, img: map.hasImage('ic-parking') }; };
   function parkAt(pt) {
     if (!map.getLayer('lm-parking')) return null;
     var f = map.queryRenderedFeatures([[pt.x - 12, pt.y - 12], [pt.x + 12, pt.y + 12]], { layers: ['lm-parking'] });
