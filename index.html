@@ -2348,6 +2348,48 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
 .xbox.done .two { align-self: stretch; }
 /* 움직임을 줄인 폰: 그림은 움직이지 않고 끝난 모양으로 */
 @media (prefers-reduced-motion: reduce) { .fx * { animation-duration: .001s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; } }
+/* ----- 카페 카드 시안 A(2026-11-28 사용자가 고름): 맨 위 사진 줄, 칸 사이 회색 띠, 콘센트 자리 넷 한 줄 ----- */
+.oin { padding-top: 4px; gap: 14px; }
+.ophoto { display: grid; gap: 6px; height: 168px; flex: none; }
+.ophoto.wait { position: relative; border-radius: 12px; background: var(--surface-2); overflow: hidden; }
+.ophoto.wait::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 20%, rgba(0, 0, 0, .05) 50%, transparent 80%); background-size: 200% 100%; animation: shimmer 1.3s linear infinite; }
+.ophoto.n1 { grid-template-columns: minmax(0, 1fr); }
+.ophoto.n2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ophoto.n3 { grid-template-columns: 1.45fr 1fr; grid-template-rows: repeat(2, minmax(0, 1fr)); }
+.ophoto.n3 .opc:first-child { grid-row: 1 / 3; }
+.opc { position: relative; min-height: 0; padding: 0; border: 0; border-radius: 12px; overflow: hidden; background: var(--surface-2); cursor: pointer; }
+.opc img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.opc .obgm { border-radius: inherit; }
+.otl h1 { word-break: keep-all; overflow-wrap: break-word; line-height: 1.3; }
+.otl .otags, .otags.wide { margin: 0; gap: 10px; flex-wrap: wrap; }
+.otag, .otag.big, .otag.new { height: auto; padding: 0; background: none; border-radius: 0; font-size: 13.5px; font-weight: 700; color: #4c3fc4; }
+.obig .py { font-size: 13.5px; line-height: 1.4; }
+.obasic { margin-top: -6px; }
+.oin > .band { margin: 0 -18px; padding: 4px 18px 0; border-top: 10px solid var(--surface-2); border-radius: 0; }
+.oin > .omod.band { border-left: 0; border-right: 0; border-bottom: 0; }
+.oin h2, .omhd h2 { font-size: 17px; font-weight: 800; letter-spacing: -.2px; }
+.oin .osec > h2, .obhd, .oin .omod .omhd { min-height: 44px; height: auto; display: flex; align-items: center; margin: 0; }
+.obhd { justify-content: space-between; }
+.omst2 { margin-top: 2px; height: 30px; }
+.omst2 b { display: inline-flex; align-items: center; gap: 6px; font-size: 17px; letter-spacing: -.2px; }
+.omst2 b .fxs { width: 28px; height: 28px; }
+.omst2 + .omtiles { margin-top: 10px; }
+.omtiles.four { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.omtiles.four .omtile { height: 92px; padding: 8px 2px; gap: 2px; }
+.omtiles.four .omtile .omname { font-size: 12.5px; }
+.omtiles.four .omtile b { font-size: 15px; }
+.omtiles.four .omtile.my b { font-size: 12.5px; }
+.omempty { height: 132px; flex-direction: row; gap: 12px; }
+.omempty .ompic { width: 56px; height: 56px; }
+.obp { padding: 8px 0; }
+.obp .obth { order: 2; width: 76px; height: 76px; border-radius: 12px; }
+.obmore { align-self: center; height: 36px; margin: 0; padding: 0; border: 0; border-radius: 0; background: none; display: inline-flex; align-items: center; gap: 1px; font-size: 14px; font-weight: 600; color: var(--ink-2); }
+.obmore svg.i { width: 15px; height: 15px; }
+.oin .oln .lb { width: 88px; font-weight: 600; }
+.oin .oln .d { font-size: 14.5px; font-weight: 800; }
+.oin > .ofix { margin-top: 10px; }
+/* 카드 안 글은 띄어쓰기에서만 줄을 바꾼다(사용자 2026-11-28: "용산전자랜 / 드"처럼 글자 중간에서 끊기면 안 된다) */
+.oin, .oin .oln .v, .oin .obtx b, .oin .osc b { word-break: keep-all; overflow-wrap: break-word; }
 </style>
 </head>
 <body>
@@ -10689,10 +10731,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (tot) { var wl = btn('omwho', null, function () { openVoters(i); }); wl.appendChild(document.createTextNode(tot + '명 기록')); wl.appendChild(icon('right')); hd.appendChild(wl); }
       box.appendChild(hd);
       if (tot) {
-        var st = el('div', 'omst2');
-        st.appendChild(el('b', null, ny >= nn ? '콘센트 자리 있어요' : '콘센트가 없다는 기록이 많아요'));
-        if (nn) st.appendChild(el('span', null, '없다는 기록 ' + nn + '명'));
-        box.appendChild(st);
+        // 결과 한 줄 앞에 플러그 그림(옆모습). 없다는 기록 수는 N명 기록 목록에서 본다(시안 A).
+        var st = el('div', 'omst2'), sb2 = el('b');
+        if (ny >= nn) sb2.appendChild(fxIcon('plug'));
+        sb2.appendChild(document.createTextNode(ny >= nn ? '콘센트 자리 있어요' : '콘센트가 없다는 기록이 많아요'));
+        st.appendChild(sb2); box.appendChild(st);
         var tl = el('div', 'omtiles four');
         CHAIRS.forEach(function (c) {
           var mine = (mc & c[2]) !== 0, n = (v[c[3]] || 0) + (mine ? 1 : 0), t = el('div', 'omtile' + (n ? '' : ' off') + (mine ? ' my' : ''));
@@ -11357,37 +11400,37 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     o.appendChild(hd); o.appendChild(stage); o.appendChild(cap); document.body.appendChild(o);
     build(); move(false);
   }
+  // 블로그 사진: 카페 이름이 든 블로그 글에 실린 사진(카카오 이미지 검색). 아주 작은 그림(이모티콘, 스티커, 아이콘)은 뺀다.
+  //  실린 사진이 없으면 글마다 대표 사진을 쓴다. 사진이 1~2장뿐이어도 보여 준다(사용자 2026-11-28).
+  function blogPics(list, imgs) {
+    imgs = (imgs || []).filter(function (x) { return (x.w || 0) >= 400 && (x.h || 0) >= 300 && !hidePics[x.i]; });
+    var pics = imgs.length ? imgs : list.filter(function (x) { return x.p; }).map(function (x) { return { s: x.p, i: x.p, u: x.u, t: x.t, b: x.b }; });
+    return { imgs: imgs, pics: pics };
+  }
+  // 카드 맨 위 사진 줄(2026-11-28 시안 A, 네이버와 카카오처럼): 큰 칸 하나와 작은 칸 둘. 더 있으면 마지막 칸에 +N.
+  //  누르면 크게 보는 창(옆으로 넘김, 아래에 출처 블로그). 사진이 없으면 칸을 숨긴다.
+  function photoFill(box, list, imgs, title) {
+    var draw = function () {
+      var pics = blogPics(list, imgs).pics, n = Math.min(3, pics.length);
+      box.textContent = ''; box.className = 'ophoto n' + n; box.hidden = !n;
+      pics.slice(0, n).forEach(function (x, k) {
+        var more = k === n - 1 && pics.length > n;
+        var a = btn('opc', null, function () { openPhotoView(pics, k, title, draw); });
+        a.setAttribute('aria-label', more ? '사진 ' + pics.length + '장 모두 보기' : x.b + '의 블로그 사진 크게 보기');
+        var im = document.createElement('img'); im.src = picMid(x); im.alt = ''; im.referrerPolicy = 'no-referrer'; im.onerror = function () { if (im.src !== x.s) im.src = x.s; else im.remove(); };
+        a.appendChild(im);
+        if (more) a.appendChild(el('span', 'obgm', '+' + (pics.length - n)));
+        box.appendChild(a);
+      });
+    };
+    draw();
+  }
+  // 블로그 후기 칸: 글 세 개(제목, 블로그 이름, 오른쪽에 사진). 사진 바둑판은 카드 맨 위 사진 줄로 옮겼다(시안 A).
   function blogFill(box, list, imgs, title) {
     box.textContent = ''; box.classList.remove('wait');
     var hd = el('div', 'obhd'); hd.appendChild(el('h2', null, '블로그 후기')); box.appendChild(hd);
     var shown = 3, rows = el('div', 'obrows');
-    // 블로그 사진 바둑판: 카페 이름이 든 블로그 글에 실린 사진(카카오 이미지 검색). 세 칸씩(3장 이상일 때), 6장을 넘으면 마지막 칸에 남은 수.
-    //  이미지 검색 사진이 모자라면 글마다 대표 사진을 쓴다. 누르면 크게 보는 창(옆으로 넘김, 아래에 출처 블로그).
-    // 아주 작은 그림(이모티콘, 스티커, 아이콘)은 뺀다.
-    imgs = (imgs || []).filter(function (x) { return (x.w || 0) >= 400 && (x.h || 0) >= 300 && !hidePics[x.i]; });
-    // 사진이 1~2장뿐이어도 보여 준다(사용자 2026-11-28). 실린 사진이 없으면 글 대표 사진으로.
-    var pics = imgs.length ? imgs : list.filter(function (x) { return x.p; }).map(function (x) { return { s: x.p, i: x.p, u: x.u, t: x.t, b: x.b }; });
-    // +N을 누르면 따로 창을 열지 않고 이 칸 안에서 아래로 모두 펼친다(사용자 2026-11-28).
-    if (pics.length) {
-      var gd = el('div', 'obgrid' + (pics.length === 1 ? ' n1' : pics.length === 2 ? ' n2' : '')), all = false, fold = btn('obfold', null, function () { all = false; drawGrid(); gd.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
-      fold.appendChild(document.createTextNode('사진 접기')); fold.appendChild(icon('down')); fold.hidden = true;
-      var drawGrid = function () {
-        gd.textContent = '';
-        fold.hidden = !all;
-        var cnt = all ? pics.length : pics.length >= 6 ? 6 : Math.min(3, pics.length);
-        pics.slice(0, cnt).forEach(function (x, n) {
-          var more = !all && n === cnt - 1 && pics.length > cnt;
-          var a = btn('obgc', null, function () { if (more) { all = true; drawGrid(); } else openPhotoView(pics, n, title, drawGrid); });
-          a.setAttribute('aria-label', more ? '사진 ' + pics.length + '장 모두 보기' : x.b + '의 블로그 사진 크게 보기');
-          var im = document.createElement('img'); im.src = picMid(x); im.alt = ''; im.loading = 'lazy'; im.referrerPolicy = 'no-referrer'; im.onerror = function () { if (im.src !== x.s) im.src = x.s; else im.remove(); };
-          a.appendChild(im);
-          if (more) a.appendChild(el('span', 'obgm', '+' + (pics.length - cnt)));
-          gd.appendChild(a);
-        });
-      };
-      drawGrid();
-      box.appendChild(gd); box.appendChild(fold);
-    }
+    imgs = blogPics(list, imgs).imgs;
     box.appendChild(rows);
     var draw = function () {
       rows.textContent = '';
@@ -11409,8 +11452,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         tx.appendChild(el('span', null, x.b + (ds ? ', ' + ds : ''))); a.appendChild(tx);
         rows.appendChild(a);
       });
+      // 더 보기는 제목 줄 오른쪽(시안 A). 누르면 나머지 글을 아래로 모두 펼친다.
       var old = box.querySelector('.obmore'); if (old) old.remove();
-      if (list.length > shown) box.appendChild(btn('obmore', '더 보기', function () { shown = list.length; draw(); }));
+      if (list.length > shown) { var mb = btn('obmore', '더 보기', function () { shown = list.length; draw(); }); mb.appendChild(icon('right')); hd.appendChild(mb); }
     };
     draw();
     box.hidden = false;
@@ -11436,8 +11480,12 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   //  이름 줄(로고, 평수와 표시, 찜 메모 공유) → 주소와 길찾기 → 영업시간, 메뉴, 후기(앱 안의 카카오맵 탭으로) → 콘센트 → 블로그 후기 →
   //  근처(버스정류장, 주차장) → 편의(지역화폐, 승강기, 건물 주차장) → 같은 건물의 카페 → 정보 수정 제안.
   //  act: outlet 콘센트 칸(없으면 rec), want 찜, memo 메모(이스터 에그를 연 사람만), share 공유, kakao 카카오맵 탭으로, fix 정보 수정 제안.
+  // 정류장, 주차장 이름처럼 띄어쓰기 없이 긴 이름은 점, 쉼표, 괄호 뒤에서만 줄을 바꾼다(사용자 2026-11-28: 글자 중간에서 끊기면 안 된다).
+  function softBreak(s) { return String(s).replace(/([.,)\]])(?=\S)/g, '$1​').replace(/(?=[(\[])/g, '​'); }
   function cafeOurs(i, act) {
     var w = el('div', 'oin');
+    // 맨 위 사진 줄(시안 A). 블로그 자료를 받을 때까지 빈 칸이 반짝이고, 사진이 없으면 숨긴다.
+    var photo = el('div', 'ophoto wait'); w.appendChild(photo);
     var top = el('div', 'otop'), tl = el('div', 'otl');
     var lg = pinEl(i); lg.classList.add('opin'); top.appendChild(lg);
     tl.appendChild(el('h1', null, D.name[i]));
@@ -11451,6 +11499,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       tags.appendChild(big);
     }
     if (ago >= 0 && ago < 12) tags.appendChild(el('span', 'otag new', '새로 연 카페'));
+    // 평수와 표시는 이름 바로 아래(시안 A). 표시는 바탕 없이 보라 글자로.
+    if (tags.firstChild) tl.appendChild(tags);
     top.appendChild(tl);
     var acts = el('div', 'oacts');
     // 찜, 메모, 공유는 글자 없이 그림만(사용자 2026-11-28). 이름은 aria-label로.
@@ -11464,8 +11514,6 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     top.appendChild(acts); w.appendChild(top);
     // 이름 줄도 카드 손잡이다(사용자 2026-11-28: 손잡이가 얇아 잡기 힘들다). 단추 위에서 시작한 것은 단추로 둔다.
     sheetDrag(top);
-    // 평수와 표시는 이름 아래 한 줄로 넓게(이름 칸이 좁아 줄이 밀리고 높이가 어긋났다. 사용자 2026-11-28).
-    if (tags.firstChild) { tags.classList.add('wide'); w.appendChild(tags); }
     // 주소와 길찾기 한 줄, 그 아래 영업시간과 전화번호(공식 자료가 없어 앱 안의 카카오맵 탭으로 넘긴다), 내 메모
     var basic = el('div', 'obasic'), fl = D.floor[i], ad = el('div', 'oaddr');
     ad.appendChild(icon('pin')); ad.appendChild(el('span', null, shortAddr(i) + (fl > 0 ? ', ' + fl + '층' : fl < 0 ? ', 지하' : '')));
@@ -11474,29 +11522,29 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (act.kakao) {
       var hr = btn('ohrs', null, act.kakao);
       // 카카오맵 탭에서 볼 것: 영업시간과, 카카오맵이 우리보다 나은 메뉴, 후기(사용자 2026-11-28: 전화번호만 뺀다. 카페에 전화할 일은 드물다).
-      hr.appendChild(icon('clock')); hr.appendChild(el('span', null, '영업시간, 메뉴, 후기')); hr.appendChild(el('span', 'k', '카카오맵 탭에서 보기')); hr.appendChild(icon('right'));
+      hr.appendChild(icon('clock')); hr.appendChild(el('span', null, '영업시간, 메뉴, 후기')); hr.appendChild(el('span', 'k', '카카오맵')); hr.appendChild(icon('right'));
       basic.appendChild(hr);
     }
     var myMemo = act.memo && (XP.memo || {})[cidOf(i)];
     if (myMemo) { var ml = btn('omemol', null, act.memo); ml.appendChild(memoPic()); ml.appendChild(el('span', null, myMemo.m)); ml.setAttribute('aria-label', '내 메모: ' + myMemo.m + ', 눌러서 고치기'); basic.appendChild(ml); }
     w.appendChild(basic);
     // 콘센트
-    if (act.outlet) w.appendChild(act.outlet); else if (act.rec) w.appendChild(act.rec);
+    // 칸 사이는 회색 띠(band)로 나눈다(시안 A).
+    var om = act.outlet || act.rec; if (om) { om.classList.add('band'); w.appendChild(om); }
     // 블로그 후기(사용자 2026-11-28): 카공 후기(이름 + 콘센트로 찾은 글)를 앞에, 그 뒤에 그 카페 블로그 글. 글이 없으면 칸을 숨긴다.
-    //  블로그 칸이 화면에 보일 때(조금 앞에서) 검색한다(사용자 2026-11-28: 카카오 검색은 하루 횟수가 정해져 있다). 같은 카드는 한 번만.
-    var blog = el('section', 'osec oblog wait'); w.appendChild(blog);
-    var loadBlog = function () { cafeBlog(i, function (d) { if (d && d.p.length) blogFill(blog, d.p, d.i, D.name[i]); else blog.hidden = true; }); };
-    if ('IntersectionObserver' in window) {
-      var bio = new IntersectionObserver(function (es) { if (es.some(function (e) { return e.isIntersecting; })) { bio.disconnect(); loadBlog(); } }, { rootMargin: '0px 0px 60px 0px' });
-      setTimeout(function () { bio.observe(blog); }, 0);
-    } else loadBlog();
+    //  사진 줄이 카드 맨 위라서 카드를 열 때 바로 검색한다(시안 A). 같은 카드는 이번 실행 동안 한 번만(blogMem).
+    var blog = el('section', 'osec oblog band wait'); w.appendChild(blog);
+    cafeBlog(i, function (d) {
+      if (d && d.p.length) { photoFill(photo, d.p, d.i, D.name[i]); blogFill(blog, d.p, d.i, D.name[i]); }
+      else { photo.hidden = true; blog.hidden = true; }
+    });
     // 근처와 편의: 자료 파일(info/)을 받은 뒤 채운다. 지하철역은 카카오맵이 출구까지 더 정확히 보여 줘서 뺐다(2026-11-28).
-    var near = el('section', 'osec'), conv = el('section', 'osec');
+    var near = el('section', 'osec band'), conv = el('section', 'osec');
     near.hidden = true; conv.hidden = true; w.appendChild(near); w.appendChild(conv);
     var line = function (box, ic, label, val, right, tap) {
       var r = el('div', 'oln'); r.appendChild(icon(ic));
       if (label) r.appendChild(el('span', 'lb', label));
-      var v = el('span', 'v'); if (typeof val === 'string') v.textContent = val; else v.appendChild(val); r.appendChild(v);
+      var v = el('span', 'v'); if (typeof val === 'string') v.textContent = softBreak(val); else v.appendChild(val); r.appendChild(v);
       if (right) r.appendChild(el('span', 'd', right));
       // 근처 정류장과 주차장은 누르면 자세한 창이 열린다(2026-11-28 시안).
       if (tap) {
@@ -11520,7 +11568,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         //  info 자료는 건물 점으로 셈해서, 카카오 매장 자리로 옮긴 카페 점과 어긋났다). 짝 중 더 가까운 쪽을 가까운 정류장으로 쓴다.
         var bA = x.b, b2 = null, b2Row = null, dEl = null, dEl2 = null, r1 = null;
         var openBus = function (k) { cm = mercToLngLat(mx[i], my[i]); nearSheet(i, 'b', dm(bA), b2 ? dm(b2) : null, b2 ? k : 0); };
-        var setRow = function (r, y) { var v = r.querySelector('.v'), d = r.querySelector('.d'); if (v) v.textContent = y[0]; if (d) d.textContent = meter(dm(y)[1]); };
+        var setRow = function (r, y) { var v = r.querySelector('.v'), d = r.querySelector('.d'); if (v) v.textContent = softBreak(y[0]); if (d) d.textContent = meter(dm(y)[1]); };
         var addB2 = function () {
           if (!b2) { if (b2Row) { b2Row.remove(); b2Row = null; dEl2 = null; } return; }
           if (b2Row) { setRow(b2Row, b2); return; }
@@ -11553,7 +11601,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
           parkRows.forEach(function (r) { r.remove(); }); parkRows = [];
           list.forEach(function (y, k) {
             var pv = document.createElement('span'), fee = { '무료': '무료', '유료': '유료', '혼합': '무료와 유료' }[y[2]];
-            pv.appendChild(document.createTextNode(y[0])); if (fee) pv.appendChild(el('em', 'fee', fee));
+            pv.appendChild(document.createTextNode(softBreak(y[0]))); if (fee) pv.appendChild(el('em', 'fee', fee));
             line(near, 'park', k ? ' ' : '주차장', pv, meter(y[1]), function () { nearSheet(i, 'p', y, list); });
             var r = near.lastChild; if (k) r.firstChild.style.visibility = 'hidden';
             parkRows.push(r);
@@ -11578,6 +11626,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       }
       if (x.m || x.e || x.c > 0) {
         conv.appendChild(el('h2', null, '편의'));
+        conv.classList.toggle('band', near.hidden);   // 근처 칸이 없으면 편의 칸 위에 띠
         if (x.m) line(conv, 'card', '', '지역화폐 가맹점');
         if (x.e) line(conv, 'lift', '', '승강기 있음');
         if (x.c > 0) line(conv, 'park', '', '건물 주차장 ' + x.c + '대');
@@ -11589,7 +11638,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     for (var j = 0; j < N; j++) if (j !== i && D.road[j] === D.road[i] && !removed[j] && !dabang[j] && fullAddr(j) === myAddr) same.push(j);
     if (same.length) {
       same.sort(function (p1, p2) { return (D.floor[p1] || 99) - (D.floor[p2] || 99); });
-      var sb = el('section', 'osec'); sb.appendChild(el('h2', null, '같은 건물의 카페 ' + same.length + '곳'));
+      var sb = el('section', 'osec band'); sb.appendChild(el('h2', null, '같은 건물의 카페 ' + same.length + '곳'));
       var rail = el('div', 'osame');
       same.slice(0, 12).forEach(function (j2) {
         var c = btn('osc', null, function () { selectCafe(j2, true, 'detail'); }), f2 = D.floor[j2];
