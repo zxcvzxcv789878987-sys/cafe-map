@@ -6268,8 +6268,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     map.on('rotate', sync); sync();
     // 확대해서 전국 화면에서 벗어나거나 돌아오면 처음부터 단추를 다시 정한다(바뀔 때만).
     var offWas = null;
-    map.on('zoom', function () { var o = offHome(); if (o !== offWas) { offWas = o; navVis(); } });
-    window.addEventListener('resize', function () { homeZ = null; navVis(); });
+    map.on('move', function () { var o = offHome(); if (o !== offWas) { offWas = o; navVis(); } });
+    window.addEventListener('resize', function () { homeZ = null; homeC = null; navVis(); });
     nb.addEventListener('click', function () { map.easeTo({ bearing: 0, duration: 400 }); });
   })();
   // 지도 스타일을 받아서 원래 있던 글씨와 기호를 전부 뺀 뒤, 위치를 가늠하는 기준점만 다시 넣는다.
@@ -9973,8 +9973,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (can) { all.textContent = S.showAll ? '동별로 보기' : rName[S.reg] + ' 전체 보기'; all.setAttribute('aria-pressed', String(S.showAll)); }
   }
   // 오른쪽 아래 단추: 뒤로와 처음부터는 지역을 골랐을 때만. 메모 단추(투명 단추 에그를 연 사람)는 전국에서도 늘 보인다(사용자 2026-11-27).
-  //  처음부터는 지도가 돌아가 있거나, 전국 화면보다 조금이라도 확대했을 때도 보인다(사용자 2026-11-28). 누르면 북쪽이 위인 전국으로 날아간다.
-  var homeZ = null;
+  //  처음부터는 지도를 전국 화면에서 조금이라도 움직였을 때도 보인다(사용자 2026-11-28: 돌리기, 확대에 더해 옮기기만 해도). 누르면 북쪽이 위인 전국으로 날아간다.
+  var homeZ = null, homeC = null;
   function homeZoom() {
     // 전국 화면의 배율: 한국이 들어가는 배율과, 지도 테두리 때문에 더 축소할 수 없는 배율 중 큰 쪽(지도가 실제로 멈추는 배율).
     if (homeZ === null) {
@@ -9982,10 +9982,18 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var bw = (134.5 - 121) / 360, bh = mercY(31) - mercY(40.5);
       var zMin = Math.max(map.getMinZoom(), Math.log2(box.clientWidth / (512 * bw)), Math.log2(box.clientHeight / (512 * bh)));
       homeZ = Math.max(cam && isFinite(cam.zoom) ? cam.zoom : 6, zMin);
+      homeC = cam && cam.center ? maplibregl.LngLat.convert(cam.center) : null;
     }
     return homeZ;
   }
-  function offHome() { return typeof map !== 'undefined' && !!map && (Math.abs(map.getBearing()) >= .5 || map.getZoom() > homeZoom() + .05); }
+  // 전국 화면에서 벗어났는가: 돌렸거나, 확대했거나, 가운데가 10px 넘게 옮겨졌다(테두리 때문에 전국 화면 가운데가 조금 다를 수 있어 10px까지는 그대로 본다).
+  function offHome() {
+    if (typeof map === 'undefined' || !map) return false;
+    if (Math.abs(map.getBearing()) >= .5 || map.getZoom() > homeZoom() + .05) return true;
+    if (!homeC) return false;
+    var p = map.project(homeC), box = map.getContainer();
+    return Math.hypot(p.x - box.clientWidth / 2, p.y - box.clientHeight / 2) > 10;
+  }
   function navVis() {
     var inReg = S.reg >= 0, memo = favOn() && !S.favHide, off = offHome();
     $('navBack').hidden = !inReg; $('navHome').hidden = !inReg && !off;
