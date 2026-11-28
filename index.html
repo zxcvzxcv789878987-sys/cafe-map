@@ -263,8 +263,12 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 /* 주차장 길(2026-11-28): 차로 오는 길은 파란 줄, 그 아래 걷는 길. 주차 요금 한 줄. */
 .rtbig.car .rtkind { color: #2f6fdf; }
 .rtbig + .rtbig { margin-top: -8px; }
-.rtfee { display: flex; align-items: baseline; gap: 10px; font-size: 15px; }
-.rtfee span { font-size: 13px; font-weight: 700; color: var(--ink-2); }
+.rtfee { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 0 12px; border: 0; border-radius: 12px; background: var(--surface-2); font-size: 15px; color: var(--ink); text-align: left; cursor: pointer; }
+.rtfee span { flex: none; font-size: 13px; font-weight: 700; color: var(--ink-2); }
+.rtfee b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rtfee em { flex: none; font-style: normal; font-size: 13.5px; font-weight: 700; color: var(--ink-2); display: inline-flex; align-items: center; gap: 2px; }
+.rtfee em svg.i { width: 15px; height: 15px; }
+.rtfee:active { filter: brightness(.96); }
 .nearpin.alt.pk .ic { border-color: #2f6fdf; }
 /* 카페 길찾기의 차로 아래 고르기(2026-11-28 사용자: 차를 고르면 카페로 갈지 주차장으로 갈지). 위 칸과 겹쳐 보이지 않게 글자 탭으로. */
 .rtsub { display: flex; gap: 18px; margin: -4px 0 0 4px; }
@@ -10836,7 +10840,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var big = el('div', 'rtbig'); big.appendChild(el('span', 'rtkind', '도보')); big.appendChild(el('b', null, r.min + '분'));
     big.appendChild(el('small', null, r.dist >= 1000 ? (Math.round(r.dist / 100) / 10) + 'km' : r.dist + 'm'));
     sc.appendChild(big);
-    if (r.to && r.to.fee) { var fe = el('div', 'rtfee'); fe.appendChild(el('span', null, '주차 요금')); fe.appendChild(el('b', null, r.to.fee)); sc.appendChild(fe); }
+    // 주차 요금 줄(사용자 2026-11-28: 일부만 보이면 안 된다): 누르면 그 주차장 창(요금 전부, 운영 시간, 남은 자리)이 열린다.
+    if (r.to && r.to.kind === 'p' && r.to.open) {
+      var fe = btn('rtfee', null, r.to.open); fe.appendChild(el('span', null, r.to.fee ? '주차 요금' : '주차장')); fe.appendChild(el('b', null, r.to.fee || r.to.name));
+      var more = el('em', null, '자세히'); more.appendChild(icon('right')); fe.appendChild(more); sc.appendChild(fe);
+    }
     if (!r.to) {
       sc.appendChild(toggleRow('다른 카페 숨기기', S.routeOnly, function (v) { S.routeOnly = v; persist(); requestDraw(); }));
       sc.appendChild(extRoute(r.i));
@@ -11504,7 +11512,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         mb1.appendChild(icon('route')); mb1.appendChild(document.createTextNode('길찾기'));
         cont.appendChild(mb1);
       }
-      if (to && i >= 0) {
+      if (to && i >= 0 && side !== 'route') {
         var mb = btn('nshmap', null, function () { close(); nearGo(i, kind, x, x2, pair ? cur : 0); });
         // 이름은 길찾기(사용자 2026-11-28: 지도에서 보기 대신). 카페에서 그곳까지 걷는 길을 그린다.
         mb.appendChild(icon('route')); mb.appendChild(document.createTextNode('길찾기'));
@@ -11619,7 +11627,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var q = y[3] || {}, to = q.x && q.y ? [q.x / 1e5, q.y / 1e5] : null; if (!to) return;
     var tok = ++parkGoTok, from = mercToLngLat(mx[i], my[i]);
     var others = (list || []).filter(function (z) { return z !== y && z[0] !== y[0] && z[3] && z[3].x; });
-    var reopen = function () { nearSheet(i, 'p', y, list); };
+    // 길을 보는 중에 여는 창이라 창의 길찾기 단추는 뺀다(side 'route').
+    var reopen = function () { nearSheet(i, 'p', y, list, 'route'); };
     var fit = function (pts) {
       var x0 = 180, y0 = 90, x1 = -180, y1 = -90;
       pts.forEach(function (c) { if (c[0] < x0) x0 = c[0]; if (c[0] > x1) x1 = c[0]; if (c[1] < y0) y0 = c[1]; if (c[1] > y1) y1 = c[1]; });
@@ -11647,7 +11656,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         parkAlts.push(new maplibregl.Marker({ element: p2, anchor: 'left', offset: [-19, 0] }).setLngLat(at).addTo(map));
         pts.push(at);
       });
-      routeInfo = { i: i, dist: Math.round(dist), min: walkMin(dist), src: src, to: { name: y[0], kind: 'p', rev: true, fee: parkFee1h(y), car: null, tok: tok } };
+      routeInfo = { i: i, dist: Math.round(dist), min: walkMin(dist), src: src, to: { name: y[0], kind: 'p', rev: true, fee: parkFee1h(y), car: null, tok: tok, open: reopen } };
       if (mode) { routeInfo.cafeMode = mode; routeInfo.lots = list; }
       setFollow(false);
       P.cafe = i; sel = i; P.prev = 'detail';
