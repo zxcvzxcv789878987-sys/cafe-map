@@ -11238,15 +11238,18 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var u = BUS_API.replace(/\/bus$/, '/transit') + '?f=' + me[0].toFixed(5) + ',' + me[1].toFixed(5) + '&t=' + dest.to[0].toFixed(5) + ',' + dest.to[1].toFixed(5);
       return fetch(u).then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j || {}, me: me }; }); }, function () { return { ok: false, j: {}, me: me }; })
         .then(function (d) {
-          // 카카오, 서울시가 안 되면(한도, 오류) ODsay. 너무 가까워 길이 없는 것(NO_RESULTS)은 ODsay도 같으니 묻지 않는다.
-          var none = d.ok && (!(d.j.r || []).length) && d.j.st === 'NO_RESULTS';
+          // 카카오, 서울시, 티맵이 안 되면(한도, 오류, 길 없음) ODsay. 1km 안이라 길이 없는 것만 ODsay도 같으니 묻지 않는다.
+          //  (2026-11-29 사용자: 광주 쪽 역을 찾았는데 "가까워서"라고 나왔다. 카카오는 도시 사이 길이 없으면 똑같이 길 없음을 준다.)
+          var near = distM(me[1], me[0], dest.to[1], dest.to[0]) < 1000;
+          var none = d.ok && (!(d.j.r || []).length) && d.j.st === 'NO_RESULTS' && near;
           if ((d.ok && (d.j.r || []).length) || none) return d;
           return odsayTransit(me, dest.to).then(function (o) { return { ok: true, j: o, me: me }; }, function () { return d; });
         });
     }).then(function (d) {
       if (tok !== meTok) return;
       var routes = d.j.r || [];
-      var err = !d.ok ? (d.j.q ? 'quota' : 'fail') : (!routes.length ? 'none' : '');
+      var near = distM(d.me[1], d.me[0], dest.to[1], dest.to[0]) < 1000;
+      var err = !d.ok ? (d.j.q ? 'quota' : 'fail') : (!routes.length ? (near ? 'none' : 'fail') : '');
       clearRoute();
       routeInfo = { i: dest.cafe >= 0 ? dest.cafe : -1, dist: 0, min: 0, src: d.j.src || 'kakao', transit: { r: routes, sel: 0, open: 0, me: d.me, err: err },
         to: { name: dest.name, kind: dest.kind, fromMe: true, mode: 'transit', dest: dest, back: dest.back, fee: dest.fee, open: dest.open } };
