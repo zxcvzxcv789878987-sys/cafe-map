@@ -456,7 +456,7 @@ body.pk-far .nearpin.alt.pk { display: none; }
 @keyframes sheetUp { from { transform: translateY(100%); } to { transform: none; } }
 @keyframes cardUp { from { transform: translateY(32px); opacity: 0; } to { transform: none; opacity: 1; } }
 #panel.rise { animation: cardUp .26s cubic-bezier(.2, .8, .2, 1); }
-@media (max-width: 760px) { #panel.rise { animation: sheetUp .32s cubic-bezier(.2, .8, .2, 1); } }
+@media (max-width: 760px) { #panel.rise { animation: sheetUp .42s cubic-bezier(.35, .5, .2, 1); } }
 @media (prefers-reduced-motion: reduce) { #panel.rise { animation: none; } }
 .dbody { position: relative; flex: 1; min-height: 0; overflow: hidden; border-top: 1px solid var(--line); }
 /* 투표할 때 뜨는 로그인 창 */
@@ -782,7 +782,8 @@ button.nearpin { pointer-events: auto; border: 0; background: none; padding: 0; 
 .osh { position: fixed; inset: 0; z-index: 72; display: flex; align-items: flex-end; justify-content: center; background: rgba(15, 20, 30, 0); transition: background .22s ease; }
 .osh.on { background: rgba(15, 20, 30, .45); }
 .oshbox { width: 100%; max-width: 480px; box-sizing: border-box; background: var(--surface); border-radius: 22px 22px 0 0; padding: 10px 20px calc(22px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; transform: translateY(100%); transition: transform .26s cubic-bezier(.2, .8, .2, 1); }
-.osh.on .oshbox { transform: none; }
+.osh.on .oshbox { transform: none; transition: transform .42s cubic-bezier(.35, .5, .2, 1); }
+.osh:not(.on) .oshbox { transition: transform .22s cubic-bezier(.4, 0, 1, 1); }
 .oshgrab { align-self: center; width: 38px; height: 4px; border-radius: 2px; background: var(--line-2); }
 .oshbox h2 { margin: 18px 0 0; font-size: 20px; font-weight: 800; letter-spacing: -.3px; }
 .oshsub { margin: 6px 0 0; font-size: 14px; color: var(--ink-2); }
@@ -818,6 +819,9 @@ body.osh-on #toast { z-index: 95; }
 .pggd { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; align-content: start; padding: 3px 0 calc(12px + env(safe-area-inset-bottom, 0px)); }
 .pvrep { flex: none; width: 40px; height: 40px; background: none; border: 0; color: rgba(255, 255, 255, .85); display: grid; place-items: center; }
 .pvrep svg.i { width: 20px; height: 20px; }
+@keyframes pvIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pvOut { from { opacity: 1; } to { opacity: 0; } }
+@media (prefers-reduced-motion: no-preference) { .pview { animation: pvIn .2s ease-out; } .pview.out { animation: pvOut .16s ease-in forwards; pointer-events: none; } }
 .pview { position: fixed; inset: 0; z-index: 82; background: #000; display: flex; flex-direction: column; color: #fff; }
 .pvhd { flex: none; display: flex; align-items: center; gap: 6px; height: 56px; padding: env(safe-area-inset-top, 0px) 14px 0 6px; }
 .pvhd .ib { color: #fff; background: none; }
@@ -933,6 +937,10 @@ body.egg-tiny-on #nogo, body.egg-tiny-on #count { display: none !important; }
 .cgroup .cbtn { box-shadow: none; border-radius: 0; }
 .cgroup .cbtn + .cbtn { border-top: 1px solid var(--line); }
 #toast.new { background: #37b24d; color: #fff; }
+@keyframes tIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%); } }
+@keyframes tOut { from { opacity: 1; } to { opacity: 0; transform: translateX(-50%) translateY(6px); } }
+#toast:not([hidden]):not(.xp) { animation: tIn .24s cubic-bezier(.2, .8, .2, 1); }
+#toast.tout:not(.xp) { animation: tOut .2s ease-in forwards; }
 /* XP를 받았을 때 뜨는 풍선: "+N XP"와 받은 까닭 한 줄. 카드와 지도를 가리지 않게 화면 맨 아래에 뜬다. */
 #toast.xp { z-index: 70; background: var(--pri); color: #fff; padding: 11px 18px; border-radius: 999px; display: flex; align-items: baseline; gap: 10px; animation: xpPop .28s cubic-bezier(.2, .9, .3, 1.3); }
 #toast.xp b { font-size: 16px; font-weight: 800; white-space: nowrap; }
@@ -2485,6 +2493,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
 .oact.omore svg.i { width: 24px; height: 24px; stroke-width: 3.4; }
 .otl h1 .owh { width: 17px; height: 17px; margin-left: 5px; vertical-align: -2px; color: #F8312F; fill: #F8312F; }
 /* 더보기 목록: 단추 바로 아래 작은 흰 판, 한 줄에 하나 */
+@keyframes omIn { from { opacity: 0; transform: translateY(-4px) scale(.96); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: no-preference) { .omenu { animation: omIn .16s cubic-bezier(.2, .8, .2, 1); transform-origin: top right; } }
 .omenu { position: fixed; z-index: 85; min-width: 148px; padding: 6px; border-radius: 14px; background: var(--surface); box-shadow: var(--sh-2); display: flex; flex-direction: column; }
 .omi { height: 44px; padding: 0 12px; border: 0; border-radius: 10px; background: none; display: flex; align-items: center; gap: 10px; font-family: inherit; font-size: 15px; font-weight: 600; color: var(--ink); text-align: left; cursor: pointer; }
 .omi:active { background: var(--surface-2); }
@@ -8356,7 +8366,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     return p;
   }
   var toastTimer = 0;
-  function toast(t, kind) { if (xpBusy) { xpQueue.push({ plain: t, kind: kind }); return; } var x = $('toast'); toastSeq++; x.textContent = t; x.className = kind || ''; x.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { x.hidden = true; }, 3800); }
+  function toast(t, kind) { if (xpBusy) { xpQueue.push({ plain: t, kind: kind }); return; } var x = $('toast'); toastSeq++; x.textContent = t; x.className = kind || ''; x.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { if (REDUCE) { x.hidden = true; return; } x.classList.add('tout'); toastTimer = setTimeout(function () { x.hidden = true; x.classList.remove('tout'); }, 200); }, 3800); }
 
   // ----- 카드 하나를 돌려 쓴다 -----
   var panel = $('panel'), P = { kind: null, prev: null, anchor: null, cafe: -1 };
@@ -8365,7 +8375,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   //  검색창을 눌러 연 검색 판(자판이 올라옴)과 글자를 친 검색 결과는 전체로 둔다. hereHalf: 이번 검색 판이 반만 열리는 지금 화면인가.
   var hereHalf = false;
   function twoStage() { return mobile.matches && (P.kind === 'list' || (P.kind === 'detail' && panel.hasAttribute('data-embed')) || (P.kind === 'search' && hereHalf)); }
-  var closeTimer = 0;
+  var closeTimer = 0, lastSwap = '';
   function openPanel(kind, anchor) {
     var was = P.kind;
     if (kind === 'search' && was !== 'search' && !searchKeep) { searchTab = 'cafe'; searchTabUser = false; }   // 검색 판을 새로 열면 카페 탭부터(노선 창에서 뒤로 오면 보던 탭)
@@ -8375,6 +8385,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (kind === 'detail' && P.cafe >= 0) eggCardOpen(P.cafe);
     lift = 0;
     clearTimeout(closeTimer);
+    // 컴퓨터에서 닫히며 흐려지던 중에 다시 열면 그 흐려짐을 멈춘다(CSS 움직임은 그대로 둔다).
+    panel.getAnimations().forEach(function (a) { if (!(window.CSSAnimation && a instanceof CSSAnimation) && !(window.CSSTransition && a instanceof CSSTransition)) a.cancel(); });
     // 카페 카드가 아닌 다른 카드(필터, 지역, 목록)를 열면 보던 카페의 선택을 푼다.
     // 풀지 않으면 그 카페가 필터나 지역과 상관없이 지도에 계속 남는다.
     if (kind !== 'detail' && sel >= 0) { sel = -1; requestDraw(); }
@@ -8387,7 +8399,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     panel.style.transform = panel.style.transition = panel.style.opacity = panel.style.transformOrigin = '';   // 위로 접혀 닫히던 검색 판의 흔적도 지운다
     panel.classList.remove('rise');
     document.body.classList.add('sheet-open');
+    var swapKey = kind + ':' + (kind === 'detail' ? P.cafe : '');
     renderPanel(); placePanel();
+    // 이미 떠 있는 카드에 다른 내용이 들어오면 새 내용을 .16초 동안 흐렸다 보이게 한다(사용자 2026-11-29: 뚝 바뀌어 보기 불편하다).
+    if (!fresh && was && swapKey !== lastSwap && !REDUCE) Array.prototype.forEach.call(panel.children, function (c) { c.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: 'ease-out' }); });
+    lastSwap = swapKey;
     if (twoStage()) {
       // 먼저 반만 올라와서 지도를 가리지 않는다(카카오맵 앱과 같은 방식).
       // 윗줄을 끌어올리면 전체로 커지고, 끌어내리면 다시 반, 한 번 더 내리면 닫힌다.
@@ -8421,7 +8437,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   function setSnap(which, animate) {
     snap = which;
     // animate가 'slow'이면 카페정보 판이 여닫히는 움직임과 같은 시간, 같은 곡선으로 움직인다.
-    panel.style.transition = animate === 'slow' ? 'transform .46s cubic-bezier(.4, 0, .2, 1)' : animate ? 'transform .3s cubic-bezier(.2, .8, .2, 1)' : 'none';
+    // 그냥 움직임은 .42초, 바로 출발하되 고르게(사용자 2026-11-29: 열림이 휙 너무 빠르다. 예전 .3초 곡선은 첫 장면에 83px씩 뛰었다).
+    panel.style.transition = animate === 'slow' ? 'transform .46s cubic-bezier(.4, 0, .2, 1)' : animate ? 'transform .42s cubic-bezier(.35, .5, .2, 1)' : 'none';
     panel.style.transform = 'translateY(' + snapOffset(which) + 'px)';
     panel.setAttribute('data-snap', which);
     // 반만 열렸을 때 판의 아랫부분은 화면 밖이라, 그만큼 목록 아래에 여백을 두어 마지막 줄까지 스크롤해 볼 수 있게 한다(사용자 2026-11-28: 찜 목록이 끝까지 안 내려간다).
@@ -8458,6 +8475,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       }
       panel.style.transition = 'transform .22s ease-in'; panel.style.transform = 'translateY(105%)';
       closeTimer = setTimeout(done, 230);
+    } else if (now !== true && !panel.hidden && !REDUCE) {
+      panel.classList.remove('rise');
+      panel.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(8px)' }], { duration: 150, easing: 'ease-in', fill: 'forwards' }).onfinish = function (ev) { var a = ev.target; setTimeout(function () { a.cancel(); }, 0); };
+      closeTimer = setTimeout(done, 150);
     } else done();
   }
   function placePanel() {
@@ -12728,7 +12749,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var o = el('div', 'pview'), hd = el('div', 'pvhd'), stage = el('div', 'pvstage'), track = el('div', 'pvtrack'), cap = btn('pvcap', null, null), cnt = el('span', 'pvn');
     var n = at, slides = [];
     o.id = 'pview'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', title + ' 사진');
-    var close = function () { o.remove(); document.removeEventListener('keydown', key); };
+    var close = function () { document.removeEventListener('keydown', key); if (REDUCE) { o.remove(); return; } o.classList.add('out'); setTimeout(function () { o.remove(); }, 160); };
     var x = btn('ib', null, close); x.setAttribute('aria-label', '닫기'); x.appendChild(icon('x'));
     var rp = btn('pvrep', null, function () {
       photoReport(imgs[n], function () {
@@ -12860,7 +12881,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var o = el('div', 'pview rvbig'), hd = el('div', 'pvhd'), stage = el('div', 'rvbigv');
     o.id = 'rvbig'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', title + ' 로드뷰');
     var key = function (e) { if (e.key === 'Escape') close(); };
-    var close = function () { o.remove(); document.removeEventListener('keydown', key); };
+    var close = function () { document.removeEventListener('keydown', key); if (REDUCE) { o.remove(); return; } o.classList.add('out'); setTimeout(function () { o.remove(); }, 160); };
     var x = btn('ib', null, close); x.setAttribute('aria-label', '닫기'); x.appendChild(icon('x'));
     hd.appendChild(x); hd.appendChild(el('b', null, title)); hd.appendChild(el('span', 'pgsp'));
     o.appendChild(hd); o.appendChild(stage); document.body.appendChild(o);
