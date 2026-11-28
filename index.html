@@ -3851,7 +3851,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     ['guide', '사용법 정독', '처음 안내를 본 뒤 메뉴의 사용법을 직접 열어 세 묶음을 모두 펼쳐 읽었어요.'],
     // 넷째 칸이 있으면 어려운 짝이고, 그 값은 짝인 일반 에그(도감에서 같은 줄 오른쪽에 놓인다).
     // 같은 행동을 더 어렵게 한 것이고, 일반 쪽과 한 번의 행동으로 같이 깨지지 않게 만든다(사용자 2026-11-26).
-    ['corner2', '세상 끝의 끝', '지도를 가장 크게 확대해서 왼쪽 아래 맨 끝에 숨은 아주 작은 친구를 찾았어요.', 'corner'],
+    ['corner2', '세상 끝의 끝', '세상 끝 친구 곁을 가장 크게 확대해서 숨어 있던 아주 작은 친구를 찾았어요.', 'corner'],
     ['privacy2', '마침표까지 읽은 사람', '개인정보처리방침 속에 숨은 원두 모양 마침표를 찾아 눌렀어요.', 'privacy'],
     ['hour2', '똑같은 숫자', '1:11, 2:22, 3:33, 4:44, 5:55, 11:11, 22:22처럼 같은 숫자로 된 시각에 앱을 켰어요.', 'hour'],
     ['offline2', '지하 카페', '인터넷이 끊긴 채로 콘센트를 기록하려고 했어요.', 'offline'],
@@ -4317,16 +4317,20 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   }
   // 차 탄 산책(어려운 짝): 걷는 길을 띄워 놓고 두 번 연달아 시속 20km(초속 5.56m) 넘게 움직임. 폰이 속도를 안 주면 앞 위치와의 거리로 잰다.
   // 같은 위치에서 길 밖으로가 막 잡히면 이번에는 세지 않는다(한 행동에 에그 하나).
-  var fastN = 0, lastRF = null;
+  var fastN = 0, lastRF = null, onRouteSeen = false;
   function eggOffroute(p) {
     var c = p.coords; if (!c || c.accuracy > 40) return;
-    // 카페에서 정류장, 주차장까지의 길은 내 위치에서 시작하는 길이 아니므로 세지 않는다(2026-11-28)
-    if (routeInfo && routeInfo.to) { offN = 0; fastN = 0; return; }
+    // 카페에서 정류장, 주차장까지의 길은 내 위치에서 시작하는 길이 아니므로 세지 않는다(2026-11-28).
+    //  차 길, 대중교통 길도 세지 않는다: 내 위치에서 카페까지 걷는 길(걸어서 탭)일 때만(사용자 2026-11-28: 길찾기로 하지도 않고 깨지면 안 된다).
+    if (!routeInfo || routeInfo.to || routeInfo.cafeMode !== 'walk') { offN = 0; fastN = 0; return; }
     var now = Date.now(), sp = typeof c.speed === 'number' && c.speed >= 0 ? c.speed : -1;
     if (sp < 0 && lastRF && now - lastRF.t > 1000) sp = distToLine([c.longitude, c.latitude], [lastRF.ll, lastRF.ll]) / ((now - lastRF.t) / 1000);
     lastRF = { ll: [c.longitude, c.latitude], t: now };
     var fresh = false;
-    if (distToLine([c.longitude, c.latitude], routeLine) > 100) { if (++offN >= 2) { fresh = !(XP.egg || {}).offroute; eggFound('offroute'); } } else offN = 0;
+    // 벗어났다는 것은 길 위에 있다가 나간 것이다. 실내에서 위치가 튀어 처음부터 멀리 잡히는 것은 세지 않게, 한 번은 길에서 40m 안에 있었던 뒤에만 센다.
+    var off = distToLine([c.longitude, c.latitude], routeLine);
+    if (off <= 40) onRouteSeen = true;
+    if (off > 100 && onRouteSeen) { if (++offN >= 2) { fresh = !(XP.egg || {}).offroute; eggFound('offroute'); } } else offN = 0;
     if (sp > 5.56) fastN++; else fastN = 0;
     if (fastN >= 2 && !fresh) eggFound('offroute2');
   }
@@ -4341,10 +4345,12 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var d = el('div', 'eggcorner'); d.setAttribute('aria-hidden', 'true'); d.appendChild(fxIcon('char'));
     d.addEventListener('click', function (e) { e.stopPropagation(); eggFound('corner'); });
     new maplibregl.Marker({ element: d }).setLngLat([121.22, 31.2]).addTo(map);
-    // 세상 끝의 끝: 지도를 가장 크게(18.6단계 이상) 확대해야만 보이는 왼쪽 아래 맨 끝의 아주 작은 캐릭터(사용자 2026-11-26)
+    // 세상 끝의 끝: 지도를 가장 크게(18.6단계 이상) 확대해야만 보이는 아주 작은 캐릭터(사용자 2026-11-26).
+    //  자리(사용자 2026-11-28): 세상 끝 친구를 찾아와서 더 확대하면 "여기 하나 더 있었네" 하게, 그 친구 바로 곁(남서쪽 8m쯤, 18.6단계에서 20px쯤)에 둔다.
+    //  전에는 지도 테두리 맨 귀퉁이(121, 31)였는데, 지도를 돌리는 동안 테두리를 넓히면서 그곳이 끝이 아니게 됐다.
     var t = el('div', 'eggtiny'); t.setAttribute('aria-hidden', 'true'); t.appendChild(fxIcon('char'));
     t.addEventListener('click', function (e) { e.stopPropagation(); eggFound('corner2'); });
-    new maplibregl.Marker({ element: t }).setLngLat([121.00016, 31.00012]).addTo(map);
+    new maplibregl.Marker({ element: t }).setLngLat([121.22 - 0.00007, 31.2 - 0.00005]).addTo(map);
     var vis = function () { t.style.display = map.getZoom() >= 18.6 ? '' : 'none'; };
     map.on('zoom', vis); vis();
   }
@@ -6173,14 +6179,17 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 전국 크기에서 돌리면 걸리던 것(사용자 2026-11-28): 지도가 한국 밖으로 못 나가게 건 테두리(maxBounds)를 전국 화면이 거의 꽉 채워서,
   //  손가락 사이를 축으로 돌릴 때 지도 가운데가 움직일 자리가 없었다. 돌아가 있는 동안은 테두리를 넓히고,
   //  북쪽이 위로 돌아온 뒤 화면이 원래 테두리 안에 들어오면 다시 좁힌다(밖에 있을 때 좁히면 지도가 튀므로 기다린다).
-  var MB_NARROW = [[121, 31], [134.5, 40.5]], MB_WIDE = [[112, 24], [143, 47]], mbWide = false;
-  var mbOpen = function () { if (!mbWide && Math.abs(map.getBearing()) >= .5) { mbWide = true; map.setMaxBounds(MB_WIDE); } };
-  map.on('rotatestart', function () { if (!mbWide) { mbWide = true; map.setMaxBounds(MB_WIDE); } });
+  //  넓히는 것은 전국, 도 크기(8단계 아래)에서만(사용자 2026-11-28: 세상 끝 에그가 끝이 아니게 된다). 그보다 확대하면 화면이 작아 원래 테두리로도 돌 자리가 넉넉하다.
+  var MB_NARROW = [[121, 31], [134.5, 40.5]], MB_WIDE = [[112, 24], [143, 47]], mbWide = false, MB_Z = 8;
+  var mbOpen = function () { if (!mbWide && map.getZoom() < MB_Z && Math.abs(map.getBearing()) >= .5) { mbWide = true; map.setMaxBounds(MB_WIDE); } };
+  map.on('rotatestart', function () { if (!mbWide && map.getZoom() < MB_Z) { mbWide = true; map.setMaxBounds(MB_WIDE); } });
   map.on('rotate', mbOpen);
   map.on('moveend', function () {
-    if (!mbWide || Math.abs(map.getBearing()) >= .5) return;
-    var b = map.getBounds();
-    if (b.getWest() >= MB_NARROW[0][0] && b.getSouth() >= MB_NARROW[0][1] && b.getEast() <= MB_NARROW[1][0] && b.getNorth() <= MB_NARROW[1][1]) { mbWide = false; map.setMaxBounds(MB_NARROW); }
+    if (!mbWide) return;
+    var b = map.getBounds(), z = map.getZoom();
+    var inside = b.getWest() >= MB_NARROW[0][0] && b.getSouth() >= MB_NARROW[0][1] && b.getEast() <= MB_NARROW[1][0] && b.getNorth() <= MB_NARROW[1][1];
+    // 북쪽으로 돌아와 원래 테두리 안이면 좁힌다. 8단계 넘게 확대했으면 밖에 있어도 좁힌다(바다 쪽으로 나갔던 화면이 테두리 안으로 들어온다).
+    if ((Math.abs(map.getBearing()) < .5 && inside) || z >= MB_Z) { mbWide = false; map.setMaxBounds(MB_NARROW); }
   });
   // 북쪽 단추: 지도가 돌아가 있을 때만 보이고, 바늘은 늘 화면 위의 북쪽을 가리킨다. 누르면 북쪽이 위로.
   (function () {
@@ -10740,7 +10749,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     return a;
   }
   function clearRoute() {
-    routeOn = false; routeLine = null; offN = 0;
+    routeOn = false; routeLine = null; offN = 0; onRouteSeen = false;
     if (nearMk) { nearMk.remove(); nearMk = null; }
     if (nearMk2) { nearMk2.remove(); nearMk2 = null; }
     parkAlts.forEach(function (m) { m.remove(); }); parkAlts = [];
