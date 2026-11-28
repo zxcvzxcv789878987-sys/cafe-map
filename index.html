@@ -575,8 +575,13 @@ button.oli { width: 100%; padding: 11px 0; margin: 0; background: none; color: v
 #rbar .rbo b { font-size: 14px; font-weight: 750; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #rbar .rbx { flex: none; width: 34px; height: 34px; display: grid; place-items: center; color: var(--ink-2); }
 #rbar .rbx svg.i { width: 18px; height: 18px; }
+/* 지도로 노선보기 동안은 카페 쪽 단추(OO 전체 보기, 이 화면 N곳, 이 화면에 없을 때 상자)를 숨긴다(사용자 2026-11-28) */
+body.broute-on #navAll, body.broute-on #count, body.broute-on #nogo { display: none !important; }
 /* 지도로 노선보기의 버스(실시간 위치) */
-.rbusmk { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .3); pointer-events: none; }
+.rbus { position: relative; width: 26px; height: 26px; pointer-events: none; }
+.rbusmk { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .3); box-sizing: border-box; }
+.rbuslb { display: none; position: absolute; left: 50%; bottom: calc(100% + 3px); transform: translateX(-50%); padding: 1px 6px; border-radius: 6px; background: #fff; font-size: 11.5px; font-weight: 800; white-space: nowrap; box-shadow: 0 1px 4px rgba(0, 0, 0, .25); }
+body.rbus-lab .rbuslb { display: block; }
 .rbusmk svg.i { width: 15px; height: 15px; color: #fff; }
 .nsharr .tm b { font-size: 14px; font-weight: 800; color: #d6336c; }
 .nsharr .tm span { font-size: 12px; color: var(--ink-2); }
@@ -7111,46 +7116,112 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       })
       .catch(function () { if (!list.isConnected) return; list.textContent = ''; list.appendChild(el('div', 'msg', '노선 정보를 불러오지 못했어요')); });
   }
-  // 지도 위 버스(실시간 위치). 차 번호마다 표시 하나, 새 자리로는 1.2초 동안 미끄러지듯 옮긴다.
-  var routeBusMk = {}, routeBusTick = null;
+  // 지도 위 버스(실시간 위치, 사용자 2026-11-28: 버스가 움직이는 게 보여야 한다).
+  //  버스마다 노선 선 위의 거리(m)를 기억하고 그 선을 따라 옮긴다. 화면은 매 틀마다 다시 그린다.
+  //  GPS가 오는 곳(서울, TAGO): 새 자리를 받으면 다음 15초 동안 그 자리로 고르게 따라간다(15초 늦게, 끊김 없이).
+  //  순번만 오는 곳(경기도): 받은 정류장에서 다음 정류장 쪽으로 천천히(한 구간 80초) 나아가고, 다음 정류장 85% 앞에서 기다린다.
+  //   다음 소식에 순번이 바뀌면 그 정류장까지 2초 만에 따라잡는다. 뒤로는 가지 않는다.
+  var routeBusMk = {}, routeBusTick = null, routeBusRaf = 0, routeGeo = null;
   function routeBusClear() {
     if (routeBusTick) { clearInterval(routeBusTick); routeBusTick = null; }
+    if (routeBusRaf) { cancelAnimationFrame(routeBusRaf); routeBusRaf = 0; }
     Object.keys(routeBusMk).forEach(function (k) { routeBusMk[k].m.remove(); }); routeBusMk = {};
+    routeGeo = null;
+    if (routeZoomFn) { map.off('zoom', routeZoomFn); routeZoomFn = null; }
+    document.body.classList.remove('rbus-lab');
   }
+  var routeZoomFn = null;
   function routeClear() {
     var was = !!routeBar;
     if (routeBar) { routeBar.remove(); routeBar = null; }
+    document.body.classList.remove('broute-on');
     routeBusClear();
     ['br-stop-name', 'br-stop-me', 'br-stop', 'br-line', 'br-edge'].forEach(function (id) { if (map.getLayer(id)) map.removeLayer(id); });
     ['br-line', 'br-stop'].forEach(function (id) { if (map.getSource(id)) map.removeSource(id); });
     if (map.getLayer('lm-bus')) map.setLayoutProperty('lm-bus', 'visibility', 'visible');
     if (was) requestDraw();   // 숨겼던 카페와 경계를 다시 그린다
   }
-  // 버스 자리: 서버가 좌표를 주면(서울, TAGO) 그 자리, 없으면(경기도) 그 순번 정류장 자리.
-  function routeBusDraw(d, v, col) {
-    var bySeq = {}; d.s.forEach(function (q) { bySeq[q[3]] = q; });
-    var seen = {};
+  // 노선 선을 m 단위 평면으로 펴고, 정류장마다 선 위의 거리를 구해 둔다(정류장 순서대로 앞으로만 찾는다).
+  function routeGeoMake(d) {
+    var src = (d.l && d.l.length > 1 ? d.l : d.s.map(function (q) { return [q[2], q[1]]; }));
+    var lat0 = src[0][1] / 1e5, kx = 111320 * Math.cos(lat0 * Math.PI / 180), ky = 110540;
+    var P = src.map(function (q) { return [q[0] / 1e5 * kx, q[1] / 1e5 * ky]; }), C = [0];
+    for (var i = 1; i < P.length; i++) C[i] = C[i - 1] + Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]);
+    // 점 하나를 선에 비춘 거리. from~to 꼭짓점 사이만 본다.
+    var proj = function (x, y, from, to) {
+      var best = Infinity, at = 0, seg = from;
+      for (var j = Math.max(0, from); j < Math.min(P.length - 1, to); j++) {
+        var ax = P[j][0], ay = P[j][1], bx = P[j + 1][0] - ax, by = P[j + 1][1] - ay, L2 = bx * bx + by * by;
+        var t = L2 ? Math.max(0, Math.min(1, ((x - ax) * bx + (y - ay) * by) / L2)) : 0;
+        var dd = Math.hypot(x - ax - bx * t, y - ay - by * t);
+        if (dd < best) { best = dd; at = C[j] + Math.sqrt(L2) * t; seg = j; }
+      }
+      return { at: at, seg: seg, off: best };
+    };
+    var seqAt = {}, seqSeg = {}, seqs = [], last = 0;
+    d.s.forEach(function (q) {
+      var r = proj(q[2] / 1e5 * kx, q[1] / 1e5 * ky, last, last + 400);
+      if (r.off > 300) r = proj(q[2] / 1e5 * kx, q[1] / 1e5 * ky, 0, P.length);   // 앞에서 못 찾으면 전체에서
+      seqAt[q[3]] = r.at; seqSeg[q[3]] = r.seg; seqs.push(q[3]); last = r.seg;
+    });
+    var nextOf = {}; seqs.forEach(function (s, k) { nextOf[s] = k + 1 < seqs.length ? seqs[k + 1] : null; });
+    // 거리 → 경도, 위도
+    var at = function (m) {
+      m = Math.max(0, Math.min(C[C.length - 1], m));
+      var lo = 0, hi = C.length - 1;
+      while (hi - lo > 1) { var mid = (lo + hi) >> 1; if (C[mid] <= m) lo = mid; else hi = mid; }
+      var f = C[hi] > C[lo] ? (m - C[lo]) / (C[hi] - C[lo]) : 0;
+      return [(P[lo][0] + (P[hi][0] - P[lo][0]) * f) / kx, (P[lo][1] + (P[hi][1] - P[lo][1]) * f) / ky];
+    };
+    return { kx: kx, ky: ky, proj: proj, seqAt: seqAt, seqSeg: seqSeg, nextOf: nextOf, at: at, n: P.length };
+  }
+  function routeBusDraw(d, v, col, label) {
+    var G = routeGeo || (routeGeo = routeGeoMake(d)), now = performance.now(), seen = {};
     (v || []).forEach(function (b, k) {
-      var q = bySeq[b[0]], ll = b[1] && b[2] ? [b[2] / 1e5, b[1] / 1e5] : q ? [q[2] / 1e5, q[1] / 1e5] : null;
-      if (!ll) return;
+      var seq = b[0], base = G.seqAt[seq];
+      if (base == null) return;
+      var gps = !!(b[1] && b[2]), tgt = base;
+      if (gps) {   // GPS 자리를 그 순번 앞뒤 선 위에 비춘다
+        var s0 = G.seqSeg[seq] || 0, r = G.proj(b[2] / 1e5 * G.kx, b[1] / 1e5 * G.ky, s0 - 60, s0 + 60);
+        if (r.off < 250) tgt = r.at;
+      }
       var key = b[3] || 'n' + k; seen[key] = 1;
       var o = routeBusMk[key];
       if (!o) {
-        var e = el('div', 'rbusmk'); e.style.background = col; e.appendChild(icon('bus'));
-        o = routeBusMk[key] = { m: new maplibregl.Marker({ element: e }).setLngLat(ll).addTo(map), at: ll };
+        var e = el('div', 'rbus'), ic = el('span', 'rbusmk'); ic.style.background = col; ic.appendChild(icon('bus')); e.appendChild(ic);
+        var lb = el('b', 'rbuslb', label); lb.style.color = col; e.appendChild(lb);
+        o = routeBusMk[key] = { m: new maplibregl.Marker({ element: e }).setLngLat(G.at(tgt)).addTo(map), pos: tgt, from: tgt, to: tgt, t0: now, dur: 1, gps: gps, seq: seq, base: tgt };
         return;
       }
-      var a = o.at, t0 = performance.now(); o.at = ll;
-      if (Math.abs(a[0] - ll[0]) < 1e-7 && Math.abs(a[1] - ll[1]) < 1e-7) return;
-      var step = function (now) {
-        if (routeBusMk[key] !== o || o.at !== ll) return;   // 그사이 지웠거나 더 새 자리가 왔다
-        var f = Math.min(1, (now - t0) / 1200);
-        o.m.setLngLat([a[0] + (ll[0] - a[0]) * f, a[1] + (ll[1] - a[1]) * f]);
-        if (f < 1) requestAnimationFrame(step);
-      };
-      requestAnimationFrame(step);
+      if (seq !== o.seq && tgt < o.pos - 30 && !gps) { o.pos = o.from = o.to = tgt; }   // 회차 등으로 뒤로 크게 바뀌면 그 자리로
+      o.from = o.pos; o.t0 = now; o.gps = gps;
+      if (gps) { o.to = tgt; o.dur = 15000; }
+      else if (seq !== o.seq) { o.to = Math.max(o.pos, tgt); o.dur = 2000; }
+      else { o.to = o.pos; o.dur = 1; }
+      o.seq = seq; o.base = tgt;
     });
     Object.keys(routeBusMk).forEach(function (k) { if (!seen[k]) { routeBusMk[k].m.remove(); delete routeBusMk[k]; } });
+    if (!routeBusRaf) {
+      var loop = function () {
+        routeBusRaf = 0;
+        if (!routeGeo) return;
+        var t = performance.now();
+        Object.keys(routeBusMk).forEach(function (k) {
+          var o = routeBusMk[k], f = Math.min(1, (t - o.t0) / o.dur), p = o.from + (o.to - o.from) * f;
+          // 경기도: 따라잡은 뒤에는 다음 정류장 쪽으로 기어간다(85%까지).
+          if (!o.gps && f >= 1) {
+            var nx = G.nextOf[o.seq], end = nx != null ? G.seqAt[nx] : null;
+            if (end != null && end > o.base) {
+              var cap = o.base + (end - o.base) * .85, sp = (end - o.base) / 80000;
+              p = Math.min(cap, Math.max(p, o.to + sp * (t - o.t0 - o.dur)));
+            }
+          }
+          if (Math.abs(p - o.pos) > .05) { o.pos = p; o.m.setLngLat(G.at(p)); }
+        });
+        routeBusRaf = requestAnimationFrame(loop);
+      };
+      routeBusRaf = requestAnimationFrame(loop);
+    }
   }
   function routeOnMap(d, z, col, reopen) {
     routeClear();
@@ -7168,10 +7239,13 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     // 노선만 보이게: 다른 정류장 표시를 숨기고, 카페와 경계는 draw()가 routeBar를 보고 그리지 않는다.
     if (map.getLayer('lm-bus')) map.setLayoutProperty('lm-bus', 'visibility', 'none');
     // 버스 실시간 위치: 처음 받은 자리를 그리고 15초마다 위치만 다시 묻는다(서버도 15초 기억).
-    routeBusDraw(d, d.v || (d.b || []).map(function (s) { return [s, 0, 0, '']; }), col);
+    routeBusDraw(d, d.v || (d.b || []).map(function (s) { return [s, 0, 0, '']; }), col, z[0]);
     if (d.rq) routeBusTick = setInterval(function () {
-      fetch(d.rq + '&p=1').then(function (r) { return r.ok ? r.json() : null; }).then(function (e) { if (e && e.v && routeBar) routeBusDraw(d, e.v, col); }, function () {});
+      fetch(d.rq + '&p=1').then(function (r) { return r.ok ? r.json() : null; }).then(function (e) { if (e && e.v && routeBar) routeBusDraw(d, e.v, col, z[0]); }, function () {});
     }, 15000);
+    // 버스 번호: 정류장 이름처럼 확대하면(14부터) 버스 옆에 보인다(사용자 2026-11-28).
+    routeZoomFn = function () { document.body.classList.toggle('rbus-lab', map.getZoom() >= 14); };
+    map.on('zoom', routeZoomFn); routeZoomFn();
     var x0 = 180, y0 = 90, x1 = -180, y1 = -90;
     line.forEach(function (q) { if (q[0] < x0) x0 = q[0]; if (q[0] > x1) x1 = q[0]; if (q[1] < y0) y0 = q[1]; if (q[1] > y1) y1 = q[1]; });
     setFollow(false);
@@ -7182,6 +7256,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var no = el('span', 'no', z[0]); no.style.background = col; b0.appendChild(no); b0.appendChild(el('b', null, (z[5] ? z[5] + '행' : z[0] + '번') + ' 노선'));
     var bx = btn('rbx', null, routeClear); bx.setAttribute('aria-label', '노선 지우기'); bx.appendChild(icon('x'));
     routeBar.appendChild(b0); routeBar.appendChild(bx); document.body.appendChild(routeBar);
+    document.body.classList.add('broute-on');
     requestDraw();   // 카페와 경계를 지운다
   }
   function busTap(s) { busPair(s, function (o) { nearSheet(-1, 'b', busTuple(s), o ? busTuple(o) : null); }); }
