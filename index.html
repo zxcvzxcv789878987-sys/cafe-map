@@ -5532,9 +5532,17 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     koreaWarm[u] = 1; fetch(u, { mode: 'cors', credentials: 'same-origin' }).catch(function () { delete koreaWarm[u]; });
   }
   function mercXY(ll) { var r = ll[1] * Math.PI / 180; return [(ll[0] + 180) / 360, (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2]; }
+  //  범위는 전국 화면 전체(사용자 2026-11-28: 전국 범위를 남한에 맞게 좁힌 뒤 화면 가장자리 북한, 바다 쪽 조각이 늦게 와 깨졌다).
+  //  전국 화면 가운데와 배율로 화면이 덮는 자리를 셈하고, 돌린 화면까지 생각해 대각선만큼 넉넉히 받는다.
   function warmKorea() {
     var tpl = warmTpl(); if (!tpl) return;
     var a = mercXY(KOREA[0]), b = mercXY(KOREA[1]);
+    var cam = map.cameraForBounds(KOREA, { padding: fitPad() }), box = map.getContainer();
+    if (cam && cam.center && isFinite(cam.zoom)) {
+      var cc = maplibregl.LngLat.convert(cam.center), cm = mercXY([cc.lng, cc.lat]), ws = 512 * Math.pow(2, cam.zoom);
+      var hd = Math.hypot(box.clientWidth, box.clientHeight) / 2 / ws;
+      a = [Math.min(a[0], cm[0] - hd), Math.max(a[1], cm[1] + hd)]; b = [Math.max(b[0], cm[0] + hd), Math.min(b[1], cm[1] - hd)];
+    }
     for (var z = 4; z <= 7; z++) {
       var n = Math.pow(2, z);
       for (var x = Math.floor(a[0] * n); x <= Math.floor(b[0] * n); x++) for (var y = Math.floor(b[1] * n); y <= Math.floor(a[1] * n); y++) warmTile(tpl, z, x, y);
