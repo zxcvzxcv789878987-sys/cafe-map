@@ -9471,10 +9471,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       else { pic.appendChild(fxIcon('plug')); if (ny < nn) pic.classList.add('dim'); st.appendChild(pic); st.appendChild(el('b', null, ny >= nn ? '콘센트 자리 있어요' : '콘센트가 없다는 기록이 많아요')); }
       box.appendChild(st);
       if (tot) {
-        // 집중석은 특정 카페에만 있어서 기록이 있을 때만 칸을 보인다. 칸이 넷이면 두 줄로(사용자 2026-11-28).
-        var tl = el('div', 'omtiles'), shownChairs = CHAIRS.filter(function (c) { return c[0] !== 'f' || (v[c[3]] || 0) + ((mc & c[2]) ? 1 : 0) > 0; });
-        if (shownChairs.length > 3) tl.classList.add('four');
-        shownChairs.forEach(function (c) {
+        // 자리 넷을 늘 2칸씩 두 줄로 보인다(사용자 2026-11-28: 항상 4개).
+        var tl = el('div', 'omtiles four');
+        CHAIRS.forEach(function (c) {
           var mine = (mc & c[2]) !== 0, n = (v[c[3]] || 0) + (mine ? 1 : 0), t = el('div', 'omtile' + (n ? '' : ' off') + (mine ? ' my' : ''));
           var sp = el('span', 'omseat'); sp.innerHTML = SEAT_SVG[c[0]]; t.appendChild(sp);
           t.appendChild(el('span', 'omname', c[1])); t.appendChild(el('b', null, (mine ? '나 포함 ' : '') + n + '명'));
