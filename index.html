@@ -6333,11 +6333,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   //  1) 지도가 '움직이는 중'인데 2초 넘게 실제로는 안 움직이면 멈춘 것으로 보고 풀어 준다(map.stop은 손가락 처리도 같이 되돌린다).
   //  2) 단추로 시킨 이동(flyTo, easeTo, fitBounds)이 2초 지나도 한 번도 안 움직이면 바로 그 자리로 옮긴다(jumpTo). 화면이 안 보일 때(앱을 내렸을 때)와
   //     앱을 연 뒤 6초는 보지 않는다(2026-11-29 사용자: 앱을 열자마자 이 안내가 떴다. 폰이 바빠 처음 날아가기가 0.9초 넘게 늦게 시작했다).
-  //  3) 풀어 줄 때 마지막 오류를 짧게 띄운다. 사용자 캡처로 진짜 원인을 찾기 위해서다(원인을 고치면 뺀다).
-  var mapErr = '', camAt = 0, healAt = 0, healFrom = Date.now() + 6000;   // 앱을 연 뒤 6초는 보지 않는다(처음엔 폰이 바빠 날아가기가 늦게 시작한다)
-  // 다른 곳 스크립트의 오류는 내용 없이 'Script error.'로만 와서 까닭으로 쓰지 않는다.
-  window.addEventListener('error', function (e) { var m = String((e && e.message) || ''); if (m && !/^Script error/i.test(m)) mapErr = m.slice(0, 80); });
-  window.addEventListener('unhandledrejection', function (e) { mapErr = String((e && e.reason && (e.reason.message || e.reason)) || '').slice(0, 80); });
+  //  3) 풀어 줄 때 화면에 아무 글도 띄우지 않는다(2026-11-29 사용자: 그 문구가 뜨는 것 자체가 불쾌하다). 사용자는 지도가 그냥 다시 움직이는 것만 본다.
+  var camAt = 0, healAt = 0, healFrom = Date.now() + 6000;   // 앱을 연 뒤 6초는 보지 않는다(처음엔 폰이 바빠 날아가기가 늦게 시작한다)
   map.on('move', function () { camAt = Date.now(); });
   var mapHeal = function (why) {
     if (Date.now() < healFrom || Date.now() - healAt < 3000) return;
@@ -6346,7 +6343,6 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var c = map.getCenter();
     if (!isFinite(c.lng) || !isFinite(c.lat) || !isFinite(map.getZoom()) || !isFinite(map.getBearing())) map.jumpTo({ center: [127.8, 36.1], zoom: 7, bearing: 0 });
     map.triggerRepaint();
-    toast('지도가 멈춰서 다시 풀었어요(' + why + (mapErr ? ', ' + mapErr : '') + ')');
   };
   // 손가락(마우스)이 지도 위에 머물러 있는 동안은 안 움직여도 멈춘 것이 아니다.
   var fingers = 0, cc = map.getCanvasContainer();
