@@ -6509,13 +6509,19 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       { id: 'lm-parking', type: 'symbol', source: 'lm-parks', minzoom: 15,
         // 찜한 주차장(f: 1)은 하트 붙은 아이콘, 겹치면 찜한 주차장이 남는다.
         // 실시간 남은 자리(a, 2026-11-28 사용자: 지도 P에서 바로)가 있으면 P 오른쪽에 숫자. 색은 창과 같다(r: 남은 비율). 자리가 없으면 숫자만 빠진다.
-        layout: { 'icon-image': ['case', ['==', ['get', 'f'], 1], 'ic-parking-fav', 'ic-parking'], 'icon-size': z(15, .85, 18, 1.2), 'icon-padding': 1, 'symbol-sort-key': ['-', 1, ['get', 'f']],
+        layout: { 'icon-image': ['case', ['==', ['get', 'f'], 1], 'ic-parking-fav', 'ic-parking'], 'icon-size': z(15, .85, 18, 1.2), 'icon-padding': 1,
+          // 겹칠 때 먼저 놓는 차례: 창을 연 주차장(s) → 찜한 주차장(f) → 나머지(2026-11-29 사용자: 청계2 공영주차장으로 날아갔더니 P가 다른 자리로 바뀜.
+          //  청계2(돈화문로), (북1), (북2)가 공식 자료에 같은 자리로 등록돼 있어 다시 그릴 때마다 남는 P가 바뀌었다)
+          'symbol-sort-key': ['-', 2, ['+', ['coalesce', ['get', 'f'], 0], ['*', 2, ['coalesce', ['get', 's'], 0]]]],
           'text-field': ['case', ['has', 'a'], ['to-string', ['get', 'a']], ''], 'text-font': ['Noto Sans Bold'], 'text-size': 12.5, 'text-anchor': 'left', 'text-offset': [1.05, 0], 'text-optional': true },
         paint: { 'icon-opacity': .95, 'text-color': ['case', ['>=', ['coalesce', ['get', 'r'], 0], .3], '#2f9e44', ['>=', ['coalesce', ['get', 'r'], 0], .1], '#f08c00', '#e03131'], 'text-halo-color': '#ffffff', 'text-halo-width': 2 } },
       // 버스 정류장은 이름 없이 아이콘만 찍는다. 지도 자료(OpenStreetMap)에는 빠진 정류장이 많아서(수원 정자동 26%) 공공데이터 정류장으로 그린다(2026-11-28).
       { id: 'lm-bus', type: 'symbol', source: 'lm-busstops', minzoom: 15,
         // 찜한 정류장(f: 1)은 하트 붙은 아이콘, 겹치면 찜한 정류장이 남는다.
         layout: { 'icon-image': ['case', ['==', ['get', 'f'], 1], 'ic-bus-fav', 'ic-bus'], 'icon-size': z(15, .85, 18, 1.2), 'icon-padding': 1, 'symbol-sort-key': ['-', 1, ['get', 'f']] }, paint: { 'icon-opacity': .95 } },
+      // 지금 창을 연 주차장(s: 1)은 정류장이나 다른 P와 겹쳐도 늘 보이게 맨 위에 한 번 더 그린다(2026-11-29 사용자: 검색으로 날아가면 P가 사라지고 다른 자리에 생김).
+      { id: 'lm-parking-sel', type: 'symbol', source: 'lm-parks', minzoom: 13, filter: ['==', ['get', 's'], 1],
+        layout: { 'icon-image': ['case', ['==', ['get', 'f'], 1], 'ic-parking-fav', 'ic-parking'], 'icon-size': z(13, 1, 18, 1.3), 'icon-allow-overlap': true, 'icon-ignore-placement': true } },
       text('lm-water', 'water_name', 9, ['match', CLS, ['river', 'lake', 'bay', 'strait', 'sea'], true, false], { 'text-size': 12, 'text-letter-spacing': .08 }, { 'text-color': '#4d8fca' }),
       text('lm-river', 'waterway', 11, ['==', CLS, 'river'], { 'symbol-placement': 'line', 'text-size': 12, 'text-letter-spacing': .08 }, { 'text-color': '#4d8fca' }),
       text('lm-peak', 'mountain_peak', 10.5, ['all', ['==', CLS, 'peak'], ['<=', RANK, 1]], {}, { 'text-color': '#5f8a55' }),
@@ -7916,7 +7922,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (ks !== parkKeyStr) parkPaint(keys);
     parkLoad(keys, function () {
       var f = [];
-      keys.forEach(function (k) { (parkTiles[k] || []).forEach(function (s, j) { f.push({ type: 'Feature', properties: { k: k, j: j, f: parkFavKey[parkKeyOf(s)] ? 1 : 0 }, geometry: { type: 'Point', coordinates: [s[1] / 1e5, s[0] / 1e5] } }); }); });
+      keys.forEach(function (k) { (parkTiles[k] || []).forEach(function (s, j) { f.push({ type: 'Feature', properties: { k: k, j: j, f: parkFavKey[parkKeyOf(s)] ? 1 : 0, s: parkSelKey === parkKeyOf(s) ? 1 : 0 }, geometry: { type: 'Point', coordinates: [s[1] / 1e5, s[0] / 1e5] } }); }); });
       parkFC = { type: 'FeatureCollection', features: f }; parkKeyStr = ks;
       if (inSeoul && parkLiveL) parkLiveMark(f, parkLiveL);
       var s2 = map.getSource('lm-parks'); if (s2) { s2.setData(parkFC); parkSrc = s2; }
@@ -7931,7 +7937,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   function parkPaint(keys) {
     var s2 = map.getSource && map.getSource('lm-parks'); if (!s2) return;
     var f = [];
-    keys.forEach(function (k) { (parkTiles[k] || []).forEach(function (s, j) { f.push({ type: 'Feature', properties: { k: k, j: j, f: parkFavKey[parkKeyOf(s)] ? 1 : 0 }, geometry: { type: 'Point', coordinates: [s[1] / 1e5, s[0] / 1e5] } }); }); });
+    keys.forEach(function (k) { (parkTiles[k] || []).forEach(function (s, j) { f.push({ type: 'Feature', properties: { k: k, j: j, f: parkFavKey[parkKeyOf(s)] ? 1 : 0, s: parkSelKey === parkKeyOf(s) ? 1 : 0 }, geometry: { type: 'Point', coordinates: [s[1] / 1e5, s[0] / 1e5] } }); }); });
     if (!f.length) return;
     if (parkLiveL) parkLiveMark(f, parkLiveL);
     parkFC = { type: 'FeatureCollection', features: f }; s2.setData(parkFC); parkSrc = s2;
@@ -7944,7 +7950,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       .then(function (d) { parkLiveP = null; parkLiveT = Date.now(); parkLiveL = (d && d.l) || []; return parkLiveL; });
     parkLiveP.then(cb);
   }
-  // 지도 주차장마다 실시간 주차장과 짝을 짓는다(서버 /park와 같은 규칙: 이름이 같으면 250m, 달라도 25m 안).
+  // 지도 주차장마다 실시간 주차장과 짝을 짓는다(서버 /park와 같은 규칙: 이름이 같으면 700m, 달라도 25m 안).
   function parkLiveMark(feats, L) {
     var stem = function (t) { return String(t || '').replace(/\s|공영주차장|공영|주차장|\((시|구)\)/g, ''); };
     var ls = L.map(function (x) { return stem(x[2]); });
@@ -7953,7 +7959,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var me = stem(s[2]), best = null;
       L.forEach(function (x, n) {
         var d = Math.hypot((x[0] - s[0]) / 1e5 * 111000, (x[1] - s[1]) / 1e5 * 88000);
-        if ((d <= 250 && me && ls[n] === me) || d <= 25) { if (!best || d < best.d) best = { d: d, x: x }; }
+        if ((d <= 700 && me && ls[n] === me) || d <= 25) { if (!best || d < best.d) best = { d: d, x: x }; }
       });
       if (best && best.x[4]) { ft.properties.a = best.x[3]; ft.properties.r = best.x[3] / best.x[4]; }
       else { delete ft.properties.a; delete ft.properties.r; }
@@ -7961,7 +7967,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   }
   map.on('moveend', parkRefresh);
   map.on('styledata', function () { var s3 = map.getSource('lm-parks'); if (s3 && s3 !== parkSrc) { parkSrc = s3; s3.setData(parkFC); parkKeyStr = ''; parkRefresh(); } });
-  if (TEST) window.testPark = function () { var sc = map.getSource('lm-parks'); return { z: map.getZoom(), layer: !!map.getLayer('lm-parking'), src: !!sc, n: parkFC.features.length, live: parkFC.features.filter(function (f) { return f.properties.a != null; }).length, liveL: parkLiveL ? parkLiveL.length : -1, keys: parkKeyStr, img: map.hasImage('ic-parking') }; };
+  if (TEST) window.testPark = function () { var sc = map.getSource('lm-parks'); return { z: map.getZoom(), layer: !!map.getLayer('lm-parking'), src: !!sc, n: parkFC.features.length, live: parkFC.features.filter(function (f) { return f.properties.a != null; }).length, liveL: parkLiveL ? parkLiveL.length : -1, sel: parkSelKey, keys: parkKeyStr, img: map.hasImage('ic-parking') }; };
   function parkAt(pt) {
     if (!map.getLayer('lm-parking')) return null;
     var f = map.queryRenderedFeatures([[pt.x - 12, pt.y - 12], [pt.x + 12, pt.y + 12]], { layers: ['lm-parking'] });
@@ -8020,6 +8026,15 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   }
   function kparkTap(x) { nearSheet(-1, 'p', [x[2], 0, '', { y: x[0], x: x[1], kk: 1, ph: x[3], ad: x[4], url: x[5] }]); }
   if (TEST) window.testKpark = function () { return { n: kparkL.length, layer: !!map.getLayer('lm-kparking'), z: map.getZoom() }; };
+  // 지금 창을 연 주차장(이름|위도|경도). 지도에서 그 P가 다른 P에 가려지지 않게 먼저 놓는다.
+  var parkSelKey = null;
+  function parkSelSet(k) {
+    if (parkSelKey === k) return;
+    parkSelKey = k;
+    var ch = false;
+    parkFC.features.forEach(function (ft) { var st = (parkTiles[ft.properties.k] || [])[ft.properties.j]; var v = st && parkKeyOf(st) === k ? 1 : 0; if (ft.properties.s !== v) { ft.properties.s = v; ch = true; } });
+    var s2 = ch && map.getSource && map.getSource('lm-parks'); if (s2) s2.setData(parkFC);
+  }
   // 주차장 창이 쓰는 모양으로(카드 근처 칸의 p와 같다): [이름, 거리, 무료|유료|혼합, { y, x, n, d, w, s, h, f, g 공영|민영 }]
   function parkTuple(s, m) { var q = Object.assign({}, s[5] || {}); q.y = s[0]; q.x = s[1]; if (s[4]) q.g = s[4]; return [s[2], m || 0, s[3], q]; }
   function parkTap(s) { nearSheet(-1, 'p', parkTuple(s)); }
@@ -8044,7 +8059,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var row = btn('row'), body = el('span', 'body'), pin = el('span', 'pin'); pin.style.setProperty('--c', 'var(--surface-2)'); pin.style.setProperty('--t', 'var(--ink-2)'); pin.appendChild(icon('park'));
     var fee = { '무료': '무료', '유료': '유료', '혼합': '무료와 유료' }[f[3]];
     row.appendChild(pin); body.appendChild(el('span', 'name', parkName(f[2], f[4]))); body.appendChild(el('span', 'meta', fee || '주차장')); row.appendChild(body);
-    row.addEventListener('click', function () { busFlyThen([f[1] / 1e5, f[0] / 1e5], function () { parkTap(f); }); });
+    row.addEventListener('click', function () { parkLiveAll(function () {}); busFlyThen([f[1] / 1e5, f[0] / 1e5], function () { parkTap(f); }); });
     return row;
   }
   // ----- 노선 보기(2026-11-28) -----
@@ -10603,7 +10618,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     }
     // 검색어 넓히기(한영 오타, 초성, 영어 이름): 낱말마다 같은 뜻 낱말들
     var alts = words.map(wordAlts);
-    var as = alts.filter(function (a, k) { return !/^(공영)?주차장?$/.test(words[k]); });
+    // 공영, 민영, 주차장 같은 낱말은 빼고 찾는다(이름에 그 말이 없는 주차장이 많다. "공영주차장"은 위에서 "공영"이 된다. 사용자 2026-11-29: "청계2 공영주차장"이 안 나왔다).
+    var as = alts.filter(function (a, k) { return !/^((공영|민영)(주차장?)?|주차장?)$/.test(words[k]); });
     if (!as.length) as = alts;
     var files = [];
     as.forEach(function (a) { a.forEach(function (w) { if (isCho(w)) return; var f = 'n' + w.charAt(0).toLowerCase().charCodeAt(0).toString(16); if (files.indexOf(f) < 0) files.push(f); }); });
@@ -10649,14 +10665,14 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var lx = o.live;
       body.appendChild(parkMeta(['남은 자리 ' + fmt(lx[3]) + '면', (lx[6] === 'seoul' ? '서울시' : '교통안전공단') + ' 자료', parkDistText(lx[0], lx[1])])); row.appendChild(body);
       row.addEventListener('click', function () {
-        $('q').value = ''; $('qClear').hidden = true; closePanel();
+        $('q').value = ''; $('qClear').hidden = true; closePanel(); parkLiveAll(function () {});
         var ll = [lx[1] / 1e5, lx[0] / 1e5], d = .004;
         parkLoad(busKeys(ll[0] - d, ll[1] - d, ll[0] + d, ll[1] + d), function () {
           var stem = function (t) { return String(t || '').replace(/\s|공영주차장|공영|주차장|\((시|구)\)/g, ''); }, me = stem(lx[2]), best = null;
           Object.keys(parkTiles).forEach(function (k) {
             (parkTiles[k] || []).forEach(function (st) {
               var dd = Math.hypot((st[0] - lx[0]) / 1e5 * 111000, (st[1] - lx[1]) / 1e5 * 88000);
-              if ((dd <= 250 && me && stem(st[2]) === me) || dd <= 25) { if (!best || dd < best.d) best = { d: dd, st: st }; }
+              if ((dd <= 700 && me && stem(st[2]) === me) || dd <= 25) { if (!best || dd < best.d) best = { d: dd, st: st }; }
             });
           });
           busFlyThen(best ? [best.st[1] / 1e5, best.st[0] / 1e5] : ll, function () {
@@ -10670,7 +10686,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     body.appendChild(parkMeta([fee, o[1], parkDistText(o[5], o[6])])); row.appendChild(body);
     // 누르면 그 자리로 날아간 뒤 주차장 창을 연다(정류장 검색과 같다).
     row.addEventListener('click', function () {
-      $('q').value = ''; $('qClear').hidden = true; closePanel();
+      // 날아가는 동안 실시간 목록을 미리 받아 둔다(창이 뜰 때 남은 자리가 같이 나오게, 사용자 2026-11-29).
+      $('q').value = ''; $('qClear').hidden = true; closePanel(); parkLiveAll(function () {});
       var k = o[3], j = o[4];
       parkLoad([k], function () {
         var st = (parkTiles[k] || [])[j]; if (!st) return;
@@ -12227,7 +12244,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var old = $('nsheet'), was = !!old && old.classList.contains('on'); if (old) old.remove();   // was: 열려 있던 창을 바꿔 끼우면 다시 올라오지 않게
     var o = el('div', 'osh'), sh = el('div', 'oshbox');
     o.id = 'nsheet'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', kind === 'b' ? '버스정류장' : '주차장');
-    var close = function () { o.classList.remove('on'); document.body.classList.remove('osh-on'); sh.style.transform = ''; setTimeout(function () { o.remove(); }, 230); };
+    parkSelSet(kind === 'p' && !(x[3] || {}).kk ? parkKeyOf(parkRow(x)) : null);
+    var close = function () { if (kind === 'p') parkSelSet(null); o.classList.remove('on'); document.body.classList.remove('osh-on'); sh.style.transform = ''; setTimeout(function () { o.remove(); }, 230); };
     o.addEventListener('click', function (e) { if (e.target === o) close(); });
     sh.appendChild(el('span', 'oshgrab'));
     // 정류장 번호는 이름 바로 옆에 붙인다(사용자 2026-11-28: 아래 줄로 따로 두면 자리만 차지한다). 쪽을 바꾸면 번호도 바뀐다.
@@ -12408,14 +12426,19 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         if (q.kk) { row('주소', q.ad); row('전화', q.ph); }
         // 남은 자리(사용자 2026-11-28, 버스처럼 실시간): 중계 서버 /park(서울시 시영주차장, 교통안전공단 전국 주차정보).
         //  답이 오면 맨 위 줄로 넣는다. 넉넉하면 초록, 열 곳에 한 곳 넘게 남으면 주황, 그보다 적으면 빨강.
-        if (q.y && q.x) parkLive(y).then(function (d) {
-          if (!d || d.a == null || !cont.isConnected) return;
+        //  지도 P 옆 숫자에 쓰는 실시간 목록(parkLiveL)에 이 주차장이 있으면 서버에 다시 묻지 않고 바로 넣는다(사용자 2026-11-29: 창만 늦게 뜬다).
+        //  now: 창을 그리는 중에 바로 넣을 때(아직 화면에 붙기 전이라 isConnected를 보지 않는다).
+        var liveRow = function (d, now) {
+          if (!d || d.a == null || (!now && !cont.isConnected)) return;
           row('남은 자리', fmt(d.a) + '면', '전체 ' + fmt(d.tot) + '면, ' + d.t + ' 기준, ' + (d.src === 'kotsa' ? '교통안전공단' : '서울시') + ' 자료');
           var lr = rows.lastChild, mv = lr.querySelector('.v'), r0 = d.tot ? d.a / d.tot : 0;
           if (mv && mv.firstChild) { var bb = el('b', 'plive', mv.firstChild.textContent); bb.style.color = r0 >= .3 ? '#2f9e44' : r0 >= .1 ? '#f08c00' : '#e03131'; mv.replaceChild(bb, mv.firstChild); }
           rows.insertBefore(lr, rows.firstChild);
           if (!cont.contains(rows)) cont.insertBefore(rows, cont.querySelector('.nshmap'));
-        });
+        };
+        var lhit = q.y && q.x ? parkLiveFind(y) : null;
+        if (lhit) liveRow(lhit, true);
+        else if (q.y && q.x) parkLive(y).then(liveRow);
       }
       if (sub.firstChild) cont.appendChild(sub);
       if (arr) cont.appendChild(arr);
@@ -12683,6 +12706,16 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   //  결과는 저장하지 않는다(카카오 규칙). 같은 카드를 다시 열 때만 쓰려고 이번 실행 동안 메모리에만 둔다.
   var BLOG_API = 'https://cafemap-blog.rdh0811.workers.dev/blog', blogMem = {};
   var BUS_API = 'https://cafemap-blog.rdh0811.workers.dev/bus';
+  // 받아 둔 실시간 목록(parkLiveL, 2분 안)에서 이 주차장 찾기. 서버 /park, 지도 숫자와 같은 짝짓기 규칙(이름이 같으면 700m, 달라도 25m 안).
+  function parkLiveFind(y) {
+    if (!parkLiveL || !parkLiveL.length || Date.now() - parkLiveT >= 120000) return null;
+    var q = y[3] || {}, stem = function (t) { return String(t || '').replace(/\s|공영주차장|공영|주차장|\((시|구)\)/g, ''); }, me = stem(y[0]), best = null;
+    parkLiveL.forEach(function (x) {
+      var d = Math.hypot((x[0] - q.y) / 1e5 * 111000, (x[1] - q.x) / 1e5 * 88000);
+      if ((d <= 700 && me && stem(x[2]) === me) || d <= 25) { if (!best || d < best.d) best = { d: d, x: x }; }
+    });
+    return best && best.x[4] ? { a: best.x[3], tot: best.x[4], t: best.x[5], src: best.x[6] } : null;
+  }
   // 주차장 남은 자리(중계 서버 /park). 같은 주차장은 1분 안에 다시 묻지 않는다. y: 주차장 창의 한 줄 [이름, 거리, 무료|유료|혼합, { y, x, ... }]
   var parkLiveMem = {};
   function parkLive(y) {
