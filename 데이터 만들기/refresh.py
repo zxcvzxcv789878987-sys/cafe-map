@@ -12,6 +12,7 @@
 #      카카오에도 인허가에도 없는 카페는 그 자리의 카카오 카페로 확인해 숨기거나 인허가 이름으로 바꾼다(build.py 3-5).
 #   5. 점검: 카페 수가 지난번과 크게 다르면 멈추고 예전 파일을 그대로 둔다
 #   6. 깃허브에 올리기
+#   지하철 노선, 역, 아파트(landmarks.js)는 석 달에 한 번 fetch_landmarks.py로 다시 받는다
 #   0, 7. 키 점검(check_keys.py)과 새 브랜드 후보(brand_candidates.py)를 기록에 남긴다
 # 받은 원본은 "데이터 만들기/작업" 폴더에 둔다(깃허브에는 올리지 않는다).
 import sys, os, json, re, time, shutil, subprocess, urllib.request, urllib.parse, datetime
@@ -166,6 +167,13 @@ say('   카페 주변 정보 만들기')
 # 건축물대장: 새 카페의 건물과 열두 달 지난 건물을 한 번에 5,000곳까지(서버가 느려 한 시간쯤). 다 못 받으면 다음 달에 이어 받는다.
 run('building_info.py', '--max', '5000', '--workers', '2')
 run('cafe_info.py', '--fetch')
+# 지하철 노선, 역, 아파트 단지(landmarks.js): 석 달에 한 번 OpenStreetMap에서 다시 받는다. 실패하면 옛 파일을 둔다.
+ym = datetime.date.today().year * 12 + datetime.date.today().month
+if ym - state.get('landmarks', 0) >= 3:
+    say('   지하철, 아파트 다시 받기')
+    if '갱신함' in run('fetch_landmarks.py'):
+        state['landmarks'] = ym
+        json.dump(state, open(STATE_PATH, 'w', encoding='utf-8'), ensure_ascii=False)
 
 # 6. 올리기
 if NO_PUSH:
@@ -174,7 +182,7 @@ else:
     say('6. 깃허브에 올리기')
     def git(*a):
         return subprocess.run(['git'] + list(a), cwd=ROOT, capture_output=True, text=True, encoding='utf-8', errors='replace')
-    git('add', 'cafes.js', 'info')
+    git('add', 'cafes.js', 'info', 'landmarks.js')
     if git('diff', '--cached', '--quiet').returncode == 0:
         say('   바뀐 것이 없다.')
     else:
