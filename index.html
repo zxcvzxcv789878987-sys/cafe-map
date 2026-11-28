@@ -12659,16 +12659,20 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     };
     var openAll = function () {
       if (busy) return;
-      // 반만 열린 카드에서 사진을 펼치면 카드도 끝까지 올린다(사용자 2026-11-29)
-      if (P.kind === 'detail' && twoStage() && snap === 'half') setSnap('full', true);
-      if (REDUCE) { all = true; draw(); return; }
+      // 반만 열린 카드에서 사진을 펼치면 카드도 끝까지 올린다(사용자 2026-11-29).
+      //  확 튀지 않게 카드 여닫힘과 같은 느린 곡선으로 먼저 올리고, 사진은 카드가 반쯤 올라간 뒤에 펼친다.
+      var rise = P.kind === 'detail' && twoStage() && snap === 'half';
+      if (REDUCE) { if (rise) setSnap('full', false); all = true; draw(); return; }
       busy = true;
-      var from = spots(), h0 = box.offsetHeight;
-      all = true; draw();
-      Array.prototype.slice.call(box.querySelectorAll('.obgc'), 3).concat([box.querySelector('.obfold')]).forEach(function (a, k) {
-        if (a) a.animate([{ opacity: 0, transform: 'translateY(10px) scale(.96)' }, { opacity: 1, transform: 'none' }], { duration: 300, delay: 90 + Math.min(k, 15) * 22, easing: 'ease-out', fill: 'backwards' });
-      });
-      morph(from, h0, function () { busy = false; });
+      var go = function () {
+        var from = spots(), h0 = box.offsetHeight;
+        all = true; draw();
+        Array.prototype.slice.call(box.querySelectorAll('.obgc'), 3).concat([box.querySelector('.obfold')]).forEach(function (a, k) {
+          if (a) a.animate([{ opacity: 0, transform: 'translateY(10px) scale(.96)' }, { opacity: 1, transform: 'none' }], { duration: 300, delay: 90 + Math.min(k, 15) * 22, easing: 'ease-out', fill: 'backwards' });
+        });
+        morph(from, h0, function () { busy = false; });
+      };
+      if (rise) { setSnap('full', 'slow'); setTimeout(go, 220); } else go();
     };
     var foldAll = function () {
       if (busy) return;
