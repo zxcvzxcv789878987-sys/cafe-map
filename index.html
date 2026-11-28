@@ -7105,6 +7105,17 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 버스 줄을 누르면 그 노선의 정류장을 세로 한 줄로 보여 주고(지금 버스가 있는 곳, 이 정류장, 회차 표시), 지도로 노선보기를 누르면 전체 경로를 지도에 그린다.
   //  자료는 중계 서버 /route(경기도 노선 조회, 서울시 노선정보조회, TAGO 노선 정보와 각 버스위치정보).
   var routeBar = null;
+  // 노선 자료 받기. 같은 노선은 20초 안에 다시 받지 않고, 버스 줄에 손가락이 닿는 순간부터 미리 받는다(2026-11-28 사용자: 노선 창도 빠르게).
+  var routePre = {};
+  function routeUrl(z, y) { return BUS_API.replace(/\/bus$/, '/route') + '?c=' + encodeURIComponent(y[5]) + '&r=' + encodeURIComponent(z[9]) + '&n=' + encodeURIComponent(y[4] || '') + '&a=' + encodeURIComponent(y[6] || ''); }
+  function routeFetch(rq) {
+    var c = routePre[rq];
+    if (c && Date.now() - c.t < 20000) return c.p;
+    var p = fetch(rq).then(function (r) { if (!r.ok) throw new Error('route'); return r.json(); });
+    p.catch(function () { delete routePre[rq]; });
+    routePre[rq] = { t: Date.now(), p: p };
+    return p;
+  }
   function routeSheet(z, y, col, back) {
     var old = $('nsheet'), was = !!old && old.classList.contains('on'); if (old) old.remove();
     var o = el('div', 'osh'), sh = el('div', 'oshbox rsheet');
@@ -7120,10 +7131,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var mb = btn('nshmap', null, null); mb.appendChild(icon('map')); mb.appendChild(document.createTextNode('지도로 노선보기')); mb.disabled = true; sh.appendChild(mb);
     o.appendChild(sh); document.body.appendChild(o); document.body.classList.add('osh-on');
     if (was) { o.classList.add('now', 'on'); requestAnimationFrame(function () { o.classList.remove('now'); }); } else requestAnimationFrame(function () { o.classList.add('on'); });
-    var rq = BUS_API.replace(/\/bus$/, '/route') + '?c=' + encodeURIComponent(y[5]) + '&r=' + encodeURIComponent(z[9]) + '&n=' + encodeURIComponent(y[4] || '') + '&a=' + encodeURIComponent(y[6] || '');
-    fetch(rq)
-      .then(function (r) { if (!r.ok) throw new Error('route'); return r.json(); })
+    var rq = routeUrl(z, y);
+    routeFetch(rq)
       .then(function (d) {
+        d = JSON.parse(JSON.stringify(d));   // 미리 받아 둔 답을 여러 창이 같이 쓰므로 복사해서 쓴다
         d.rq = rq;   // 지도로 노선보기가 버스 위치만 다시 물을 때 쓴다
         if (!list.isConnected) return;
         list.textContent = '';
@@ -10447,7 +10458,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     // 도착 정보는 정류장마다 한 번 물어 두고(방면도 같이 온다) 쪽을 바꿀 때 다시 쓴다. 새로 보기를 누르면 다시 묻는다.
     //  방면(사용자 2026-11-28): 그 정류장 다음 정류장 이름. 서울은 노선들의 다음 정류장 가운데 가장 많은 것, 그 밖은 TAGO 노선 정보에서.
     var canArr = function (y) { return y[5] && (y[5] === '11' ? y[6] : y[4]); };
-    var got = [null, null], dirs = ['', ''], retried = [0, 0];
+    var got = [null, null], dirs = ['', ''];
     var showDir = function () {
       segSub.forEach(function (sp, k) {
         var walk = i >= 0 ? '걸어서 ' + walkMin(pair[k][1]) + '분' : '';
@@ -10458,21 +10469,25 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       });
       if (dirEl) { dirEl.textContent = dirs[cur] ? dirs[cur] + ' 방면' : ''; dirEl.hidden = !dirs[cur]; }
     };
+    // 서버는 도착 정보만 먼저 빨리 주고(more: 1), 오는 차 없는 노선의 알림, 앞차, 방면은 뒤에서 채운다(2026-11-28 사용자: 더 빨리).
+    //  more가 오면 창이 열려 있는 동안 1.5초 간격으로 세 번까지 다시 묻고, 이미 받은 알림과 앞차는 지우지 않고 합친다.
+    var last = [null, null], moreN = [0, 0], redraw = null;
+    var merge = function (k, d) {
+      var p = last[k];
+      if (p && p.a && d.a) {
+        var old = {}; p.a.forEach(function (z) { old[z[0]] = z; });
+        d.a.forEach(function (z) { var q = old[z[0]]; if (!q || z[1] >= 0) return; if ((!z[7] || z[7] === '도착 정보 없음') && q[7]) z[7] = q[7]; if (z[8] == null && q[8] != null) z[8] = q[8]; });
+      }
+      if (!d.d && p && p.d) d.d = p.d;
+      last[k] = d; return d;
+    };
     var ask = function (k, fresh) {
       var y = pair ? pair[k] : x;
-      got[k] = busFetch(y, fresh).then(function (d) { if (d.d) { dirs[k] = d.d; showDir(); } return d; });
-      got[k].catch(function () {});
-      // 처음 묻는 정류장은 서버가 방면을 뒤에서 찾느라 비워 보낼 때가 있어서(노선 정류장 목록을 받는 데 몇 초 걸린다),
-      //  비었으면 창이 열려 있는 동안 4초 간격으로 세 번까지 다시 묻는다.
-      if (!retried[k]) got[k].then(function (d) {
-        if (d.d || retried[k]) return; retried[k] = 1;
-        var n = 0, again = function () {
-          setTimeout(function () {
-            if (!o.isConnected || dirs[k]) return;
-            busFetch(y, true).then(function (e) { if (e.d) { dirs[k] = e.d; showDir(); } else if (++n < 3) again(); }, function () { if (++n < 3) again(); });
-          }, 4000);
-        };
-        again();
+      got[k] = busFetch(y, fresh).then(function (d) { d = merge(k, d); if (d.d) { dirs[k] = d.d; showDir(); } return d; });
+      got[k].then(function (d) {
+        if (!d.more || moreN[k] >= 3) return;
+        moreN[k]++;
+        setTimeout(function () { if (!o.isConnected) return; ask(k, true); if (k === (pair ? cur : 0) && redraw) redraw(); }, 1500);
       }, function () {});
       return got[k];
     };
@@ -10523,7 +10538,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
           var rf = btn('rf', null, function () { rf.classList.remove('spin'); void rf.offsetWidth; rf.classList.add('spin'); ask(k0, true); draw(); });
           rf.setAttribute('aria-label', '새로 보기'); rf.appendChild(icon('refresh')); ahd.appendChild(rf);
           arr.appendChild(ahd); arr.appendChild(list);
-          var draw = function () {
+          var draw = redraw = function () {
             if (!list.firstChild) list.appendChild(el('div', 'msg', '불러오는 중'));
             (got[k0] || ask(k0)).then(function (d) {
                 if (!list.isConnected) return;   // 그사이 다른 쪽을 골랐다
@@ -10535,7 +10550,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
                 d.a.forEach(function (z, k) {
                   var r = el('div', 'rt'), no = el('span', 'no', z[0]); no.style.background = busColor(z[3] || '');
                   // 버스를 누르면 그 노선을 세로로 보여 준다(사용자 2026-11-28, 네이버, 카카오처럼).
-                  if (z[9]) { r.classList.add('tap'); r.setAttribute('role', 'button'); r.addEventListener('click', function () { routeSheet(z, y, busColor(z[3] || ''), function () { nearSheet(i, kind, x, x2, cur); }); }); }
+                  if (z[9]) { r.classList.add('tap'); r.setAttribute('role', 'button'); r.addEventListener('pointerdown', function () { routeFetch(routeUrl(z, y)); }); r.addEventListener('click', function () { routeSheet(z, y, busColor(z[3] || ''), function () { nearSheet(i, kind, x, x2, cur); }); }); }
                   // 서울은 노선이 가는 곳(예: 도봉산행)을, 그 밖은 다음 차 시간을 적는다. 방면은 정류장의 다음 정류장이라 노선 줄에는 쓰지 않는다.
                   r.appendChild(no); r.appendChild(el('span', 'ds', z[5] ? z[5] + '행' : z[4] ? '다음 ' + mins(z[4]) : (z[3] || '')));
                   var tm = el('span', 'tm'), t1 = el('span', 't1');
