@@ -522,6 +522,7 @@ button.oli { width: 100%; padding: 11px 0; margin: 0; background: none; color: v
 .nshhd { margin-top: 18px; display: flex; align-items: center; gap: 10px; }
 .nshhd > svg.i { flex: none; width: 24px; height: 24px; color: var(--ink-2); }
 .nshhd h2 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -.3px; overflow-wrap: anywhere; }
+.nshhd .nfav { margin: -8px -8px -8px auto; flex: none; }
 .nshhd h2 .sno { margin-left: 6px; font-size: 15px; font-weight: 600; letter-spacing: 0; white-space: nowrap; }
 .nshsub { margin: 6px 0 0 34px; display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-2); }
 .nshsub .dir { font-weight: 700; color: var(--ink); }
@@ -7005,6 +7006,21 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   }
   function busPress(e) { var s = busAt(e.point); if (s) busFetch(busTuple(s)); }
   map.on('mousedown', busPress); map.on('touchstart', busPress);
+  // 정류장 찜: 이 기기에 저장한다(cafemap.busfav). 한 줄: [위도*1e5, 경도*1e5, 이름, 정류장 아이디, 도시 코드, 정류장 번호]
+  var busFavs = load('cafemap.busfav') || [];
+  function busFavHas(y) { return busFavs.some(function (f) { return f[3] === y[4] && f[4] === y[5]; }); }
+  function busFavSet(y, on) {
+    busFavs = busFavs.filter(function (f) { return !(f[3] === y[4] && f[4] === y[5]); });
+    if (on) busFavs.unshift([y[2], y[3], y[0], y[4], y[5], y[6]]);
+    save('cafemap.busfav', busFavs);
+    if (P.kind === 'list' && S.seen === 'want') renderPanel();
+  }
+  function busFavRow(f) {
+    var row = btn('row'), body = el('span', 'body'), pin = el('span', 'pin'); pin.style.setProperty('--c', 'var(--surface-2)'); pin.style.setProperty('--t', 'var(--ink-2)'); pin.appendChild(icon('bus'));
+    row.appendChild(pin); body.appendChild(el('span', 'name', f[2])); body.appendChild(el('span', 'meta', f[5] ? '정류장 번호 ' + f[5] : '버스정류장')); row.appendChild(body);
+    row.addEventListener('click', function () { setFollow(false); map.flyTo({ center: [f[1] / 1e5, f[0] / 1e5], zoom: Math.max(map.getZoom(), 17), duration: 600 }); busTap(f); });
+    return row;
+  }
   function busTap(s) { busPair(s, function (o) { nearSheet(-1, 'b', busTuple(s), o ? busTuple(o) : null); }); }
   map.on('click', function (e) {
     var h = hit(e.point);
@@ -8915,7 +8931,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var wl = null;
     if (wantOnly) { wl = []; for (var w0 = 0; w0 < N; w0++) if (want[w0] === 1 && removed[w0] !== 1) wl.push(w0); }
     var cnt = wl ? wl.length : vc;
-    var h = head(wantOnly ? '찜한 곳' : S.reg >= 0 ? rName[S.reg] : '이 화면', (bonusOpt() && !wantOnly ? bonusOpt()[2] + ' ' : '') + fmt(cnt) + '곳'), sc = el('div', 'scroll'), k;
+    var h = head(wantOnly ? '찜한 곳' : S.reg >= 0 ? rName[S.reg] : '이 화면', (bonusOpt() && !wantOnly ? bonusOpt()[2] + ' ' : '') + fmt(cnt + (wantOnly ? busFavs.length : 0)) + '곳'), sc = el('div', 'scroll'), k;
     if (cnt) {
       var sort = el('div', 'sort');
       // 가까운 순은 내 위치를 알아야 쓸 수 있다. 위치를 모르면 넓은 순으로 보여 주고, 가까운 순을 누르면 위치를 허용해 달라고 알린다.
@@ -8928,8 +8944,15 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     }
     h.appendChild(closeBtn());
     panel.appendChild(h); panel.appendChild(sc);
+    // 찜한 정류장은 찜 목록 맨 위에(사용자 2026-11-28).
+    if (wantOnly && busFavs.length) {
+      sc.appendChild(el('div', 'sec', '찜한 정류장 ' + fmt(busFavs.length) + '곳'));
+      busFavs.forEach(function (f) { sc.appendChild(busFavRow(f)); });
+      if (cnt) sc.appendChild(el('div', 'sec', '찜한 카페 ' + fmt(cnt) + '곳'));
+      else return;
+    }
     if (wantOnly && !cnt) {
-      var e0 = el('div', 'empty'); e0.appendChild(el('b', null, '아직 찜한 곳이 없어요')); e0.appendChild(el('span', null, '카페 카드의 찜을 누르면 여기에 모여요.'));
+      var e0 = el('div', 'empty'); e0.appendChild(el('b', null, '아직 찜한 곳이 없어요')); e0.appendChild(el('span', null, '카페 카드나 정류장 창의 하트를 누르면 여기에 모여요.'));
       sc.appendChild(e0); return;
     }
     if (!cnt) {
@@ -9052,6 +9075,54 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   window.cafeTest.legalMiss = function () { legalFind(['가']); return LG ? LG.g.filter(function (g) { return lgPath[g] === undefined; }) : 'not loaded'; };
   window.cafeTest.legal = function (q) { return legalFind(q.toLowerCase().split(/\s+/).filter(Boolean)).map(legalPath); };
 
+  // ----- 정류장 검색(2026-11-28 사용자: 정류장 이름, 정류장 번호로 검색) -----
+  // 색인 파일(busidx/, 데이터 만들기/bus_tiles.py)을 찾는 글자에 맞는 것만 그때 받는다. 이름은 점으로 나눈 조각의 첫 글자별, 번호는 앞 두 자리별.
+  //  한 줄: [이름, 도시, [[칸, 칸 안 순번, 정류장 번호], ...]]. 칸과 순번으로 bus/칸.json의 정류장을 찾아 연다.
+  var busIdx = {}, busIdxWait = {};
+  function busFind(words) {
+    var q = words.join(''), num = /^\d{2,}$/.test(q), files = [];
+    if (num) files.push('a' + q.slice(0, 2));
+    else words.forEach(function (w) { var f = 'n' + w.charAt(0).toLowerCase().charCodeAt(0).toString(16); if (files.indexOf(f) < 0) files.push(f); });
+    var wait = false;
+    files.forEach(function (f) {
+      if (busIdx[f]) return;
+      wait = true;
+      if (!busIdxWait[f]) busIdxWait[f] = fetch('busidx/' + f + '.json').then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; })
+        .then(function (v) { busIdx[f] = v || []; delete busIdxWait[f]; if (P.kind === 'search') renderPanel(); });
+    });
+    if (wait) return null;
+    var out = [], seen = {}, ct = map.getCenter();
+    files.forEach(function (f) {
+      busIdx[f].forEach(function (e) {
+        if (num) { e[2].forEach(function (p) { if (p[2].indexOf(q) === 0) out.push([e[0], e[1], p]); }); return; }
+        var nm = e[0].toLowerCase(), hay = nm + ' ' + nm.replace(/\s/g, '') + ' ' + e[1];
+        for (var w = 0; w < words.length; w++) if (hay.indexOf(words[w]) < 0) return;
+        if (seen[e[0] + e[1]]) return; seen[e[0] + e[1]] = 1;
+        e[2].forEach(function (p) { out.push([e[0], e[1], p]); });
+      });
+    });
+    // 지도 가운데에서 가까운 순서(칸 가운데로 잰다), 같으면 번호 순서.
+    out.forEach(function (o) { var t = o[2][0].split('_'); o.d = Math.pow((+t[0] + .5) / 20 - ct.lat, 2) + Math.pow(((+t[1] + .5) / 20 - ct.lng) * .8, 2); });
+    out.sort(function (a, b) { return a.d - b.d || String(a[2][2]).localeCompare(String(b[2][2])); });
+    return out;
+  }
+  function busGo(o) {
+    $('q').value = ''; $('qClear').hidden = true; closePanel();
+    var k = o[2][0], j = o[2][1];
+    busLoad([k], function () {
+      var st = (busTiles[k] || [])[j]; if (!st) return;
+      setFollow(false);
+      map.flyTo({ center: [st[1] / 1e5, st[0] / 1e5], zoom: Math.max(map.getZoom(), 17), duration: 600 });
+      busTap(st);
+    });
+  }
+  function busRow(o) {
+    var row = btn('row'), body = el('span', 'body'), pin = el('span', 'pin'); pin.style.setProperty('--c', 'var(--surface-2)'); pin.style.setProperty('--t', 'var(--ink-2)'); pin.appendChild(icon('bus'));
+    row.appendChild(pin); body.appendChild(el('span', 'name', o[0])); body.appendChild(el('span', 'meta', o[1] + (o[2][2] ? ', 정류장 번호 ' + o[2][2] : ''))); row.appendChild(body);
+    row.addEventListener('click', function () { busGo(o); });
+    return row;
+  }
+
   // ----- 검색 -----
   var flat = null, qTimer = 0;
   function renderSearch() {
@@ -9078,6 +9149,12 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         sc.appendChild(row);
       });
       lg.slice(0, regs.length ? 3 : 5).forEach(function (i) { sc.appendChild(legalRow(i)); });
+    }
+    // 버스정류장: 이름이나 번호로. 숫자만 쳤으면 정류장 번호로 찾는다.
+    var stops = joined.length >= 2 ? busFind(words) : [];
+    if (stops && stops.length) {
+      sc.appendChild(el('div', 'sec', '버스정류장 ' + fmt(stops.length) + '곳'));
+      stops.slice(0, /^\d+$/.test(joined) ? 10 : 5).forEach(function (o) { sc.appendChild(busRow(o)); });
     }
     // 카페: 이름에 찾은 글자가 다 든 곳(이름으로 찾은 카페)을 먼저, 동네나 도로명 주소까지 합쳐야 맞는 곳(주소로 찾은 카페)을 그 아래 따로.
     //  찾은 글자는 이름과 주소에서 굵게 칠한다(사용자 2026-11-28: "하슬"로 찾았는데 왜 트라디시옹이 나왔는지 몰랐다. 주소가 하슬라로).
@@ -9106,7 +9183,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       byAddr.slice(0, byName.length ? 20 : 40).forEach(function (f) { sc.appendChild(cafeRow(f[1], true, 'search', words, true)); });
       if (byAddr.length > (byName.length ? 20 : 40)) sc.appendChild(el('p', 'note', '지도 가운데에서 가까운 ' + (byName.length ? 20 : 40) + '곳이에요. 동네 이름을 함께 입력하면 더 좁혀져요.'));
     }
-    if (!regs.length && !found.length && !lg.length) {
+    if (!regs.length && !found.length && !lg.length && stops !== null && !(stops && stops.length)) {
       var e = el('div', 'empty');
       e.appendChild(el('b', null, joined.length < 2 ? '두 글자 이상 입력해 주세요' : '찾는 곳이 없어요'));
       if (joined.length >= 2 && !eggWord) eggNoSearch(e);
@@ -9896,6 +9973,12 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     // 정류장 번호는 이름 바로 옆에 붙인다(사용자 2026-11-28: 아래 줄로 따로 두면 자리만 차지한다). 쪽을 바꾸면 번호도 바뀐다.
     var hd = el('div', 'nshhd'), h2 = el('h2', null, x[0]), hno = el('span', 'sno', ''); h2.appendChild(hno);
     hd.appendChild(icon(kind === 'b' ? 'bus' : 'park')); hd.appendChild(h2); sh.appendChild(hd);
+    // 정류장 찜(사용자 2026-11-28): 이름 줄 끝의 하트. 고른 쪽 정류장을 찜하고, 찜 칩의 목록 맨 위에 모인다.
+    var fav = null;
+    if (kind === 'b') {
+      fav = btn('oact ohw nfav', null, function () { var y = pair ? pair[cur] : x; busFavSet(y, !busFavHas(y)); fav.setAttribute('aria-pressed', String(busFavHas(y))); toast(busFavHas(y) ? '정류장을 찜했어요' : '정류장 찜을 풀었어요'); });
+      fav.appendChild(icon('heart')); fav.setAttribute('aria-label', '정류장 찜'); hd.appendChild(fav);
+    }
     var pair = kind === 'b' && x2 ? [x, x2] : null, cur = pair && side ? 1 : 0, seg = null, segSub = [], dirEl = null;
     // 도착 정보는 정류장마다 한 번 물어 두고(방면도 같이 온다) 쪽을 바꿀 때 다시 쓴다. 새로 보기를 누르면 다시 묻는다.
     //  방면(사용자 2026-11-28): 그 정류장 다음 정류장 이름. 서울은 노선들의 다음 정류장 가운데 가장 많은 것, 그 밖은 TAGO 노선 정보에서.
@@ -9913,7 +9996,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     };
     if (pair) {
       seg = el('div', 'nshseg'); seg.setAttribute('role', 'tablist');
-      [i >= 0 ? '가까운 쪽' : '누른 정류장', '건너편'].forEach(function (t, k) {
+      [i >= 0 ? '가까운 쪽' : '이 정류장', '건너편'].forEach(function (t, k) {
         var sb = btn(null, null, function () { if (cur === k) return; cur = k; fill(); });
         sb.setAttribute('role', 'tab');
         sb.appendChild(el('b', null, t)); segSub[k] = el('span', null, ''); sb.appendChild(segSub[k]);
@@ -9952,6 +10035,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (kind === 'b') {
         to = [y[3] / 1e5, y[2] / 1e5];
         hno.textContent = y[6] || '';
+        if (fav) fav.setAttribute('aria-pressed', String(busFavHas(y)));
         // 곧 도착하는 버스: 중계 서버가 묻는다(키는 서버에 숨김). 서울은 서울시 정류소정보조회에 정류장 번호로, 그 밖은 국토교통부 TAGO에.
         if (canArr(y)) {
           arr = el('div', 'nsharr');
