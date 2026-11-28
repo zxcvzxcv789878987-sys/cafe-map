@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <!-- 카페 카드 사진 줄을 빨리 띄우려고 블로그 사진 서버와 중계 서버에 미리 연결해 둔다(사용자 2026-11-28: 사진이 늦게 떠서 흐려 보인다) -->
 <link rel="preconnect" href="https://postfiles.pstatic.net">
 <link rel="preconnect" href="https://cafemap-blog.rdh0811.workers.dev" crossorigin>
@@ -51,6 +51,9 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { height: 100%; margin: 0; }
+/* 화면 전체가 확대되지 않게(사용자 2026-11-28: 지도를 끝까지 확대한 뒤 더 벌리면 브라우저가 화면째 키워서 단추가 밖으로 밀리고 멈춘 것처럼 됐다).
+   손가락 두 개 확대는 지도 안에서만(지도는 자기 손가락 규칙이 따로 있다). 목록은 위아래, 옆으로 밀기만 된다. */
+html, body { touch-action: pan-x pan-y; }
 body { font-family: var(--font); font-size: 14px; line-height: 1.45; color: var(--ink); background: var(--bg); overflow: hidden; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
 button, input { font: inherit; color: inherit; }
 button { cursor: pointer; border: 0; background: none; padding: 0; }
@@ -6176,6 +6179,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   function styleUrl() { return 'https://tiles.openfreemap.org/styles/liberty'; }
   var mapAt = saved.view && S.start === 'last' ? { center: [saved.view[1], saved.view[0]], zoom: saved.view[2] }
     : { bounds: KOREA, fitBoundsOptions: { padding: { top: 110, bottom: 70, left: 30, right: 30 } } };
+  // 아이폰 사파리: 화면째 확대(손가락 모으기, 두 번 톡)를 막는다. 지도 확대는 지도가 따로 처리하므로 그대로 된다.
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (ev) { document.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false }); });
   var map = new maplibregl.Map(Object.assign({
     container: 'map',
     minZoom: 5.2, maxZoom: 19, maxBounds: [[121, 31], [134.5, 40.5]],
