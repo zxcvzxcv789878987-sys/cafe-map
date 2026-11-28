@@ -2500,7 +2500,10 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
 .grgo .name { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .grx svg.i { width: 16px; height: 16px; color: var(--ink-3); }
 /* 이 화면 N곳: 사진이 없을 때는 로고나 컵 동그라미를 크게 */
-.hth > .pin { width: 44px; height: 44px; }
+/* 사진이 없을 때(사용자 2026-11-28): 갈색 바탕에 흰 동그라미, 그 안에 우리 캐릭터나 브랜드 로고 */
+.hth { background: #8a5a3c; }
+.hth > .pin { width: 48px; height: 48px; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .18); }
+.hth > .pin .fxs { width: 36px; height: 36px; }
 .opghost { position: absolute; z-index: 2; object-fit: cover; border-radius: 10px; pointer-events: none; }
 /* +N 칸: 사진이 잘 보이게 어두운 막은 옅게, 글자는 그림자로 읽히게(사용자 2026-11-28: 너무 흐리다) */
 .opc .obgm { background: rgba(20, 23, 28, .22); font-size: 19px; text-shadow: 0 1px 4px rgba(0, 0, 0, .55); }
