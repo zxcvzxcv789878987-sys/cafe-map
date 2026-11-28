@@ -6169,6 +6169,18 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   });
   // 두 손가락으로 돌린다. 확대하다가 조금 돌아간 것(5도 안)은 손을 떼면 북쪽으로 되돌린다.
   map.on('rotateend', function () { var b = map.getBearing(); if (b && Math.abs(b) < 5) map.easeTo({ bearing: 0, duration: 200 }); });
+  // 전국 크기에서 돌리면 걸리던 것(사용자 2026-11-28): 지도가 한국 밖으로 못 나가게 건 테두리(maxBounds)를 전국 화면이 거의 꽉 채워서,
+  //  손가락 사이를 축으로 돌릴 때 지도 가운데가 움직일 자리가 없었다. 돌아가 있는 동안은 테두리를 넓히고,
+  //  북쪽이 위로 돌아온 뒤 화면이 원래 테두리 안에 들어오면 다시 좁힌다(밖에 있을 때 좁히면 지도가 튀므로 기다린다).
+  var MB_NARROW = [[121, 31], [134.5, 40.5]], MB_WIDE = [[112, 24], [143, 47]], mbWide = false;
+  var mbOpen = function () { if (!mbWide && Math.abs(map.getBearing()) >= .5) { mbWide = true; map.setMaxBounds(MB_WIDE); } };
+  map.on('rotatestart', function () { if (!mbWide) { mbWide = true; map.setMaxBounds(MB_WIDE); } });
+  map.on('rotate', mbOpen);
+  map.on('moveend', function () {
+    if (!mbWide || Math.abs(map.getBearing()) >= .5) return;
+    var b = map.getBounds();
+    if (b.getWest() >= MB_NARROW[0][0] && b.getSouth() >= MB_NARROW[0][1] && b.getEast() <= MB_NARROW[1][0] && b.getNorth() <= MB_NARROW[1][1]) { mbWide = false; map.setMaxBounds(MB_NARROW); }
+  });
   // 북쪽 단추: 지도가 돌아가 있을 때만 보이고, 바늘은 늘 화면 위의 북쪽을 가리킨다. 누르면 북쪽이 위로.
   (function () {
     var nb = $('north'); if (!nb) return;
