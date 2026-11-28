@@ -2486,6 +2486,14 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
 .ssmore { border: 0; background: none; padding: 0 4px; height: 36px; display: inline-flex; align-items: center; gap: 1px; font-family: inherit; font-size: 13.5px; font-weight: 600; color: var(--ink-2); cursor: pointer; }
 .ssmore svg.i { width: 14px; height: 14px; }
 .sgap { height: 8px; background: var(--surface-2); margin-top: 6px; }
+/* 검색 안내 판: 최근 검색 줄(누르면 그 말로 찾기, 오른쪽 x로 지우기) */
+.grow { padding: 0 6px 0 16px; gap: 4px; min-height: 48px; }
+.grgo { flex: 1; min-width: 0; height: 48px; padding: 0; border: 0; background: none; display: flex; align-items: center; gap: 12px; font-family: inherit; text-align: left; color: var(--ink); cursor: pointer; }
+.grgo svg.i { flex: none; width: 20px; height: 20px; color: var(--ink-3); }
+.grgo .name { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grx svg.i { width: 16px; height: 16px; color: var(--ink-3); }
+/* 이 화면 N곳: 사진이 없을 때는 로고나 컵 동그라미를 크게 */
+.hth > .pin { width: 44px; height: 44px; }
 .opghost { position: absolute; z-index: 2; object-fit: cover; border-radius: 10px; pointer-events: none; }
 /* +N 칸: 사진이 잘 보이게 어두운 막은 옅게, 글자는 그림자로 읽히게(사용자 2026-11-28: 너무 흐리다) */
 .opc .obgm { background: rgba(20, 23, 28, .22); font-size: 19px; text-shadow: 0 1px 4px rgba(0, 0, 0, .55); }
@@ -2557,7 +2565,7 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       <label class="search">
         <svg class="i"><use href="#i-search"/></svg>
         <!-- 아이폰 사파리는 글자에 '이름'이 있으면 연락처 칸으로 여겨 '자동 완성 연락처'를 띄운다. autocomplete=off로는 안 막혀서 '이'와 '름' 사이에 보이지 않는 글자를 넣었다. -->
-        <input id="q" type="search" placeholder="카페 이&#8203;름이나 동네 검색" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
+        <input id="q" type="search" placeholder="카페, 장소, 버스 검색" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
         <button id="qClear" type="button" aria-label="검색어 지우기" hidden><svg class="i"><use href="#i-x"/></svg></button>
       </label>
     </div>
@@ -10005,7 +10013,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (P.kind === 'list' || (P.kind === 'search' && !$('q').value.trim())) { closePanel(); return; }
     P.prev = null;
     if (S.seen === 'want') { openPanel('list'); return; }
-    $('q').value = ''; $('qClear').hidden = true; searchTab = 'cafe'; searchTabUser = true; searchKeep = true; syncSearchBox(); openPanel('search');
+    $('q').value = ''; $('qClear').hidden = true; searchTab = 'cafe'; searchTabUser = true; searchKeep = true; searchGuide = false; syncSearchBox(); openPanel('search');
   });
 
   // ----- 목록 -----
@@ -10413,7 +10421,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (c in thumbMem) { put(thumbMem[c]); return; }
     if (!('IntersectionObserver' in window)) return;
     if (!thumbIO) thumbIO = new IntersectionObserver(function (es) { es.forEach(function (e) { if (!e.isIntersecting) return; thumbIO.unobserve(e.target); if (e.target._load) e.target._load(); }); }, { rootMargin: '160px 0px' });
-    th._load = function () { thumbFetch(i, put); };
+    // 가벼운 사진 한 장 찾기(th=1)는 작은 카페 사진을 대부분 못 찾아서(사용자 2026-11-28: 로고도 사진도 안 나온다), 카드와 같은 블로그 찾기를 쓴다.
+    //  찾은 결과는 blogMem에 남아 그 카드를 열 때 다시 찾지 않는다.
+    th._load = function () { cafeBlog(i, function (d) { put(d && d.p.length ? blogPics(d.p, d.i).pics[0] : null); }); };
     thumbIO.observe(th);
   }
   function hereRow(i) {
@@ -10485,14 +10495,46 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     }
   }
 
+  // 검색 안내 판(사용자 2026-11-28: 검색창을 누르면 이 화면 N곳 대신 다른 안내가 뜨게): 최근 검색, 그리고 무엇을 찾을 수 있는지 예시.
+  //  최근 검색은 이 기기에만 남는다(검색 결과의 줄을 누르면 그 검색어를 남긴다). 예시를 누르면 그 말로 찾아 준다.
+  var RECENT_KEY = 'cafemap.recentQ';
+  function recentQ() { var r = load(RECENT_KEY); return Array.isArray(r) ? r.filter(function (x) { return typeof x === 'string' && x; }).slice(0, 8) : []; }
+  function recentAdd(t) { t = String(t || '').trim(); if (t.length < 1) return; var r = recentQ().filter(function (x) { return x !== t; }); r.unshift(t); save(RECENT_KEY, r.slice(0, 8)); }
+  function searchFor(t) { var q = $('q'); q.value = t; $('qClear').hidden = !t; q.dispatchEvent(new Event('input', { bubbles: true })); try { q.focus(); } catch (e) { /* 그대로 둔다 */ } }
+  function renderGuide() {
+    var h = head('검색'); h.appendChild(closeBtn()); panel.appendChild(h);
+    var sc = el('div', 'scroll'); panel.appendChild(sc);
+    var rec = recentQ();
+    if (rec.length) {
+      var hd = el('div', 'ssec'); hd.appendChild(el('b', null, '최근 검색'));
+      hd.appendChild(btn('ssmore', '모두 지우기', function () { save(RECENT_KEY, []); renderPanel(); }));
+      sc.appendChild(hd);
+      rec.forEach(function (t) {
+        var row = el('div', 'row grow'), go = btn('grgo', null, function () { searchFor(t); }), x = btn('ib grx', null, function () { save(RECENT_KEY, recentQ().filter(function (y) { return y !== t; })); renderPanel(); });
+        go.appendChild(icon('clock')); go.appendChild(el('span', 'name', t));
+        x.setAttribute('aria-label', t + ' 지우기'); x.appendChild(icon('x'));
+        row.appendChild(go); row.appendChild(x); sc.appendChild(row);
+      });
+      sc.appendChild(el('div', 'sgap'));
+    }
+    var hd2 = el('div', 'ssec'); hd2.appendChild(el('b', null, '이렇게 찾을 수 있어요')); sc.appendChild(hd2);
+    [['cup', '카페', '스타벅스 강남'], ['pin', '동네', '연남동'], ['subway', '역과 정류장', '홍대입구역'], ['bus', '버스 노선', '7016'], ['park', '주차장', '공영주차장']].forEach(function (x) {
+      var row = btn('row'), pin = el('span', 'pin'), body = el('span', 'body');
+      pin.style.setProperty('--c', 'var(--surface-2)'); pin.style.setProperty('--t', 'var(--ink-2)'); pin.appendChild(icon(x[0]));
+      body.appendChild(el('span', 'name', x[2])); body.appendChild(el('span', 'meta', x[1]));
+      row.appendChild(pin); row.appendChild(body);
+      row.addEventListener('click', function () { searchFor(x[2]); });
+      sc.appendChild(row);
+    });
+  }
   // ----- 검색 -----
   // 결과는 탭(카페, 지역, 정류장, 노선, 주차장)으로 나눠 본다(사용자 2026-11-28). 처음에는 카페 탭, 카페가 없으면 결과가 있는 첫 탭.
   //  탭을 직접 누르면 검색 판을 닫을 때까지 그 탭을 지킨다.
   var flat = null, qTimer = 0, searchTab = 'cafe', searchTabUser = false, searchKeep = false;
-  var searchMore = {}, searchMoreQ = '';   // 검색 결과에서 더 보기로 펼친 묶음(검색어가 바뀌면 다시 접는다)
+  var searchMore = {}, searchMoreQ = '', searchGuide = false;   // searchGuide: 검색창을 눌러 연 검색 판(빈 검색어일 때 안내 판)   // 검색 결과에서 더 보기로 펼친 묶음(검색어가 바뀌면 다시 접는다)
   function renderSearch() {
     var words = $('q').value.toLowerCase().split(/\s+/).filter(Boolean), k, w, ok;
-    if (!words.length) { renderHere(); return; }   // 아무것도 안 쳤으면 지금 화면
+    if (!words.length) { if (searchGuide) renderGuide(); else renderHere(); return; }   // 아무것도 안 쳤으면: 검색창을 눌러 연 것은 안내 판, 이 화면 N곳으로 연 것은 목록
     if (searchMoreQ !== $('q').value.trim()) { searchMore = {}; searchMoreQ = $('q').value.trim(); }
     var h = head('검색 결과'); h.appendChild(closeBtn());
     var joined = words.join(''), regs = [], eggWord = joined === '이스터에그' || joined === 'easteregg';
@@ -10573,6 +10615,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       sc.appendChild(e);
     }
   }
+  panel.addEventListener('click', function (e) {
+    if (P.kind !== 'search') return;
+    var v = $('q').value.trim();
+    if (v && e.target.closest('.scroll .row, .scroll button.row')) recentAdd(v);
+  }, true);
   $('q').addEventListener('input', function () {
     var v = this.value.trim();
     $('qClear').hidden = !this.value;
@@ -10595,7 +10642,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   //  그래서 누르는 순간 검색창 바로 아래에서 키보드 위까지만 오는 검색 판으로 바꾸고, 그 안에서 스크롤한다.
   $('q').addEventListener('focus', function () {
     syncSearchBox(); legalLoad();
-    if (P.kind !== 'search') { openPanel('search'); return; }
+    if (P.kind !== 'search') { searchGuide = true; openPanel('search'); return; }
+    if (!searchGuide && !$('q').value.trim()) { searchGuide = true; if (!hereHalf) renderPanel(); }
     if (hereHalf) { hereHalf = false; panel.removeAttribute('data-snap'); panel.style.removeProperty('--snapoff'); panel.style.transition = 'none'; panel.style.transform = ''; panel.classList.remove('rise'); void panel.offsetWidth; panel.classList.add('rise'); renderPanel(); }
   });
   $('qClear').addEventListener('click', function () { $('q').value = ''; this.hidden = true; if (P.kind === 'search') renderPanel(); $('q').focus(); });
