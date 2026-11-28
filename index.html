@@ -12408,7 +12408,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   //  판의 뒤로는 주차장 창으로 돌아가고, 주차 요금 줄과 지도의 표시는 길 위에 주차장 창을 연다.
   function parkRouteFromMe(y) {
     var q = y[3] || {}, to = q.x && q.y ? [q.x / 1e5, q.y / 1e5] : null; if (!to) return;
-    meRouteTo({ to: to, name: y[0], ic: 'park', kind: 'p', fee: parkFee1h(y), back: function () { nearSheet(-1, 'p', y); }, open: function () { nearSheet(-1, 'p', y, null, 'route'); } }, 'car');
+    // 이름표와 판 제목에도 주차장 창과 같은 이름(관철동 → 관철동 공영주차장, 주차장 방 parkName)
+    meRouteTo({ to: to, name: parkName(y[0], q.g), ic: 'park', kind: 'p', fee: parkFee1h(y), back: function () { nearSheet(-1, 'p', y); }, open: function () { nearSheet(-1, 'p', y, null, 'route'); } }, 'car');
   }
   function myFix() {
     return new Promise(function (ok, no) {
