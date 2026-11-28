@@ -893,6 +893,9 @@ body.osh-on #toast { z-index: 95; }
 #navAll.flipB { animation: flipB .2s cubic-bezier(.2, .8, .3, 1.15); }
 .cbtn { width: 42px; height: 42px; display: grid; place-items: center; background: var(--surface); border-radius: 12px; box-shadow: var(--sh-1); color: var(--ink); }
 .cbtn:hover { background: var(--surface-2); }
+#north { position: absolute; right: 12px; top: 124px; z-index: 15; width: 40px; height: 40px; border-radius: 50%; }
+#north[hidden] { display: none; }
+#north svg { width: 26px; height: 26px; }
 .cgroup { display: flex; flex-direction: column; background: var(--surface); border-radius: 12px; box-shadow: var(--sh-1); overflow: hidden; }
 .cgroup .cbtn { box-shadow: none; border-radius: 0; }
 .cgroup .cbtn + .cbtn { border-top: 1px solid var(--line); }
@@ -2537,6 +2540,8 @@ button.xlink .xbadge.pic { width: 42px; height: 42px; margin: -4px 10px -4px -2p
       <button class="nbtn" id="navHome" type="button" aria-label="처음부터"><svg class="i"><use href="#i-home"/></svg><span class="t">처음부터</span></button>
     </span>
   </div>
+  <!-- 북쪽 단추: 오른쪽 위, 필터 칩 줄 아래(오른쪽 아래 단추들과 겹치지 않게) -->
+  <button class="cbtn" id="north" type="button" aria-label="북쪽을 위로" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l4.2 8.5H7.8z" fill="#e5484d"/><path d="M12 20.5l-4.2-8.5h8.4z" fill="#a3abb6"/></svg></button>
   <div id="ctrl">
     <button class="cbtn" id="locate" type="button" aria-label="내 위치로 이동"><svg class="i"><use href="#i-locate"/></svg></button>
     <div class="cgroup">
@@ -6125,7 +6130,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   var map = new maplibregl.Map(Object.assign({
     container: 'map',
     minZoom: 5.2, maxZoom: 19, maxBounds: [[121, 31], [134.5, 40.5]],
-    dragRotate: false, pitchWithRotate: false, touchPitch: false,
+    // 지도 돌리기(사용자 2026-11-28: 길찾기 하고 보기 편하게 두 손가락으로 돌리기). 기울이기는 그대로 끈다.
+    dragRotate: true, pitchWithRotate: false, touchPitch: false,
     attributionControl: false,
     // 지도 안의 한글은 화면 글꼴과 같은 글꼴로 그린다.
     localIdeographFontFamily: '"Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
@@ -6161,8 +6167,19 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var ic = ICONS[e.id.replace('ic-', '')];
     if (ic && !map.hasImage(e.id)) map.addImage(e.id, drawIcon(ic[0], ic[1]), { pixelRatio: 2 });
   });
-  map.touchZoomRotate.disableRotation();
-  map.keyboard.disableRotation();
+  // 두 손가락으로 돌린다. 확대하다가 조금 돌아간 것(5도 안)은 손을 떼면 북쪽으로 되돌린다.
+  map.on('rotateend', function () { var b = map.getBearing(); if (b && Math.abs(b) < 5) map.easeTo({ bearing: 0, duration: 200 }); });
+  // 북쪽 단추: 지도가 돌아가 있을 때만 보이고, 바늘은 늘 화면 위의 북쪽을 가리킨다. 누르면 북쪽이 위로.
+  (function () {
+    var nb = $('north'); if (!nb) return;
+    var nd = nb.querySelector('svg');
+    var sync = function () {
+      var b = map.getBearing(), was = nb.hidden; nb.hidden = Math.abs(b) < .5; nd.style.transform = 'rotate(' + (-b) + 'deg)'; applyHead();
+      if (was && !nb.hidden) { var c = $('chips'); if (c) nb.style.top = Math.round(c.getBoundingClientRect().bottom + 10) + 'px'; }   // 칩 줄 바로 아래
+    };
+    map.on('rotate', sync); sync();
+    nb.addEventListener('click', function () { map.easeTo({ bearing: 0, duration: 400 }); });
+  })();
   // 지도 스타일을 받아서 원래 있던 글씨와 기호를 전부 뺀 뒤, 위치를 가늠하는 기준점만 다시 넣는다.
   // 기준은 네이버 지도다. 다만 "누가 개별로 운영하는 영업장과 작은 시설"은 넣지 않는다.
   //   넣는 것: 교통(지하철 노선과 역, 버스 정류장, 터미널), 지명(동 이름, 길 이름, 강, 산),
@@ -6441,8 +6458,18 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     return (shapeCache[r] = out);
   }
   // 고른 지역(시도, 시, 구, 동 어느 단계든)의 땅 전체를 옅게 칠하고 경계선을 두른다.
+  // 지도 돌리기(2026-11-28): 카페 그림은 위가 북쪽인 좌표로 셈한 뒤, 화면 가운데를 축으로 지도 방향만큼 돌린 자리에 그린다.
+  //  RB: 돌린 각(라디안, 0이면 안 돌림). rp(u, v)는 돌린 자리를 RPX, RPY에 넣는다. 선(경계)은 캔버스째 돌려서 긋는다(rotCtx).
+  var RB = 0, RC = 1, RS = 0, RX = 0, RY = 0, RPX = 0, RPY = 0;
+  function rotSet(W, H) { var b = map.getBearing(); RB = Math.abs(b) < .01 ? 0 : -b * Math.PI / 180; RC = Math.cos(RB); RS = Math.sin(RB); RX = W / 2; RY = H / 2; }
+  function rp(u, v) { var du = u - RX, dv = v - RY; RPX = RX + du * RC - dv * RS; RPY = RY + du * RS + dv * RC; }
+  function rotCtx() { if (RB) { ctx.translate(RX, RY); ctx.rotate(RB); ctx.translate(-RX, -RY); } }
   function drawOutline(r, scale, ox, oy) { var sh = shapeOf(r); if (sh) drawRings(sh, scale, ox, oy); }
   function drawRings(sh, scale, ox, oy) {
+    ctx.save(); rotCtx();
+    try { drawRings0(sh, scale, ox, oy); } finally { ctx.restore(); }
+  }
+  function drawRings0(sh, scale, ox, oy) {
     ctx.beginPath();
     for (var k = 0; k < sh.rings.length; k++) {
       var a = sh.rings[k];
@@ -6472,6 +6499,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   function drawExtent(r, z, scale, ox, oy, x0, x1, y0, y1) {
     var sh = shapeOf(r), i, k, px, py;
     if (sh) {
+      ctx.save(); rotCtx();   // 지도가 돌아가 있으면 선도 같이 돌린다
       ctx.beginPath();
       for (k = 0; k < sh.rings.length; k++) {
         var a = sh.rings[k];
@@ -6482,14 +6510,14 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       // 마우스를 올린 지역도 고른 지역과 같은 색으로, 조금 더 진하게 칠한다.
       ctx.globalAlpha = .18; ctx.fillStyle = C.area; ctx.fill('evenodd');
       ctx.globalAlpha = 1; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.strokeStyle = C.area; ctx.stroke();
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha = 1; ctx.restore();
       return;
     }
     var R = Math.max(6, Math.min(18, 6 + (z - 6) * 1.5)), m = R / scale;
     ctx.beginPath();
     for (i = 0; i < N; i++) {
       if (!hoverMask[D.dongOf[i]] || mx[i] < x0 - m || mx[i] > x1 + m || my[i] < y0 - m || my[i] > y1 + m) continue;
-      px = mx[i] * scale - ox; py = my[i] * scale - oy;
+      px = mx[i] * scale - ox; py = my[i] * scale - oy; if (RB) { rp(px, py); px = RPX; py = RPY; }
       ctx.moveTo(px + R, py); ctx.arc(px, py, R, 0, 6.2832);
     }
     ctx.save(); if ('filter' in ctx) ctx.filter = 'blur(5px)'; ctx.globalAlpha = .22; ctx.fillStyle = C.area; ctx.fill(); ctx.restore();
@@ -6818,9 +6846,12 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (routeBar) { hits = []; vc = 0; return; }
     var z = map.getZoom(), scale = 512 * Math.pow(2, z), ct = map.getCenter();
     var ox = (ct.lng + 180) / 360 * scale - W / 2, oy = mercY(ct.lat) * scale - H / 2;
+    rotSet(W, H);
     // 1m가 화면에서 몇 픽셀인지로 아이콘 반지름을 정한다. 테두리 두께 1픽셀은 빼 둔다.
     iconR = Math.max(6, Math.min(11, GAP * .98 / 2 * scale / (40075016 * Math.cos(ct.lat * Math.PI / 180)) - 1));
     var pad = 14 / scale, x0 = ox / scale - pad, x1 = (ox + W) / scale + pad, y0 = oy / scale - pad, y1 = (oy + H) / scale + pad;
+    // 지도가 돌아가 있으면 화면 대각선만큼 넓게 본다(돌린 화면의 귀퉁이까지).
+    if (RB) { var hd = Math.hypot(W, H) / 2; x0 = (ox + W / 2 - hd) / scale - pad; x1 = (ox + W / 2 + hd) / scale + pad; y0 = (oy + H / 2 - hd) / scale - pad; y1 = (oy + H / 2 + hd) / scale + pad; }
     var i, k, j, px, py;
     vc = 0;
     // 걷는 길 판에서 "다른 카페 숨기기"를 켰으면 도착 카페 하나만 그린다.
@@ -6849,13 +6880,14 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         var ps = lay[k];
         if (!rCnt[k] || !ps || z < ps.z - .001) continue;
         // 기억해 둔 지도 좌표를 지금 화면 좌표로 바꾸기만 한다. 그때그때 자리를 다시 잡지 않는다.
-        px = ps.x * scale - ox; py = ps.y * scale - oy;
+        px = ps.x * scale - ox; py = ps.y * scale - oy; if (RB) { rp(px, py); px = RPX; py = RPY; }
         if (px < -90 || px > W + 90 || py < -30 || py > H + 30) continue;
         // 개수는 시 안으로 들어왔을 때만 이름 옆에 적는다. 좁은 화면에서 옆 이름표와 닿는 곳은 이름만 보이다가, 확대해서 자리가 나면(ps.zc) 개수가 붙는다.
         var name = rName[k], num = inCity(S.reg) && z >= ps.zc - .001 ? fmt(rCnt[k]) : '';
         ctx.font = '600 12.5px ' + FONT; var w1 = ctx.measureText(name).width;
         ctx.font = '750 12.5px ' + FONT; var w2 = num ? ctx.measureText(num).width + 6 : 0;
-        tags.push({ r: k, ax: ps.ax * scale - ox, ay: ps.ay * scale - oy, x: px, y: py, w: w1 + w2 + 20, h: 28, w1: w1, name: name, num: num });
+        var tax = ps.ax * scale - ox, tay = ps.ay * scale - oy; if (RB) { rp(tax, tay); tax = RPX; tay = RPY; }
+        tags.push({ r: k, ax: tax, ay: tay, x: px, y: py, w: w1 + w2 + 20, h: 28, w1: w1, name: name, num: num });
       }
       // 이름표에는 선이나 점을 붙이지 않는다. 많이 축소해서 서로 겹치면 카페가 많은 쪽만 남기고 나머지는 숨긴다.
       tags.sort(function (p, q) { return rCnt[q.r] - rCnt[p.r]; });
@@ -6883,6 +6915,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       var labels = [], pass2, piles = {}, inDong = S.reg >= 0 && rLeaf[S.reg] === 1, wantLabel = z >= LABEL_SOME || inDong || S.seen === 'want', r = dotR(0, z);
       var one = function (i) {
         var x = mx[i] * scale - ox, y = my[i] * scale - oy, fa = liveFade.get(i);
+        if (RB) { rp(x, y); x = RPX; y = RPY; }
         if (fa !== undefined) { ctx.globalAlpha = Math.max(0, Math.min(1, (performance.now() - fa) / LIVE_FADE)); stampDot(i, x, y, r); ctx.globalAlpha = 1; }
         else stampDot(i, x, y, r);
         hits.push({ x: x, y: y, r: Math.max(r + 3, 9), i: i });
@@ -6899,7 +6932,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         var mem = piles[pk];
         if (mem.length === 1) { if (mem[0] !== big) one(mem[0]); continue; }
         // 묶음 점: 어두운 동그라미에 카페 수를 적는다. 작게 그릴 때는 숫자 없이 점만.
-        px = mx[mem[0]] * scale - ox; py = my[mem[0]] * scale - oy;
+        px = mx[mem[0]] * scale - ox; py = my[mem[0]] * scale - oy; if (RB) { rp(px, py); px = RPX; py = RPY; }
         var pr = r >= 8 ? r + 1 : r;
         ctx.beginPath(); ctx.arc(px, py, pr, 0, 6.2832); ctx.fillStyle = C.inv; ctx.fill();
         ctx.lineWidth = 1.6; ctx.strokeStyle = C.surface; ctx.stroke();
@@ -6944,14 +6977,14 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         }
       }
       if (hoverI >= 0 && hoverI !== sel) {
-        px = mx[hoverI] * scale - ox; py = my[hoverI] * scale - oy;
+        px = mx[hoverI] * scale - ox; py = my[hoverI] * scale - oy; if (RB) { rp(px, py); px = RPX; py = RPY; }
         var hr = dotR(hoverI, z) + 2;
         drawDot(hoverI, px, py, hr);
         drawLabel(clip(D.name[hoverI], 22), px + hr + 6, py, true, hr + 6);
       }
     }
     if (big >= 0) {
-      px = mx[big] * scale - ox; py = my[big] * scale - oy;
+      px = mx[big] * scale - ox; py = my[big] * scale - oy; if (RB) { rp(px, py); px = RPX; py = RPY; }
       var bo = big === sel ? 17 : 23, bi = bo - 4;   // 길 판의 도착 카페는 더 크게
       if (px > -50 && px < W + 50 && py > -50 && py < H + 50) {
         ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 3;
@@ -7244,8 +7277,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   }
   function placePile(scale, ox, oy) {
     if (!pileAt) return;
-    pileBox.style.left = (pileAt.x * scale - ox) + 'px';
-    pileBox.style.top = (pileAt.y * scale - oy - 18) + 'px';
+    var plx = pileAt.x * scale - ox, ply = pileAt.y * scale - oy; if (RB) { rp(plx, ply); plx = RPX; ply = RPY; }
+    pileBox.style.left = plx + 'px';
+    pileBox.style.top = (ply - 18) + 'px';
   }
   // ----- 버스정류장(2026-11-28) -----
   // 국토교통부 전국 정류소 목록을 0.05도 칸(가로세로 4~5km)으로 나눈 파일(bus/위도칸_경도칸.json, 데이터 만들기/bus_tiles.py)을
@@ -12562,10 +12596,16 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     headRaf = requestAnimationFrame(function () {
       headRaf = 0;
       if (!me) return;
-      var el2 = me.getElement(); el2.classList.add('has-dir');
-      el2.querySelector('.cone').style.transform = 'rotate(' + Math.round(headDeg) + 'deg)';
-      if (Date.now() >= glanceUntil) lookAt(headDeg);      // 터치한 곳을 보는 동안에는 눈동자를 그대로 둔다
+      me.getElement().classList.add('has-dir');
+      applyHead();
     });
+  }
+  // 부채꼴과 눈동자는 화면 기준 방향(나침반 방향에서 지도가 돌아간 만큼 뺀다).
+  function applyHead() {
+    if (!me || headDeg === null) return;
+    var d = (headDeg - map.getBearing() + 360) % 360;
+    me.getElement().querySelector('.cone').style.transform = 'rotate(' + Math.round(d) + 'deg)';
+    if (Date.now() >= glanceUntil) lookAt(d);      // 터치한 곳을 보는 동안에는 눈동자를 그대로 둔다
   }
   // 캐릭터 눈동자를 그 방향으로 옮긴다. 몸은 그대로 두고 컵 윗부분 흰 곳 안에서만 움직인다(위가 북쪽인 지도라 방향 그대로).
   function lookAt(deg) {
