@@ -11370,6 +11370,16 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       .then(function (j) { if (!j.routes || !j.routes.length) throw new Error('route'); return { coords: j.routes[0].geometry.coordinates, dist: j.routes[0].distance, src: 'fossgis' }; });
   }
   var routeInfo = null;     // { i, dist, min } 판에 적을 것
+  // 길찾기를 처음 누를 때 고르는 방법(사용자 2026-11-29: 차로 가려는데 걷는 길부터 찾으면 한도가 아깝다, 대중교통은 최대한 아낀다).
+  //  곧은 거리 1.5km 이하는 걷기, 넘으면 차. 대중교통은 탭을 눌렀을 때만 찾는다.
+  function pickMode(me, to) { return distM(me[1], me[0], to[1], to[0]) <= 1500 ? 'walk' : 'car'; }
+  // 카페 카드와 카페 창의 길찾기 단추. 내 위치를 먼저 받아 거리로 걷는 길이나 차 길을 고른다. 위치를 못 받으면 예전처럼 걷는 길(위치 안내는 그쪽이 한다).
+  function startCafeRoute(i) {
+    startHeading(true);   // 아이폰은 누른 순간에만 방향 허용을 물을 수 있다
+    myFix().then(function (me) {
+      if (pickMode(me, [D.lng[i] / 1e5, D.lat[i] / 1e5]) === 'car') cafeCar(i, 'park'); else openRoute(i);
+    }, function () { openRoute(i); });
+  }
   function openRoute(i) {
     startHeading(true);   // 길찾기 동안 보는 방향(아이폰은 누른 순간에만 허용을 물을 수 있다)
     if (!navigator.geolocation) { toast('이 기기에서는 위치를 확인할 수 없어요'); return; }
@@ -11658,7 +11668,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   }
   // 지도에서 누른 정류장(역) 창의 길찾기: 내 위치에서 걸어서. y: 정류장 창의 한 줄, back: 그 창을 다시 연다. ic: 'subway'면 역.
   function stopRouteFromMe(y, back, ic) {
-    meRouteTo({ to: [y[3] / 1e5, y[2] / 1e5], name: y[0], ic: ic || 'bus', kind: ic === 'subway' ? 's' : 'b', back: back }, 'walk');
+    // 거리로 걷는 길이나 차 길을 고른다(사용자 2026-11-29, pickMode). 위치를 못 받으면 걷는 길(위치 안내는 meRouteTo가 한다).
+    var dest = { to: [y[3] / 1e5, y[2] / 1e5], name: y[0], ic: ic || 'bus', kind: ic === 'subway' ? 's' : 'b', back: back };
+    startHeading(true);
+    myFix().then(function (me) { meRouteTo(dest, pickMode(me, dest.to)); }, function () { meRouteTo(dest, 'walk'); });
   }
   // 걷는 길 판이 열려 있는가. 이 동안은 환경설정과 상관없이 지역 경계를 그리지 않는다.
   function routing() { return P.kind === 'route' && !!routeInfo; }
@@ -11802,7 +11815,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     function fact(k) { dl.appendChild(el('dt', null, k)); var dd = el('dd'); dl.appendChild(dd); return dd; }
     var f1 = fact('주소'); f1.appendChild(el('span', null, addr + (fl > 0 ? ' ' + fl + '층' : fl < 0 ? ' 지하' : '')));
     // 길찾기: 카카오맵의 길찾기 화면을 새 창(폰은 카카오맵 앱)으로 연다. 카카오 장소 번호가 있으면 그 가게로, 없으면 이름과 좌표로 찾는다.
-    var go = btn('go', null, function () { openRoute(i); });
+    var go = btn('go', null, function () { startCafeRoute(i); });
     // 환경설정에서 고른 지도 앱으로 연다. 카카오맵은 앱이 없어도 웹으로 열리는 주소다.
     // 네이버지도는 앱을 바로 부르는 주소라서 폰에서만 쓰고, 앱이 없으면 아무 일도 일어나지 않으므로 잠시 뒤에 알려 준다. 컴퓨터에서는 카카오맵으로 연다.
     go.appendChild(icon('route')); go.appendChild(document.createTextNode('길찾기'));
@@ -13172,7 +13185,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     // 주소와 길찾기 한 줄, 그 아래 영업시간과 전화번호(공식 자료가 없어 앱 안의 카카오맵 탭으로 넘긴다), 내 메모
     var basic = el('div', 'obasic'), fl = D.floor[i], ad = el('div', 'oaddr');
     ad.appendChild(icon('pin')); ad.appendChild(el('span', null, shortAddr(i) + (fl > 0 ? ', ' + fl + '층' : fl < 0 ? ', 지하' : '')));
-    var rt = btn('oroute', null, function () { openRoute(i); }); rt.appendChild(icon('route')); rt.appendChild(document.createTextNode('길찾기'));
+    var rt = btn('oroute', null, function () { startCafeRoute(i); }); rt.appendChild(icon('route')); rt.appendChild(document.createTextNode('길찾기'));
     ad.appendChild(rt); basic.appendChild(ad);
     if (act.kakao) {
       var hr = btn('ohrs', null, act.kakao);
