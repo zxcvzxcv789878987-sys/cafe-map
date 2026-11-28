@@ -7420,15 +7420,31 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       cont.querySelectorAll('b[data-s]').forEach(function (b) { b.textContent = secText(+b.dataset.s - (now - +b.dataset.t) / 1000); });
       if (now - lastAsk > 30000) { lastAsk = now; ask(true); }
     }, 1000);
-    // 아래로 끌면 닫힌다(목록 칸 안은 빼고).
-    var dragOn = false, dy0 = 0, ddy = 0;
+    // 아래로 끌면 닫힌다. 노선 탭(단추) 위에서 시작해도 끌린다(사용자 2026-11-28, 정류장 창과 같게):
+    //  탭 위에서는 아래로 8px 넘게 움직여야 끌기로 보고, 톡 누르면 탭이 바뀐다. 옆으로 미는 것(노선이 많은 역의 탭 넘기기)은 끌기가 아니다. 끌고 난 뒤의 눌림은 막는다.
+    var dragOn = false, dx0 = 0, dy0 = 0, ddy = 0, soft = false, moved = false, pid = 0;
     sh.addEventListener('pointerdown', function (e) {
-      if (e.target.closest('button')) return;
-      dragOn = true; dy0 = e.clientY; ddy = 0; sh.style.transition = 'none';
-      try { sh.setPointerCapture(e.pointerId); } catch (err) { /* 그대로 둔다 */ }
+      var segBtn = e.target.closest('.nshseg button');
+      if (e.target.closest('button') && !segBtn) return;
+      dragOn = true; dx0 = e.clientX; dy0 = e.clientY; ddy = 0; soft = !!segBtn; moved = false; pid = e.pointerId;
+      if (!soft) { sh.style.transition = 'none'; try { sh.setPointerCapture(e.pointerId); } catch (err) { /* 그대로 둔다 */ } }
     });
-    sh.addEventListener('pointermove', function (e) { if (!dragOn) return; ddy = Math.max(0, e.clientY - dy0); sh.style.transform = 'translateY(' + ddy + 'px)'; });
-    var dragEnd = function () { if (!dragOn) return; dragOn = false; sh.style.transition = ''; if (ddy > 80) close(); else sh.style.transform = ''; };
+    sh.addEventListener('pointermove', function (e) {
+      if (!dragOn) return;
+      var dy = e.clientY - dy0, dx = e.clientX - dx0;
+      if (soft && !moved) {
+        if (Math.abs(dx) >= 8 && Math.abs(dx) > Math.abs(dy)) { dragOn = false; return; }   // 옆으로 미는 중
+        if (Math.abs(dy) < 8) return;
+        moved = true; sh.style.transition = 'none'; try { sh.setPointerCapture(pid); } catch (err) { /* 그대로 */ }
+      }
+      ddy = Math.max(0, dy); sh.style.transform = 'translateY(' + ddy + 'px)';
+    });
+    var dragEnd = function () {
+      if (!dragOn) return; dragOn = false;
+      if (soft && !moved) return;   // 탭을 톡 누름
+      if (soft) { var stop = function (ev) { ev.stopPropagation(); ev.preventDefault(); }; sh.addEventListener('click', stop, { capture: true, once: true }); setTimeout(function () { sh.removeEventListener('click', stop, true); }, 400); }
+      sh.style.transition = ''; if (ddy > 80) close(); else sh.style.transform = '';
+    };
     sh.addEventListener('pointerup', dragEnd); sh.addEventListener('pointercancel', dragEnd);
     o.appendChild(sh); document.body.appendChild(o); document.body.classList.add('osh-on');
     if (was) { o.classList.add('now', 'on'); requestAnimationFrame(function () { o.classList.remove('now'); }); }
