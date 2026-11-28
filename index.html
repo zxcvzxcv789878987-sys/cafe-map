@@ -522,6 +522,10 @@ button.oli { width: 100%; padding: 11px 0; margin: 0; background: none; color: v
 .nshhd > svg.i { flex: none; width: 24px; height: 24px; color: var(--ink-2); }
 .nshhd h2 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -.3px; overflow-wrap: anywhere; }
 .nshsub { margin: 6px 0 0 34px; display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-2); }
+.nshsub .dir { font-weight: 700; color: var(--ink); }
+.nshseg + .nshcont .nshsub { margin: 10px 0 0 4px; }
+.nshsub .dir[hidden] { display: none; }
+.nshseg button span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nshsub .fee { font-size: 12px; font-weight: 700; color: var(--ink-2); background: var(--surface-2); border-radius: 5px; padding: 2px 6px; }
 .nsharr { margin-top: 16px; }
 .nsharr .ahd { display: flex; align-items: center; justify-content: space-between; }
@@ -548,6 +552,16 @@ button.oli { width: 100%; padding: 11px 0; margin: 0; background: none; color: v
 .nearpin { display: flex; align-items: center; gap: 6px; pointer-events: none; }
 .nearpin .ic { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; box-shadow: 0 3px 8px rgba(0, 0, 0, .25); }
 .nearpin .ic svg.i { width: 18px; height: 18px; color: #fff; }
+/* 건너편 정류장 고르기(2026-11-28) */
+.nshseg { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface-2); }
+.nshseg button { border: 0; border-radius: 10px; background: none; padding: 8px 4px; display: flex; flex-direction: column; align-items: center; gap: 1px; color: var(--ink-2); }
+.nshseg button b { font-size: 15px; font-weight: 800; }
+.nshseg button span { font-size: 12.5px; }
+.nshseg button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 4px rgba(0, 0, 0, .12); }
+.nearpin.alt { pointer-events: auto; border: 0; background: none; padding: 0; cursor: pointer; }
+.nearpin.alt .ic { background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .2); border: 2px solid #2f9e44; box-sizing: border-box; }
+.nearpin.alt .ic svg.i { color: #2f9e44; }
+.nearpin.alt b { background: #fff; color: #14171c; box-shadow: 0 2px 6px rgba(0, 0, 0, .15); }
 .nearpin b { background: #14171c; color: #fff; font-size: 12.5px; font-weight: 700; padding: 4px 8px; border-radius: 8px; white-space: nowrap; }
 .oln .fee { font-style: normal; margin-left: 6px; font-size: 12px; font-weight: 700; color: var(--ink-2); background: var(--surface-2); border-radius: 5px; padding: 2px 6px; white-space: nowrap; }
 .ofix { width: 100%; padding: 16px 0 2px; border: 0; border-top: 1px solid var(--line); background: none; display: flex; align-items: center; gap: 8px; font: inherit; font-size: 14px; color: var(--ink-2); text-align: left; }
@@ -9180,6 +9194,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   function clearRoute() {
     routeOn = false; routeLine = null; offN = 0;
     if (nearMk) { nearMk.remove(); nearMk = null; }
+    if (nearMk2) { nearMk2.remove(); nearMk2 = null; }
     if (map.getLayer && map.getLayer('walk')) { map.removeLayer('walk'); map.removeLayer('walk-edge'); }
     if (map.getSource && map.getSource('walk')) map.removeSource('walk');
   }
@@ -9725,7 +9740,9 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   //  버스 도착 정보는 공공데이터 활용 승인이 나면 붙인다(지금 키는 버스도착정보에 등록돼 있지 않다).
   function walkMin(m) { return Math.max(1, Math.round(m / 70)); }
   function nearMeter(m) { return m >= 1000 ? (Math.round(m / 100) / 10) + 'km' : Math.round(m) + 'm'; }
-  function nearSheet(i, kind, x) {
+  // 버스는 방향이 둘이라(사용자 2026-11-28) 건너편 정류장(x2, 같은 이름, 다른 번호)이 있으면 위에 가까운 쪽, 건너편을 고르는 칸을 둔다.
+  //  고르면 걸어서 몇 분, 정류장 번호, 곧 도착하는 버스, 지도에서 보기가 그 정류장으로 바뀐다.
+  function nearSheet(i, kind, x, x2, side) {
     var old = $('nsheet'); if (old) old.remove();
     var o = el('div', 'osh'), sh = el('div', 'oshbox');
     o.id = 'nsheet'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', kind === 'b' ? '버스정류장' : '주차장');
@@ -9733,85 +9750,128 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     o.addEventListener('click', function (e) { if (e.target === o) close(); });
     sh.appendChild(el('span', 'oshgrab'));
     var hd = el('div', 'nshhd'); hd.appendChild(icon(kind === 'b' ? 'bus' : 'park')); hd.appendChild(el('h2', null, x[0])); sh.appendChild(hd);
-    var sub = el('div', 'nshsub'); sub.appendChild(el('span', null, '걸어서 ' + walkMin(x[1]) + '분, ' + nearMeter(x[1])));
-    var rows = el('div', 'nshrows');
-    var row = function (lb, main, small) {
-      if (!main) return;
-      var r = el('div', 'nshrow'); r.appendChild(el('span', 'lb', lb));
-      var v = el('span', 'v'); v.appendChild(document.createTextNode(main)); if (small) v.appendChild(el('small', null, small));
-      r.appendChild(v); rows.appendChild(r);
+    var pair = kind === 'b' && x2 ? [x, x2] : null, cur = pair && side ? 1 : 0, seg = null, segSub = [], dirEl = null;
+    // 도착 정보는 정류장마다 한 번 물어 두고(방면도 같이 온다) 쪽을 바꿀 때 다시 쓴다. 새로 보기를 누르면 다시 묻는다.
+    //  방면(사용자 2026-11-28): 그 정류장 다음 정류장 이름. 서울은 노선들의 다음 정류장 가운데 가장 많은 것, 그 밖은 TAGO 노선 정보에서.
+    var canArr = function (y) { return y[5] && (y[5] === '11' ? y[6] : y[4]); };
+    var got = [null, null], dirs = ['', ''];
+    var showDir = function () {
+      segSub.forEach(function (sp, k) { sp.textContent = dirs[k] ? dirs[k] + ' 방면' : '걸어서 ' + walkMin(pair[k][1]) + '분'; });
+      if (dirEl) { dirEl.textContent = dirs[cur] ? dirs[cur] + ' 방면' : ''; dirEl.hidden = !dirs[cur]; }
     };
-    var to, arr = null;
-    if (kind === 'b') {
-      to = [x[3] / 1e5, x[2] / 1e5];
-      if (x[6]) row('정류장 번호', x[6]);
-      // 곧 도착하는 버스: 중계 서버가 묻는다(키는 서버에 숨김). 서울은 서울시 정류소정보조회에 정류장 번호로, 그 밖은 국토교통부 TAGO에.
-      if (x[5] && (x[5] === '11' ? x[6] : x[4])) {
-        arr = el('div', 'nsharr');
-        var ahd = el('div', 'ahd'), list = el('div', 'alist');
-        ahd.appendChild(el('h3', null, '곧 도착하는 버스'));
-        var rf = btn(null, null, function () { loadArr(); }); rf.appendChild(document.createTextNode('새로 보기')); ahd.appendChild(rf);
-        arr.appendChild(ahd); arr.appendChild(list);
-        var busColor = function (t) {
-          if (/간선/.test(t)) return '#3d5bf5'; if (/지선/.test(t)) return '#2fa84f'; if (/광역|직행|급행|좌석/.test(t)) return '#e03131';
-          if (/마을/.test(t)) return '#53b332'; if (/순환/.test(t)) return '#f08c00'; if (/공항/.test(t)) return '#1c7ed6'; return '#5c6b7f';
-        };
-        var mins = function (sec) { return sec < 60 ? '곧 도착' : Math.round(sec / 60) + '분'; };
-        var loadArr = function () {
-          list.textContent = ''; list.appendChild(el('div', 'msg', '불러오는 중'));
-          fetch(BUS_API + '?c=' + encodeURIComponent(x[5]) + '&n=' + encodeURIComponent(x[4] || '') + '&a=' + encodeURIComponent(x[6] || ''))
-            .then(function (r) { if (!r.ok) throw new Error('bus'); return r.json(); })
-            .then(function (d) {
-              list.textContent = '';
-              if (d.err) { list.appendChild(el('div', 'msg', '도착 정보를 불러오지 못했어요')); return; }
-              if (!d.a || !d.a.length) { list.appendChild(el('div', 'msg', '지금 곧 도착하는 버스가 없어요')); return; }
-              // 가장 빨리 오는 6개만 먼저, 나머지는 더 보기로 펼친다.
-              d.a.forEach(function (z, k) {
-                var r = el('div', 'rt'), no = el('span', 'no', z[0]); no.style.background = busColor(z[3] || '');
-                if (k >= 6) r.hidden = true;
-                // 서울은 방면(예: 도봉산 방면)을, 그 밖은 다음 차 시간을 적는다.
-                r.appendChild(no); r.appendChild(el('span', 'ds', z[5] ? z[5] + ' 방면' : z[4] ? '다음 ' + mins(z[4]) : (z[3] || '')));
-                var tm = el('span', 'tm'); tm.appendChild(el('b', null, mins(z[1]))); if (z[2]) tm.appendChild(el('span', null, z[2] + '정거장 전'));
-                r.appendChild(tm); list.appendChild(r);
-              });
-              if (d.a.length > 6) {
-                var more = btn('amore', (d.a.length - 6) + '개 더 보기', function () { list.querySelectorAll('.rt').forEach(function (r) { r.hidden = false; }); more.remove(); });
-                list.appendChild(more);
-              }
-            }, function () { list.textContent = ''; list.appendChild(el('div', 'msg', '도착 정보를 불러오지 못했어요')); });
-        };
-        loadArr();
-      }
-    } else {
-      var q = x[3] || {}, fee = { '무료': '무료', '유료': '유료', '혼합': '무료와 유료' }[x[2]];
-      if (fee) sub.appendChild(el('span', 'fee', fee));
-      to = q.x && q.y ? [q.x / 1e5, q.y / 1e5] : null;
-      if (q.f) {
-        var f = q.f;
-        if (!f[1]) row('요금', '무료');
-        else row('요금', '기본 ' + f[0] + '분 ' + fmt(f[1]) + '원', f[2] && f[3] ? f[2] + '분마다 ' + fmt(f[3]) + '원 더' : '');
-      }
-      var hm = function (t) { if (!t) return ''; if (t === '00:00-00:00' || t === '00:00-24:00') return '24시간'; return t.replace('-', ' ~ '); };
-      // 같은 시간인 날은 한 줄로 묶는다(평일, 토요일, 공휴일 08:00 ~ 22:00). 시간이 있으면 운영 요일 줄은 따로 두지 않는다.
-      var groups = [];
-      [['평일', q.w], ['토요일', q.s], ['공휴일', q.h]].forEach(function (z) {
-        if (!z[1]) return;
-        var g = groups.filter(function (y) { return y.t === z[1]; })[0];
-        if (g) g.d.push(z[0]); else groups.push({ t: z[1], d: [z[0]] });
+    var ask = function (k) {
+      var y = pair ? pair[k] : x;
+      got[k] = fetch(BUS_API + '?c=' + encodeURIComponent(y[5]) + '&n=' + encodeURIComponent(y[4] || '') + '&a=' + encodeURIComponent(y[6] || ''))
+        .then(function (r) { if (!r.ok) throw new Error('bus'); return r.json(); })
+        .then(function (d) { if (d.d) { dirs[k] = d.d; showDir(); } return d; });
+      got[k].catch(function () {});
+      return got[k];
+    };
+    if (pair) {
+      seg = el('div', 'nshseg'); seg.setAttribute('role', 'tablist');
+      ['가까운 쪽', '건너편'].forEach(function (t, k) {
+        var sb = btn(null, null, function () { if (cur === k) return; cur = k; fill(); });
+        sb.setAttribute('role', 'tab');
+        sb.appendChild(el('b', null, t)); segSub[k] = el('span', null, ''); sb.appendChild(segSub[k]);
+        seg.appendChild(sb);
       });
-      var gl = groups.map(function (g) { return g.d.join(', ') + ' ' + hm(g.t); });
-      if (gl.length) row('운영 시간', gl[0], gl.slice(1).join(', '));
-      else if (q.d) row('운영 요일', q.d.replace(/\+/g, ', '));
-      if (q.n) row('주차면', fmt(q.n) + '면');
-    }
-    sh.appendChild(sub);
-    if (arr) sh.appendChild(arr);
-    if (rows.firstChild) sh.appendChild(rows);
-    if (to) {
-      var mb = btn('nshmap', null, function () { close(); nearOnMap(i, kind, x[0], to, x[1]); });
-      mb.appendChild(icon('map')); mb.appendChild(document.createTextNode('지도에서 보기'));
-      sh.appendChild(mb);
-    }
+      sh.appendChild(seg);
+      pair.forEach(function (y, k) { if (canArr(y)) ask(k); });
+    } else if (kind === 'b' && canArr(x)) ask(0);
+    var cont = el('div', 'nshcont'); sh.appendChild(cont);
+    var busColor = function (t) {
+      if (/간선/.test(t)) return '#3d5bf5'; if (/지선/.test(t)) return '#2fa84f'; if (/광역|직행|급행|좌석/.test(t)) return '#e03131';
+      if (/마을/.test(t)) return '#53b332'; if (/순환/.test(t)) return '#f08c00'; if (/공항/.test(t)) return '#1c7ed6'; return '#5c6b7f';
+    };
+    var mins = function (sec) { return sec < 60 ? '곧 도착' : Math.round(sec / 60) + '분'; };
+    var fill = function () {
+      var y = pair ? pair[cur] : x, ot = pair ? pair[1 - cur] : null;
+      if (seg) seg.querySelectorAll('button').forEach(function (sb, k) { sb.setAttribute('aria-selected', String(k === cur)); });
+      cont.textContent = '';
+      var sub = el('div', 'nshsub');
+      sub.appendChild(el('span', null, '걸어서 ' + walkMin(y[1]) + '분, ' + nearMeter(y[1])));
+      // 하나뿐인 정류장은 방면을 이 줄에 적는다(둘이면 위 고르는 칸에 있다).
+      dirEl = null;
+      if (kind === 'b' && !pair) { dirEl = el('b', 'dir', ''); sub.appendChild(dirEl); }
+      showDir();
+      var rows = el('div', 'nshrows');
+      var row = function (lb, main, small) {
+        if (!main) return;
+        var r = el('div', 'nshrow'); r.appendChild(el('span', 'lb', lb));
+        var v = el('span', 'v'); v.appendChild(document.createTextNode(main)); if (small) v.appendChild(el('small', null, small));
+        r.appendChild(v); rows.appendChild(r);
+      };
+      var to, arr = null;
+      if (kind === 'b') {
+        to = [y[3] / 1e5, y[2] / 1e5];
+        if (y[6]) row('정류장 번호', y[6]);
+        // 곧 도착하는 버스: 중계 서버가 묻는다(키는 서버에 숨김). 서울은 서울시 정류소정보조회에 정류장 번호로, 그 밖은 국토교통부 TAGO에.
+        if (canArr(y)) {
+          arr = el('div', 'nsharr');
+          var ahd = el('div', 'ahd'), list = el('div', 'alist'), k0 = pair ? cur : 0;
+          ahd.appendChild(el('h3', null, '곧 도착하는 버스'));
+          var rf = btn(null, null, function () { ask(k0); draw(); }); rf.appendChild(document.createTextNode('새로 보기')); ahd.appendChild(rf);
+          arr.appendChild(ahd); arr.appendChild(list);
+          var draw = function () {
+            list.textContent = ''; list.appendChild(el('div', 'msg', '불러오는 중'));
+            (got[k0] || ask(k0)).then(function (d) {
+                if (!list.isConnected) return;   // 그사이 다른 쪽을 골랐다
+                list.textContent = '';
+                if (d.err) { list.appendChild(el('div', 'msg', '도착 정보를 불러오지 못했어요')); return; }
+                if (!d.a || !d.a.length) { list.appendChild(el('div', 'msg', '지금 곧 도착하는 버스가 없어요')); return; }
+                // 가장 빨리 오는 6개만 먼저, 나머지는 더 보기로 펼친다.
+                d.a.forEach(function (z, k) {
+                  var r = el('div', 'rt'), no = el('span', 'no', z[0]); no.style.background = busColor(z[3] || '');
+                  if (k >= 6) r.hidden = true;
+                  // 서울은 노선이 가는 곳(예: 도봉산행)을, 그 밖은 다음 차 시간을 적는다. 방면은 정류장의 다음 정류장이라 노선 줄에는 쓰지 않는다.
+                  r.appendChild(no); r.appendChild(el('span', 'ds', z[5] ? z[5] + '행' : z[4] ? '다음 ' + mins(z[4]) : (z[3] || '')));
+                  var tm = el('span', 'tm'); tm.appendChild(el('b', null, mins(z[1]))); if (z[2]) tm.appendChild(el('span', null, z[2] + '정거장 전'));
+                  r.appendChild(tm); list.appendChild(r);
+                });
+                if (d.a.length > 6) {
+                  var more = btn('amore', (d.a.length - 6) + '개 더 보기', function () { list.querySelectorAll('.rt').forEach(function (r) { r.hidden = false; }); more.remove(); });
+                  list.appendChild(more);
+                }
+              }, function () { if (!list.isConnected) return; list.textContent = ''; list.appendChild(el('div', 'msg', '도착 정보를 불러오지 못했어요')); });
+          };
+          draw();
+        }
+      } else {
+        var q = y[3] || {}, fee = { '무료': '무료', '유료': '유료', '혼합': '무료와 유료' }[y[2]];
+        if (fee) sub.appendChild(el('span', 'fee', fee));
+        to = q.x && q.y ? [q.x / 1e5, q.y / 1e5] : null;
+        if (q.f) {
+          var f = q.f;
+          if (!f[1]) row('요금', '무료');
+          else row('요금', '기본 ' + f[0] + '분 ' + fmt(f[1]) + '원', f[2] && f[3] ? f[2] + '분마다 ' + fmt(f[3]) + '원 더' : '');
+        }
+        var hm = function (t) { if (!t) return ''; if (t === '00:00-00:00' || t === '00:00-24:00') return '24시간'; return t.replace('-', ' ~ '); };
+        // 같은 시간인 날은 한 줄로 묶는다(평일, 토요일, 공휴일 08:00 ~ 22:00). 시간이 있으면 운영 요일 줄은 따로 두지 않는다.
+        var groups = [];
+        [['평일', q.w], ['토요일', q.s], ['공휴일', q.h]].forEach(function (z) {
+          if (!z[1]) return;
+          var g = groups.filter(function (w) { return w.t === z[1]; })[0];
+          if (g) g.d.push(z[0]); else groups.push({ t: z[1], d: [z[0]] });
+        });
+        var gl = groups.map(function (g) { return g.d.join(', ') + ' ' + hm(g.t); });
+        if (gl.length) row('운영 시간', gl[0], gl.slice(1).join(', '));
+        else if (q.d) row('운영 요일', q.d.replace(/\+/g, ', '));
+        if (q.n) row('주차면', fmt(q.n) + '면');
+      }
+      if (sub.firstChild) cont.appendChild(sub);
+      if (arr) cont.appendChild(arr);
+      if (rows.firstChild) cont.appendChild(rows);
+      if (to) {
+        var oto = ot ? [ot[3] / 1e5, ot[2] / 1e5] : null, k0 = cur;
+        var mb = btn('nshmap', null, function () {
+          close();
+          nearOnMap(i, kind, y[0], to, y[1], oto ? { to: oto, label: k0 ? '가까운 쪽' : '건너편', open: function () { nearSheet(i, kind, x, x2, 1 - k0); } } : null, pair ? (k0 ? '건너편' : '가까운 쪽') : '');
+        });
+        mb.appendChild(icon('map')); mb.appendChild(document.createTextNode('지도에서 보기'));
+        cont.appendChild(mb);
+      }
+    };
+    fill();
     // 아래로 끌면 닫힌다.
     var dragOn = false, dy0 = 0, ddy = 0;
     sh.addEventListener('pointerdown', function (e) {
@@ -9826,18 +9886,30 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     requestAnimationFrame(function () { o.classList.add('on'); });
   }
   // 지도에서 보기: 카페에서 정류장(주차장)까지 걷는 길을 지도에 그리고, 그 자리에 표시를 둔다. 걷는 길 판의 뒤로를 누르면 카페 카드로 돌아간다.
-  var nearMk = null;
-  function nearOnMap(i, kind, name, to, meters) {
+  //  other: 건너편 정류장 { to, label, open }. 흐린 표시로 같이 두고, 누르면 그 정류장 창을 연다.
+  var nearMk = null, nearMk2 = null;
+  function nearOnMap(i, kind, name, to, meters, other, sideLabel) {
     var from = [D.lng[i] / 1e5, D.lat[i] / 1e5];
     var show = function (c, dist, src) {
       drawRoute(c);
       if (nearMk) nearMk.remove();
-      var pin = el('div', 'nearpin'), ic = el('span', 'ic'); ic.style.background = kind === 'b' ? '#2f9e44' : '#2f6fdf';
+      if (nearMk2) { nearMk2.remove(); nearMk2 = null; }
+      var col = kind === 'b' ? '#2f9e44' : '#2f6fdf';
+      var pin = el('div', 'nearpin'), ic = el('span', 'ic'); ic.style.background = col;
       ic.appendChild(icon(kind === 'b' ? 'bus' : 'park')); pin.appendChild(ic); pin.appendChild(el('b', null, name));
       nearMk = new maplibregl.Marker({ element: pin, anchor: 'left', offset: [-15, 0] }).setLngLat(to).addTo(map);
-      routeInfo = { i: i, dist: Math.round(dist), min: walkMin(dist), src: src, to: { name: name, kind: kind } };
+      var pts = c.slice();
+      if (other) {
+        var p2 = document.createElement('button'); p2.type = 'button'; p2.className = 'nearpin alt';
+        var ic2 = el('span', 'ic'); ic2.appendChild(icon('bus')); p2.appendChild(ic2); p2.appendChild(el('b', null, other.label));
+        p2.setAttribute('aria-label', other.label + ' 정류장 보기');
+        p2.addEventListener('click', function (e) { e.stopPropagation(); other.open(); });
+        nearMk2 = new maplibregl.Marker({ element: p2, anchor: 'left', offset: [-15, 0] }).setLngLat(other.to).addTo(map);
+        pts.push(other.to);
+      }
+      routeInfo = { i: i, dist: Math.round(dist), min: walkMin(dist), src: src, to: { name: name + (sideLabel ? '(' + sideLabel + ')' : ''), kind: kind } };
       var x0 = 180, y0 = 90, x1 = -180, y1 = -90;
-      c.forEach(function (q) { if (q[0] < x0) x0 = q[0]; if (q[0] > x1) x1 = q[0]; if (q[1] < y0) y0 = q[1]; if (q[1] > y1) y1 = q[1]; });
+      pts.forEach(function (q) { if (q[0] < x0) x0 = q[0]; if (q[0] > x1) x1 = q[0]; if (q[1] < y0) y0 = q[1]; if (q[1] > y1) y1 = q[1]; });
       setFollow(false);
       var pad = mobile.matches ? { top: 130, bottom: Math.round(window.innerHeight * .36), left: 60, right: 140 } : { top: 96, bottom: 70, left: 420, right: 160 };
       map.fitBounds([[x0, y0], [x1, y1]], { padding: pad, maxZoom: 18, duration: 600 });
@@ -10153,7 +10225,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       if (!x) return;
       if (x.b || x.p) {
         near.appendChild(el('h2', null, '근처'));
-        if (x.b) line(near, 'bus', '버스정류장', x.b[0], meter(x.b[1]), function () { nearSheet(i, 'b', x.b); });
+        if (x.b) line(near, 'bus', '버스정류장', x.b[0], meter(x.b[1]), function () { nearSheet(i, 'b', x.b, x.b2); });
         if (x.p) {
           var pv = document.createElement('span'), fee = { '무료': '무료', '유료': '유료', '혼합': '무료와 유료' }[x.p[2]];
           pv.appendChild(document.createTextNode(x.p[0])); if (fee) pv.appendChild(el('em', 'fee', fee));
