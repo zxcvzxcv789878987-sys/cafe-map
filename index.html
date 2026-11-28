@@ -10551,7 +10551,13 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   if (window.visualViewport) { visualViewport.addEventListener('resize', syncSearchBox); visualViewport.addEventListener('scroll', syncSearchBox); }
   window.addEventListener('resize', syncSearchBox); syncSearchBox();
   // 검색창을 누르면 아무것도 치기 전에도 탭이 보이는 판(지금 화면)이 열린다(사용자 2026-11-28).
-  $('q').addEventListener('focus', function () { syncSearchBox(); legalLoad(); if (P.kind !== 'search') openPanel('search'); else if (panel.getAttribute('data-snap') === 'half') setSnap('full', true); });
+  //  반만 열린 지금 화면(이 화면 N곳)에서 검색창을 누르면, 아래에서 올라온 전체 높이 판이 키보드에 가려졌다(사용자 2026-11-28).
+  //  그래서 누르는 순간 검색창 바로 아래에서 키보드 위까지만 오는 검색 판으로 바꾸고, 그 안에서 스크롤한다.
+  $('q').addEventListener('focus', function () {
+    syncSearchBox(); legalLoad();
+    if (P.kind !== 'search') { openPanel('search'); return; }
+    if (hereHalf) { hereHalf = false; panel.removeAttribute('data-snap'); panel.style.removeProperty('--snapoff'); panel.style.transition = 'none'; panel.style.transform = ''; panel.classList.remove('rise'); void panel.offsetWidth; panel.classList.add('rise'); renderPanel(); }
+  });
   $('qClear').addEventListener('click', function () { $('q').value = ''; this.hidden = true; if (P.kind === 'search') renderPanel(); $('q').focus(); });
 
   // ----- 지역 고르기 -----
