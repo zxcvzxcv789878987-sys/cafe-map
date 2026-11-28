@@ -670,6 +670,8 @@ button.nearpin { pointer-events: auto; border: 0; background: none; padding: 0; 
 .subdir .bdg.exp { color: #c2255c; background: #fff0f6; }
 .subdir .alist { max-height: none; }
 .subdir .sfe { margin-top: 6px; font-size: 13px; color: var(--ink-2); }
+/* 위 방면(첫차, 막차 줄까지)과 아래 방면 사이는 조금 굵은 회색 줄로 나눈다(사용자 2026-11-28). 이름과 첫 방면 사이는 그대로 얇게 */
+.subdir + .subdir { margin-top: 16px; padding-top: 14px; border-top: 4px solid var(--line); }
 .ssrc { margin-top: 12px; font-size: 11.5px; color: var(--ink-2); }
 .nearpin.alt { pointer-events: auto; border: 0; background: none; padding: 0; cursor: pointer; }
 .nearpin.alt .ic { background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .2); border: 2px solid #2f9e44; box-sizing: border-box; }
