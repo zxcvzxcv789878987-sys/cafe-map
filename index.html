@@ -559,20 +559,21 @@ button.oli { width: 100%; padding: 11px 0; margin: 0; background: none; color: v
 .rshd .rtt span { font-size: 12.5px; color: var(--ink-2); }
 .rvl { position: relative; margin-top: 12px; padding-top: 6px; border-top: 1px solid var(--line); max-height: 52vh; overflow-y: auto; overscroll-behavior: contain; --rc: #6a5ae0; }
 .rvl .msg { padding: 14px 0 4px; font-size: 14px; color: var(--ink-2); }
-.rvl .rs { position: relative; display: flex; align-items: center; min-height: 40px; padding-left: 40px; }
-.rvl .rs .ln { position: absolute; left: 17px; top: 0; bottom: 0; width: 4px; background: var(--rc); opacity: .35; }
+/* 세로 노선(사용자 2026-11-28: 차량 번호와 남은 시간이 정류장 이름을 가린다): 왼쪽 78px 칸은 버스 정보, 그 오른쪽에 노선 줄, 그 오른쪽에 정류장 이름 */
+.rvl .rs { position: relative; display: flex; align-items: center; min-height: 40px; padding-left: 116px; }
+.rvl .rs .ln { position: absolute; left: 90px; top: 0; bottom: 0; width: 4px; background: var(--rc); opacity: .35; }
 .rvl .rs.first .ln { top: 50%; }
 .rvl .rs.last .ln { bottom: 50%; }
-.rvl .rs .dt { position: absolute; left: 13px; top: 50%; width: 12px; height: 12px; margin-top: -6px; border-radius: 50%; background: var(--surface); border: 2px solid var(--rc); box-sizing: border-box; }
+.rvl .rs .dt { position: absolute; left: 86px; top: 50%; width: 12px; height: 12px; margin-top: -6px; border-radius: 50%; background: var(--surface); border: 2px solid var(--rc); box-sizing: border-box; }
 .rvl .rs .nm { flex: 1; min-width: 0; font-size: 14.5px; color: var(--ink); }
 .rvl .rs .nm em { font-style: normal; margin-left: 6px; font-size: 11.5px; font-weight: 700; color: var(--ink-2); }
 .rvl .rs.cur .nm { font-weight: 800; }   /* 이 정류장 줄. 이름을 me로 하면 내 위치 표시(.me, 폭 70px)와 겹쳐 글자가 세로로 쪼개진다 */
-.rvl .rs.cur .dt { width: 18px; height: 18px; left: 10px; margin-top: -9px; background: var(--rc); border: 3px solid var(--surface); box-shadow: 0 0 0 2px var(--rc); }
+.rvl .rs.cur .dt { width: 18px; height: 18px; left: 83px; margin-top: -9px; background: var(--rc); border: 3px solid var(--surface); box-shadow: 0 0 0 2px var(--rc); }
 /* 노선 창의 버스(실시간): 선 위 버스 그림, 오른쪽에 차량 번호와 남은 시간 */
-.rvl .rvbus { position: absolute; left: 6px; width: 26px; height: 26px; z-index: 2; pointer-events: none; }
-.rvl .rvtag { position: absolute; right: 0; z-index: 2; transform: translateY(-50%); display: flex; align-items: baseline; gap: 6px; padding: 2px 7px; border-radius: 8px; background: var(--surface); box-shadow: 0 1px 4px rgba(0, 0, 0, .18); pointer-events: none; white-space: nowrap; }
-.rvl .rvtag small { font-size: 11.5px; font-weight: 600; color: var(--ink-2); }
-.rvl .rvtag b { font-size: 13px; font-weight: 800; color: #d6336c; font-variant-numeric: tabular-nums; }
+.rvl .rvbus { position: absolute; left: 79px; width: 26px; height: 26px; z-index: 2; pointer-events: none; }
+.rvl .rvtag { position: absolute; left: 0; width: 74px; z-index: 2; transform: translateY(-50%); display: flex; flex-direction: column; align-items: flex-end; line-height: 1.25; pointer-events: none; white-space: nowrap; }
+.rvl .rvtag small { font-size: 10.5px; font-weight: 600; color: var(--ink-2); letter-spacing: -.02em; }
+.rvl .rvtag b { font-size: 12.5px; font-weight: 800; color: #d6336c; font-variant-numeric: tabular-nums; }
 .rvl .rvtag b:empty { display: none; }
 .rsched { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13.5px; }
 .rsched i { font-style: normal; color: var(--ink-2); margin-right: 5px; }
@@ -589,7 +590,8 @@ body.broute-on #navAll, body.broute-on #count, body.broute-on #nogo { display: n
 /* 지도로 노선보기의 버스(실시간 위치) */
 /* position을 주면 안 된다: 지도 표시(.maplibregl-marker)의 position: absolute를 덮어써 버스들이 세로로 쌓이고 확대할 때마다 자리가 바뀐다 */
 .rbus { width: 26px; height: 26px; pointer-events: none; }
-.rbusmk { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .3); box-sizing: border-box; }
+.rbusfan { position: absolute; left: -17px; top: -17px; width: 60px; height: 60px; opacity: .32; pointer-events: none; }
+.rbusmk { position: relative; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .3); box-sizing: border-box; }
 .rbuslb { display: none; position: absolute; left: 50%; bottom: calc(100% + 3px); transform: translateX(-50%); padding: 1px 6px; border-radius: 6px; background: #fff; color: #333d4b; font-size: 11px; font-weight: 700; white-space: nowrap; box-shadow: 0 1px 4px rgba(0, 0, 0, .25); }
 body.rbus-lab .rbuslb { display: block; }
 .rbusmk svg.i { width: 15px; height: 15px; color: #fff; }
@@ -7157,7 +7159,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
             var m = mk[k];
             if (!m) {
               m = mk[k] = { ic: busMark(col, '', 'rvbus'), tag: el('div', 'rvtag') };
-              m.pl = el('small', null, o.plate); m.tm = el('b', null, ''); m.tag.appendChild(m.pl); m.tag.appendChild(m.tm);
+              m.pl = el('small', null, o.plate); m.tm = el('b', null, ''); m.tag.appendChild(m.tm); m.tag.appendChild(m.pl);   // 남은 시간 위, 차량 번호 아래
               list.appendChild(m.ic); list.appendChild(m.tag);
             }
             m.ic.style.top = (yy - 13) + 'px'; m.tag.style.top = yy + 'px';
@@ -7209,7 +7211,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (routeBar) { routeBar.remove(); routeBar = null; }
     document.body.classList.remove('broute-on');
     routeBusClear();
-    ['br-stop-name', 'br-stop-me', 'br-stop', 'br-line', 'br-edge'].forEach(function (id) { if (map.getLayer(id)) map.removeLayer(id); });
+    ['br-stop-name', 'br-stop-me', 'br-stop', 'br-arrow', 'br-line', 'br-edge'].forEach(function (id) { if (map.getLayer(id)) map.removeLayer(id); });
     ['br-line', 'br-stop'].forEach(function (id) { if (map.getSource(id)) map.removeSource(id); });
     if (map.getLayer('lm-bus')) map.setLayoutProperty('lm-bus', 'visibility', 'visible');
     if (was) requestDraw();   // 숨겼던 카페와 경계를 다시 그린다
@@ -7289,8 +7291,15 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     });
   }
   // 버스 표시(지도와 노선 창 같은 모양): 동그라미 버스 그림, 위에 차량 번호(사용자 2026-11-28: 노선 번호가 아니라 차량 번호).
-  function busMark(col, plate, cls) {
-    var e = el('div', cls), ic = el('span', 'rbusmk'); ic.style.background = col; ic.appendChild(icon('bus')); e.appendChild(ic);
+  //  fan: 가는 쪽을 가리키는 부채꼴(지도에서만, 사용자 2026-11-28). 위쪽(0도)을 보게 그려 두고 돌린다.
+  function busMark(col, plate, cls, fan) {
+    var e = el('div', cls);
+    if (fan) {
+      var fs = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); fs.setAttribute('class', 'rbusfan'); fs.setAttribute('viewBox', '-30 -30 60 60');
+      var fp = document.createElementNS('http://www.w3.org/2000/svg', 'path'); fp.setAttribute('d', 'M0 0 L-12.6 -27 A30 30 0 0 1 12.6 -27 Z'); fp.setAttribute('fill', col);
+      fs.appendChild(fp); e.appendChild(fs); e._fan = fs;
+    }
+    var ic = el('span', 'rbusmk'); ic.style.background = col; ic.appendChild(icon('bus')); e.appendChild(ic);
     if (plate) e.appendChild(el('b', 'rbuslb', plate));
     return e;
   }
@@ -7298,7 +7307,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var T = routeGeo || (routeGeo = trackMake(d));
     trackUpdate(T, v);
     Object.keys(T.B).forEach(function (k) {
-      if (!routeBusMk[k]) routeBusMk[k] = { m: new maplibregl.Marker({ element: busMark(col, T.B[k].plate, 'rbus') }).setLngLat(T.G.at(T.B[k].pos)).addTo(map), at: -1 };
+      if (!routeBusMk[k]) { var be = busMark(col, T.B[k].plate, 'rbus', true); routeBusMk[k] = { m: new maplibregl.Marker({ element: be }).setLngLat(T.G.at(T.B[k].pos)).addTo(map), at: -1, fan: be._fan, deg: null }; }
     });
     Object.keys(routeBusMk).forEach(function (k) { if (!T.B[k]) { routeBusMk[k].m.remove(); delete routeBusMk[k]; } });
     if (!routeBusRaf) {
@@ -7308,7 +7317,18 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         trackStep(routeGeo, performance.now());
         Object.keys(routeBusMk).forEach(function (k) {
           var o = routeGeo.B[k], mk = routeBusMk[k];
-          if (o && Math.abs(o.pos - mk.at) > .05) { mk.at = o.pos; mk.m.setLngLat(routeGeo.G.at(o.pos)); }
+          if (!o) return;
+          if (Math.abs(o.pos - mk.at) > .05) { mk.at = o.pos; mk.m.setLngLat(routeGeo.G.at(o.pos)); }
+          // 부채꼴: 지금 자리와 20m 앞을 화면에 비춰 그 쪽으로 돌린다(지도를 돌리거나 기울여도 맞게).
+          var a1 = map.project(routeGeo.G.at(o.pos)), a2 = map.project(routeGeo.G.at(o.pos + 20));
+          if (Math.abs(a2.x - a1.x) + Math.abs(a2.y - a1.y) > .3) {
+            var dg = Math.round(Math.atan2(a2.x - a1.x, a1.y - a2.y) * 180 / Math.PI);
+            if (dg !== mk.deg) { mk.deg = dg; mk.fan.style.transform = 'rotate(' + dg + 'deg)'; }
+            // 노선 선을 가는 방향 오른쪽으로 비켜 그린 만큼(line-offset과 같은 값) 버스도 옮긴다.
+            var zz = map.getZoom(), off = zz <= 11 ? 0 : zz <= 13 ? (zz - 11) : zz <= 16 ? 2 + (zz - 13) * 2.5 / 3 : 4.5;
+            var dx = a2.x - a1.x, dy = a2.y - a1.y, dl = Math.hypot(dx, dy), ox = Math.round(-dy / dl * off * 10) / 10, oy = Math.round(dx / dl * off * 10) / 10;
+            if (ox !== mk.ox || oy !== mk.oy) { mk.ox = ox; mk.oy = oy; mk.m.setOffset([ox, oy]); }
+          }
         });
         routeBusRaf = requestAnimationFrame(loop);
       };
@@ -7320,8 +7340,17 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var line = (d.l || []).map(function (q) { return [q[0] / 1e5, q[1] / 1e5]; }), me = d.me || z[10] || 0;
     map.addSource('br-line', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: line } } });
     map.addSource('br-stop', { type: 'geojson', data: { type: 'FeatureCollection', features: d.s.map(function (q) { return { type: 'Feature', properties: { me: q[3] === me ? 1 : 0, n: q[0] }, geometry: { type: 'Point', coordinates: [q[2] / 1e5, q[1] / 1e5] } }; }) } });
-    map.addLayer({ id: 'br-edge', type: 'line', source: 'br-line', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 9 } });
-    map.addLayer({ id: 'br-line', type: 'line', source: 'br-line', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': col, 'line-width': 5 } });
+    map.addLayer({ id: 'br-edge', type: 'line', source: 'br-line', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 11, 'line-offset': ['interpolate', ['linear'], ['zoom'], 11, 0, 13, 2, 16, 4.5] } });
+    map.addLayer({ id: 'br-line', type: 'line', source: 'br-line', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': col, 'line-width': 7, 'line-offset': ['interpolate', ['linear'], ['zoom'], 11, 0, 13, 2, 16, 4.5] } });
+    // 가는 방향(사용자 2026-11-28): 노선 안에 흰 꺾쇠(>)를 일정한 간격으로 찍는다. 선의 점 순서가 버스가 가는 순서다.
+    //  선은 가는 방향의 오른쪽으로 조금 비켜 그린다(오른쪽 통행). 같은 길을 오가는 노선이 나란한 두 줄로 갈라져 꺾쇠가 겹치지 않는다.
+    if (!map.hasImage('br-arrow')) {
+      var cv = document.createElement('canvas'); cv.width = cv.height = 20;
+      var g2 = cv.getContext('2d'); g2.strokeStyle = '#ffffff'; g2.lineWidth = 3.2; g2.lineCap = 'round'; g2.lineJoin = 'round';
+      g2.beginPath(); g2.moveTo(7.5, 4.5); g2.lineTo(13, 10); g2.lineTo(7.5, 15.5); g2.stroke();
+      map.addImage('br-arrow', g2.getImageData(0, 0, 20, 20), { pixelRatio: 2 });
+    }
+    map.addLayer({ id: 'br-arrow', type: 'symbol', source: 'br-line', layout: { 'symbol-placement': 'line', 'symbol-spacing': 70, 'icon-image': 'br-arrow', 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-rotation-alignment': 'map', 'icon-offset': ['interpolate', ['linear'], ['zoom'], 11, ['literal', [0, 0]], 13, ['literal', [0, 2]], 16, ['literal', [0, 4.5]]] } });
     map.addLayer({ id: 'br-stop', type: 'circle', source: 'br-stop', filter: ['==', ['get', 'me'], 0], paint: { 'circle-radius': 3.6, 'circle-color': '#ffffff', 'circle-stroke-color': col, 'circle-stroke-width': 2 } });
     map.addLayer({ id: 'br-stop-me', type: 'circle', source: 'br-stop', filter: ['==', ['get', 'me'], 1], paint: { 'circle-radius': 7, 'circle-color': col, 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 3 } });
     // 정류장 이름: 카페 이름처럼 확대하면 보인다(14부터). 누른 정류장은 굵게 먼저, 겹치면 나머지가 숨는다.
