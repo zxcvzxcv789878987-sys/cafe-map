@@ -675,8 +675,8 @@ button.nearpin { pointer-events: auto; border: 0; background: none; padding: 0; 
 .subdir .alist { max-height: none; }
 .subdir .sfe { margin-top: 6px; font-size: 13px; color: var(--ink-2); }
 /* 그다음 열차(사용자 2026-11-28): 방면 줄 오른쪽 > 단추, 누르면 그 방향의 오늘 남은 열차 목록(뒤로 단추와 제목) */
-.subdir .ahd .smore { padding: 6px; margin: -6px -8px -6px 0; border: 0; background: none; color: var(--ink-2); }
-.subdir .ahd .smore svg.i { width: 18px; height: 18px; }
+.subdir .smore { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border: 0; border-top: 1px solid var(--line); background: none; font-size: 14px; font-weight: 700; color: var(--ink); }
+.subdir .smore svg.i { width: 18px; height: 18px; color: var(--ink-2); }
 .smhd { margin-top: 14px; display: flex; align-items: center; gap: 4px; }
 .smhd h3 { margin: 0; font-size: 16px; font-weight: 800; }
 .smhd .smback { padding: 6px; margin-left: -8px; border: 0; background: none; color: var(--ink); }
@@ -7612,10 +7612,6 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       gs.forEach(function (g) {
         var blk = el('div', 'nsharr subdir'), h = el('div', 'ahd');
         h.appendChild(el('h3', null, g.h || (g.k === 'U' ? '상행' : '하행')));
-        if (g.m && g.m.length) {
-          var mo = btn('smore', null, function () { more = g.k; draw(); sh.scrollTop = 0; });
-          mo.setAttribute('aria-label', '그다음 열차 보기'); mo.appendChild(icon('right')); h.appendChild(mo);
-        }
         blk.appendChild(h);
         var list = el('div', 'alist');
         if (!g.t || !g.t.length) list.appendChild(el('div', 'msg', g.end ? '오늘 운행이 끝났어요' : g.nt ? '오늘 시간표 정보가 없어요' : '곧 오는 열차 정보가 없어요'));
@@ -7635,6 +7631,12 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
           r.appendChild(tm); list.appendChild(r);
         });
         blk.appendChild(list);
+        // 그다음 열차는 가까운 두 대 바로 아래 줄에서 > 로 연다(사용자 2026-11-28: 위에 두면 순서가 헷갈린다).
+        if (g.m && g.m.length) {
+          var mo = btn('smore', null, function () { more = g.k; draw(); sh.scrollTop = 0; });
+          mo.appendChild(el('span', null, '그다음 열차 ' + g.m.length + '대')); mo.appendChild(icon('right'));
+          blk.appendChild(mo);
+        }
         if (g.f) blk.appendChild(el('div', 'sfe', '첫차 ' + g.f + ', 막차 ' + g.e + (g.et ? '(' + g.et + '행)' : '')));
         box.appendChild(blk);
       });
