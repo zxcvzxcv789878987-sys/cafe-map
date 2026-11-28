@@ -153,6 +153,14 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 /* 콘센트 기록이 있는 카페: 플러그 그림에 초록 동그라미를 두른다(지도 점의 초록 표시와 같은 색, 사용자 2026-11-27) */
 .row .tag { flex: none; color: var(--ok); display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--ok); box-sizing: border-box; }
 .row .tag svg.i { width: 16px; height: 16px; }
+/* 검색 결과 탭(카페, 지역, 정류장, 노선): 밑줄 탭 */
+.stabs { flex: none; display: flex; gap: 20px; padding: 0 16px; border-bottom: 1px solid var(--line); }
+.stabs button { border: 0; background: none; padding: 10px 0 9px; margin-bottom: -1px; border-bottom: 2.5px solid transparent; font-size: 15px; font-weight: 700; color: var(--ink-2); display: inline-flex; align-items: baseline; gap: 4px; }
+.stabs button small { font-size: 12.5px; font-weight: 700; color: var(--ink-3); }
+.stabs button.zero { color: var(--ink-3); }
+.stabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+.stabs button[aria-selected="true"] small { color: var(--ink-2); }
+.row .rno { flex: none; min-width: 44px; height: 26px; padding: 0 8px; box-sizing: border-box; border-radius: 7px; display: grid; place-items: center; color: #fff; font-size: 13.5px; font-weight: 800; white-space: nowrap; }
 .sec { padding: 12px 16px 4px; font-size: 12px; font-weight: 650; color: var(--ink-3); letter-spacing: .03em; }
 .note { margin: 0; padding: 8px 16px 10px; font-size: 12.5px; color: var(--ink-3); }
 .ask { margin: 2px 14px 8px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--ink-2); }
@@ -7055,6 +7063,13 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   }
   // 지도의 정류장 표시를 누르면 곧바로 그 정류장의 곧 도착하는 버스 창을 연다(건너편이 있으면 고르는 칸도).
   // 도착 정보 받기. 같은 정류장은 15초 안에 다시 받지 않고, 지도에서 정류장에 손가락이 닿는 순간부터 미리 받는다(사용자: 누르면 바로 보여야 한다).
+  // 버스 종류별 색(정류장 창, 노선 창, 노선 검색이 같이 쓴다).
+  function busColorOf(t) {
+    if (/간선/.test(t)) return '#3d5bf5'; if (/지선/.test(t)) return '#2fa84f'; if (/광역|직행|급행|좌석/.test(t)) return '#e03131';
+    // 일반, 마을버스는 카카오맵이 쓰는 색(청록, 초록)으로 칠한다(사용자 2026-11-28).
+    if (/일반/.test(t)) return '#4fa8bd';
+    if (/마을/.test(t)) return '#61ad26'; if (/순환/.test(t)) return '#f08c00'; if (/공항/.test(t)) return '#1c7ed6'; return '#5c6b7f';
+  }
   var busPre = {};
   function busFetch(y, fresh) {
     var key = y[5] + '/' + (y[4] || '') + '/' + (y[6] || ''), c = busPre[key];
@@ -7144,7 +7159,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
             if (a) arr = { t1: a[1], t2: a[4] || -1, st: a[2] || 0, t0: dd.t0 };
           }, function () {});
         };
-        askArr(false);
+        var hasStop = !!(y[4] || y[6]);   // 검색에서 연 노선은 누른 정류장이 없다(남은 시간 없음)
+        if (hasStop) askArr(false);
         var mmss = function (sec) { sec = Math.floor(sec); return sec <= 0 ? '곧 도착' : sec < 60 ? sec + '초' : Math.floor(sec / 60) + '분 ' + (sec % 60) + '초'; };
         var lastTxt = 0;
         var frame = function () {
@@ -7186,7 +7202,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         var tick = setInterval(function () {
           if (!list.isConnected) { clearInterval(tick); return; }
           fetch(rq + '&p=1').then(function (r) { return r.ok ? r.json() : null; }).then(function (e) { if (e && e.v) trackUpdate(T, e.v); }, function () {});
-          askArr(true);
+          if (hasStop) askArr(true);
         }, 15000);
       })
       .catch(function () { if (!list.isConnected) return; list.textContent = ''; list.appendChild(el('div', 'msg', '노선 정보를 불러오지 못했어요')); });
@@ -7425,6 +7441,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   var closeTimer = 0;
   function openPanel(kind, anchor) {
     var was = P.kind;
+    if (kind === 'search' && was !== 'search' && !searchKeep) { searchTab = 'cafe'; searchTabUser = false; }   // 검색 판을 새로 열면 카페 탭부터(노선 창에서 뒤로 오면 보던 탭)
+    searchKeep = false;
     P.kind = kind; P.anchor = anchor || null; eggIdleArm();
     if (kind === 'detail' && P.cafe >= 0) eggCardOpen(P.cafe);
     lift = 0;
@@ -9303,12 +9321,15 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     }
     h.appendChild(closeBtn());
     panel.appendChild(h); panel.appendChild(sc);
-    // 찜한 정류장은 찜 목록 맨 위에(사용자 2026-11-28).
-    if (wantOnly && busFavs.length) {
+    // 찜 목록은 카페가 맨 위, 찜한 정류장은 그 아래(사용자 2026-11-28: 카페가 최상단이어야 한다).
+    var favStops = function () {
+      if (!wantOnly || !busFavs.length) return;
       sc.appendChild(el('div', 'sec', '찜한 정류장 ' + fmt(busFavs.length) + '곳'));
       busFavs.forEach(function (f) { sc.appendChild(busFavRow(f)); });
-      if (cnt) sc.appendChild(el('div', 'sec', '찜한 카페 ' + fmt(cnt) + '곳'));
-      else return;
+    };
+    if (wantOnly && busFavs.length) {
+      if (!cnt) { favStops(); return; }
+      sc.appendChild(el('div', 'sec', '찜한 카페 ' + fmt(cnt) + '곳'));
     }
     if (wantOnly && !cnt) {
       var e0 = el('div', 'empty'); e0.appendChild(el('b', null, '아직 찜한 곳이 없어요')); e0.appendChild(el('span', null, '카페 카드나 정류장 창의 하트를 누르면 여기에 모여요.'));
@@ -9347,6 +9368,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     else arr.sort(function (p, q) { return (mx[p] - cx) * (mx[p] - cx) + (my[p] - cy) * (my[p] - cy) - (mx[q] - cx) * (mx[q] - cx) - (my[q] - cy) * (my[q] - cy); });
     arr.slice(0, wl ? arr.length : 60).forEach(function (i) { sc.appendChild(cafeRow(i, wantOnly, 'list')); });
     if (!wl && arr.length > 60) sc.appendChild(el('p', 'note', (sortNow === 'size' ? '넓은' : '내 위치에서 가까운') + ' 60곳이에요. 지도를 확대하면 더 좁혀져요.'));
+    favStops();
   }
 
   // ----- 법정동, 법정리 이름으로 찾기 -----
@@ -9482,14 +9504,66 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     return row;
   }
 
+  // ----- 노선 번호 검색(2026-11-28 사용자: 검색에서 버스 노선 번호로도) -----
+  // 중계 서버 /routes가 지도 가운데 도시의 노선을 찾는다(수도권은 서울과 경기를 같이). 도시는 지도 가운데 둘레 정류장의 도시 코드로 정한다.
+  //  한 줄: [번호, 노선 아이디, 종류, 기점, 종점, 지역, 도시 코드]
+  var routeQ = {}, routeQWait = {};
+  function centerCity() {
+    var ct = map.getCenter(), d = .02, keys = busKeys(ct.lng - d, ct.lat - d, ct.lng + d, ct.lat + d), cnt = {}, best = '', bn = 0;
+    keys.forEach(function (k) { (busTiles[k] || []).forEach(function (s) { cnt[s[4]] = (cnt[s[4]] || 0) + 1; }); });
+    Object.keys(cnt).forEach(function (c) { if (cnt[c] > bn) { bn = cnt[c]; best = c; } });
+    if (!best && keys.some(function (k) { return !busTiles[k]; })) busLoad(keys, function () { if (P.kind === 'search') renderPanel(); });
+    return best;
+  }
+  function routeFind(q) {
+    if (!/\d/.test(q) || q.length > 10 || !/^[0-9a-z가-힣-]+$/i.test(q)) return [];
+    var c = centerCity(), key = c + '/' + q;
+    if (routeQ[key]) return routeQ[key];
+    if (!routeQWait[key]) routeQWait[key] = fetch(BUS_API.replace(/\/bus$/, '/routes') + '?q=' + encodeURIComponent(q) + '&c=' + encodeURIComponent(c))
+      .then(function (r) { return r.ok ? r.json() : { r: [] }; }).catch(function () { return { r: [] }; })
+      .then(function (v) { routeQ[key] = v.r || []; delete routeQWait[key]; if (P.kind === 'search') renderPanel(); });
+    return null;
+  }
+  // 똑같은 번호를 먼저, 그 안에서 지금 보는 지역(예: 경기 수원시 팔달구)에 든 노선을 먼저.
+  function routeSortLocal(list, q) {
+    // 지금 지역: 고른 지역, 없으면 지도 가운데에서 가장 가까운 카페의 주소(예: 경기 수원시 권선구)
+    var here = S.reg >= 0 ? regPath(S.reg) : '';
+    if (!here && N) {
+      var ct = map.getCenter(), cx = (ct.lng + 180) / 360, cy = mercY(ct.lat), bk = -1, bd = Infinity;
+      for (var k = 0; k < N; k++) { var dd = (mx[k] - cx) * (mx[k] - cx) + (my[k] - cy) * (my[k] - cy); if (dd < bd) { bd = dd; bk = k; } }
+      if (bk >= 0) here = regPath(dongReg[D.dongOf[bk]]);
+    }
+    // x[7]: 서버가 지도 가운데 도시의 노선이라고 표시한 것(1)
+    var loc = function (x) { return x[7] === 1 || (here && x[5] && x[5].split(',').some(function (w) { return w && here.indexOf(w) >= 0; })) ? 0 : 1; };
+    var exact = function (x) { return x[0].toLowerCase() === q ? 0 : 1; };
+    return list.slice().sort(function (a, b) { return exact(a) - exact(b) || loc(a) - loc(b); });
+  }
+  function routeRow(x) {
+    var row = btn('row rrow'), body = el('span', 'body'), no = el('span', 'rno', x[0]); no.style.background = busColorOf(x[2]);
+    row.appendChild(no);
+    body.appendChild(el('span', 'name', x[3] && x[4] ? x[3] + ' ↔ ' + x[4] : x[4] || x[3] || x[0] + '번'));
+    body.appendChild(el('span', 'meta', [x[5], x[2]].filter(Boolean).join(', ')));
+    row.appendChild(body);
+    // 누르면 노선 창(정류장 없이). 뒤로는 검색 결과로 돌아간다.
+    row.addEventListener('click', function () {
+      var z = [x[0], -1, 0, x[2], 0, x[4], '', '', null, x[1], 0], y = ['', 0, 0, 0, '', x[6], ''];
+      $('q').blur(); closePanel();
+      routeSheet(z, y, busColorOf(x[2]), function () {
+        var s0 = $('nsheet'); if (s0) { s0.classList.remove('on'); document.body.classList.remove('osh-on'); setTimeout(function () { s0.remove(); }, 230); }
+        searchKeep = true; openPanel('search');
+      });
+    });
+    return row;
+  }
+
   // ----- 검색 -----
-  var flat = null, qTimer = 0;
+  // 결과는 탭 넷(카페, 지역, 정류장, 노선)으로 나눠 본다(사용자 2026-11-28). 처음에는 카페 탭, 카페가 없으면 결과가 있는 첫 탭.
+  //  탭을 직접 누르면 검색 판을 닫을 때까지 그 탭을 지킨다.
+  var flat = null, qTimer = 0, searchTab = 'cafe', searchTabUser = false, searchKeep = false;
   function renderSearch() {
-    var words = $('q').value.toLowerCase().split(/\s+/).filter(Boolean), k, l, w, ok;
-    var h = head('검색 결과'), sc = el('div', 'scroll'); h.appendChild(closeBtn());
-    panel.appendChild(h); panel.appendChild(sc);
+    var words = $('q').value.toLowerCase().split(/\s+/).filter(Boolean), k, w, ok;
+    var h = head('검색 결과'); h.appendChild(closeBtn());
     var joined = words.join(''), regs = [], eggWord = joined === '이스터에그' || joined === 'easteregg';
-    if (eggWord) eggSearchWord(sc);
     for (k = 0; k < NR; k++) {
       var nm = regPath(k).toLowerCase(); ok = true;
       for (w = 0; w < words.length; w++) if (nm.indexOf(words[w]) < 0) { ok = false; break; }
@@ -9499,22 +9573,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     regs.sort(function (p, q) { return regChain(p).length - regChain(q).length || rCnt[q] - rCnt[p]; });
     var lg = joined.length >= 2 ? legalFind(words) : [];
     lg.sort(function (p, q) { return (lgText[p] === joined ? 0 : 1) - (lgText[q] === joined ? 0 : 1); });
-    if (regs.length || lg.length) {
-      sc.appendChild(el('div', 'sec', '지역'));
-      regs.slice(0, 5).forEach(function (r) {
-        var row = btn('row'), body = el('span', 'body'), pin = el('span', 'pin'); pin.style.setProperty('--c', 'var(--surface-2)'); pin.style.setProperty('--t', 'var(--ink-2)'); pin.appendChild(icon('pin'));
-        row.appendChild(pin); body.appendChild(el('span', 'name', regPath(r))); body.appendChild(el('span', 'meta', '이 지역만 보기')); row.appendChild(body);
-        row.addEventListener('click', function () { $('q').value = ''; $('qClear').hidden = true; closePanel(); setRegion(r, true); });
-        sc.appendChild(row);
-      });
-      lg.slice(0, regs.length ? 3 : 5).forEach(function (i) { sc.appendChild(legalRow(i)); });
-    }
     // 버스정류장: 이름이나 번호로. 숫자만 쳤으면 정류장 번호로 찾는다.
     var stops = joined.length >= 2 ? busFind(words) : [];
-    if (stops && stops.length) {
-      sc.appendChild(el('div', 'sec', '버스정류장 ' + fmt(stops.length) + '곳'));
-      stops.slice(0, /^\d+$/.test(joined) ? 10 : 5).forEach(function (o) { sc.appendChild(busRow(o)); });
-    }
+    // 노선: 숫자가 든 한 낱말(예: 13, 2-5, M5107)이면 한 글자여도 찾는다.
+    var routes = words.length === 1 ? routeFind(words[0]) : [];
+    if (routes) routes = routeSortLocal(routes, joined);
     // 카페: 이름에 찾은 글자가 다 든 곳(이름으로 찾은 카페)을 먼저, 동네나 도로명 주소까지 합쳐야 맞는 곳(주소로 찾은 카페)을 그 아래 따로.
     //  찾은 글자는 이름과 주소에서 굵게 칠한다(사용자 2026-11-28: "하슬"로 찾았는데 왜 트라디시옹이 나왔는지 몰랐다. 주소가 하슬라로).
     var found = [], byName = [], byAddr = [];
@@ -9532,22 +9595,59 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       }
       byName.sort(function (p, q) { return p[0] - q[0]; }); byAddr.sort(function (p, q) { return p[0] - q[0]; });
     }
-    if (byName.length) {
-      sc.appendChild(el('div', 'sec', '이름으로 찾은 카페 ' + fmt(byName.length) + '곳'));
-      byName.slice(0, 40).forEach(function (f) { sc.appendChild(cafeRow(f[1], true, 'search', words)); });
-      if (byName.length > 40) sc.appendChild(el('p', 'note', '지도 가운데에서 가까운 40곳이에요. 동네 이름을 함께 입력하면 더 좁혀져요.'));
+    var cnt = { cafe: found.length, reg: regs.length + lg.length, stop: stops ? stops.length : -1, route: routes ? routes.length : -1 };   // -1: 아직 찾는 중
+    var tabs = [['cafe', '카페'], ['reg', '지역'], ['stop', '정류장'], ['route', '노선']];
+    if (!searchTabUser) {
+      var first = tabs.filter(function (t) { return cnt[t[0]] > 0; })[0];
+      searchTab = cnt.cafe > 0 || !first ? 'cafe' : first[0];
     }
-    if (byAddr.length) {
-      sc.appendChild(el('div', 'sec', '주소로 찾은 카페 ' + fmt(byAddr.length) + '곳'));
-      byAddr.slice(0, byName.length ? 20 : 40).forEach(function (f) { sc.appendChild(cafeRow(f[1], true, 'search', words, true)); });
-      if (byAddr.length > (byName.length ? 20 : 40)) sc.appendChild(el('p', 'note', '지도 가운데에서 가까운 ' + (byName.length ? 20 : 40) + '곳이에요. 동네 이름을 함께 입력하면 더 좁혀져요.'));
-    }
-    if (!regs.length && !found.length && !lg.length && stops !== null && !(stops && stops.length)) {
+    var bar = el('div', 'stabs'); bar.setAttribute('role', 'tablist');
+    tabs.forEach(function (t) {
+      var b = btn(null, null, function () { searchTab = t[0]; searchTabUser = true; renderPanel(); });
+      b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(searchTab === t[0]));
+      b.appendChild(document.createTextNode(t[1]));
+      if (cnt[t[0]] > 0) b.appendChild(el('small', null, cnt[t[0]] >= 100 ? '99+' : String(cnt[t[0]])));
+      if (cnt[t[0]] === 0) b.classList.add('zero');
+      bar.appendChild(b);
+    });
+    panel.appendChild(h); panel.appendChild(bar);
+    var sc = el('div', 'scroll'); panel.appendChild(sc);
+    if (eggWord) eggSearchWord(sc);
+    var empty = function (msg) {
       var e = el('div', 'empty');
-      e.appendChild(el('b', null, joined.length < 2 ? '두 글자 이상 입력해 주세요' : '찾는 곳이 없어요'));
-      if (joined.length >= 2 && !eggWord) eggNoSearch(e);
-      if (joined.length >= 2) e.appendChild(el('span', null, '띄어쓰기를 바꾸거나 더 짧게 입력해 보세요.'));
+      e.appendChild(el('b', null, msg));
+      if (joined.length >= 2 && !eggWord && searchTab === 'cafe') eggNoSearch(e);
       sc.appendChild(e);
+    };
+    if (searchTab === 'cafe') {
+      if (byName.length) {
+        sc.appendChild(el('div', 'sec', '이름으로 찾은 카페 ' + fmt(byName.length) + '곳'));
+        byName.slice(0, 40).forEach(function (f) { sc.appendChild(cafeRow(f[1], true, 'search', words)); });
+        if (byName.length > 40) sc.appendChild(el('p', 'note', '지도 가운데에서 가까운 40곳이에요. 동네 이름을 함께 입력하면 더 좁혀져요.'));
+      }
+      if (byAddr.length) {
+        sc.appendChild(el('div', 'sec', '주소로 찾은 카페 ' + fmt(byAddr.length) + '곳'));
+        byAddr.slice(0, byName.length ? 20 : 40).forEach(function (f) { sc.appendChild(cafeRow(f[1], true, 'search', words, true)); });
+        if (byAddr.length > (byName.length ? 20 : 40)) sc.appendChild(el('p', 'note', '지도 가운데에서 가까운 ' + (byName.length ? 20 : 40) + '곳이에요. 동네 이름을 함께 입력하면 더 좁혀져요.'));
+      }
+      if (!found.length) empty(joined.length < 2 ? '두 글자 이상 입력해 주세요' : '이름이나 주소에 맞는 카페가 없어요');
+    } else if (searchTab === 'reg') {
+      regs.slice(0, 20).forEach(function (r) {
+        var row = btn('row'), body = el('span', 'body'), pin = el('span', 'pin'); pin.style.setProperty('--c', 'var(--surface-2)'); pin.style.setProperty('--t', 'var(--ink-2)'); pin.appendChild(icon('pin'));
+        row.appendChild(pin); body.appendChild(el('span', 'name', regPath(r))); body.appendChild(el('span', 'meta', '이 지역만 보기')); row.appendChild(body);
+        row.addEventListener('click', function () { $('q').value = ''; $('qClear').hidden = true; closePanel(); setRegion(r, true); });
+        sc.appendChild(row);
+      });
+      lg.slice(0, 20).forEach(function (i) { sc.appendChild(legalRow(i)); });
+      if (!cnt.reg) empty(joined.length < 2 ? '두 글자 이상 입력해 주세요' : '맞는 지역이 없어요');
+    } else if (searchTab === 'stop') {
+      if (stops === null) empty('정류장을 찾는 중이에요');
+      else if (!stops.length) empty(joined.length < 2 ? '두 글자 이상 입력해 주세요' : '맞는 정류장이 없어요');
+      else stops.slice(0, 40).forEach(function (o) { sc.appendChild(busRow(o)); });
+    } else {
+      if (routes === null) empty('노선을 찾는 중이에요');
+      else if (!routes.length) empty(/\d/.test(joined) ? '맞는 노선이 없어요' : '노선 번호를 입력해 주세요');
+      else routes.forEach(function (x) { sc.appendChild(routeRow(x)); });
     }
   }
   $('q').addEventListener('input', function () {
@@ -10385,12 +10485,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       pair.forEach(function (y, k) { if (canArr(y)) ask(k); });
     } else if (kind === 'b' && canArr(x)) ask(0);
     var cont = el('div', 'nshcont'); sh.appendChild(cont);
-    var busColor = function (t) {
-      if (/간선/.test(t)) return '#3d5bf5'; if (/지선/.test(t)) return '#2fa84f'; if (/광역|직행|급행|좌석/.test(t)) return '#e03131';
-      // 일반, 마을버스는 카카오맵이 쓰는 색(청록, 초록)으로 칠한다(사용자 2026-11-28).
-      if (/일반/.test(t)) return '#4fa8bd';
-      if (/마을/.test(t)) return '#61ad26'; if (/순환/.test(t)) return '#f08c00'; if (/공항/.test(t)) return '#1c7ed6'; return '#5c6b7f';
-    };
+    var busColor = busColorOf;
     var mins = function (sec) { return sec < 60 ? '곧 도착' : Math.round(sec / 60) + '분'; };
     var secText = function (sec) { sec = Math.floor(sec); return sec <= 0 ? '곧 도착' : sec < 60 ? sec + '초' : Math.floor(sec / 60) + '분 ' + (sec % 60) + '초'; };
     var fill = function () {
