@@ -10447,6 +10447,21 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   //  한 줄: [이름, 지역, 무료|유료|혼합, 칸, 칸 안 순번, 위도*1e5, 경도*1e5]. "용산 주차장"처럼 주차장이라는 낱말은 빼고 찾는다(이름에 주차장이 없는 곳이 많다).
   var parkIdx = {}, parkIdxWait = {};
   function parkFind(words) {
+    // "시영주차장"처럼 붙여 쓴 낱말은 주차장을 뗀다.
+    words = words.map(function (w) { return w.length > 3 ? w.replace(/주차장$/, '') : w; });
+    // 실시간 남은 자리가 나오는 주차장 찾기(사용자 2026-11-29: "서울 시영주차장"이 안 나온다): 시영, 실시간, 빈자리, 남은자리라는 낱말이 있으면
+    //  지도 숫자에 쓰는 실시간 목록(/parks)에서 찾는다. 나머지 낱말(서울, 종로 등)은 이름과 지역으로 좁힌다.
+    if (words.some(function (w) { return /^(시영|실시간|빈자리|남은자리|남은)$/.test(w); })) {
+      if (!parkLiveL || Date.now() - parkLiveT >= 120000) { parkLiveAll(function () { if (P.kind === 'search') renderPanel(); }); if (!parkLiveL) return null; }
+      var fs = words.filter(function (w) { return !/^(시영|실시간|빈자리|남은자리|남은|자리|(공영)?주차장?)$/.test(w); }), ct0 = map.getCenter();
+      var lv = parkLiveL.filter(function (x) {
+        var hay = (x[2] + ' ' + x[2].replace(/\s/g, '') + (x[6] === 'seoul' ? ' 서울 시영' : '')).toLowerCase();
+        return fs.every(function (w) { return hay.indexOf(w) >= 0; });
+      }).map(function (x) { var o = [x[2], x[6] === 'seoul' ? '서울' : '', '', null, null, x[0], x[1]]; o.live = x; return o; });
+      lv.forEach(function (o) { o.d = Math.pow(o[5] / 1e5 - ct0.lat, 2) + Math.pow((o[6] / 1e5 - ct0.lng) * .8, 2); });
+      lv.sort(function (a, b) { return a.d - b.d; });
+      return lv;
+    }
     var ws = words.filter(function (w) { return !/^(공영)?주차장?$/.test(w); });
     if (!ws.length) ws = words;
     var files = [];
@@ -10479,7 +10494,30 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   function parkSearchRow(o) {
     var row = btn('row'), body = el('span', 'body'), pin = el('span', 'pin'); pin.style.setProperty('--c', 'var(--surface-2)'); pin.style.setProperty('--t', 'var(--ink-2)'); pin.appendChild(icon('park'));
     var fee = { '무료': '무료', '유료': '유료', '혼합': '무료와 유료' }[o[2]];
-    row.appendChild(pin); body.appendChild(el('span', 'name', o[0])); body.appendChild(el('span', 'meta', [o[1], fee].filter(Boolean).join(', ') || '주차장')); row.appendChild(body);
+    row.appendChild(pin); body.appendChild(el('span', 'name', o[0]));
+    if (o.live) {
+      // 실시간 목록에서 찾은 주차장: 남은 자리를 줄에 적고, 누르면 그 자리의 지도 주차장 창(짝이 없으면 실시간 자료만 든 창).
+      var lx = o.live;
+      body.appendChild(el('span', 'meta', '남은 자리 ' + fmt(lx[3]) + '면, ' + (lx[6] === 'seoul' ? '서울시' : '교통안전공단') + ' 자료')); row.appendChild(body);
+      row.addEventListener('click', function () {
+        $('q').value = ''; $('qClear').hidden = true; closePanel();
+        var ll = [lx[1] / 1e5, lx[0] / 1e5], d = .004;
+        parkLoad(busKeys(ll[0] - d, ll[1] - d, ll[0] + d, ll[1] + d), function () {
+          var stem = function (t) { return String(t || '').replace(/\s|공영주차장|공영|주차장|\((시|구)\)/g, ''); }, me = stem(lx[2]), best = null;
+          Object.keys(parkTiles).forEach(function (k) {
+            (parkTiles[k] || []).forEach(function (st) {
+              var dd = Math.hypot((st[0] - lx[0]) / 1e5 * 111000, (st[1] - lx[1]) / 1e5 * 88000);
+              if ((dd <= 250 && me && stem(st[2]) === me) || dd <= 25) { if (!best || dd < best.d) best = { d: dd, st: st }; }
+            });
+          });
+          busFlyThen(best ? [best.st[1] / 1e5, best.st[0] / 1e5] : ll, function () {
+            if (best) parkTap(best.st); else nearSheet(-1, 'p', [lx[2], 0, '', { y: lx[0], x: lx[1] }]);
+          });
+        });
+      });
+      return row;
+    }
+    body.appendChild(el('span', 'meta', [o[1], fee].filter(Boolean).join(', ') || '주차장')); row.appendChild(body);
     // 누르면 그 자리로 날아간 뒤 주차장 창을 연다(정류장 검색과 같다).
     row.addEventListener('click', function () {
       $('q').value = ''; $('qClear').hidden = true; closePanel();
