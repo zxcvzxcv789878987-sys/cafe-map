@@ -6800,7 +6800,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       liveBusy = false;
       save('liveDay', liveDay);
       liveTiles[t[4]] = -1;   // 이 칸은 다 받았다(못 받은 카페는 이제 건물 자리에 그린다)
-      if (got.length) { liveSpread(got); liveFadeIn(got); } else requestDraw();
+      if (got.length) { liveSpread(got); liveFadeIn(got); if (nearDist && got.indexOf(nearDist.i) >= 0) nearDist.up(); } else requestDraw();
       if (!liveQueue.length && liveHold) { liveHold = 0; requestDraw(); }
       liveNext();
     });
@@ -10015,7 +10015,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 지도에서 보기: 카페에서 정류장(주차장)까지 걷는 길을 지도에 그리고, 그 자리에 표시를 둔다. 걷는 길 판의 뒤로를 누르면 카페 카드로 돌아간다.
   //  other: 건너편 정류장 { to, label, open }. 흐린 표시로 같이 두고, 누르면 그 정류장 창을 연다.
   //  rev: 거꾸로(그곳에서 카페까지). 주차장은 차를 대고 걸어오는 길이 먼저라 주차장에서 카페가 처음이고, 길 판에서 방향을 바꿀 수 있다(사용자 2026-11-28).
-  var nearMk = null, nearMk2 = null;
+  var nearMk = null, nearMk2 = null, nearDist = null;
   //  me: 지도의 이 정류장(주차장) 표시를 누르면 다시 여는 창. 버스는 곧 도착하는 버스가 바로 보인다(사용자 2026-11-28).
   function nearOnMap(i, kind, name, to, meters, other, sideLabel, rev, me) {
     // 카페 쪽 끝은 지도에 찍힌 카페 점(카카오 매장 자리로 옮겨 찍었으면 그 자리)에 맞춘다. 건물 점에서 시작하면 점과 길이 떨어져 보인다.
@@ -10368,9 +10368,13 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
         //  건너편(b2)이 자료에 없으면 공공데이터 정류장 목록에서 그 자리에서 찾는다.
         var cm = mercToLngLat(mx[i], my[i]), dm = function (y) { var z = y.slice(); z[1] = distM(cm[1], cm[0], y[2] / 1e5, y[3] / 1e5); return z; };
         if (x.b) line(near, 'bus', '버스정류장', x.b[0], meter(dm(x.b)[1]), function () {
+          cm = mercToLngLat(mx[i], my[i]);
           if (x.b2) { nearSheet(i, 'b', dm(x.b), dm(x.b2)); return; }
           busPair([x.b[2], x.b[3], x.b[0], x.b[4], x.b[5], x.b[6]], function (o) { nearSheet(i, 'b', dm(x.b), o ? dm(busTuple(o)) : null); });
         });
+        // 카드가 먼저 열리고 카페 점이 나중에 카카오 자리로 옮겨지면 거리를 다시 잰다.
+        var dEl = x.b && near.lastChild && near.lastChild.querySelector('.d');
+        nearDist = dEl ? { i: i, up: function () { if (!dEl.isConnected) { nearDist = null; return; } cm = mercToLngLat(mx[i], my[i]); dEl.textContent = meter(dm(x.b)[1]); } } : null;
         if (x.p) {
           var pv = document.createElement('span'), fee = { '무료': '무료', '유료': '유료', '혼합': '무료와 유료' }[x.p[2]];
           pv.appendChild(document.createTextNode(x.p[0])); if (fee) pv.appendChild(el('em', 'fee', fee));
