@@ -5446,19 +5446,42 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   //  내 위치에서 시작하면 전국 크기(줌 4~7) 지도 조각을 한 번도 받지 않아, 날아가는 동안 빈 곳이 보였다.
   //  앱이 한숨 돌린 뒤 한국을 덮는 그 조각들(스무 장이 안 된다)을 미리 받아 두면 브라우저가 기억해 두었다가 바로 꺼내 쓴다.
   var koreaWarm = {};
-  function warmKorea() {
+  function warmTpl() {
     var st = map.getStyle && map.getStyle(), src = null;
-    if (!st || !st.sources) return;
+    if (!st || !st.sources) return '';
     Object.keys(st.sources).some(function (id) { var s0 = map.getSource(id); if (s0 && s0.type === 'vector' && s0.tiles && s0.tiles.length) { src = s0; return true; } return false; });
-    if (!src) return;
-    var tpl = src.tiles[0], get = function (u) { koreaWarm[u] = 1; fetch(u, { mode: 'cors', credentials: 'same-origin' }).catch(function () { delete koreaWarm[u]; }); };
+    warmMax = src && src.maxzoom ? src.maxzoom : 14;
+    return src ? src.tiles[0] : '';
+  }
+  var warmMax = 14;
+  // 조각 하나 미리 받기(이미 받은 것은 다시 받지 않는다). 지도가 같은 조각을 찾으면 브라우저가 기억해 둔 것을 바로 쓴다.
+  function warmTile(tpl, z, x, y) {
+    var n = Math.pow(2, z); x = ((x % n) + n) % n; if (y < 0 || y >= n) return;
+    var u = tpl.replace('{z}', z).replace('{x}', x).replace('{y}', y);
+    if (koreaWarm[u]) return;
+    koreaWarm[u] = 1; fetch(u, { mode: 'cors', credentials: 'same-origin' }).catch(function () { delete koreaWarm[u]; });
+  }
+  function mercXY(ll) { var r = ll[1] * Math.PI / 180; return [(ll[0] + 180) / 360, (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2]; }
+  function warmKorea() {
+    var tpl = warmTpl(); if (!tpl) return;
+    var a = mercXY(KOREA[0]), b = mercXY(KOREA[1]);
     for (var z = 4; z <= 7; z++) {
-      var n = Math.pow(2, z), ty = function (lat) { var r = lat * Math.PI / 180; return Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * n); };
-      var x0 = Math.floor((KOREA[0][0] + 180) / 360 * n), x1 = Math.floor((KOREA[1][0] + 180) / 360 * n), y0 = ty(KOREA[1][1]), y1 = ty(KOREA[0][1]);
-      for (var x = x0; x <= x1; x++) for (var y = y0; y <= y1; y++) {
-        var u = tpl.replace('{z}', z).replace('{x}', x).replace('{y}', y);
-        if (!koreaWarm[u]) get(u);
-      }
+      var n = Math.pow(2, z);
+      for (var x = Math.floor(a[0] * n); x <= Math.floor(b[0] * n); x++) for (var y = Math.floor(b[1] * n); y <= Math.floor(a[1] * n); y++) warmTile(tpl, z, x, y);
+    }
+  }
+  // 날아갈 길 위의 중간 크기 조각도 날기 시작할 때 한꺼번에 받기 시작한다(사용자 2026-11-28: 날아가는 중간에 지도가 비어 깨져 보인다).
+  //  줌 한 칸마다 그때 화면이 덮을 자리(가운데는 출발점에서 도착점 쪽으로 옮겨 감)를 어림해서 그 조각들을 받는다. 출발 줌 조각은 이미 있다.
+  function warmPath(toLL, toZ) {
+    var tpl = warmTpl(); if (!tpl) return;
+    var c = map.getCenter(), z0 = map.getZoom(), p0 = mercXY([c.lng, c.lat]), p1 = mercXY(toLL);
+    var el0 = map.getContainer(), hw = el0.clientWidth / 2 / 512, hh = el0.clientHeight / 2 / 512;
+    for (var z = Math.min(warmMax, Math.floor(z0) - 1); z >= Math.max(0, Math.floor(toZ)); z--) {
+      var lin = Math.min(1, Math.max(0, (z0 - z) / Math.max(.01, z0 - toZ))), n = Math.pow(2, z);
+      [lin, lin * lin].forEach(function (t) {
+        var cx = (p0[0] + (p1[0] - p0[0]) * t) * n, cy = (p0[1] + (p1[1] - p0[1]) * t) * n;
+        for (var x = Math.floor(cx - hw); x <= Math.floor(cx + hw); x++) for (var y = Math.floor(cy - hh); y <= Math.floor(cy + hh); y++) warmTile(tpl, z, x, y);
+      });
     }
   }
   // 전국 지도로 간다. 처음부터 단추와 같은 곳(전국)이지만 내 위치 단추처럼 천천히 날아간다.
@@ -5468,7 +5491,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     setRegion(-1, false);
     var cam = map.cameraForBounds(KOREA, { padding: fitPad() });
     if (!cam) { map.fitBounds(KOREA, { padding: fitPad(), duration: 1600 }); return; }
-    var dur = flyMsTo(cam.center, cam.zoom);
+    var dur = flyMsTo(cam.center, cam.zoom), cc = cam.center && cam.center.lng !== undefined ? [cam.center.lng, cam.center.lat] : cam.center;
+    warmPath(cc, cam.zoom);
     map.flyTo({ center: cam.center, zoom: cam.zoom, bearing: 0, duration: dur, curve: 1.2, essential: true });
   }
   // 조건에 맞는 카페 중 가장 가까운 곳: 10분 안에 받은 내 위치가 있으면 거기서, 없으면 지도 가운데에서.
