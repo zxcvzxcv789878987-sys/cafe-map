@@ -5962,6 +5962,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 지도가 아이콘을 찾을 때 그 자리에서 그려서 넘겨 준다.
   map.on('styleimagemissing', function (e) {
     if (e.id === 'ic-bus-fav') { if (!map.hasImage(e.id)) map.addImage(e.id, drawIconFav(ICONS.bus[0], ICONS.bus[1]), { pixelRatio: 2 }); return; }
+    if (e.id === 'ic-parking-fav') { if (!map.hasImage(e.id)) map.addImage(e.id, drawIconFav(ICONS.parking[0], ICONS.parking[1]), { pixelRatio: 2 }); return; }
     var ic = ICONS[e.id.replace('ic-', '')];
     if (ic && !map.hasImage(e.id)) map.addImage(e.id, drawIcon(ic[0], ic[1]), { pixelRatio: 2 });
   });
@@ -6063,7 +6064,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       { id: 'lm-subway-line', type: 'line', source: 'lm-subway', minzoom: 9.5, layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': ['get', 'c'], 'line-width': z(10, 1.4, 16, 4.6) } },
       // 주차장(2026-11-28)도 정류장처럼 이름 없이 아이콘만. 정류장보다 아래 층이라 겹치면 정류장이 남는다.
       { id: 'lm-parking', type: 'symbol', source: 'lm-parks', minzoom: 15,
-        layout: { 'icon-image': 'ic-parking', 'icon-size': z(15, .85, 18, 1.2), 'icon-padding': 1 }, paint: { 'icon-opacity': .95 } },
+        // 찜한 주차장(f: 1)은 하트 붙은 아이콘, 겹치면 찜한 주차장이 남는다.
+        layout: { 'icon-image': ['case', ['==', ['get', 'f'], 1], 'ic-parking-fav', 'ic-parking'], 'icon-size': z(15, .85, 18, 1.2), 'icon-padding': 1, 'symbol-sort-key': ['-', 1, ['get', 'f']] }, paint: { 'icon-opacity': .95 } },
       // 버스 정류장은 이름 없이 아이콘만 찍는다. 지도 자료(OpenStreetMap)에는 빠진 정류장이 많아서(수원 정자동 26%) 공공데이터 정류장으로 그린다(2026-11-28).
       { id: 'lm-bus', type: 'symbol', source: 'lm-busstops', minzoom: 15,
         // 찜한 정류장(f: 1)은 하트 붙은 아이콘, 겹치면 찜한 정류장이 남는다.
@@ -7187,7 +7189,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (ks === parkKeyStr && src === parkSrc) return;
     parkLoad(keys, function () {
       var f = [];
-      keys.forEach(function (k) { (parkTiles[k] || []).forEach(function (s, j) { f.push({ type: 'Feature', properties: { k: k, j: j }, geometry: { type: 'Point', coordinates: [s[1] / 1e5, s[0] / 1e5] } }); }); });
+      keys.forEach(function (k) { (parkTiles[k] || []).forEach(function (s, j) { f.push({ type: 'Feature', properties: { k: k, j: j, f: parkFavKey[parkKeyOf(s)] ? 1 : 0 }, geometry: { type: 'Point', coordinates: [s[1] / 1e5, s[0] / 1e5] } }); }); });
       parkFC = { type: 'FeatureCollection', features: f }; parkKeyStr = ks;
       var s2 = map.getSource('lm-parks'); if (s2) { s2.setData(parkFC); parkSrc = s2; }
     });
@@ -7205,6 +7207,30 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   // 주차장 창이 쓰는 모양으로(카드 근처 칸의 p와 같다): [이름, 거리, 무료|유료|혼합, { y, x, n, d, w, s, h, f, g 공영|민영 }]
   function parkTuple(s, m) { var q = Object.assign({}, s[5] || {}); q.y = s[0]; q.x = s[1]; if (s[4]) q.g = s[4]; return [s[2], m || 0, s[3], q]; }
   function parkTap(s) { nearSheet(-1, 'p', parkTuple(s)); }
+  // 주차장 찜(사용자 2026-11-28, 정류장처럼): 이 기기에 저장한다(cafemap.parkfav). 한 줄은 지도 칸 파일과 같은 모양
+  //  [위도*1e5, 경도*1e5, 이름, 무료|유료|혼합, 공영|민영, { n, d, w, s, h, f, dp }]. 같은 주차장인지는 이름과 자리로 가린다.
+  var parkFavs = load('cafemap.parkfav') || [], parkFavKey = {};
+  function parkKeyOf(s) { return s[2] + '|' + s[0] + '|' + s[1]; }
+  function parkFavIndex() { parkFavKey = {}; parkFavs.forEach(function (f) { parkFavKey[parkKeyOf(f)] = 1; }); }
+  parkFavIndex();
+  // 창의 한 줄([이름, 거리, 무료|유료|혼합, { y, x, g, ... }])을 지도 칸 모양으로
+  function parkRow(y) { var q = Object.assign({}, y[3] || {}), r = [q.y, q.x, y[0], y[2] || '', q.g || '']; delete q.y; delete q.x; delete q.g; r.push(q); return r; }
+  function parkFavHas(y) { return !!parkFavKey[parkKeyOf(parkRow(y))]; }
+  function parkFavSet(y, on) {
+    var r = parkRow(y), k = parkKeyOf(r);
+    parkFavs = parkFavs.filter(function (f) { return parkKeyOf(f) !== k; });
+    if (on) parkFavs.unshift(r);
+    save('cafemap.parkfav', parkFavs); parkFavIndex();
+    parkKeyStr = ''; parkRefresh();   // 지도의 주차장 하트를 바로 고친다
+    if (P.kind === 'list' && S.seen === 'want') renderPanel();
+  }
+  function parkFavRow(f) {
+    var row = btn('row'), body = el('span', 'body'), pin = el('span', 'pin'); pin.style.setProperty('--c', 'var(--surface-2)'); pin.style.setProperty('--t', 'var(--ink-2)'); pin.appendChild(icon('park'));
+    var fee = { '무료': '무료', '유료': '유료', '혼합': '무료와 유료' }[f[3]];
+    row.appendChild(pin); body.appendChild(el('span', 'name', f[2])); body.appendChild(el('span', 'meta', fee ? fee + ' 주차장' : '주차장')); row.appendChild(body);
+    row.addEventListener('click', function () { busFlyThen([f[1] / 1e5, f[0] / 1e5], function () { parkTap(f); }); });
+    return row;
+  }
   // ----- 노선 보기(2026-11-28) -----
   // 버스 줄을 누르면 그 노선의 정류장을 세로 한 줄로 보여 주고(지금 버스가 있는 곳, 이 정류장, 회차 표시), 지도로 노선보기를 누르면 전체 경로를 지도에 그린다.
   //  자료는 중계 서버 /route(경기도 노선 조회, 서울시 노선정보조회, TAGO 노선 정보와 각 버스위치정보).
@@ -9463,7 +9489,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var wl = null;
     if (wantOnly) { wl = []; for (var w0 = 0; w0 < N; w0++) if (want[w0] === 1 && removed[w0] !== 1) wl.push(w0); }
     var cnt = wl ? wl.length : vc;
-    var h = head(wantOnly ? '찜한 곳' : S.reg >= 0 ? rName[S.reg] : '이 화면', (bonusOpt() && !wantOnly ? bonusOpt()[2] + ' ' : '') + fmt(cnt + (wantOnly ? busFavs.length : 0)) + '곳'), sc = el('div', 'scroll'), k;
+    var h = head(wantOnly ? '찜한 곳' : S.reg >= 0 ? rName[S.reg] : '이 화면', (bonusOpt() && !wantOnly ? bonusOpt()[2] + ' ' : '') + fmt(cnt + (wantOnly ? busFavs.length + parkFavs.length : 0)) + '곳'), sc = el('div', 'scroll'), k;
     if (cnt) {
       var sort = el('div', 'sort');
       // 가까운 순은 내 위치를 알아야 쓸 수 있다. 위치를 모르면 넓은 순으로 보여 주고, 가까운 순을 누르면 위치를 허용해 달라고 알린다.
@@ -9477,17 +9503,24 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     h.appendChild(closeBtn());
     panel.appendChild(h); panel.appendChild(sc);
     // 찜 목록은 카페가 맨 위, 찜한 정류장은 그 아래(사용자 2026-11-28: 카페가 최상단이어야 한다).
+    //  찜한 주차장은 정류장 아래(2026-11-28).
     var favStops = function () {
-      if (!wantOnly || !busFavs.length) return;
-      sc.appendChild(el('div', 'sec', '찜한 정류장 ' + fmt(busFavs.length) + '곳'));
-      busFavs.forEach(function (f) { sc.appendChild(busFavRow(f)); });
+      if (!wantOnly) return;
+      if (busFavs.length) {
+        sc.appendChild(el('div', 'sec', '찜한 정류장 ' + fmt(busFavs.length) + '곳'));
+        busFavs.forEach(function (f) { sc.appendChild(busFavRow(f)); });
+      }
+      if (parkFavs.length) {
+        sc.appendChild(el('div', 'sec', '찜한 주차장 ' + fmt(parkFavs.length) + '곳'));
+        parkFavs.forEach(function (f) { sc.appendChild(parkFavRow(f)); });
+      }
     };
-    if (wantOnly && busFavs.length) {
+    if (wantOnly && (busFavs.length || parkFavs.length)) {
       if (!cnt) { favStops(); return; }
       sc.appendChild(el('div', 'sec', '찜한 카페 ' + fmt(cnt) + '곳'));
     }
     if (wantOnly && !cnt) {
-      var e0 = el('div', 'empty'); e0.appendChild(el('b', null, '아직 찜한 곳이 없어요')); e0.appendChild(el('span', null, '카페 카드나 정류장 창의 하트를 누르면 여기에 모여요.'));
+      var e0 = el('div', 'empty'); e0.appendChild(el('b', null, '아직 찜한 곳이 없어요')); e0.appendChild(el('span', null, '카페 카드, 정류장 창, 주차장 창의 하트를 누르면 여기에 모여요.'));
       sc.appendChild(e0); return;
     }
     if (!cnt) {
@@ -10654,6 +10687,10 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (kind === 'b') {
       fav = btn('oact ohw nfav', null, function () { var y = pair ? pair[cur] : x; busFavSet(y, !busFavHas(y)); fav.setAttribute('aria-pressed', String(busFavHas(y))); toast(busFavHas(y) ? '정류장을 찜했어요' : '정류장 찜을 풀었어요'); });
       fav.appendChild(icon('heart')); fav.setAttribute('aria-label', '정류장 찜'); hd.appendChild(fav);
+    } else if (kind === 'p') {
+      // 주차장 찜(사용자 2026-11-28): 정류장처럼 이름 줄 끝의 하트.
+      fav = btn('oact ohw nfav', null, function () { parkFavSet(x, !parkFavHas(x)); fav.setAttribute('aria-pressed', String(parkFavHas(x))); toast(parkFavHas(x) ? '주차장을 찜했어요' : '주차장 찜을 풀었어요'); });
+      fav.appendChild(icon('heart')); fav.setAttribute('aria-label', '주차장 찜'); fav.setAttribute('aria-pressed', String(parkFavHas(x))); hd.appendChild(fav);
     }
     var pair = kind === 'b' && x2 ? [x, x2] : null, cur = pair && side ? 1 : 0, seg = null, segMain = [], segSub = [], dirEl = null;
     // 고르는 칸(사용자 2026-11-28): 굵은 글씨는 누른 정류장(카드에서 열면 가까운 정류장)과 반대편 정류장, 작은 글씨는 방면.
