@@ -51,9 +51,6 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { height: 100%; margin: 0; }
-/* 화면 전체가 확대되지 않게(사용자 2026-11-28: 지도를 끝까지 확대한 뒤 더 벌리면 브라우저가 화면째 키워서 단추가 밖으로 밀리고 멈춘 것처럼 됐다).
-   손가락 두 개 확대는 지도 안에서만(지도는 자기 손가락 규칙이 따로 있다). 목록은 위아래, 옆으로 밀기만 된다. */
-html, body { touch-action: pan-x pan-y; }
 body { font-family: var(--font); font-size: 14px; line-height: 1.45; color: var(--ink); background: var(--bg); overflow: hidden; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
 button, input { font: inherit; color: inherit; }
 button { cursor: pointer; border: 0; background: none; padding: 0; }
@@ -6179,8 +6176,18 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   function styleUrl() { return 'https://tiles.openfreemap.org/styles/liberty'; }
   var mapAt = saved.view && S.start === 'last' ? { center: [saved.view[1], saved.view[0]], zoom: saved.view[2] }
     : { bounds: KOREA, fitBoundsOptions: { padding: { top: 110, bottom: 70, left: 30, right: 30 } } };
-  // 아이폰 사파리: 화면째 확대(손가락 모으기, 두 번 톡)를 막는다. 지도 확대는 지도가 따로 처리하므로 그대로 된다.
-  ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (ev) { document.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false }); });
+  // 화면째 확대(사용자 2026-11-28: 지도를 끝까지 확대한 뒤 더 벌리면 브라우저가 화면을 키워 단추가 밀리고 멈춘 것처럼 됐다).
+  //  손가락 동작을 막는 방식(touch-action, gesturestart)은 아이폰에서 지도까지 안 움직이게 해서 뺐다(같은 날).
+  //  대신 화면이 확대된 것을 알아채면 확대 막는 설정을 다시 걸어 1배로 되돌린다.
+  (function () {
+    var vv = window.visualViewport, vm = document.querySelector('meta[name="viewport"]'); if (!vv || !vm) return;
+    var base = vm.getAttribute('content'), busy = false;
+    vv.addEventListener('resize', function () {
+      if (busy || vv.scale <= 1.02) return;
+      busy = true; vm.setAttribute('content', base.replace(/,?\s*maximum-scale=[^,]*/, '') + ', maximum-scale=1.0');
+      setTimeout(function () { vm.setAttribute('content', base); busy = false; }, 400);
+    });
+  })();
   var map = new maplibregl.Map(Object.assign({
     container: 'map',
     minZoom: 5.2, maxZoom: 19, maxBounds: [[121, 31], [134.5, 40.5]],
@@ -6244,6 +6251,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     var nd = nb.querySelector('svg');
     var sync = function () {
       var b = map.getBearing(), was = nb.hidden; nb.hidden = Math.abs(b) < .5; nd.style.transform = 'rotate(' + (-b) + 'deg)'; applyHead();
+      if (was !== nb.hidden) navVis();   // 돌아가 있으면 처음부터 단추도 보인다
       if (was && !nb.hidden) { var c = $('chips'); if (c) nb.style.top = Math.round(c.getBoundingClientRect().bottom + 10) + 'px'; }   // 칩 줄 바로 아래
     };
     map.on('rotate', sync); sync();
@@ -9950,10 +9958,11 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
     if (can) { all.textContent = S.showAll ? '동별로 보기' : rName[S.reg] + ' 전체 보기'; all.setAttribute('aria-pressed', String(S.showAll)); }
   }
   // 오른쪽 아래 단추: 뒤로와 처음부터는 지역을 골랐을 때만. 메모 단추(투명 단추 에그를 연 사람)는 전국에서도 늘 보인다(사용자 2026-11-27).
+  //  처음부터는 지도가 돌아가 있을 때도 보인다(사용자 2026-11-28: 전국에서 돌린 뒤 다시 눌러 똑바로 돌리고 싶다). 누르면 북쪽이 위인 전국으로 날아간다.
   function navVis() {
-    var inReg = S.reg >= 0, memo = favOn() && !S.favHide;
-    $('navBack').hidden = !inReg; $('navHome').hidden = !inReg;
-    $('nav').hidden = !inReg && !memo;
+    var inReg = S.reg >= 0, memo = favOn() && !S.favHide, rot = typeof map !== 'undefined' && map && Math.abs(map.getBearing()) >= .5;
+    $('navBack').hidden = !inReg; $('navHome').hidden = !inReg && !rot;
+    $('nav').hidden = !inReg && !memo && !rot;
   }
   function toggleMenu(kind, anchor) { if (P.kind === kind) closePanel(); else openPanel(kind, anchor); }
   $('chips').addEventListener('click', function (e) {
