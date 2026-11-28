@@ -587,7 +587,8 @@ button.oli { width: 100%; padding: 11px 0; margin: 0; background: none; color: v
 /* 지도로 노선보기 동안은 카페 쪽 단추(OO 전체 보기, 이 화면 N곳, 이 화면에 없을 때 상자)를 숨긴다(사용자 2026-11-28) */
 body.broute-on #navAll, body.broute-on #count, body.broute-on #nogo { display: none !important; }
 /* 지도로 노선보기의 버스(실시간 위치) */
-.rbus { position: relative; width: 26px; height: 26px; pointer-events: none; }
+/* position을 주면 안 된다: 지도 표시(.maplibregl-marker)의 position: absolute를 덮어써 버스들이 세로로 쌓이고 확대할 때마다 자리가 바뀐다 */
+.rbus { width: 26px; height: 26px; pointer-events: none; }
 .rbusmk { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .3); box-sizing: border-box; }
 .rbuslb { display: none; position: absolute; left: 50%; bottom: calc(100% + 3px); transform: translateX(-50%); padding: 1px 6px; border-radius: 6px; background: #fff; color: #333d4b; font-size: 11px; font-weight: 700; white-space: nowrap; box-shadow: 0 1px 4px rgba(0, 0, 0, .25); }
 body.rbus-lab .rbuslb { display: block; }
