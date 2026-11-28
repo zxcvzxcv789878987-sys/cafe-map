@@ -7720,7 +7720,8 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
   if (TEST) window.testSubMap = function () { var src = map.getSource('lm-stations'), d = src && src._data; return { layer: !!map.getLayer('lm-station-fav'), img: map.hasImage('ic-heart-sm'), fav: d && d.features ? d.features.filter(function (f) { return f.properties.f; }).map(function (f) { return f.properties.name; }) : null, shown: map.queryRenderedFeatures({ layers: ['lm-station-fav'] }).length }; };
   if (TEST) window.testSub = function (name) { var s = SUBWAY.filter(function (a) { return a[2] === name; })[0]; if (s) subSheet(s); return s; };
   // 역 창. li: 처음 보여 줄 노선 순번(환승역). 노선마다 상행, 하행 두 칸을 같이 보여 준다(어느 쪽을 탈지 고르기 쉽게).
-  function subSheet(st, li) {
+  // ci: 카페 카드 근처 칸에서 열었으면 그 카페 번호. 그때 길찾기는 버스정류장 줄처럼 카페에서 역까지 걷는 길(2026-11-29, 원래 방 부탁).
+  function subSheet(st, li, ci) {
     var old = $('nsheet'), was = !!old && old.classList.contains('on'); if (old) old.remove();
     var o = el('div', 'osh'), sh = el('div', 'oshbox');
     o.id = 'nsheet'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', '지하철역');
@@ -7816,7 +7817,14 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       // 서울 실시간을 보여 줄 때는 출처를 적는다(열린데이터광장 이용약관 제10조). 시간표로 보여 줄 때는 실시간이 아니라고 한 번만 적는다.
       if (L.rt) cont.appendChild(el('div', 'ssrc', '실시간 도착 정보: 서울특별시 공공데이터'));
       else if (L.g.some(function (g) { return g.t && g.t.length; })) cont.appendChild(el('div', 'ssrc', '실시간 정보가 없는 노선이라 시간표 기준 예정 시각이에요'));
-      var mb = btn('nshmap', null, function () { close(); stopRouteFromMe([st[2], 0, st[1], st[0]], function () { subSheet(st, cur); }, 'subway'); });
+      var mb = btn('nshmap', null, function () {
+        close();
+        if (ci != null && ci >= 0) {
+          // 카페에서 역까지(카페 점에서 잰 거리). 길 판 제목은 "카페에서 OO역까지", 지도의 역 표시를 누르면 이 역 창으로 돌아온다.
+          var to = [st[0] / 1e5, st[1] / 1e5], cm = mercToLngLat(mx[ci], my[ci]), nm = /역$/.test(st[2]) ? st[2] : st[2] + '역';
+          nearOnMap(ci, 's', nm, to, distM(cm[1], cm[0], to[1], to[0]), null, '', false, function () { subSheet(st, cur, ci); });
+        } else stopRouteFromMe([st[2], 0, st[1], st[0]], function () { subSheet(st, cur); }, 'subway');
+      });
       mb.appendChild(icon('route')); mb.appendChild(document.createTextNode('길찾기'));
       cont.appendChild(mb);
     };
@@ -12293,11 +12301,12 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
       drawRoute(c);
       if (nearMk) nearMk.remove();
       if (nearMk2) { nearMk2.remove(); nearMk2 = null; }
-      var col = kind === 'b' ? '#2f9e44' : '#2f6fdf';
+      // kind 's': 카드 근처 칸에서 연 지하철역(2026-11-29, 길찾기 통일 마지막 단계). 그림과 색은 역 길찾기와 같게.
+      var col = kind === 'b' ? '#2f9e44' : kind === 's' ? '#3d5bf5' : '#2f6fdf';
       var pin = document.createElement(me ? 'button' : 'div'), ic = el('span', 'ic'); pin.className = 'nearpin'; ic.style.background = col;
-      ic.appendChild(icon(kind === 'b' ? 'bus' : 'park')); pin.appendChild(ic); pin.appendChild(el('b', null, name));
+      ic.appendChild(icon(kind === 'b' ? 'bus' : kind === 's' ? 'subway' : 'park')); pin.appendChild(ic); pin.appendChild(el('b', null, name));
       if (me) {
-        pin.type = 'button'; pin.setAttribute('aria-label', name + (kind === 'b' ? ' 곧 도착하는 버스 보기' : ' 주차장 정보 보기'));
+        pin.type = 'button'; pin.setAttribute('aria-label', name + (kind === 'b' ? ' 곧 도착하는 버스 보기' : kind === 's' ? ' 곧 도착하는 열차 보기' : ' 주차장 정보 보기'));
         pin.addEventListener('click', function (e) { e.stopPropagation(); me(); });
       }
       nearMk = new maplibregl.Marker({ element: pin, anchor: 'left', offset: [-19, 0] }).setLngLat(to).addTo(map);
@@ -12869,7 +12878,7 @@ window.addEventListener('error', function () { window.cafeBootFail('앱을 여�
           st0[3].forEach(function (L) { var dt = el('i', 'ldot sdot'); dt.style.background = L[1]; dt.title = L[0]; sv.appendChild(dt); });
           // 다음 열차: 모든 노선, 방향 가운데 가장 먼저 오는 열차(남은 초를 아는 것만). 1초마다 줄어든다.
           var nx = el('small', 'snext'); nx.hidden = true; sv.appendChild(nx);
-          line(near, 'subway', '가까운 역', sv, meter(sn[1]), function () { subSheet(st0); });
+          line(near, 'subway', '가까운 역', sv, meter(sn[1]), function () { subSheet(st0, 0, i); });
           var sr = near.lastChild;
           sr.addEventListener('pointerdown', function () { subFetch(st0); });
           subFetch(st0).then(function (d) {
